@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+mobile_agent/.venv/
+# Packaging output (`pip wheel .`, `python -m build`)
+/build/
+/dist/
+*.egg-info/
+
+# Compiled helpers (rebuild with `python3 -m mobile_agent build-ocr`)
+mobile_agent/.build/
+
+# Task journal: contains task goals and observed app text. Never commit.
+mobile_agent/.state/
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+
+# Credentials and signing material. Never commit these.
+.env
+.env.*
+!.env.example
+*.p12
+*.p8
+*.pem
+*.key
+*.mobileprovision
+
+# Per-user OS, editor and tool state. These are listed here rather than left to a
+# personal global gitignore, which other clones do not have. Xcode user data and
+# result bundles embed the macOS username, device names and UDIDs.
+.DS_Store
+.claude/settings.local.json
+xcuserdata/
+*.xcuserstate
+*.xcresult/
+
+# Local captures produced while debugging a device (HAR files carry cookies and tokens)
+*.pcap
+*.har
+
+# Benchmark runs (the default --out of `python -m mobile_agent.bench`): raw traces and
+# screenshots. Phone runs carry observed screen text (names, networks, contacts); iOSWorld
+# runs are ~1 GB of screenshots. Reports are kept.
+research/bench-runs/*/
+research/bench-runs/*.log
+research/iosworld-runs/

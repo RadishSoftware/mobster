@@ -1,0 +1,323 @@
+[
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 1,
+"logprobs": false,
+"ok": true,
+"content": "{\n  \"results\": [\n    {\n      \"image\": 1,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 1.0\n    }\n  ]\n}",
+"usage": {
+"promptTokenCount": 652,
+"candidatesTokenCount": 45,
+"totalTokenCount": 697
+},
+"latency_ms": 1253.4
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 1,
+"logprobs": false,
+"ok": true,
+"content": "{\"results\": [{\"image\": 1, \"answer\": \"yes\", \"answer_confidence\": 1.0}]}",
+"usage": {
+"promptTokenCount": 648,
+"candidatesTokenCount": 25,
+"totalTokenCount": 673
+},
+"latency_ms": 845.1
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 1,
+"logprobs": false,
+"ok": true,
+"content": "{\n  \"results\": [\n    {\n      \"image\": 1,\n      \"answer\": \"no\",\n      \"answer_confidence\": 0.8\n    }\n  ]\n}",
+"usage": {
+"promptTokenCount": 642,
+"candidatesTokenCount": 45,
+"totalTokenCount": 687
+},
+"latency_ms": 912.4
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 1,
+"logprobs": false,
+"ok": true,
+"content": "{\n  \"results\": [\n    {\n      \"image\": 1,\n      \"answer\": \"no\",\n      \"answer_confidence\": 0.99\n    }\n  ]\n}",
+"usage": {
+"promptTokenCount": 642,
+"candidatesTokenCount": 46,
+"totalTokenCount": 688
+},
+"latency_ms": 896.1
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 1,
+"logprobs": false,
+"ok": true,
+"content": "{\n  \"results\": [\n    {\n      \"image\": 1,\n      \"answer\": \"no\",\n      \"answer_confidence\": 1.0\n    }\n  ]\n}",
+"usage": {
+"promptTokenCount": 648,
+"candidatesTokenCount": 45,
+"totalTokenCount": 693
+},
+"latency_ms": 986.0
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 1,
+"logprobs": false,
+"ok": true,
+"content": "{\"results\": [{\"image\": 1, \"answer\": \"no\", \"answer_confidence\": 0.95}]}",
+"usage": {
+"promptTokenCount": 652,
+"candidatesTokenCount": 26,
+"totalTokenCount": 678
+},
+"latency_ms": 758.4
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 1,
+"logprobs": false,
+"ok": true,
+"content": "{\"results\": [{\"image\": 1, \"answer\": \"yes\", \"answer_confidence\": 1.0}]}",
+"usage": {
+"promptTokenCount": 644,
+"candidatesTokenCount": 25,
+"totalTokenCount": 669
+},
+"latency_ms": 1112.6
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 1,
+"logprobs": false,
+"ok": true,
+"content": "{\n  \"results\": [\n    {\n      \"image\": 1,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 1.0\n    }\n  ]\n}",
+"usage": {
+"promptTokenCount": 630,
+"candidatesTokenCount": 45,
+"totalTokenCount": 675
+},
+"latency_ms": 888.1
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 1,
+"logprobs": false,
+"ok": false,
+"error": "TransportError: HTTP TimeoutError; request outcome unknown; not retried",
+"latency_ms": 19951.6
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 1,
+"logprobs": false,
+"ok": true,
+"content": "{\n  \"results\": [\n    {\n      \"image\": 1,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 1.0\n    }\n  ]\n}",
+"usage": {
+"promptTokenCount": 638,
+"candidatesTokenCount": 45,
+"totalTokenCount": 683
+},
+"latency_ms": 983.2
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 1,
+"logprobs": false,
+"ok": true,
+"content": "{\n  \"results\": [\n    {\n      \"image\": 1,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 1.0\n    }\n  ]\n}",
+"usage": {
+"promptTokenCount": 634,
+"candidatesTokenCount": 45,
+"totalTokenCount": 679
+},
+"latency_ms": 951.3
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 1,
+"logprobs": false,
+"ok": false,
+"error": "TransportError: HTTP TimeoutError; request outcome unknown; not retried",
+"latency_ms": 19956.5
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 1,
+"logprobs": false,
+"ok": true,
+"content": "{\n  \"results\": [\n    {\n      \"image\": 1,\n      \"answer\": \"no\",\n      \"answer_confidence\": 1.0\n    }\n  ]\n}",
+"usage": {
+"promptTokenCount": 626,
+"candidatesTokenCount": 45,
+"totalTokenCount": 671
+},
+"latency_ms": 838.6
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 1,
+"logprobs": false,
+"ok": true,
+"content": "{\n  \"results\": [\n    {\n      \"image\": 1,\n      \"answer\": \"no\",\n      \"answer_confidence\": 1.0\n    }\n  ]\n}",
+"usage": {
+"promptTokenCount": 634,
+"candidatesTokenCount": 45,
+"totalTokenCount": 679
+},
+"latency_ms": 844.2
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 1,
+"logprobs": false,
+"ok": true,
+"content": "{\n  \"results\": [\n    {\n      \"image\": 1,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 0.99\n    }\n  ]\n}",
+"usage": {
+"promptTokenCount": 620,
+"candidatesTokenCount": 46,
+"totalTokenCount": 666
+},
+"latency_ms": 860.2
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 1,
+"logprobs": false,
+"ok": true,
+"content": "{\n  \"results\": [\n    {\n      \"image\": 1,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 1.0\n    }\n  ]\n}",
+"usage": {
+"promptTokenCount": 626,
+"candidatesTokenCount": 45,
+"totalTokenCount": 671
+},
+"latency_ms": 865.3
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 1,
+"logprobs": false,
+"ok": false,
+"error": "TransportError: HTTP TimeoutError; request outcome unknown; not retried",
+"latency_ms": 19958.9
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 1,
+"logprobs": false,
+"ok": true,
+"content": "{\n  \"results\": [\n    {\n      \"image\": 1,\n      \"answer\": \"no\",\n      \"answer_confidence\": 0.99\n    }\n  ]\n}",
+"usage": {
+"promptTokenCount": 630,
+"candidatesTokenCount": 46,
+"totalTokenCount": 676
+},
+"latency_ms": 902.6
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 1,
+"logprobs": false,
+"ok": true,
+"content": "{\n  \"results\": [\n    {\n      \"image\": 1,\n      \"answer\": \"no\",\n      \"answer_confidence\": 1.0\n    }\n  ]\n}",
+"usage": {
+"promptTokenCount": 620,
+"candidatesTokenCount": 45,
+"totalTokenCount": 665
+},
+"latency_ms": 836.3
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 1,
+"logprobs": false,
+"ok": true,
+"content": "{\"results\": [{\"image\": 1, \"answer\": \"no\", \"answer_confidence\": 0.99}]}",
+"usage": {
+"promptTokenCount": 612,
+"candidatesTokenCount": 26,
+"totalTokenCount": 638
+},
+"latency_ms": 881.5
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 1,
+"logprobs": false,
+"ok": true,
+"content": "{\n  \"results\": [\n    {\n      \"image\": 1,\n      \"face\": \"yes\",\n      \"eyes\": \"yes\",\n      \"colour_photo\": \"yes\",\n      \"iris\": \"green\",\n      \"iris_confidence\": 0.85\n    }\n  ]\n}",
+"usage": {
+"promptTokenCount": 878,
+"candidatesTokenCount": 72,
+"totalTokenCount": 950
+},
+"latency_ms": 833.7
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 1,
+"logprobs": false,
+"ok": true,
+"content": "{\n  \"results\": [\n    {\n      \"image\": 1,\n      \"face\": \"yes\",\n      \"eyes\": \"yes\",\n      \"colour_photo\": \"yes\",\n      \"iris\": \"green\",\n      \"iris_confidence\": 0.95\n    }\n  ]\n}",
+"usage": {
+"promptTokenCount": 890,
+"candidatesTokenCount": 72,
+"totalTokenCount": 962
+},
+"latency_ms": 752.2
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 1,
+"logprobs": false,
+"ok": true,
+"content": "{\n  \"results\": [\n    {\n      \"image\": 1,\n      \"face\": \"yes\",\n      \"eyes\": \"yes\",\n      \"colour_photo\": \"yes\",\n      \"iris\": \"blue\",\n      \"iris_confidence\": 0.99\n    }\n  ]\n}",
+"usage": {
+"promptTokenCount": 873,
+"candidatesTokenCount": 72,
+"totalTokenCount": 945
+},
+"latency_ms": 801.7
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 1,
+"logprobs": false,
+"ok": true,
+"content": "{\n  \"results\": [\n    {\n      \"image\": 1,\n      \"face\": \"yes\",\n      \"eyes\": \"yes\",\n      \"colour_photo\": \"yes\",\n      \"iris\": \"brown\",\n      \"iris_confidence\": 0.9\n    }\n  ]\n}",
+"usage": {
+"promptTokenCount": 884,
+"candidatesTokenCount": 71,
+"totalTokenCount": 955
+},
+"latency_ms": 940.5
+}
+]

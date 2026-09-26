@@ -1,0 +1,72 @@
+[
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 8,
+"logprobs": false,
+"ok": true,
+"content": "{\n  \"results\": [\n    {\n      \"image\": 1,\n      \"face\": \"yes\",\n      \"eyes\": \"yes\",\n      \"colour_photo\": \"yes\",\n      \"iris\": \"blue\",\n      \"iris_confidence\": 0.99\n    },\n    {\n      \"image\": 2,\n      \"face\": \"yes\",\n      \"eyes\": \"yes\",\n      \"colour_photo\": \"yes\",\n      \"iris\": \"brown\",\n      \"iris_confidence\": 0.99\n    },\n    {\n      \"image\": 3,\n      \"face\": \"yes\",\n      \"eyes\": \"yes\",\n      \"colour_photo\": \"yes\",\n      \"iris\": \"green\",\n      \"iris_confidence\": 0.95\n    },\n    {\n      \"image\": 4,\n      \"face\": \"yes\",\n      \"eyes\": \"yes\",\n      \"colour_photo\": \"yes\",\n      \"iris\": \"green\",\n      \"iris_confidence\": 0.98\n    },\n    {\n      \"image\": 5,\n      \"face\": \"yes\",\n      \"eyes\": \"yes\",\n      \"colour_photo\": \"yes\",\n      \"iris\": \"brown\",\n      \"iris_confidence\": 0.99\n    },\n    {\n      \"image\": 6,\n      \"face\": \"yes\",\n      \"eyes\": \"yes\",\n      \"colour_photo\": \"yes\",\n      \"iris\": \"green\",\n      \"iris_confidence\": 0.98\n    },\n    {\n      \"image\": 7,\n      \"face\": \"yes\",\n      \"eyes\": \"yes\",\n      \"colour_photo\": \"yes\",\n      \"iris\": \"green\",\n      \"iris_confidence\": 0.98\n    },\n    {\n      \"image\": 8,\n      \"face\": \"yes\",\n      \"eyes\": \"yes\",\n      \"colour_photo\": \"yes\",\n      \"iris\": \"green\",\n      \"iris_confidence\": 0.99\n    }\n  ]\n}",
+"usage": {
+"promptTokenCount": 2750,
+"candidatesTokenCount": 492,
+"totalTokenCount": 3242
+},
+"latency_ms": 2480.4
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 8,
+"logprobs": false,
+"ok": true,
+"content": "{\n  \"results\": [\n    {\n      \"image\": 1,\n      \"face\": \"yes\",\n      \"eyes\": \"yes\",\n      \"colour_photo\": \"yes\",\n      \"iris\": \"brown\",\n      \"iris_confidence\": 0.99\n    },\n    {\n      \"image\": 2,\n      \"face\": \"yes\",\n      \"eyes\": \"yes\",\n      \"colour_photo\": \"yes\",\n      \"iris\": \"hazel\",\n      \"iris_confidence\": 0.95\n    },\n    {\n      \"image\": 3,\n      \"face\": \"yes\",\n      \"eyes\": \"yes\",\n      \"colour_photo\": \"yes\",\n      \"iris\": \"brown\",\n      \"iris_confidence\": 0.8\n    },\n    {\n      \"image\": 4,\n      \"face\": \"yes\",\n      \"eyes\": \"yes\",\n      \"colour_photo\": \"yes\",\n      \"iris\": \"green\",\n      \"iris_confidence\": 0.9\n    },\n    {\n      \"image\": 5,\n      \"face\": \"yes\",\n      \"eyes\": \"yes\",\n      \"colour_photo\": \"yes\",\n      \"iris\": \"blue\",\n      \"iris_confidence\": 0.99\n    },\n    {\n      \"image\": 6,\n      \"face\": \"yes\",\n      \"eyes\": \"yes\",\n      \"colour_photo\": \"yes\",\n      \"iris\": \"hazel\",\n      \"iris_confidence\": 0.9\n    },\n    {\n      \"image\": 7,\n      \"face\": \"yes\",\n      \"eyes\": \"yes\",\n      \"colour_photo\": \"yes\",\n      \"iris\": \"green\",\n      \"iris_confidence\": 0.95\n    },\n    {\n      \"image\": 8,\n      \"face\": \"yes\",\n      \"eyes\": \"yes\",\n      \"colour_photo\": \"yes\",\n      \"iris\": \"green\",\n      \"iris_confidence\": 0.99\n    }\n  ]\n}",
+"usage": {
+"promptTokenCount": 2728,
+"candidatesTokenCount": 491,
+"totalTokenCount": 3219
+},
+"latency_ms": 2108.2
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 8,
+"logprobs": false,
+"ok": true,
+"content": "{\n  \"results\": [\n    {\n      \"image\": 1,\n      \"face\": \"yes\",\n      \"eyes\": \"yes\",\n      \"colour_photo\": \"yes\",\n      \"iris\": \"green\",\n      \"iris_confidence\": 0.95\n    },\n    {\n      \"image\": 2,\n      \"face\": \"yes\",\n      \"eyes\": \"yes\",\n      \"colour_photo\": \"yes\",\n      \"iris\": \"brown\",\n      \"iris_confidence\": 0.90\n    },\n    {\n      \"image\": 3,\n      \"face\": \"yes\",\n      \"eyes\": \"yes\",\n      \"colour_photo\": \"no\",\n      \"iris\": \"unclear\",\n      \"iris_confidence\": 0.85\n    },\n    {\n      \"image\": 4,\n      \"face\": \"yes\",\n      \"eyes\": \"no\",\n      \"colour_photo\": \"yes\",\n      \"iris\": \"unclear\",\n      \"iris_confidence\": 0.99\n    },\n    {\n      \"image\": 5,\n      \"face\": \"yes\",\n      \"eyes\": \"yes\",\n      \"colour_photo\": \"yes\",\n      \"iris\": \"brown\",\n      \"iris_confidence\": 0.90\n    },\n    {\n      \"image\": 6,\n      \"face\": \"yes\",\n      \"eyes\": \"yes\",\n      \"colour_photo\": \"yes\",\n      \"iris\": \"brown\",\n      \"iris_confidence\": 0.95\n    },\n    {\n      \"image\": 7,\n      \"face\": \"no\",\n      \"eyes\": \"yes\",\n      \"colour_photo\": \"yes\",\n      \"iris\": \"blue\",\n      \"iris_confidence\": 0.80\n    },\n    {\n      \"image\": 8,\n      \"face\": \"yes\",\n      \"eyes\": \"yes\",\n      \"colour_photo\": \"no\",\n      \"iris\": \"unclear\",\n      \"iris_confidence\": 0.90\n    }\n  ]\n}",
+"usage": {
+"promptTokenCount": 2762,
+"candidatesTokenCount": 495,
+"totalTokenCount": 3257
+},
+"latency_ms": 1974.5
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 8,
+"logprobs": false,
+"ok": true,
+"content": "{\n  \"results\": [\n    {\n      \"image\": 1,\n      \"face\": \"yes\",\n      \"eyes\": \"unsure\",\n      \"colour_photo\": \"no\",\n      \"iris\": \"unclear\",\n      \"iris_confidence\": 0.95\n    },\n    {\n      \"image\": 2,\n      \"face\": \"yes\",\n      \"eyes\": \"yes\",\n      \"colour_photo\": \"yes\",\n      \"iris\": \"hazel\",\n      \"iris_confidence\": 0.88\n    },\n    {\n      \"image\": 3,\n      \"face\": \"yes\",\n      \"eyes\": \"unsure\",\n      \"colour_photo\": \"no\",\n      \"iris\": \"unclear\",\n      \"iris_confidence\": 0.99\n    },\n    {\n      \"image\": 4,\n      \"face\": \"yes\",\n      \"eyes\": \"unsure\",\n      \"colour_photo\": \"no\",\n      \"iris\": \"unclear\",\n      \"iris_confidence\": 0.96\n    },\n    {\n      \"image\": 5,\n      \"face\": \"yes\",\n      \"eyes\": \"yes\",\n      \"colour_photo\": \"yes\",\n      \"iris\": \"brown\",\n      \"iris_confidence\": 0.85\n    },\n    {\n      \"image\": 6,\n      \"face\": \"yes\",\n      \"eyes\": \"yes\",\n      \"colour_photo\": \"yes\",\n      \"iris\": \"brown\",\n      \"iris_confidence\": 0.90\n    },\n    {\n      \"image\": 7,\n      \"face\": \"yes\",\n      \"eyes\": \"yes\",\n      \"colour_photo\": \"no\",\n      \"iris\": \"unclear\",\n      \"iris_confidence\": 0.95\n    },\n    {\n      \"image\": 8,\n      \"face\": \"yes\",\n      \"eyes\": \"yes\",\n      \"colour_photo\": \"yes\",\n      \"iris\": \"brown\",\n      \"iris_confidence\": 0.92\n    }\n  ]\n}",
+"usage": {
+"promptTokenCount": 2752,
+"candidatesTokenCount": 500,
+"totalTokenCount": 3252
+},
+"latency_ms": 1904.2
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 5,
+"logprobs": false,
+"ok": true,
+"content": "{\n  \"results\": [\n    {\n      \"image\": 1,\n      \"face\": \"no\",\n      \"eyes\": \"no\",\n      \"colour_photo\": \"yes\",\n      \"iris\": \"unclear\",\n      \"iris_confidence\": 0.99\n    },\n    {\n      \"image\": 2,\n      \"face\": \"no\",\n      \"eyes\": \"no\",\n      \"colour_photo\": \"yes\",\n      \"iris\": \"unclear\",\n      \"iris_confidence\": 0.99\n    },\n    {\n      \"image\": 3,\n      \"face\": \"yes\",\n      \"eyes\": \"no\",\n      \"colour_photo\": \"yes\",\n      \"iris\": \"unclear\",\n      \"iris_confidence\": 0.99\n    },\n    {\n      \"image\": 4,\n      \"face\": \"yes\",\n      \"eyes\": \"no\",\n      \"colour_photo\": \"yes\",\n      \"iris\": \"unclear\",\n      \"iris_confidence\": 0.99\n    },\n    {\n      \"image\": 5,\n      \"face\": \"yes\",\n      \"eyes\": \"no\",\n      \"colour_photo\": \"yes\",\n      \"iris\": \"unclear\",\n      \"iris_confidence\": 0.99\n    }\n  ]\n}",
+"usage": {
+"promptTokenCount": 1944,
+"candidatesTokenCount": 317,
+"totalTokenCount": 2261
+},
+"latency_ms": 1866.1
+}
+]

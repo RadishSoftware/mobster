@@ -1,0 +1,72 @@
+[
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 8,
+"logprobs": false,
+"ok": true,
+"content": "{\n  \"results\": [\n    {\n      \"image\": 1,\n      \"answer\": \"blue\",\n      \"answer_confidence\": 0.95\n    },\n    {\n      \"image\": 2,\n      \"answer\": \"brown\",\n      \"answer_confidence\": 0.98\n    },\n    {\n      \"image\": 3,\n      \"answer\": \"green\",\n      \"answer_confidence\": 0.91\n    },\n    {\n      \"image\": 4,\n      \"answer\": \"green\",\n      \"answer_confidence\": 0.95\n    },\n    {\n      \"image\": 5,\n      \"answer\": \"brown\",\n      \"answer_confidence\": 0.99\n    },\n    {\n      \"image\": 6,\n      \"answer\": \"green\",\n      \"answer_confidence\": 0.92\n    },\n    {\n      \"image\": 7,\n      \"answer\": \"green\",\n      \"answer_confidence\": 0.94\n    },\n    {\n      \"image\": 8,\n      \"answer\": \"green\",\n      \"answer_confidence\": 0.96\n    }\n  ]\n}",
+"usage": {
+"promptTokenCount": 2490,
+"candidatesTokenCount": 284,
+"totalTokenCount": 2774
+},
+"latency_ms": 2300.7
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 8,
+"logprobs": false,
+"ok": true,
+"content": "{\n  \"results\": [\n    {\n      \"image\": 1,\n      \"answer\": \"brown\",\n      \"answer_confidence\": 0.95\n    },\n    {\n      \"image\": 2,\n      \"answer\": \"hazel\",\n      \"answer_confidence\": 0.9\n    },\n    {\n      \"image\": 3,\n      \"answer\": \"green\",\n      \"answer_confidence\": 0.85\n    },\n    {\n      \"image\": 4,\n      \"answer\": \"hazel\",\n      \"answer_confidence\": 0.9\n    },\n    {\n      \"image\": 5,\n      \"answer\": \"blue\",\n      \"answer_confidence\": 0.95\n    },\n    {\n      \"image\": 6,\n      \"answer\": \"hazel\",\n      \"answer_confidence\": 0.9\n    },\n    {\n      \"image\": 7,\n      \"answer\": \"green\",\n      \"answer_confidence\": 0.95\n    },\n    {\n      \"image\": 8,\n      \"answer\": \"green\",\n      \"answer_confidence\": 0.95\n    }\n  ]\n}",
+"usage": {
+"promptTokenCount": 2468,
+"candidatesTokenCount": 284,
+"totalTokenCount": 2752
+},
+"latency_ms": 1455.5
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 8,
+"logprobs": false,
+"ok": true,
+"content": "{\n  \"results\": [\n    {\n      \"image\": 1,\n      \"answer\": \"green\",\n      \"answer_confidence\": 0.95\n    },\n    {\n      \"image\": 2,\n      \"answer\": \"brown\",\n      \"answer_confidence\": 0.9\n    },\n    {\n      \"image\": 3,\n      \"answer\": \"hazel\",\n      \"answer_confidence\": 0.7\n    },\n    {\n      \"image\": 4,\n      \"answer\": \"brown\",\n      \"answer_confidence\": 0.8\n    },\n    {\n      \"image\": 5,\n      \"answer\": \"brown\",\n      \"answer_confidence\": 0.85\n    },\n    {\n      \"image\": 6,\n      \"answer\": \"brown\",\n      \"answer_confidence\": 0.95\n    },\n    {\n      \"image\": 7,\n      \"answer\": \"blue\",\n      \"answer_confidence\": 0.95\n    },\n    {\n      \"image\": 8,\n      \"answer\": \"unsure\",\n      \"answer_confidence\": 1.0\n    }\n  ]\n}",
+"usage": {
+"promptTokenCount": 2502,
+"candidatesTokenCount": 282,
+"totalTokenCount": 2784
+},
+"latency_ms": 1787.2
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 8,
+"logprobs": false,
+"ok": true,
+"content": "{\n  \"results\": [\n    {\n      \"image\": 1,\n      \"answer\": \"unsure\",\n      \"answer_confidence\": 1.0\n    },\n    {\n      \"image\": 2,\n      \"answer\": \"hazel\",\n      \"answer_confidence\": 0.95\n    },\n    {\n      \"image\": 3,\n      \"answer\": \"unsure\",\n      \"answer_confidence\": 1.0\n    },\n    {\n      \"image\": 4,\n      \"answer\": \"unsure\",\n      \"answer_confidence\": 1.0\n    },\n    {\n      \"image\": 5,\n      \"answer\": \"brown\",\n      \"answer_confidence\": 0.9\n    },\n    {\n      \"image\": 6,\n      \"answer\": \"brown\",\n      \"answer_confidence\": 0.9\n    },\n    {\n      \"image\": 7,\n      \"answer\": \"unsure\",\n      \"answer_confidence\": 1.0\n    },\n    {\n      \"image\": 8,\n      \"answer\": \"brown\",\n      \"answer_confidence\": 0.8\n    }\n  ]\n}",
+"usage": {
+"promptTokenCount": 2492,
+"candidatesTokenCount": 282,
+"totalTokenCount": 2774
+},
+"latency_ms": 1435.7
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 5,
+"logprobs": false,
+"ok": true,
+"content": "{\n  \"results\": [\n    {\n      \"image\": 1,\n      \"answer\": \"unsure\",\n      \"answer_confidence\": 1.0\n    },\n    {\n      \"image\": 2,\n      \"answer\": \"unsure\",\n      \"answer_confidence\": 1.0\n    },\n    {\n      \"image\": 3,\n      \"answer\": \"unsure\",\n      \"answer_confidence\": 1.0\n    },\n    {\n      \"image\": 4,\n      \"answer\": \"unsure\",\n      \"answer_confidence\": 1.0\n    },\n    {\n      \"image\": 5,\n      \"answer\": \"unsure\",\n      \"answer_confidence\": 1.0\n    }\n  ]\n}",
+"usage": {
+"promptTokenCount": 1684,
+"candidatesTokenCount": 182,
+"totalTokenCount": 1866
+},
+"latency_ms": 1133.6
+}
+]

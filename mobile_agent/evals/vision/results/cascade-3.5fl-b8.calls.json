@@ -1,0 +1,244 @@
+[
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 8,
+"logprobs": false,
+"ok": true,
+"content": "{\n  \"results\": [\n    {\n      \"image\": 1,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 1.0\n    },\n    {\n      \"image\": 2,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 1.0\n    },\n    {\n      \"image\": 3,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 1.0\n    },\n    {\n      \"image\": 4,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 1.0\n    },\n    {\n      \"image\": 5,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 1.0\n    },\n    {\n      \"image\": 6,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 1.0\n    },\n    {\n      \"image\": 7,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 1.0\n    },\n    {\n      \"image\": 8,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 1.0\n    }\n  ]\n}",
+"usage": {
+"promptTokenCount": 2542,
+"candidatesTokenCount": 276,
+"totalTokenCount": 2818
+},
+"latency_ms": 2319.7
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 8,
+"logprobs": false,
+"ok": true,
+"content": "{\"results\": [{\"image\": 1, \"answer\": \"yes\", \"answer_confidence\": 0.99}, {\"image\": 2, \"answer\": \"yes\", \"answer_confidence\": 0.95}, {\"image\": 3, \"answer\": \"yes\", \"answer_confidence\": 0.8}, {\"image\": 4, \"answer\": \"yes\", \"answer_confidence\": 0.99}, {\"image\": 5, \"answer\": \"yes\", \"answer_confidence\": 0.99}, {\"image\": 6, \"answer\": \"yes\", \"answer_confidence\": 0.99}, {\"image\": 7, \"answer\": \"no\", \"answer_confidence\": 0.99}, {\"image\": 8, \"answer\": \"no\", \"answer_confidence\": 0.99}]}",
+"usage": {
+"promptTokenCount": 2496,
+"candidatesTokenCount": 186,
+"totalTokenCount": 2682
+},
+"latency_ms": 1577.4
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 8,
+"logprobs": false,
+"ok": true,
+"content": "{\n  \"results\": [\n    {\n      \"image\": 1,\n      \"answer\": \"no\",\n      \"answer_confidence\": 1.0\n    },\n    {\n      \"image\": 2,\n      \"answer\": \"no\",\n      \"answer_confidence\": 1.0\n    },\n    {\n      \"image\": 3,\n      \"answer\": \"no\",\n      \"answer_confidence\": 1.0\n    },\n    {\n      \"image\": 4,\n      \"answer\": \"no\",\n      \"answer_confidence\": 1.0\n    },\n    {\n      \"image\": 5,\n      \"answer\": \"no\",\n      \"answer_confidence\": 1.0\n    },\n    {\n      \"image\": 6,\n      \"answer\": \"no\",\n      \"answer_confidence\": 1.0\n    },\n    {\n      \"image\": 7,\n      \"answer\": \"no\",\n      \"answer_confidence\": 0.99\n    },\n    {\n      \"image\": 8,\n      \"answer\": \"no\",\n      \"answer_confidence\": 0.99\n    }\n  ]\n}",
+"usage": {
+"promptTokenCount": 2526,
+"candidatesTokenCount": 278,
+"totalTokenCount": 2804
+},
+"latency_ms": 1772.3
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 6,
+"logprobs": false,
+"ok": true,
+"content": "{\n  \"results\": [\n    {\n      \"image\": 1,\n      \"answer\": \"no\",\n      \"answer_confidence\": 0.95\n    },\n    {\n      \"image\": 2,\n      \"answer\": \"no\",\n      \"answer_confidence\": 0.95\n    },\n    {\n      \"image\": 3,\n      \"answer\": \"no\",\n      \"answer_confidence\": 0.99\n    },\n    {\n      \"image\": 4,\n      \"answer\": \"no\",\n      \"answer_confidence\": 0.99\n    },\n    {\n      \"image\": 5,\n      \"answer\": \"no\",\n      \"answer_confidence\": 0.99\n    },\n    {\n      \"image\": 6,\n      \"answer\": \"no\",\n      \"answer_confidence\": 0.99\n    }\n  ]\n}",
+"usage": {
+"promptTokenCount": 1976,
+"candidatesTokenCount": 216,
+"totalTokenCount": 2192
+},
+"latency_ms": 1592.5
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 8,
+"logprobs": false,
+"ok": true,
+"content": "{\n  \"results\": [\n    {\n      \"image\": 1,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 0.99\n    },\n    {\n      \"image\": 2,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 0.99\n    },\n    {\n      \"image\": 3,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 0.99\n    },\n    {\n      \"image\": 4,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 0.95\n    },\n    {\n      \"image\": 5,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 0.99\n    },\n    {\n      \"image\": 6,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 0.99\n    },\n    {\n      \"image\": 7,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 0.98\n    },\n    {\n      \"image\": 8,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 0.99\n    }\n  ]\n}",
+"usage": {
+"promptTokenCount": 2519,
+"candidatesTokenCount": 284,
+"totalTokenCount": 2803
+},
+"latency_ms": 1738.8
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 8,
+"logprobs": false,
+"ok": true,
+"content": "{\n  \"results\": [\n    {\n      \"image\": 1,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 1.0\n    },\n    {\n      \"image\": 2,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 1.0\n    },\n    {\n      \"image\": 3,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 0.99\n    },\n    {\n      \"image\": 4,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 1.0\n    },\n    {\n      \"image\": 5,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 1.0\n    },\n    {\n      \"image\": 6,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 1.0\n    },\n    {\n      \"image\": 7,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 1.0\n    },\n    {\n      \"image\": 8,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 1.0\n    }\n  ]\n}",
+"usage": {
+"promptTokenCount": 2516,
+"candidatesTokenCount": 277,
+"totalTokenCount": 2793
+},
+"latency_ms": 1737.1
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 8,
+"logprobs": false,
+"ok": true,
+"content": "{\n  \"results\": [\n    {\n      \"image\": 1,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 1.0\n    },\n    {\n      \"image\": 2,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 1.0\n    },\n    {\n      \"image\": 3,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 0.95\n    },\n    {\n      \"image\": 4,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 0.95\n    },\n    {\n      \"image\": 5,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 1.0\n    },\n    {\n      \"image\": 6,\n      \"answer\": \"no\",\n      \"answer_confidence\": 1.0\n    },\n    {\n      \"image\": 7,\n      \"answer\": \"no\",\n      \"answer_confidence\": 1.0\n    },\n    {\n      \"image\": 8,\n      \"answer\": \"no\",\n      \"answer_confidence\": 1.0\n    }\n  ]\n}",
+"usage": {
+"promptTokenCount": 2513,
+"candidatesTokenCount": 278,
+"totalTokenCount": 2791
+},
+"latency_ms": 1619.6
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 8,
+"logprobs": false,
+"ok": true,
+"content": "{\n  \"results\": [\n    {\n      \"image\": 1,\n      \"answer\": \"no\",\n      \"answer_confidence\": 0.95\n    },\n    {\n      \"image\": 2,\n      \"answer\": \"no\",\n      \"answer_confidence\": 0.98\n    },\n    {\n      \"image\": 3,\n      \"answer\": \"no\",\n      \"answer_confidence\": 0.95\n    },\n    {\n      \"image\": 4,\n      \"answer\": \"no\",\n      \"answer_confidence\": 0.95\n    },\n    {\n      \"image\": 5,\n      \"answer\": \"no\",\n      \"answer_confidence\": 0.98\n    },\n    {\n      \"image\": 6,\n      \"answer\": \"no\",\n      \"answer_confidence\": 0.98\n    },\n    {\n      \"image\": 7,\n      \"answer\": \"no\",\n      \"answer_confidence\": 0.99\n    },\n    {\n      \"image\": 8,\n      \"answer\": \"no\",\n      \"answer_confidence\": 0.99\n    }\n  ]\n}",
+"usage": {
+"promptTokenCount": 2504,
+"candidatesTokenCount": 284,
+"totalTokenCount": 2788
+},
+"latency_ms": 1660.4
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 8,
+"logprobs": false,
+"ok": true,
+"content": "{\n  \"results\": [\n    {\n      \"image\": 1,\n      \"answer\": \"no\",\n      \"answer_confidence\": 1.0\n    },\n    {\n      \"image\": 2,\n      \"answer\": \"no\",\n      \"answer_confidence\": 1.0\n    },\n    {\n      \"image\": 3,\n      \"answer\": \"no\",\n      \"answer_confidence\": 1.0\n    },\n    {\n      \"image\": 4,\n      \"answer\": \"no\",\n      \"answer_confidence\": 1.0\n    },\n    {\n      \"image\": 5,\n      \"answer\": \"no\",\n      \"answer_confidence\": 0.9\n    },\n    {\n      \"image\": 6,\n      \"answer\": \"no\",\n      \"answer_confidence\": 1.0\n    },\n    {\n      \"image\": 7,\n      \"answer\": \"no\",\n      \"answer_confidence\": 0.9\n    },\n    {\n      \"image\": 8,\n      \"answer\": \"no\",\n      \"answer_confidence\": 1.0\n    }\n  ]\n}",
+"usage": {
+"promptTokenCount": 2532,
+"candidatesTokenCount": 276,
+"totalTokenCount": 2808
+},
+"latency_ms": 1920.1
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 8,
+"logprobs": false,
+"ok": true,
+"content": "{\n  \"results\": [\n    {\n      \"image\": 1,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 0.99\n    },\n    {\n      \"image\": 2,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 0.99\n    },\n    {\n      \"image\": 3,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 0.99\n    },\n    {\n      \"image\": 4,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 0.99\n    },\n    {\n      \"image\": 5,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 0.99\n    },\n    {\n      \"image\": 6,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 0.99\n    },\n    {\n      \"image\": 7,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 0.99\n    },\n    {\n      \"image\": 8,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 0.99\n    }\n  ]\n}",
+"usage": {
+"promptTokenCount": 2487,
+"candidatesTokenCount": 284,
+"totalTokenCount": 2771
+},
+"latency_ms": 1821.0
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 8,
+"logprobs": false,
+"ok": true,
+"content": "{\n  \"results\": [\n    {\n      \"image\": 1,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 0.99\n    },\n    {\n      \"image\": 2,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 0.99\n    },\n    {\n      \"image\": 3,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 0.95\n    },\n    {\n      \"image\": 4,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 0.99\n    },\n    {\n      \"image\": 5,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 0.95\n    },\n    {\n      \"image\": 6,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 0.99\n    },\n    {\n      \"image\": 7,\n      \"answer\": \"yes\",\n      \"answer_confidence\": 0.99\n    },\n    {\n      \"image\": 8,\n      \"answer\": \"no\",\n      \"answer_confidence\": 0.98\n    }\n  ]\n}",
+"usage": {
+"promptTokenCount": 2471,
+"candidatesTokenCount": 284,
+"totalTokenCount": 2755
+},
+"latency_ms": 1650.5
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 8,
+"logprobs": false,
+"ok": false,
+"error": "TransportError",
+"latency_ms": 19949.5
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 4,
+"logprobs": false,
+"ok": false,
+"error": "TransportError",
+"latency_ms": 10460.3
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 8,
+"logprobs": false,
+"ok": true,
+"content": "{\n  \"results\": [\n    {\n      \"image\": 1,\n      \"face_visible\": \"yes\",\n      \"face_visible_confidence\": 0.99,\n      \"eyes_visible\": \"yes\",\n      \"eyes_visible_confidence\": 0.99,\n      \"colour_image\": \"yes\",\n      \"colour_image_confidence\": 0.99,\n      \"iris_colour\": \"blue\",\n      \"iris_colour_confidence\": 0.99\n    },\n    {\n      \"image\": 2,\n      \"face_visible\": \"yes\",\n      \"face_visible_confidence\": 0.99,\n      \"eyes_visible\": \"yes\",\n      \"eyes_visible_confidence\": 0.99,\n      \"colour_image\": \"yes\",\n      \"colour_image_confidence\": 0.99,\n      \"iris_colour\": \"brown\",\n      \"iris_colour_confidence\": 0.99\n    },\n    {\n      \"image\": 3,\n      \"face_visible\": \"yes\",\n      \"face_visible_confidence\": 0.99,\n      \"eyes_visible\": \"yes\",\n      \"eyes_visible_confidence\": 0.99,\n      \"colour_image\": \"yes\",\n      \"colour_image_confidence\": 0.99,\n      \"iris_colour\": \"green\",\n      \"iris_colour_confidence\": 0.95\n    },\n    {\n      \"image\": 4,\n      \"face_visible\": \"yes\",\n      \"face_visible_confidence\": 0.99,\n      \"eyes_visible\": \"yes\",\n      \"eyes_visible_confidence\": 0.99,\n      \"colour_image\": \"yes\",\n      \"colour_image_confidence\": 0.99,\n      \"iris_colour\": \"green\",\n      \"iris_colour_confidence\": 0.95\n    },\n    {\n      \"image\": 5,\n      \"face_visible\": \"yes\",\n      \"face_visible_confidence\": 0.99,\n      \"eyes_visible\": \"yes\",\n      \"eyes_visible_confidence\": 0.99,\n      \"colour_image\": \"yes\",\n      \"colour_image_confidence\": 0.99,\n      \"iris_colour\": \"brown\",\n      \"iris_colour_confidence\": 0.99\n    },\n    {\n      \"image\": 6,\n      \"face_visible\": \"yes\",\n      \"face_visible_confidence\": 0.99,\n      \"eyes_visible\": \"yes\",\n      \"eyes_visible_confidence\": 0.99,\n      \"colour_image\": \"yes\",\n      \"colour_image_confidence\": 0.99,\n      \"iris_colour\": \"green\",\n      \"iris_colour_confidence\": 0.9\n    },\n    {\n      \"image\": 7,\n      \"face_visible\": \"yes\",\n      \"face_visible_confidence\": 0.99,\n      \"eyes_visible\": \"yes\",\n      \"eyes_visible_confidence\": 0.99,\n      \"colour_image\": \"yes\",\n      \"colour_image_confidence\": 0.99,\n      \"iris_colour\": \"green\",\n      \"iris_colour_confidence\": 0.9\n    },\n    {\n      \"image\": 8,\n      \"face_visible\": \"yes\",\n      \"face_visible_confidence\": 0.99,\n      \"eyes_visible\": \"yes\",\n      \"eyes_visible_confidence\": 0.99,\n      \"colour_image\": \"yes\",\n      \"colour_image_confidence\": 0.99,\n      \"iris_colour\": \"green\",\n      \"iris_colour_confidence\": 0.95\n    }\n  ]\n}",
+"usage": {
+"promptTokenCount": 2848,
+"candidatesTokenCount": 914,
+"totalTokenCount": 3762
+},
+"latency_ms": 3497.6
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 8,
+"logprobs": false,
+"ok": true,
+"content": "{\n  \"results\": [\n    {\n      \"image\": 1,\n      \"face_visible\": \"yes\",\n      \"face_visible_confidence\": 0.99,\n      \"eyes_visible\": \"yes\",\n      \"eyes_visible_confidence\": 0.99,\n      \"colour_image\": \"yes\",\n      \"colour_image_confidence\": 0.99,\n      \"iris_colour\": \"brown\",\n      \"iris_colour_confidence\": 0.99\n    },\n    {\n      \"image\": 2,\n      \"face_visible\": \"yes\",\n      \"face_visible_confidence\": 0.99,\n      \"eyes_visible\": \"yes\",\n      \"eyes_visible_confidence\": 0.99,\n      \"colour_image\": \"yes\",\n      \"colour_image_confidence\": 0.99,\n      \"iris_colour\": \"hazel\",\n      \"iris_colour_confidence\": 0.95\n    },\n    {\n      \"image\": 3,\n      \"face_visible\": \"yes\",\n      \"face_visible_confidence\": 0.99,\n      \"eyes_visible\": \"yes\",\n      \"eyes_visible_confidence\": 0.99,\n      \"colour_image\": \"yes\",\n      \"colour_image_confidence\": 0.99,\n      \"iris_colour\": \"green\",\n      \"iris_colour_confidence\": 0.90\n    },\n    {\n      \"image\": 4,\n      \"face_visible\": \"yes\",\n      \"face_visible_confidence\": 0.99,\n      \"eyes_visible\": \"yes\",\n      \"eyes_visible_confidence\": 0.99,\n      \"colour_image\": \"yes\",\n      \"colour_image_confidence\": 0.99,\n      \"iris_colour\": \"hazel\",\n      \"iris_colour_confidence\": 0.90\n    },\n    {\n      \"image\": 5,\n      \"face_visible\": \"yes\",\n      \"face_visible_confidence\": 0.99,\n      \"eyes_visible\": \"yes\",\n      \"eyes_visible_confidence\": 0.99,\n      \"colour_image\": \"yes\",\n      \"colour_image_confidence\": 0.99,\n      \"iris_colour\": \"blue\",\n      \"iris_colour_confidence\": 0.99\n    },\n    {\n      \"image\": 6,\n      \"face_visible\": \"yes\",\n      \"face_visible_confidence\": 0.99,\n      \"eyes_visible\": \"yes\",\n      \"eyes_visible_confidence\": 0.99,\n      \"colour_image\": \"yes\",\n      \"colour_image_confidence\": 0.99,\n      \"iris_colour\": \"hazel\",\n      \"iris_colour_confidence\": 0.95\n    },\n    {\n      \"image\": 7,\n      \"face_visible\": \"yes\",\n      \"face_visible_confidence\": 0.99,\n      \"eyes_visible\": \"yes\",\n      \"eyes_visible_confidence\": 0.99,\n      \"colour_image\": \"yes\",\n      \"colour_image_confidence\": 0.99,\n      \"iris_colour\": \"green\",\n      \"iris_colour_confidence\": 0.95\n    },\n    {\n      \"image\": 8,\n      \"face_visible\": \"yes\",\n      \"face_visible_confidence\": 0.99,\n      \"eyes_visible\": \"yes\",\n      \"eyes_visible_confidence\": 0.99,\n      \"colour_image\": \"yes\",\n      \"colour_image_confidence\": 0.99,\n      \"iris_colour\": \"green\",\n      \"iris_colour_confidence\": 0.95\n    }\n  ]\n}",
+"usage": {
+"promptTokenCount": 2826,
+"candidatesTokenCount": 919,
+"totalTokenCount": 3745
+},
+"latency_ms": 4903.9
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 8,
+"logprobs": false,
+"ok": true,
+"content": "{\n  \"results\": [\n    {\n      \"image\": 1,\n      \"face_visible\": \"yes\",\n      \"face_visible_confidence\": 0.99,\n      \"eyes_visible\": \"yes\",\n      \"eyes_visible_confidence\": 0.99,\n      \"colour_image\": \"yes\",\n      \"colour_image_confidence\": 0.99,\n      \"iris_colour\": \"green\",\n      \"iris_colour_confidence\": 0.95\n    },\n    {\n      \"image\": 2,\n      \"face_visible\": \"yes\",\n      \"face_visible_confidence\": 0.99,\n      \"eyes_visible\": \"yes\",\n      \"eyes_visible_confidence\": 0.99,\n      \"colour_image\": \"yes\",\n      \"colour_image_confidence\": 0.99,\n      \"iris_colour\": \"brown\",\n      \"iris_colour_confidence\": 0.98\n    },\n    {\n      \"image\": 3,\n      \"face_visible\": \"yes\",\n      \"face_visible_confidence\": 0.99,\n      \"eyes_visible\": \"yes\",\n      \"eyes_visible_confidence\": 0.99,\n      \"colour_image\": \"no\",\n      \"colour_image_confidence\": 0.99,\n      \"iris_colour\": \"unclear\",\n      \"iris_colour_confidence\": 0.95\n    },\n    {\n      \"image\": 4,\n      \"face_visible\": \"yes\",\n      \"face_visible_confidence\": 0.99,\n      \"eyes_visible\": \"no\",\n      \"eyes_visible_confidence\": 0.95,\n      \"colour_image\": \"yes\",\n      \"colour_image_confidence\": 0.99,\n      \"iris_colour\": \"unclear\",\n      \"iris_colour_confidence\": 0.99\n    },\n    {\n      \"image\": 5,\n      \"face_visible\": \"yes\",\n      \"face_visible_confidence\": 0.99,\n      \"eyes_visible\": \"yes\",\n      \"eyes_visible_confidence\": 0.90,\n      \"colour_image\": \"yes\",\n      \"colour_image_confidence\": 0.99,\n      \"iris_colour\": \"brown\",\n      \"iris_colour_confidence\": 0.85\n    },\n    {\n      \"image\": 6,\n      \"face_visible\": \"yes\",\n      \"face_visible_confidence\": 0.99,\n      \"eyes_visible\": \"yes\",\n      \"eyes_visible_confidence\": 0.99,\n      \"colour_image\": \"yes\",\n      \"colour_image_confidence\": 0.99,\n      \"iris_colour\": \"brown\",\n      \"iris_colour_confidence\": 0.99\n    },\n    {\n      \"image\": 7,\n      \"face_visible\": \"yes\",\n      \"face_visible_confidence\": 0.99,\n      \"eyes_visible\": \"yes\",\n      \"eyes_visible_confidence\": 0.99,\n      \"colour_image\": \"yes\",\n      \"colour_image_confidence\": 0.99,\n      \"iris_colour\": \"blue\",\n      \"iris_colour_confidence\": 0.95\n    },\n    {\n      \"image\": 8,\n      \"face_visible\": \"yes\",\n      \"face_visible_confidence\": 0.99,\n      \"eyes_visible\": \"yes\",\n      \"eyes_visible_confidence\": 0.99,\n      \"colour_image\": \"no\",\n      \"colour_image_confidence\": 0.99,\n      \"iris_colour\": \"unclear\",\n      \"iris_colour_confidence\": 0.99\n    }\n  ]\n}",
+"usage": {
+"promptTokenCount": 2860,
+"candidatesTokenCount": 919,
+"totalTokenCount": 3779
+},
+"latency_ms": 3104.5
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 8,
+"logprobs": false,
+"ok": true,
+"content": "{\n  \"results\": [\n    {\n      \"image\": 1,\n      \"face_visible\": \"yes\",\n      \"face_visible_confidence\": 0.99,\n      \"eyes_visible\": \"yes\",\n      \"eyes_visible_confidence\": 0.95,\n      \"colour_image\": \"no\",\n      \"colour_image_confidence\": 0.99,\n      \"iris_colour\": \"unclear\",\n      \"iris_colour_confidence\": 0.99\n    },\n    {\n      \"image\": 2,\n      \"face_visible\": \"yes\",\n      \"face_visible_confidence\": 0.99,\n      \"eyes_visible\": \"yes\",\n      \"eyes_visible_confidence\": 0.99,\n      \"colour_image\": \"yes\",\n      \"colour_image_confidence\": 0.99,\n      \"iris_colour\": \"hazel\",\n      \"iris_colour_confidence\": 0.9\n    },\n    {\n      \"image\": 3,\n      \"face_visible\": \"yes\",\n      \"face_visible_confidence\": 0.99,\n      \"eyes_visible\": \"yes\",\n      \"eyes_visible_confidence\": 0.9,\n      \"colour_image\": \"no\",\n      \"colour_image_confidence\": 0.99,\n      \"iris_colour\": \"unclear\",\n      \"iris_colour_confidence\": 0.99\n    },\n    {\n      \"image\": 4,\n      \"face_visible\": \"yes\",\n      \"face_visible_confidence\": 0.99,\n      \"eyes_visible\": \"yes\",\n      \"eyes_visible_confidence\": 0.95,\n      \"colour_image\": \"no\",\n      \"colour_image_confidence\": 0.99,\n      \"iris_colour\": \"unclear\",\n      \"iris_colour_confidence\": 0.99\n    },\n    {\n      \"image\": 5,\n      \"face_visible\": \"yes\",\n      \"face_visible_confidence\": 0.99,\n      \"eyes_visible\": \"yes\",\n      \"eyes_visible_confidence\": 0.95,\n      \"colour_image\": \"yes\",\n      \"colour_image_confidence\": 0.99,\n      \"iris_colour\": \"brown\",\n      \"iris_colour_confidence\": 0.9\n    },\n    {\n      \"image\": 6,\n      \"face_visible\": \"yes\",\n      \"face_visible_confidence\": 0.99,\n      \"eyes_visible\": \"yes\",\n      \"eyes_visible_confidence\": 0.99,\n      \"colour_image\": \"yes\",\n      \"colour_image_confidence\": 0.99,\n      \"iris_colour\": \"brown\",\n      \"iris_colour_confidence\": 0.9\n    },\n    {\n      \"image\": 7,\n      \"face_visible\": \"yes\",\n      \"face_visible_confidence\": 0.99,\n      \"eyes_visible\": \"yes\",\n      \"eyes_visible_confidence\": 0.9,\n      \"colour_image\": \"no\",\n      \"colour_image_confidence\": 0.99,\n      \"iris_colour\": \"unclear\",\n      \"iris_colour_confidence\": 0.99\n    },\n    {\n      \"image\": 8,\n      \"face_visible\": \"yes\",\n      \"face_visible_confidence\": 0.99,\n      \"eyes_visible\": \"yes\",\n      \"eyes_visible_confidence\": 0.95,\n      \"colour_image\": \"yes\",\n      \"colour_image_confidence\": 0.99,\n      \"iris_colour\": \"brown\",\n      \"iris_colour_confidence\": 0.8\n    }\n  ]\n}",
+"usage": {
+"promptTokenCount": 2850,
+"candidatesTokenCount": 915,
+"totalTokenCount": 3765
+},
+"latency_ms": 3277.3
+},
+{
+"model": "gemini-3.5-flash-lite",
+"resolution": "low",
+"images": 5,
+"logprobs": false,
+"ok": true,
+"content": "{\n  \"results\": [\n    {\n      \"image\": 1,\n      \"face_visible\": \"no\",\n      \"face_visible_confidence\": 0.99,\n      \"eyes_visible\": \"no\",\n      \"eyes_visible_confidence\": 0.99,\n      \"colour_image\": \"yes\",\n      \"colour_image_confidence\": 0.99,\n      \"iris_colour\": \"unclear\",\n      \"iris_colour_confidence\": 0.99\n    },\n    {\n      \"image\": 2,\n      \"face_visible\": \"no\",\n      \"face_visible_confidence\": 0.99,\n      \"eyes_visible\": \"no\",\n      \"eyes_visible_confidence\": 0.99,\n      \"colour_image\": \"yes\",\n      \"colour_image_confidence\": 0.99,\n      \"iris_colour\": \"unclear\",\n      \"iris_colour_confidence\": 0.99\n    },\n    {\n      \"image\": 3,\n      \"face_visible\": \"no\",\n      \"face_visible_confidence\": 0.99,\n      \"eyes_visible\": \"no\",\n      \"eyes_visible_confidence\": 0.99,\n      \"colour_image\": \"yes\",\n      \"colour_image_confidence\": 0.99,\n      \"iris_colour\": \"unclear\",\n      \"iris_colour_confidence\": 0.99\n    },\n    {\n      \"image\": 4,\n      \"face_visible\": \"no\",\n      \"face_visible_confidence\": 0.99,\n      \"eyes_visible\": \"no\",\n      \"eyes_visible_confidence\": 0.99,\n      \"colour_image\": \"yes\",\n      \"colour_image_confidence\": 0.99,\n      \"iris_colour\": \"unclear\",\n      \"iris_colour_confidence\": 0.99\n    },\n    {\n      \"image\": 5,\n      \"face_visible\": \"no\",\n      \"face_visible_confidence\": 0.99,\n      \"eyes_visible\": \"no\",\n      \"eyes_visible_confidence\": 0.99,\n      \"colour_image\": \"yes\",\n      \"colour_image_confidence\": 0.99,\n      \"iris_colour\": \"unclear\",\n      \"iris_colour_confidence\": 0.99\n    }\n  ]\n}",
+"usage": {
+"promptTokenCount": 2042,
+"candidatesTokenCount": 582,
+"totalTokenCount": 2624
+},
+"latency_ms": 2343.8
+}
+]

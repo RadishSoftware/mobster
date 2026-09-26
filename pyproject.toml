@@ -1,0 +1,64 @@
+[project]
+# "mobster" on PyPI is an unrelated SBOM tool. The import package is mobile_agent; the command is `mobster`.
+name = "mobster-cli"
+dynamic = ["version"]
+description = "Mobster CLI: the open-source iPhone agent and command line that the Mobster Mac app is built on"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Radish Retail, LLC" }]
+requires-python = ">=3.12"
+# Compatible ranges for installing beside other libraries. The tested pins (CI, `make venv`, the desktop
+# sidecar) are in mobile_agent/requirements.txt.
+dependencies = [
+    "jsonschema>=4.23,<5",
+    "referencing>=0.35",  # imported directly (extraction.py, loops.py); also a jsonschema dependency
+    "croniter>=6,<7",
+    "Pillow>=11,<13",
+]
+keywords = ["ios", "iphone", "agent", "accessibility", "webdriveragent", "automation", "benchmark"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Testing",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.urls]
+Homepage = "https://mobster.dev"
+Repository = "https://github.com/uninstantiated/mobster-cli"
+Documentation = "https://github.com/uninstantiated/mobster-cli/tree/main/mobile_agent/docs"
+Issues = "https://github.com/uninstantiated/mobster-cli/issues"
+
+[project.scripts]
+mobster = "mobile_agent.__main__:main"
+
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.dynamic]
+version = { attr = "mobile_agent.__version__" }
+
+[tool.setuptools.packages.find]
+include = ["mobile_agent*"]
+# mobile_agent.private (the private extensions, extensions.py) never ships in a distribution.
+exclude = ["mobile_agent.tests*", "mobile_agent.bench.tests*", "mobile_agent.private*"]
+
+# Non-Python files the documented commands read: the Swift helper sources (`mobster build-ocr`,
+# `python -m mobile_agent.vision_judge build-t0`), the frozen benchmark manifest and ground truth
+# (`python -m mobile_agent.bench`), and the labelled VisionJudge set (CC0 / public-domain images;
+# see evals/vision/manifest.json).
+[tool.setuptools.package-data]
+mobile_agent = ["*.swift"]
+"mobile_agent.bench" = ["README.md", "manifest.json", "truth/*.json"]
+"mobile_agent.evals.vision" = ["manifest.json", "images/*.jpg"]
