@@ -1,0 +1,92 @@
+---
+title: "Set up an iPhone or simulator for Mobster (WebDriverAgent)"
+sidebarTitle: "Device setup"
+description: "Put Mobster's helper on your iPhone or a simulator, guided or by hand."
+icon: "cable"
+keywords: ["developer mode", "webdriveragent", "trust this computer", "signing", "apple account", "iproxy", "7 days"]
+---
+
+Mobster drives an iPhone through [WebDriverAgent](https://github.com/appium/WebDriverAgent) (WDA), an XCTest runner that Xcode builds and installs on the phone. WDA serves the phone's accessibility tree and accepts taps and typing over HTTP. On a USB iPhone, `iproxy` relays that HTTP port to `127.0.0.1:8100` on your Mac, and Mobster talks to that address.
+
+<Info>Mobster for Mac does all of this in Setup, with a picture of every step on the iPhone: [Quickstart: Mobster for Mac](/quickstart/mac). The steps below are for Mobster CLI on its own.</Info>
+
+There are three ways to get WDA answering:
+
+| path | when to use it |
+| --- | --- |
+| [Guided setup](#guided-setup) with `mobster serve --manage-device` | A USB iPhone, and you want Mobster to build, sign, start and restart WDA for you. The Mac app uses this path. |
+| [By hand](#by-hand) with `xcodebuild` and `scripts/usb-wda.sh` | A USB iPhone, and you want to run each step yourself. |
+| [A simulator](#simulators) | Development and benchmarks. Nothing leaves the Mac. |
+
+## Before you start
+
+- **Xcode**, the full app from the App Store, opened once, and signed in to your Apple ID (Xcode › Settings › Accounts). A free Apple ID works. Its signatures last 7 days, after which you rebuild the runner. `mobster doctor` says how many days are left.
+- **libimobiledevice**: `brew install libimobiledevice ideviceinstaller`.
+- **The iPhone**: Developer Mode on (Settings › Privacy & Security › Developer Mode, then restart the phone), connected with a cable, unlocked, and "Trust This Computer" accepted.
+
+Run `mobster doctor` after each step. It checks Xcode, the tools, whether the phone is connected and trusted, whether a managed runner is built and still signed, whether WDA answers, and whether the phone is locked.
+
+## Guided setup
+
+`mobster serve --manage-device` owns the USB iPhone. It finds Xcode and your Apple development teams, builds WDA for the connected phone into Mobster's data folder (`~/Library/Application Support/app.mobster.desktop`), then runs and supervises the runner and the USB relay. The runner and relay start again the next time you run `serve`. The Mac app runs this same server and shows its setup API as a setup screen. If the Mac app is set up and running, you can skip this section, since WDA is already answering at `127.0.0.1:8100`.
+
+Without the Mac app, drive the setup API from a terminal. Start the server, then read the API token from the file named on its first line:
+
+```sh
+mobster serve --manage-device --env-file "$MOBSTER_ENV_FILE" > /tmp/mobster-serve.log 2>&1 &
+sleep 2
+TOKEN_FILE=$(head -1 /tmp/mobster-serve.log | python3 -c 'import json, sys; print(json.load(sys.stdin)["tokenFile"])')
+setup() { curl -s -H "Authorization: Bearer $(cat "$TOKEN_FILE")" -H 'Content-Type: application/json' \
+            "http://127.0.0.1:8765/api/setup$1" ${2:+-d "$2"}; }
+```
+
+Walk the steps in order:
+
+```sh
+setup | jq '.steps[] | {id, state, detail}'      # what is done and what is next
+setup | jq '.teams'                               # your Apple development teams
+setup /build '{"team": "ABCDE12345"}'             # builds WDA for the phone: minutes the first time
+setup | jq '.build.state'                         # repeat until "succeeded"
+setup /start '{}'                                 # starts the runner and the USB relay
+setup /live '{"enabled": true}'                   # lets tasks act on the phone
+```
+
+With several phones connected, choose one first with `setup /phone '{"udid": "<UDID>"}'` (the UDIDs are in `setup | jq .devices`). A build belongs to the phone it was made for. [The setup API](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/setup-api.md) documents every field and action.
+
+Leave `serve` running while you use Mobster. It keeps the runner alive and restarts it if it stops. Then, in another terminal:
+
+```sh
+mobster doctor
+mobster
+```
+
+## By hand
+
+[mobile_agent/docs/usb-wda.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/usb-wda.md) has the exact commands: clone WDA at the version Mobster pins, give its two targets bundle IDs under your team, `build-for-testing` for your phone, then run `test-without-building` and `iproxy`. Once it is built, `scripts/usb-wda.sh` keeps the runner and the relay running and restarts either one if it exits. The script is in a source checkout of [mobster-cli](https://github.com/RadishSoftware/mobster), not in an installed build:
+
+```sh
+TEAM=<your team id> UDID=<device udid> WDA_DIR=<path to WebDriverAgent> scripts/usb-wda.sh
+```
+
+The script also reads `WDA_DERIVED_DATA`, `WDA_PORT` (default 8100) and `WDA_LOG_DIR`. Without `UDID` it uses the first USB iPhone that `idevice_id -l` lists. The guided setup also patches WDA so its video port answers only over USB. The manual recipe does not, so prefer the guided setup on a shared network.
+
+## Simulators
+
+`mobster sim prepare` creates a simulator Mobster manages, boots it headless, builds WebDriverAgent once and starts it on its own port. Then name it from `mobster devices`:
+
+```sh
+mobster sim prepare
+mobster devices                                  # its name and id
+mobster --device "Mobster · iPhone 17 Pro · iOS 26.4"
+mobster doctor --simulator --device "Mobster · iPhone 17 Pro · iOS 26.4"
+```
+
+`--simulator` skips the USB, Xcode and runner checks. A simulator you run WebDriverAgent on yourself works too: pass its address with `--wda-url`. [Simulators](/simulators) has the details. [Benchmarks](/benchmarks#iosworld) describes the simulator pool the iOSWorld harness uses.
+
+## Rules that hold on every path
+
+- Keep the phone unlocked. The accessibility tree cannot be read while it is locked, and Mobster never enters a passcode.
+- Turn on a Focus mode before long runs. A notification can take the foreground in the middle of a task.
+- One Mobster process controls a phone at a time. A second one is refused while the first holds the phone, whether that is the Mac app, `mobster serve`, `mobster run --execute` or the terminal UI, and however its address is written (`localhost` or `127.0.0.1`). `mobster doctor` shows this as "Device lock".
+
+<Warning>WDA has no authentication. Both setups bind it to `127.0.0.1` on the Mac. Keep it that way.</Warning>

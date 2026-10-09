@@ -98,6 +98,7 @@ class LaunchTokenTests(unittest.TestCase):
         class FakeServer:
             def __init__(self, address, handler):
                 seen["handler"] = handler
+                self.server_address = address
 
             def serve_forever(self):
                 path = state.parent / "api-token"

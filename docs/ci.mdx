@@ -1,0 +1,126 @@
+---
+title: "Running checks in CI"
+sidebarTitle: "CI"
+keywords: ["ci", "github actions", "run my checks in ci", "junit", "self-hosted runner", "pull request"]
+description: "Run mobster test on every pull request, on a simulator or on a Mac with your iPhone plugged in."
+icon: "workflow"
+---
+
+`mobster test` exits non-zero when a check fails and writes JUnit XML, so any CI that runs on a Mac can gate a pull request on your checks. These recipes are for GitHub Actions. Each needs a Mac: iOS simulators and iPhones run only on macOS.
+
+| recipe | where it runs | cost |
+| --- | --- | --- |
+| [A simulator on a macOS runner](#a-simulator-on-a-macos-runner) | GitHub's hosted macOS runner | free for public repositories; per minute for private ones |
+| [Your iPhone on a self-hosted runner](#your-iphone-on-a-self-hosted-runner) | a Mac of yours, with the phone plugged in | none |
+
+Both upload the suite's folder, `.mobster/test-results/<suite-id>/`, which holds the JUnit file, the HTML report and a copy of every run's report. [Testing your app](/testing) explains the reports and the flags.
+
+## A simulator on a macOS runner
+
+```yaml .github/workflows/checks.yml
+name: checks
+on: [pull_request]
+jobs:
+  checks:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Mobster
+        run: |
+          curl -fsSL https://mobster.dev/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Build the app for the simulator
+        run: |
+          xcodebuild -project Daybreak.xcodeproj -scheme Daybreak \
+            -destination 'generic/platform=iOS Simulator' -derivedDataPath .mobster/build \
+            CODE_SIGNING_ALLOWED=NO build
+      - name: Prepare a simulator
+        run: mobster sim doctor --fix
+      - name: Run the checks
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}   # only for checks with steps
+        run: mobster test --junit build/junit.xml --html build/mobster-report
+      - name: Keep the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobster-report
+          path: build/mobster-report
+```
+
+- `mobster sim doctor --fix` creates and boots the simulator and builds WebDriverAgent once, so the first check doesn't spend its time on it. The first build takes several minutes; a cache of `~/Library/Application Support/app.mobster.desktop/dev` between runs keeps it.
+- Launch-only checks need no key. Leave the key out to run only those, with `mobster test --keyless`.
+- Point each check's `app.path` at `.mobster/build/Build/Products/Debug-iphonesimulator/<App>.app`, relative to the project root, as above.
+- `--parallel 2` runs two simulators at once. The standard macOS runner has 3 or 4 cores and 7 to 14 GB of memory: more than 2 slows every run down.
+
+## Your iPhone on a self-hosted runner
+
+A Mac of yours, with the iPhone set up once in the Mobster app and plugged in, can run your checks on the phone for every pull request.
+
+```yaml .github/workflows/device-checks.yml
+name: device checks
+on:
+  pull_request:
+    branches: [main]
+jobs:
+  device:
+    runs-on: [self-hosted, macOS]
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and install on the phone
+        run: |
+          xcodebuild -project Daybreak.xcodeproj -scheme Daybreak -destination 'generic/platform=iOS' \
+            -derivedDataPath .mobster/build build
+      - name: Run the checks on the iPhone
+        run: |
+          mobster test --device "Test iPhone" \
+            --junit build/junit.xml --html build/mobster-report
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobster-device-report
+          path: build/mobster-report
+```
+
+- The phone is named on the command line (`--device`), never in a check: that is the only way `mobster test` reaches a real iPhone.
+- A check drives only your own build. To have Mobster install the build from this job, point the check's `app.path` at the device build (`Debug-iphoneos/<App>.app`) or an `.ipa`; otherwise the build must already be on the phone from Xcode. An App Store app couldn't run.
+- Keep the phone unlocked and awake while the job runs (Settings › Display & Brightness › Auto-Lock › Never on a test phone), and the Mobster app or `mobster serve --manage-device` running so its runner is up.
+- Smart steps stay in your app and never send, buy, post or delete on the phone.
+
+<Warning>The job drives a real iPhone signed in to real accounts. Use a test phone and a test account.</Warning>
+- One check runs at a time on the phone. Add `--sim` too, to run the same checks on simulators beside it.
+
+## Results on the pull request
+
+`junit.xml` works with any JUnit reader. With [test-reporter](https://github.com/dorny/test-reporter):
+
+```yaml
+      - name: Show the results
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: Mobster checks
+          path: build/junit.xml
+          reporter: java-junit
+```
+
+Each check is a test case named after the check, grouped by device. A flaky check passes with the property `flaky=true` unless you run with `--strict`. A quarantined check shows as skipped.
+
+To comment on the pull request with the summary and a link to the report artifact:
+
+```yaml
+      - name: Comment
+        if: always() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          summary=$(python3 -c "import json,glob; d=json.load(open(sorted(glob.glob('.mobster/test-results/*/results.json'))[-1])); s=d['summary']; print(f\"{s['passed']} passed, {s['failed']} failed, {s['flaky']} flaky, {s['couldntRun']} couldn't run\")")
+          gh pr comment "${{ github.event.pull_request.number }}" \
+            --body "Mobster checks: $summary. Report: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+```
+
+## Several machines
+
+`--shard I/N` splits the checks evenly: run `mobster test --shard 1/3`, `--shard 2/3` and `--shard 3/3` on three runners with a matrix strategy, and upload each runner's folder. An empty shard exits 0.

@@ -28,9 +28,11 @@ from .output_contract import validate_automatic_schema
 from .run_state import RunDeadline, RunState
 from .task_policy import (LOADING_WAIT_THRESHOLD, ActionSupport, OutputIntent, OutputSupport, StopGate,
                           COMPLETION_GOAL_FLOOR, agreement_accepts, agreement_reason, claims_calibrated,
-                          asks_for_changes, has_stop_condition, requested_by,
-                          is_keypad_key, is_navigation_shaped_tap, is_plain_navigation_tap, needs_approval,
-                          STATE_CHANGING_LABEL, COMMIT_CONTROL)
+                          asks_for_changes, asked_part, has_stop_condition, requested_by,
+                          is_keypad_key, is_navigation_shaped_tap, is_plain_navigation_tap, approval_kind,
+                          approval_subject, approval_title, commit_act, MESSAGE_ACTS, STATE_CHANGING_LABEL,
+                          COMMIT_CONTROL)
+from . import fast_proof
 from .drivers import DriverRejection, activation_diagnostics
 from .latency_trace import NULL as NULL_TRACE, Trace
 from . import decision_memo as memo
@@ -441,6 +443,21 @@ class ContinueTask(Exception):
     """Raised from answer verification when the run should keep going with a hint."""
 
 
+# Verbs that only say "send a message" ("send the message", "text Sam"), and words that chain another
+# action after it: a request with neither is finished once its approved message shows as sent.
+MESSAGE_VERBS = frozenset({"send", "message", "text", "reply", "email", "type", "enter", "write", "tap"})
+SEQUENCE = re.compile(r"\b(?:then|after(?:wards| that)?|next|also|before|and (?:call|open|share|post|delete|forward))\b", re.I)
+# A redirect ("decline and say what to do instead"): helper calls it may add (the rewrite and new text).
+REDIRECT_HELPER_CALLS = 2
+REVISE_INSTRUCTIONS = (
+    'Return JSON {"request":"the revised task"}. A phone automation task ("request") paused before one of its '
+    'steps ("declined_step"); the user declined that step and said what to do instead ("change"). Write the '
+    'task as it now stands: the request with the change applied, complete and self-contained, in the '
+    "request's own words and style. When the change rewords a message, a title or other text, give the exact "
+    'new text in full (for "I am running late" and "say ten minutes late": "I am running ten minutes late"). '
+    'Keep every other part of the request; add nothing the user did not ask for.')
+
+
 class Agent:
     # Answer work starts at the DONE decision, in parallel with the completion
     # re-read (latency breakdown of 23 Sep 2026, item 6). A switch for same-day A/B runs.
@@ -450,6 +467,10 @@ class Agent:
     _trace = NULL_TRACE
     # Guards the speculative-answer table, written from speculation workers.
     _answer_lock = threading.Lock()
+    # The server sets this after construction when it stores frames: step events then carry
+    # ``_frame`` (JPEG bytes), which it swaps for a frame id before the event is journaled.
+    # Never set without such a server: the journal cannot hold bytes.
+    capture_frames = False
 
     def __init__(self, driver, model, helper=None, max_steps=30, max_seconds=120,
                  max_helper_calls=4, settle_seconds=.6, emit=None, cancelled=None, visual=None,
@@ -530,6 +551,8 @@ class Agent:
         # The app the caller launched for this run: its remembered first screen
         # lets the first decision start while the launch is still being observed.
         self.launch_bundle = launch_bundle
+        # Plain-words steps shown in the run view; a plan's sub-agents share the count.
+        self._step_count = [0]
 
     def _span(self, name, **attrs):
         return self._trace.span(name, **attrs)
@@ -567,7 +590,11 @@ class Agent:
         state.replay = list(steps) if steps else []
         state.memo_pending, state.memo_used, state.memo_key = [], [], None
         state.route, state.route_pending = routes.compile_route(goal) if len(state.goals) == 1 else None, None
+        state.bulk_request = loops.bulk_wording(goal)
         try:
+            if loops.dating_loop(goal):
+                # A request to repeat an action over people in a dating app ends before the phone is read or touched.
+                return self._refuse_loop(state, None, "dating_app")
             planned = self._run_plan(state) if self._plan_candidate(state) else None
             if planned is not None:
                 return planned
@@ -641,6 +668,7 @@ class Agent:
         if retries >= STEP_INTERRUPTION_RETRIES or state.deadline - time.monotonic() < STEP_RETRY_MIN_SECONDS:
             return False
         state.step_interruptions = retries + 1
+        self._flush_step(state)
         self._record_unknown_outcome(state)
         state.loop_fallback_snapshot = None
         state.hint = ("The previous step was interrupted by a device or network timeout. Re-check the current "
@@ -664,6 +692,9 @@ class Agent:
         observe_ms = (time.monotonic() - t) * 1000
         self.emit({"event": "observation", "step": step, **snapshot.public()})
         state.snapshot = snapshot
+        if getattr(state, "bulk_request", False) and loops.in_dating_app(snapshot.bundle_id):
+            # Whatever way the run got here (a route, a plan, a loop the compiler never saw): not one tap in bulk.
+            return self._refuse_loop(state, snapshot, "dating_app")
         if step == 0 and state.execute and not state.replay:
             opened = self._open_requested_url(state, snapshot, step)
             if opened:
@@ -748,14 +779,20 @@ class Agent:
         if not state.execute:
             return self._finish(state, "preview", snapshot, "No device actions executed")
         state.force_approval = False
+        # The message the person approved already shows as sent: that is the task, whatever the model
+        # decided (it waited, or said DONE and its goal watcher disagreed, live on sim 4).
+        sent = self._approved_message_sent(state, snapshot)
+        if sent is not None:
+            return sent
         if decision.approvable_target is not None and (self.approve is not None or self.bypass):
-            # A commit the side-effect floor gated to WAIT although the model is fairly sure
-            # of it (APPROVAL_CONFIDENCE_FLOOR): the user decides (ask before acting) or their
-            # bypass does. Waiting cannot change the screen, so WAIT only ran into no_progress.
-            state.force_approval = self.approve is not None
+            # A tap the side-effect floor gated to WAIT although the model is fairly sure of it
+            # (APPROVAL_CONFIDENCE_FLOOR). Waiting cannot change the screen, so WAIT only ran into
+            # no_progress. With ask before acting, a commit-labelled control is put to the user
+            # (approval_kind) and anything else goes on to the action check, which still refuses a
+            # mismatch and puts an unclear effect to the user; bypass takes it.
             self.emit({"event": "demotion_lifted", "step": step, "operation": decision.demoted_from,
                        "target": decision.approvable_target,
-                       "by": "approval" if state.force_approval else "bypass"})
+                       "by": "approval" if self.approve is not None else "bypass"})
             decision = replace(decision, operation=decision.demoted_from, target=decision.approvable_target,
                                demoted_from=None, approvable_target=None)
         if decision.operation == "DONE":
@@ -838,6 +875,7 @@ class Agent:
             self.emit({"event": "milestones_not_compiled", "reason": type(error).__name__})
             return
         if not items:
+            state.single_step = True
             self.emit({"event": "milestones_not_compiled", "reason": "single_step"})
             return
         state.goals = items + [state.goal]
@@ -897,6 +935,7 @@ class Agent:
                         visual=self.visual, spend_ledger=self.spend_ledger,
                         allowed_bundles=[step["app"]], approve=self.approve, ask=self.ask, loop_mode="off",
                         trace=self.trace, launch_bundle=step["app"], bypass=self.bypass)
+            sub.capture_frames, sub._step_count = self.capture_frames, self._step_count
             result = sub.run(f"In {names.get(step['app'], step['app'])}: {request}", execute=True,
                              output_schema=plans.step_schema(step), output_format="json")
             results.append(result)
@@ -922,9 +961,14 @@ class Agent:
             last["data"] = answer
         elif last.get("status") in COMPLETED_STATUSES:
             last["status"], last["data"] = "completion_not_confirmed", None
+        # Every step's proof backs the plan's answer; done needs all of it (fast_proof.outcome).
+        last["proof"] = [item for result in results for item in result.get("proof") or ()][:fast_proof.PROOF_LIMIT]
+        last["outcome"] = fast_proof.outcome(last.get("status"), last["proof"])
+        last["answer"] = fast_proof.answer_sentence(answer, state.resolved_output_format) if answer is not None else None
         last["elapsed_ms"] = round((time.monotonic() - state.started) * 1000, 2)
         self.emit({"event": "result", **{key: value for key, value in last.items()
-                                         if key in ("status", "reason", "actions", "decisions", "plan_steps")}})
+                                         if key in ("status", "reason", "actions", "decisions", "plan_steps",
+                                                    "outcome", "answer", "proof")}})
         return last
 
     # -- visual answers -------------------------------------------------------------------
@@ -1157,11 +1201,8 @@ class Agent:
                 self._defer_uncompiled_survey(state, snapshot, deferred)
                 return None
             if program is None:
-                if why == "refused":
-                    self.emit({"event": "loop_not_compiled", "reason": "refused"})
-                    return self._finish(state, "blocked", snapshot,
-                                        "Mobster doesn't judge people by race, religion, health, disability or "
-                                        "sexual orientation, so nothing was done")
+                if why in loops.REFUSALS:
+                    return self._refuse_loop(state, snapshot, why)
                 self.emit({"event": "loop_not_compiled", "reason": why})
                 if why == "not_a_loop":
                     self._defer_uncompiled_survey(state, snapshot, deferred)
@@ -1216,20 +1257,28 @@ class Agent:
                     state.deadline += time.monotonic() - waited
             return call
         crop = self._judge_crop() if self.vision_judge is not None else None
-        runner = loops.LoopRunner(
-            program, driver=self.driver, request=state.goal, emit=self.emit, budget=state.budget,
-            ledger=ledger, effects=state.effects, judge=self.vision_judge, tools=tools, compiler=compiler,
-            shadow=lambda screen, hint: self._loop_shadow(state, screen, hint),
-            approve=timed(self.approve), ask=timed(self.ask),
-            frame_clock=getattr(self.driver, "frame_clock", None), crop=crop, dry_run=dry_run,
-            settle_seconds=self.settle_seconds, on_action=lambda item: self._loop_action(state, item))
-        with self._span("loop"):
-            summary = runner.run(snapshot)
+        try:
+            runner = loops.LoopRunner(
+                program, driver=self.driver, request=state.goal, emit=self.emit, budget=state.budget,
+                ledger=ledger, effects=state.effects, judge=self.vision_judge, tools=tools, compiler=compiler,
+                shadow=lambda screen, hint: self._loop_shadow(state, screen, hint),
+                approve=timed(self.approve), ask=timed(self.ask),
+                frame_clock=getattr(self.driver, "frame_clock", None), crop=crop, dry_run=dry_run,
+                settle_seconds=self.settle_seconds, on_action=lambda item: self._loop_action(state, item))
+            with self._span("loop"):
+                summary = runner.run(snapshot)
+        except loops.LoopRefused as refusal:
+            return self._refuse_loop(state, snapshot, refusal.reason)
         state.loop_summary = {key: summary[key] for key in ("reason", "counts", "elapsed_ms", "dry_run")}
         if program["report"] is not None:
             return self._finish_survey(state, program, summary, runner.snapshot or snapshot, runner.survey_screens)
         status, reason = loop_status(summary)
         return self._finish(state, status, runner.snapshot or snapshot, reason)
+
+    def _refuse_loop(self, state, snapshot, reason):
+        """End the run before any tap: a loop Mobster will not run (``loops.REFUSALS``), with its plain sentence."""
+        self.emit({"event": "loop_not_compiled", "reason": reason})
+        return self._finish(state, "blocked", snapshot, loops.REFUSALS[reason])
 
     def _defer_uncompiled_survey(self, state, snapshot, deferred):
         """Ask again on arrival when a question over a named collection did not compile at the start.
@@ -2041,6 +2090,21 @@ class Agent:
             if support is ActionSupport.UNCLEAR:
                 return self._finish(state, "needs_clarification", fresh,
                                     "This action was not dispatched because its exact effect could not be established; earlier actions may have completed")
+            if support is ActionSupport.MISMATCH and self.approve is not None and (
+                    decision.operation == "TYPE" and getattr(state, "redirect_field", None) == (target.locator, target.label)
+                    or getattr(state, "redirected_commit", None) == (decision.operation, target.label)):
+                # After a redirect, the user's own change: typing it into the field the redirect emptied,
+                # or the declined commit proposed again with it. Live, the check read the thread (the
+                # same words already sent) as a reason to refuse either one. Typing without Return
+                # commits nothing and the commit is put to the user with its exact text anyway, so the
+                # user decides instead of the run ending "couldn't finish" right after they said what
+                # to do. Once each per redirect.
+                self.emit({"event": "redirect_mismatch_put_to_user", "step": step, "operation": decision.operation})
+                if decision.operation == "TYPE":
+                    state.redirect_field = None
+                else:
+                    state.redirected_commit = None
+                support, state.force_approval = ActionSupport.ALLOWED, True
             if support is ActionSupport.MISMATCH:
                 self._memo_forget(state)
                 state.rejected_actions.add(rejected_key)
@@ -2051,10 +2115,14 @@ class Agent:
                 return None
         state.budget()
         forced, state.force_approval = state.force_approval, False
-        if self.approve is not None and (forced or needs_approval(
-                decision.operation, target.label if target else "", risk_tier=decision.risk_tier,
-                side_effect_risk=decision.side_effect_risk)):
-            asked = self._ask_approval(state, fresh, target, text, decision, step)
+        kind = subject = None
+        if self.approve is not None:
+            # A tap on text reads as the control it lands on (WebKit's checkout Button holds a StaticText of its label).
+            subject = approval_subject(fresh.elements, target) if decision.operation == "TAP" else target
+            kind = approval_kind(decision.operation, subject.label if subject else "", risk_tier=decision.risk_tier,
+                                 uncertain=forced, role=subject.role if subject else None)
+        if kind is not None:
+            asked = self._ask_approval(state, fresh, target, text, decision, step, kind, subject)
             if asked is not True:
                 return asked
             fresh = self._refresh_unchanged(state, fresh, step, target=target)
@@ -2065,6 +2133,89 @@ class Agent:
             # Same element, same frame, re-identified in the fresh observation.
             target = retarget
         return self._dispatch(state, fresh, target, text, field_key, effect_target, decision, step)
+
+    def _flush_step(self, state):
+        """Show an acknowledged action whose settle was cut short (a timeout, an error) as a step."""
+        pending, state.pending_step = getattr(state, "pending_step", None), None
+        if pending is not None:
+            step, text, operation, target = pending
+            self._emit_step(state, step, text, operation, target, changed=True)
+
+    def _emit_step(self, state, step, text, operation=None, target=None, changed=False, frame=None):
+        """One plain-words step for the run view, with the settled screen when frames are on."""
+        try:
+            if operation is not None:
+                fast_proof.track_path(state, step, operation, target, changed)
+            self._step_count[0] += 1
+            event = {"event": "step", "n": self._step_count[0], "step": step, "text": text}
+            if self.capture_frames:
+                frame = frame if frame is not None else fast_proof.frame_jpeg(self.driver)
+                if frame:
+                    event["_frame"] = frame
+        except Exception:
+            return  # The step list is presentation; it never changes a run.
+        self.emit(event)
+
+    def _proof(self, state, status, snapshot, data, citations):
+        """What the screen showed for this result (fast_proof); a proof on the final screen is a step."""
+        if not state.execute or status not in COMPLETED_STATUSES:
+            return []
+        final = len(state.metrics)
+        if data is not None:
+            proof = fast_proof.cited_proof(state, state.evidence.public()["entries"], citations)
+        elif not state.wants_output:
+            proof = fast_proof.screen_proof(state, state.goal, getattr(state, "typed_texts", ()), snapshot, final)
+        else:
+            proof = []
+        on_final = [item for item in proof if item["step"] >= final]
+        frame = (fast_proof.frame_jpeg(self.driver, allow_capture=True)
+                 if on_final and self.capture_frames else None)
+        for item in proof:
+            if item["step"] >= final:
+                item["step"] = final
+                self._emit_step(state, final, f"{'Read' if data is not None else 'Found'} {item['quote']}",
+                                frame=frame)
+            else:
+                # An earlier screen: the step whose settled frame shows it (the last action before it).
+                item["step"] = max((s for s in getattr(state, "step_paths", {}) if s < item["step"]), default=None)
+        return proof
+
+    def _approved_message_sent(self, state, snapshot):
+        """Finish a one-part message task once the message the person approved shows as sent, or None.
+
+        Live on sim 4 (27 Sep), Jev never proposed DONE after an approved Send: the words sat in the
+        thread, the composer was empty, and the run wandered until no_progress, reading "Couldn't
+        finish" for a message that went out. Only a single-goal action task counts, and only the
+        exact approved text reading back outside its composer (fast_proof.screen_proof).
+        """
+        approved = getattr(state, "approved_message", None)
+        if approved is None or not state.execute or state.wants_output or len(state.goals) != 1:
+            return None
+        # A request that may go on after the message ("text Sam, then call him") is not finished by it. The
+        # message's own words are left out of that test: "I am running late" is no second action.
+        rest = asked_part(re.sub(re.escape(" ".join(approved["text"].split())), " ", " ".join(state.goal.split()),
+                                 flags=re.I))
+        others = {m.group(1).casefold() for m in milestones._ACTION.finditer(rest)} - MESSAGE_VERBS
+        if (others or SEQUENCE.search(rest)) and not getattr(state, "single_step", False):
+            return None
+        proof = fast_proof.screen_proof(state, state.goal, [(approved["locator"], approved["label"], approved["text"])],
+                                        snapshot, len(state.metrics))
+        if not proof:
+            return None
+        self.emit({"event": "approved_message_sent"})
+        return self._finish(state, "completed_unverified", snapshot, "The message you approved shows as sent")
+
+    @staticmethod
+    def _app_name(snapshot):
+        """The app's display name for a sentence ("Reminders"), or "" when the catalog does not know it."""
+        bundle = getattr(snapshot, "bundle_id", None)
+        if not bundle:
+            return ""
+        try:
+            from .catalog import APPS
+            return next((app["name"] for app in APPS if app.get("bundleId") == bundle), "")
+        except Exception:
+            return ""
 
     def _pixels_still_since(self, snapshot):
         """Whether a healthy FrameClock ("on") saw no change since before ``snapshot``'s read began.
@@ -2083,33 +2234,163 @@ class Agent:
         return (still is not None and snapshot.captured_at > 0
                 and time.monotonic() - still <= snapshot.captured_at - PIXEL_GUARD_READ_BOUND)
 
-    def _ask_approval(self, state, fresh, target, text, decision, step):
+    def _ask_approval(self, state, fresh, target, text, decision, step, kind="commit", subject=None):
         """True to dispatch, None to decide again, or the run's terminal result.
 
+        ``kind`` is "commit" (the act puts something out: the card names it and shows the exact
+        text) or "unsure" (a step the model or its check could not establish: Continue or Stop).
+        A commit's card names ``subject`` (approval_subject): the control a tap on its text lands on.
         An action the user already approved is not asked again when the screen
         moved underneath it and Jev chose the same action; any other change asks.
-        Time spent waiting for the user never counts against the run deadline.
+        A redirect ("redirected:<instruction>") declines this action and continues the run
+        with the instruction added to the request. Time spent waiting for the user never
+        counts against the run deadline.
         """
         key = (decision.operation, target.label if target else "", text)
         approved = getattr(state, "approved_actions", set())
         if key in approved:
             return True
-        request = {"step": step, "operation": decision.operation,
-                   "label": (target.label if target else "")[:200], "role": target.role if target else "",
-                   "text": text, "app": fresh.bundle_id}
+        # A commit is named by the control the tap lands on (``subject``, from approval_subject).
+        named = subject if subject is not None and kind == "commit" else target
+        label = (named.label if named else "")[:200]
+        act = (commit_act(label, state.goal, named.role if named else None, decision.operation)
+               if kind == "commit" else None)
+        to = fast_proof.recipient(fresh, named) if act in MESSAGE_ACTS else None
+        # A tap on Send types nothing: the words going out are the ones in the composer.
+        shown = text if text is not None or act not in MESSAGE_ACTS else fast_proof.composed_text(fresh, named)
+        request = {"step": step, "operation": decision.operation, "label": label,
+                   "role": named.role if named else "", "text": shown, "app": fresh.bundle_id,
+                   "kind": kind, "act": act, "title": approval_title(act, unsure=kind == "unsure", recipient=to),
+                   "target": fast_proof.target_rect(target)}
         waited = time.monotonic()
         with self._span("approval.wait"):
             answer = self.approve(request)
         state.deadline += time.monotonic() - waited
         if answer == "approved":
             state.approved_actions = approved | {key}
+            if kind == "commit" and act in MESSAGE_ACTS and shown:
+                # What the person approved going out, and from which field: once it shows as sent,
+                # the run is done (_approved_message_sent).
+                field = fast_proof.composer(fresh, named, shown)
+                if field is not None:
+                    state.approved_message = {"label": field.label, "locator": field.locator, "text": shown, "to": to}
             return True
         if answer == "stopped":
             raise Cancelled()
         if answer == "timeout":
             return self._finish(state, "approval_timeout", fresh,
                                 "No answer to the approval request, so the action was not taken")
+        if isinstance(answer, str) and answer.startswith("redirected:"):
+            instruction = " ".join(answer[len("redirected:"):].split())[:500]
+            if instruction:
+                return self._redirect(state, fresh, target, text, decision, step, instruction)
+        if kind == "unsure":
+            return self._finish(state, "stopped", fresh,
+                                "You stopped at a step Mobster was unsure of, so it was not taken")
         return self._finish(state, "approval_denied", fresh, "You declined the action, so it was not taken")
+
+    def _redirect(self, state, fresh, target, text, decision, step, instruction):
+        """Decline this action and keep going with the user's instruction as the current request.
+
+        Live on sim 4 (26 Sep, runs 73cb2ffc33e1 and fcec1c83390d) a redirect at Send failed twice:
+        the composer still held the declined text, so the next TYPE would have appended to it, the
+        action check refused it, Jev proposed it again and the run ended blocked. Now the text the
+        declined commit would have sent is emptied first (``_clear_declined_text``), and the request
+        the model, the text helper and the action check read says the instruction wins.
+        """
+        # The declined action is not refused for good: if the model proposes it again, the user is
+        # asked again (with the text it would send then) and can redirect or decline once more.
+        self._memo_forget(state)
+        what = f"“{target.label}”" if target is not None and target.label else "that action"
+        original = state.goal
+        # The user's change is new work: the rewrite and the text it asks for get their own helper calls.
+        self.max_helper_calls += REDIRECT_HELPER_CALLS
+        state.goal = self._revised_request(state, original, what, instruction) or (
+            f"{original}\nThe user changed this request when asked to approve {what}: {instruction}\n"
+            "Where the two differ, the user's change wins: do what it says, then finish the task.")
+        state.goals = [state.goal if goal == original else goal for goal in state.goals]
+        # A redirected run is not the request it started as: never replay or memoize it under that key.
+        state.replay_key, state.memo_pending = None, []
+        cleared = self._clear_declined_text(state, fresh, target, step)
+        state.redirected_commit = (decision.operation, target.label if target is not None else "")
+        state.hint = (f"The user declined {what} and said: {instruction}. Nothing was dispatched for the declined "
+                      "action. " + (f"The text in “{cleared}” was removed; write there what the user asked for "
+                                    "now, then continue." if cleared else
+                                    "If a field holds text that no longer matches the request, change it first."))
+        state.redirects = getattr(state, "redirects", 0) + 1
+        self.emit({"event": "approval_redirected", "step": step, "operation": decision.operation,
+                   "redirects": state.redirects, "cleared": bool(cleared)})
+        return None
+
+    def _revised_request(self, state, original, what, instruction):
+        """The request as it stands after the user's change, as one self-contained task, or None.
+
+        Live, "say ten minutes late" appended to the request made the text helper type exactly
+        " ten minutes late" and left Jev unsure the task was done once it was sent. One helper call
+        rewrites the request instead ("Send the message I am running ten minutes late in this
+        conversation"), so the model, the text helper and the action check all read the change as
+        the request. Any failure keeps the appended form.
+        """
+        helper = self.helper
+        if helper is None or not callable(getattr(helper, "complete", None)):
+            return None
+        try:
+            from .models import AUTHORITY_RULES
+            from .transport import decode_json
+            with self._span("helper.revise"):
+                result = helper.complete(
+                    [{"role": "system", "content": REVISE_INSTRUCTIONS + " " + AUTHORITY_RULES},
+                     {"role": "user", "content": json.dumps({"request": original, "declined_step": what,
+                                                             "change": instruction}, ensure_ascii=False)}],
+                    300, min(10., state.budget()), "request_revision")
+            choice = result["choices"][0]
+            if choice.get("finish_reason") not in {None, "stop"}:
+                return None
+            data = decode_json(choice["message"]["content"])
+            revised = " ".join(str(data["request"]).split()) if isinstance(data, dict) and set(data) == {"request"} else ""
+        except (Cancelled, SpendCapExceeded, RunDeadline):
+            raise
+        except Exception:
+            return None
+        return revised if 3 <= len(revised) <= 2000 else None
+
+    def _clear_declined_text(self, state, fresh, target, step):
+        """Empty the field holding text this run typed that the declined commit would have sent (the
+        composer beside Send), so the next TYPE writes the user's version instead of appending to the
+        old one. Returns the field's label, or None when there was nothing to empty or it could not be."""
+        clear = getattr(self.driver, "clear_text", None)
+        typed = [(label, " ".join(text.split())) for _locator, label, text in getattr(state, "typed_texts", ())
+                 if text and text.strip()]
+        if not callable(clear) or not typed:
+            return None
+        # Only a field this run typed into, still holding what it typed (not a sent bubble with the same words).
+        fields = [e for e in fresh.elements if e.editable and e.value.strip() and e.value != (e.placeholder or None)
+                  and any(label == e.label and words in " ".join(e.value.split()) for label, words in typed)]
+        if not fields:
+            return None
+        if target is not None:
+            fields.sort(key=lambda e: abs(e.center[1] - target.center[1]))
+        field = fields[0]
+        try:
+            with self._span("redirect.clear"):
+                clear(field, timeout=max(1., min(10., state.deadline - time.monotonic())))
+        except Exception as error:
+            self.emit({"event": "redirect_clear_failed", "step": step, "error": type(error).__name__})
+            return None
+        # The field's old text is gone: typing the new text there is no duplicate of it.
+        state.typed_fields = {key for key in state.typed_fields
+                              if not (isinstance(key, tuple) and len(key) == 4 and key[1:3] == (field.locator, field.label))}
+        state.typed_texts = [item for item in state.typed_texts if item[1] != field.label]
+        state.redirect_field = (field.locator, field.label)
+        # The action history the model and the action check read says the field was emptied: without it,
+        # the earlier TYPE there read as text still in the field, and typing the new version was refused
+        # as a mismatch (live, sim 4, 27 Sep).
+        state.history.append({"operation": "CLEAR_TEXT", "label": field.label, "target_role": field.role,
+                              "target_value_before": field.value, "target_value_after": "",
+                              "outcome": "observed", "changed": True,
+                              "note": "Emptied because the user declined sending this text and changed the request"})
+        self._emit_step(state, step, f"Cleared {fast_proof.step_text('TYPE', field.label).removeprefix('Typed into ')}")
+        return field.label or "the field"
 
     def _dispatch(self, state, fresh, target, text, field_key, effect_target, decision, step):
         before = fresh.fingerprint
@@ -2156,6 +2437,8 @@ class Agent:
         act_ms = (time.monotonic() - t) * 1000
         if decision.operation in TEXT_OPERATIONS:
             state.typed_fields.add(field_key)
+            # In order, with the field: proof reads the last, and whether that field still holds it.
+            state.typed_texts = [*getattr(state, "typed_texts", ()), (target.locator, target.label, text)]
         # Record execution BEFORE observation, so a failed observe cannot invite replay.
         item = {"operation": decision.operation, "label": target.label if target else "",
                 "target_role": target.role if target else "",
@@ -2166,6 +2449,9 @@ class Agent:
         state.action_outcome = "acknowledged"
         state.done_blocked = False  # an action happened: DONE is available again
         self.emit({"event": "action_acknowledged", "step": step, "act_ms": round(act_ms, 2), **diagnostics})
+        # The step is shown once the screen settles; if the settle never finishes, _flush_step shows it.
+        state.pending_step = (step, fast_proof.step_text(decision.operation, target.label if target else ""),
+                              decision.operation, target)
         settle_end = min(state.deadline, time.monotonic() + self.settle_seconds)
         t = time.monotonic()
         settle_started = self._trace.now()
@@ -2258,6 +2544,9 @@ class Agent:
             state.effects.record_outcome(effect_key[0], effect_key[1], effect_key[2],
                                          outcome=item["outcome"])
             state.in_flight_effect = None
+        state.pending_step = None
+        self._emit_step(state, step, fast_proof.step_text(decision.operation, target.label if target else ""),
+                        decision.operation, target, changed)
         if changed and predictable:
             remember_transition(fresh, decision.operation, target, after)
         if changed and (entry := compiled.record(before_content, decision, target, fresh)) is not None:
@@ -2415,6 +2704,7 @@ class Agent:
                            "probably one level deeper; open the row on this screen that leads to it, then finish.")
 
     def _finish(self, state, status, snapshot=None, reason=""):
+        self._flush_step(state)
         data, citations, schema_validated = None, [], False
         output_support = None
         resolved_schema = state.schema
@@ -2483,6 +2773,20 @@ class Agent:
             "schema_source": "automatic" if state.automatic_output else "custom" if state.schema is not None else None,
             "citations": citations, "evidence": state.evidence.public(),
             "replayed": getattr(state, "replay_used", False)}
+        try:
+            proof = self._proof(state, status, snapshot, data, citations)
+        except Exception:
+            proof = []  # Proof is presentation: without it the run reads "check the result", never done.
+        ledger = self.spend_ledger
+        if ledger is not None and ledger.priced_calls:
+            # What the run's model calls cost at published rates, so History can show it.
+            result["costUsd"] = round(ledger.cost_nanodollars / 1e9, 6)
+        answer = (fast_proof.answer_sentence(data, state.resolved_output_format) if data_status == "extracted"
+                  else fast_proof.done_sentence(proof, self._app_name(snapshot), getattr(state, "approved_message", None))
+                  if data is None else None)
+        result.update(engine="fast", outcome=fast_proof.outcome(status, proof), proof=proof, answer=answer)
+        if getattr(state, "redirects", 0):
+            result["redirects"] = state.redirects  # History reads it without the run's events
         if getattr(state, "loop_summary", None) is not None:
             result["loop"] = state.loop_summary
         if getattr(state, "visual_evidence", None) is not None:

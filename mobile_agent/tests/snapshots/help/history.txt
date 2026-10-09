@@ -1,0 +1,10 @@
+usage: mobster history [-h] [--json] [-n N]
+
+List the tasks you ran in this terminal, newest first. Open one with
+`mobster --resume ID`, or save one as a GIF with `mobster export ID --gif`. The
+history holds task text and screen text: keep it private.
+
+options:
+  -h, --help       show this help and exit
+  --json           print one JSON object per task
+  -n N, --limit N  show N tasks (default: 20)

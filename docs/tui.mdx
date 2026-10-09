@@ -1,0 +1,142 @@
+---
+title: "The terminal UI"
+sidebarTitle: "Terminal UI"
+description: "Run tasks, answer approvals and look back at history in the terminal UI."
+icon: "square-terminal"
+---
+
+`mobster` with no command opens the terminal UI. You type a task, watch each step happen, answer approvals, and keep a history of what ran. It runs the same runtime as `mobster serve` and the Mac app, so a task behaves the same way in all three.
+
+```sh
+mobster                                         # your iPhone at 127.0.0.1:8100 (or $MOBSTER_WDA_URL)
+mobster --device "Mobster · iPhone 17 Pro · iOS 26.4"   # a simulator from `mobster sim prepare`
+mobster --demo                                  # a scripted phone: no iPhone, keys or model calls
+mobster --resume                                # reopen the last task
+```
+
+![Two finished tasks. Messages: tapped Alex Rivera, typed into Message, tapped Send after the user approved it, checked the task was done. Settings: scrolled down, tapped Display & Brightness, tapped Dark, checked. The screen view on the right shows Display & Brightness as Mobster read it, with Dark selected.](/images/tui-finished.png)
+
+## The screen
+
+From top to bottom:
+
+- **Header.** The version and the phone's state: a green dot when WebDriverAgent answers, red when it does not, with its address. In the demo it says `DEMO`.
+- **Transcript.** Each task starts with its prompt line (`❯`) and the app it runs in. Every step follows as one line with the action and its target, such as `Tapped “Dark”`, then a `⎿` line with where Mobster looked and what the phone did: `Settings · 7 elements → screen changed`. On the right of each step are its number, how sure the model was, and how long it took. The task ends with its outcome, such as `Finished, unverified` or `Declined`, with a sentence that says what happened.
+- **Phone.** On terminals 110 columns or wider, the phone sits beside the transcript. `ctrl+s` shows or hides it at any width. In terminals that draw images (kitty and Ghostty through the kitty graphics protocol, iTerm2, WezTerm and others through sixel) it is the real screenshot. Everywhere else it is the screen as Mobster read it: the app, the title bar, and one line per row of the accessibility tree, with values on the right, switches as `on` or `off`, and the element the current step acts on marked with `❯`. The text view appears once a task has read a screen. `MOBSTER_PHONE_VIEW=text` always uses it, and `MOBSTER_PHONE_VIEW=image` asks any terminal whether it can draw images.
+- **Approval card.** Appears above the prompt when Mobster is waiting for you (see [Approvals](#approvals)).
+- **Prompt.** The app the task will run in is on the left of the prompt (`Settings ›`).
+- **Status line.** The mode (`⏸ ask before acting` or `⏵⏵ acting without asking`, plus `⚠ bypass on` when Bypass is on), the models, and during a task its step, elapsed time and spend so far, with the spend cap if you set one.
+
+Step glyphs:
+
+| glyph | meaning |
+| --- | --- |
+| spinner | reading the screen, deciding or acting |
+| `●` green | the action was sent and the screen changed |
+| `●` amber | the action was sent and nothing visible changed |
+| `✓` | Mobster checked the task is done |
+| `○` | did not act this step: waiting for the screen, or looking for a way forward. Consecutive ones share one line, with a count (`2 tries`). |
+| `✗` | the action was not sent, because the screen changed before it could be |
+
+Press `ctrl+o` to see every phase of every step: `observe` (what was read, and how fast), `decide` (the action, its target and confidence), `verify` (the action check's verdict) and `act` (what the phone did).
+
+## Choosing the app
+
+Every task runs in one app. Mobster opens the app first, then works inside it. It picks the app like this:
+
+1. The app you chose with `@` in the prompt (`@messages text Alex…`) or with `/app`. An `@word` that names no app, such as a handle in "Follow @nasa", stays in the task.
+2. An app the task opens or works in, such as "Open **Settings**" or "Find my boarding pass in **Wallet**".
+3. For a task that starts with "Text", "Message", "Email", "Call", "Remind me" or "Take a note":
+   - the channel the task names: "Message Sam on **WhatsApp**";
+   - else another app, when it is who or what the task calls or messages: "Call an **Uber** to the airport", "Message my **Airbnb** host", "Text the **DoorDash** driver". The ride, the host and the driver are reached in that app;
+   - else the app the opening word means (Messages, Mail, Phone, Reminders, Notes). The rest of such a task is what to say, so "Message Sam about the camera settings" runs in Messages, and "Email the notes to Sam" in Mail.
+4. Any other app your task names, such as "Search **TikTok** for cat videos". A name that is also an everyday word counts only when the task clearly means the app: "Find my boarding pass" names no app, while "Find my iPhone" and "Check **Find My** for my keys" run in Find My.
+5. An app the task's other opening words point to: "Set an alarm" runs in Clock, "Search for" in Safari and "Play" in Music. Settings words such as "Dark Mode", "Wi-Fi" or "Accessibility" anywhere in the task mean Settings.
+6. The app of your last task.
+
+The chip on the left of the prompt shows the choice as you type. The list covers the built-in apps, plus every app installed on a USB iPhone.
+
+## Approvals
+
+With "Ask before acting" on, which is the default, Mobster stops before a tap or submit that can commit something: a control labelled Send, Buy, Post, Delete, Submit and the like, a submit in a task whose words are a side effect, or an action the model scores as a likely side effect. It also stops when its own action check cannot tell whether an action matches your request. The card shows the action, the app and any text about to be typed:
+
+```text
+Tap “Send” in Messages
+This control can send, buy, post, delete or submit, so Mobster asks first.
+
+❯ 1. Yes, tap “Send”   (y)
+  2. No, stop the task  (n, esc)
+Declines itself in 9:58
+```
+
+- `y` or `1`, or `enter` on the highlighted option, lets that one action go ahead. If the same action comes up again in the same task on a changed screen, it is not asked twice.
+- `n`, `2` or `esc` declines it. The task ends as `Declined`, and nothing is sent. The prompt then suggests you say what to do instead, and `↑` brings back the task to edit.
+- If nobody answers in 10 minutes, the task ends as `Approval expired`. Time spent waiting does not count against the task's time limit.
+
+The terminal bell rings when a card appears (`--no-bell` turns it off). A repeated action over a list, such as liking every matching post, asks once before it starts, with a choice for items Mobster cannot judge.
+
+**Bypass** (`/bypass`) is for tasks where the action check is too careful. With it on, Mobster acts when its check is unsure, and a commit it would otherwise hold back goes ahead when the model is fairly sure of it. A check that finds the action contradicts your request still stops it, and so do the duplicate guards. With "Ask before acting" also on, approvals still happen.
+
+`shift+tab` turns "Ask before acting" on and off. Like `/bypass`, it applies from the next task and is saved to your env file when you have one (`--env-file` or `$MOBSTER_ENV_FILE`), as the Mac app saves its settings.
+
+## Keys
+
+| key | action |
+| --- | --- |
+| `enter` | run the task |
+| `esc` | stop the running task, decline an approval, or close a popup |
+| `ctrl+c` | stop the running task; clear the prompt; press twice to quit |
+| `ctrl+d` | quit |
+| `shift+tab` | turn "Ask before acting" on or off |
+| `↑` `↓` | earlier tasks, including those in history |
+| `@` | pick the app inline |
+| `/` | commands |
+| `?` | help, when the prompt is empty |
+| `ctrl+o` | show every phase of each step |
+| `ctrl+s` | show or hide the phone |
+| `ctrl+r` | history |
+| `ctrl+l` | clear the transcript |
+
+Stopping takes effect at the next safe point, after the action in flight. Mobster does not undo actions that already happened.
+
+## Commands
+
+Type `/` to see the list. It filters as you type, and `tab` or `enter` picks one.
+
+| command | what it does |
+| --- | --- |
+| `/app [name]` | choose the app for the next task; without a name, a searchable list |
+| `/model [name]` | choose Quick mode's text helper (`none` for no helper) |
+| `/ask` | turn "Ask before acting" on or off |
+| `/bypass` | turn Bypass on or off |
+| `/cap <usd>` or `/cap off` | stop a task before further model calls once its spend reaches this many dollars |
+| `/preview` | the next task shows its first decision and sends nothing; a preview needs `TYPESAFE_API_KEY` |
+| `/format <auto\|text\|json\|yaml\|csv\|markdown>` | how answers come back |
+| `/history` | browse past tasks |
+| `/resume [id]` | open a past task |
+| `/device` | the doctor report for this phone, with fixes |
+| `/screen` | show or hide the phone |
+| `/details` | show every phase of each step |
+| `/clear` | clear the transcript |
+| `/help` | keys and commands |
+| `/quit` | leave |
+
+## History and resume
+
+Every task the terminal UI runs is saved in its journal, with its steps and outcome. `ctrl+r` or `/history` lists them newest first, and you can type to filter. Opening one shows its transcript and puts its request back in the prompt, so `enter` runs it again. From a shell, `mobster history` lists them and `mobster --resume ID` opens one (`--resume` alone opens the latest).
+
+![The history list: three tasks with their app, outcome and time.](/images/tui-history.png)
+
+The journal is `mobile_agent/.state/terminal.sqlite3` in a source checkout and `~/Library/Application Support/app.mobster.desktop/state/terminal.sqlite3` otherwise. It is separate from the journal of `mobster serve` and the Mac app, so both can run at once. One terminal UI has it open at a time: a second one says another is open, and does not start. It keeps the last 100 tasks. It holds your task text and what Mobster read on the screen, so keep it private. A task that was running when the UI closed is marked `Interrupted` and never resumed on its own.
+
+When you quit, the UI prints a plain summary of the session's tasks, so they stay in your terminal's scrollback. A task still running stops at its next safe point, and the summary says how long it ran.
+
+## When there is no phone
+
+If WebDriverAgent does not answer, the header turns red and the welcome screen lists the ways to connect a phone. A task you start then is refused before anything runs, with the same hints. `/device` runs the full doctor report. [Device setup](/device-setup) has the details.
+
+![No phone connected: the setup commands and the missing key.](/images/tui-no-phone.png)
+
+## Other terminals
+
+The UI needs a terminal at least 80 columns wide and a truecolor terminal for the phone view. Every modern macOS terminal works (Terminal, iTerm2, Ghostty, kitty, WezTerm). In a pipe or script, `mobster` refuses to start the UI and points you to `mobster run`, which prints plain lines or JSON.

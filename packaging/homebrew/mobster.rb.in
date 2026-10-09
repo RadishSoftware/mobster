@@ -1,0 +1,30 @@
+class Mobster < Formula
+  desc "Let AI agents use a real iPhone over USB"
+  homepage "https://mobster.dev"
+  url "@URL@"
+  sha256 "@SHA256@"
+  version "@VERSION@"
+  license "MIT"
+
+  depends_on arch: :arm64
+  depends_on macos: :ventura
+
+  def install
+    libexec.install Dir["*"]
+    bin.install_symlink libexec/"mobster"
+    # `mobster completion zsh|fish` prints the script from this build's own commands.
+    generate_completions_from_executable(bin/"mobster", "completion", shells: [:zsh, :fish])
+  end
+
+  def caveats
+    <<~EOS
+      Save your Claude or OpenAI key: mobster login
+      Check your iPhone, key and tools: mobster doctor
+      Testing an app on a simulator needs Xcode with an iOS Simulator runtime: mobster sim doctor
+    EOS
+  end
+
+  test do
+    assert_match version.to_s, shell_output("#{bin}/mobster version")
+  end
+end

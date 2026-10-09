@@ -1,0 +1,31 @@
+{
+  "manifest_version": "0.3",
+  "name": "mobster",
+  "display_name": "Mobster",
+  "version": "0.3.0",
+  "description": "Check iOS screens on a headless simulator and drive a real iPhone over USB.",
+  "long_description": "Mobster's MCP server for Claude Desktop. It needs the mobster command on this Mac: install it with `curl -fsSL https://mobster.dev/install.sh | sh` or `brew install radishsoftware/tap/mobster`. The bundle holds only a small script that finds that command and runs `mobster mcp`.",
+  "author": {
+    "name": "Radish Retail, LLC",
+    "url": "https://mobster.dev"
+  },
+  "homepage": "https://mobster.dev",
+  "documentation": "https://github.com/RadishSoftware/mobster/blob/main/docs/mcp.md",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RadishSoftware/mobster"
+  },
+  "license": "MIT",
+  "keywords": ["ios", "iphone", "simulator", "testing"],
+  "server": {
+    "type": "binary",
+    "entry_point": "server/mobster-mcp",
+    "mcp_config": {
+      "command": "${__dirname}/server/mobster-mcp",
+      "args": []
+    }
+  },
+  "compatibility": {
+    "platforms": ["darwin"]
+  }
+}

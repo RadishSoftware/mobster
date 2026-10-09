@@ -1,0 +1,50 @@
+{
+ "note": "The Messages list, newest first (synthetic). Times are 10:42 AM and Yesterday.",
+ "bundle": "com.apple.MobileSMS",
+ "width": 402,
+ "height": 874,
+ "keyboard": "",
+ "elements": [
+  {
+   "label": "Messages",
+   "role": "StaticText",
+   "rect": [
+    0.05,
+    0.08,
+    0.5,
+    0.05
+   ]
+  },
+  {
+   "label": "Search",
+   "role": "SearchField",
+   "rect": [
+    0.05,
+    0.14,
+    0.9,
+    0.04
+   ],
+   "editable": true
+  },
+  {
+   "label": "Unread, Chase, Your Chase verification code is 482913. Don't share it., 10:42 AM",
+   "role": "Cell",
+   "rect": [
+    0.0,
+    0.2,
+    1.0,
+    0.09
+   ]
+  },
+  {
+   "label": "Mom, Dinner at 7?, Yesterday",
+   "role": "Cell",
+   "rect": [
+    0.0,
+    0.3,
+    1.0,
+    0.09
+   ]
+  }
+ ]
+}

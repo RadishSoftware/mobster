@@ -1,0 +1,17 @@
+{
+  "name": "mobster",
+  "owner": {
+    "name": "Radish Retail, LLC",
+    "url": "https://mobster.dev"
+  },
+  "description": "Mobster for Claude Code: check iOS screens on a headless simulator and, after setup, a USB iPhone.",
+  "plugins": [
+    {
+      "name": "mobster",
+      "source": "./plugins/mobster",
+      "description": "Mobster's MCP server, the ios-testing skill and /mobster:verify: verify iOS UI changes on a simulator Mobster manages, and, after setup, a USB iPhone.",
+      "category": "development",
+      "tags": ["ios", "iphone", "simulator", "testing", "mcp"]
+    }
+  ]
+}

@@ -1,0 +1,119 @@
+---
+title: "Troubleshooting: your iPhone"
+sidebarTitle: "iPhone issues"
+description: "Fix an iPhone Mobster can't reach, or one that's locked, unplugged or asking for Face ID."
+icon: "smartphone"
+keywords: ["iphone is locked", "unlock", "passcode", "webdriveragent not answering", "trust this computer", "face id", "developer mode", "unplugged"]
+---
+
+Run `mobster doctor` first. Every line with `✗` has its fix under it. Each heading below is the message you see.
+
+## Connecting
+
+<span id="wda-not-answering"></span>
+
+### ✗ WebDriverAgent  not answering at http://127.0.0.1:8100
+
+Mobster's helper (WebDriverAgent) isn't running on the phone, or the USB relay isn't.
+
+1. Open Mobster for Mac, or run `mobster serve --manage-device`: either starts both and restarts them if they stop.
+2. In a source checkout, `scripts/usb-wda.sh` does the same by hand: [Device setup](/device-setup#by-hand).
+3. For a simulator, run `mobster sim prepare` and pass `--device NAME` from `mobster devices`.
+
+Only checking your own app? You need none of this: run `mobster sim doctor`.
+
+<span id="no-iphone"></span>
+
+### ! USB iPhone  none connected
+
+1. Use a cable that carries data, not one that only charges, or try another port.
+2. Unlock the phone, and check that Developer Mode is on (Settings › Privacy & Security › Developer Mode).
+3. `idevice_id -l` should print the phone's UDID.
+
+<span id="not-trusted"></span>
+
+### ! USB iPhone  … connected but not trusted
+
+Unlock the phone, tap **Trust** on "Trust This Computer?", and enter the passcode. If you tapped **Don't Trust**, unplug the phone and plug it in again.
+
+<span id="runner-expired"></span>
+
+### ✗ WDA runner  the runner's signature expired
+
+A free Apple Account signs Mobster's helper for 7 days at a time.
+
+1. In Mobster for Mac, choose **Refresh now** in Settings › Phones, or **Refresh helper** in the sidebar. Mobster also refreshes it by itself while the phone is plugged in and unlocked.
+2. Without the Mac app, rebuild it with the guided setup (`setup /build`) or rerun your `xcodebuild build-for-testing`.
+
+<span id="not-registered"></span>
+
+### Building WDA fails with "isn't registered in your developer account"
+
+Open Xcode once with the phone connected, so Xcode registers it on your team, or register it in Apple's developer portal. Then build again.
+
+<span id="iproxy-old"></span>
+
+### iproxy is too old to bind 127.0.0.1 only
+
+Run `brew upgrade libimobiledevice libusbmuxd`. Mobster binds the relay to this Mac only, and older `iproxy` builds can't.
+
+<span id="device-busy"></span>
+
+### ! Device lock  another Mobster process is using this phone
+
+One Mobster process controls a phone at a time. Finish or stop the task in Mobster for Mac, in `mobster serve` or in the other terminal, then try again.
+
+## During a task
+
+<span id="locked"></span>
+
+### Your iPhone is locked. Unlock it and try again. No action was taken.
+
+The phone was locked when the task started. Mobster checks before its first model call, so the task cost nothing.
+
+1. Unlock the phone.
+2. Run the task again.
+
+<Note>Mobster never enters your passcode and never unlocks the phone. For long or scheduled tasks, keep it unlocked while it's plugged in: Settings › Display & Brightness › Auto-Lock.</Note>
+
+<span id="locked-mid-task"></span>
+
+### Your iPhone locked during the task, so Mobster stopped.
+
+The phone auto-locked mid-task, often during a long wait for your approval. Unlock it, or lengthen Auto-Lock, and run the task again. In Mobster for Mac, **Pick up where it left off** continues from the last step.
+
+<span id="unplugged"></span>
+
+### Your iPhone was unplugged. Plug it back in and try again.
+
+The cable came out during the task. Plug it back in; Mobster's helper starts again by itself.
+
+<span id="not-responding"></span>
+
+### Your iPhone isn't responding. Unlock it, close Control Center or Siri…
+
+Something covers the app. Close it on the phone and try again. Mobster presses Home before each task, but it can't dismiss everything.
+
+<span id="face-id"></span>
+
+### [App] is asking for Face ID. Mobster can't use Face ID…
+
+The app wants Face ID before it shows anything. Open the app on the phone once yourself, then run the task again.
+
+<span id="app-locked"></span>
+
+### [App] is locked on your iPhone. Mobster won't open locked apps…
+
+The app is locked with iOS's Require Face ID. Open it yourself, or remove the lock: touch and hold its icon, then **Don't Require Face ID**.
+
+<span id="app-store-confirm"></span>
+
+### The App Store wants you to confirm on your iPhone.
+
+A download or purchase needs the side button pressed twice. Mobster never confirms one for you: do it on the phone if you meant it.
+
+`mobster devices lock-probe` shows what Mobster sees on the lock screen and taps nothing.
+
+<Card title="Still stuck?" icon="life-buoy" href="/troubleshooting#report-a-problem">
+  Send the output of `mobster version` and `mobster doctor`, the task you gave and what you saw.
+</Card>

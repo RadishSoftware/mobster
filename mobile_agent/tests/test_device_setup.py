@@ -1,5 +1,6 @@
 """Device manager and setup checklist. Offline: tools, devices and processes are faked."""
 
+import io
 import os
 import stat
 import tempfile
@@ -10,7 +11,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from mobile_agent import device_manager as dm
-from mobile_agent.setup_service import SetupService
+from mobile_agent.setup_service import SetupService, ToolsInstall, install_words
 
 
 class EnvFileTests(unittest.TestCase):
@@ -24,6 +25,20 @@ class EnvFileTests(unittest.TestCase):
     def test_newlines_cannot_inject_entries(self):
         with self.assertRaises(ValueError):
             dm.save_env_value(Path(tempfile.mkdtemp()) / "e", "KEY", "a\nEVIL=1")
+
+    def test_a_line_that_is_not_utf8_is_kept_and_the_key_still_saves(self):
+        # Setup and Settings repair agent.env; a stray Latin-1 byte must not stop them saving a key.
+        path = Path(tempfile.mkdtemp()) / "agent.env"
+        path.write_bytes(b"TEXT_MODEL=caf\xe9\n")
+        dm.save_env_value(path, "TYPESAFE_API_KEY", "x")
+        self.assertEqual(path.read_bytes(), b"TEXT_MODEL=caf\xe9\nTYPESAFE_API_KEY=x\n")
+        dm.save_env_value(path, "TYPESAFE_API_KEY", None)
+        self.assertEqual(path.read_bytes(), b"TEXT_MODEL=caf\xe9\n")
+        with self.assertRaises(ValueError):
+            dm.save_env_value(path, "KEY", "caf\udce9")
+        path.write_bytes(b"\xef\xbb\xbfTYPESAFE_API_KEY=old\n")
+        dm.save_env_value(path, "TYPESAFE_API_KEY", "new")
+        self.assertEqual(path.read_bytes(), b"TYPESAFE_API_KEY=new\n")
 
 
 class BuildHintTests(unittest.TestCase):
@@ -210,7 +225,9 @@ class SupervisedTests(unittest.TestCase):
         self.assertFalse(service.running)
         long_running = dm.Supervised("t", ["/bin/sh", "-c", "sleep 30 & wait"], log)
         long_running.start()
-        time.sleep(.3)
+        deadline = time.monotonic() + 5  # it starts on its own thread: slow on a loaded machine
+        while long_running.process is None and time.monotonic() < deadline:
+            time.sleep(.02)
         pid = long_running.process.pid
         long_running.stop()
         with self.assertRaises(ProcessLookupError):
@@ -378,7 +395,8 @@ class ChecklistTests(unittest.TestCase):
         self.assertEqual(tools["commands"], ["brew install libimobiledevice"])
         self.assertIn("Install Xcode from the Mac App Store", tools["detail"])
         self.assertEqual(state["tools"], {"xcode": {"state": "missing", "version": None, "app": None},
-                                          "libimobiledevice": False, "homebrew": True})
+                                          "libimobiledevice": False, "homebrew": True, "bundled": False,
+                                          "install": {"state": "idle", "line": None, "error": None}})
 
     def test_the_command_line_tools_are_not_xcode_and_the_step_says_how_to_switch(self):
         xcode = xcode_state("not_selected", selected=dm.CLT_DIR, fixes=["sudo xcode-select -s /Applications/Xcode.app"])
@@ -395,7 +413,7 @@ class ChecklistTests(unittest.TestCase):
             self.assertEqual(steps["tools"], "todo")
             self.assertIn(words, self.step(state, "tools")["detail"])
         state, _ = self.states()
-        self.assertEqual(self.step(state, "tools")["detail"], "Xcode 26.4 and libimobiledevice are installed.")
+        self.assertEqual(self.step(state, "tools")["detail"], "Xcode 26.4 and the iPhone connection tools are installed.")
 
     def test_homebrew_is_offered_first_when_it_is_missing(self):
         service, env = self.service(tools=False, xcode=xcode_state("ok"))
@@ -404,7 +422,81 @@ class ChecklistTests(unittest.TestCase):
         tools = self.step(state, "tools")
         self.assertEqual(tools["commands"][1], "brew install libimobiledevice")
         self.assertIn("Homebrew/install", tools["commands"][0])
-        self.assertIn("Install Homebrew, then libimobiledevice", tools["detail"])
+        self.assertIn("Install Homebrew, then the iPhone connection tools", tools["detail"])
+
+    def test_the_apps_own_iphone_tools_come_first_and_read_as_included(self):
+        # Mobster for Mac carries the tools (build-iphone-tools.sh): found before Homebrew's, and Setup says so.
+        bundled = Path(tempfile.mkdtemp())
+        for name in dm.IPHONE_TOOLS:
+            (bundled / name).write_text("#!/bin/sh\n")
+            (bundled / name).chmod(0o755)
+        with patch.dict(os.environ, {"MOBSTER_IPHONE_TOOLS": str(bundled)}):
+            self.assertEqual(dm.tool("iproxy"), str(bundled / "iproxy"))
+            self.assertEqual(dm.tool("ideviceinstaller"), str(bundled / "ideviceinstaller"))
+            self.assertNotEqual(dm.tool("git"), str(bundled / "git"))
+            service, _ = self.service()
+            paths = {**service.manager.tools(), "iproxy": str(bundled / "iproxy"), "idevice_id": str(bundled / "idevice_id")}
+            service.manager.tools = lambda: paths
+            state = service.state()
+        self.assertTrue(state["tools"]["bundled"])
+        self.assertEqual(self.step(state, "tools")["commands"], [])
+        # Outside the app (no override, not frozen) there is no bundled folder.
+        with patch.dict(os.environ, {}, clear=True):
+            self.assertIsNone(dm.bundled_tools_dir())
+
+    def test_install_runs_homebrew_in_the_background_and_reports_progress_in_words(self):
+        lines = ["==> Fetching dependencies for libimobiledevice: libplist", "==> Fetching libplist\n",
+                 "==> Pouring libplist--2.7.0.arm64_tahoe.bottle.tar.gz", "==> Downloading https://ghcr.io/x"]
+        seen, calls = [], []
+        install = ToolsInstall(popen=None)
+
+        def popen(argv, **kwargs):
+            calls.append((argv, kwargs["env"].get("HOMEBREW_NO_AUTO_UPDATE")))
+
+            class Process:
+                stdout = iter(line + "\n" for line in lines)
+
+                def wait(self):
+                    seen.append(install.status()["line"])
+                    return 0
+            return Process()
+        install.popen = popen
+        install.update(state="running")
+        install.run("/opt/homebrew/bin/brew", on_done=lambda: seen.append("refreshed"))
+        self.assertEqual(calls, [(["/opt/homebrew/bin/brew", "install", "libimobiledevice", "ideviceinstaller"], "1")])
+        self.assertEqual(seen, ["Installing libplist", "refreshed"])
+        self.assertEqual(install.status(), {"state": "succeeded", "line": None, "error": None})
+        self.assertIsNone(install_words("==> Downloading https://ghcr.io/v2/homebrew/core/libplist"))
+
+    def test_a_failed_install_says_what_to_do_and_homebrew_is_needed_for_one(self):
+        class Process:
+            stdout = iter(["Error: No internet\n"])
+
+            def wait(self):
+                return 1
+        install = ToolsInstall(popen=lambda *args, **kwargs: Process())
+        install.run("/x/brew")
+        self.assertEqual(install.status()["state"], "failed")
+        self.assertIn("Check your internet connection", install.status()["error"])
+        self.assertIn("Error: No internet", install.status()["error"])
+        service, env = self.service(tools=False, xcode=xcode_state("ok"))
+        with patch.dict(os.environ, env, clear=True), patch.object(dm, "executable", return_value=None):
+            with self.assertRaisesRegex(LookupError, "needs Homebrew"):
+                service.install_tools()
+        # With the tools already there, Install does nothing.
+        service, env = self.service(tools=True)
+        service.tools_install.start = lambda *args, **kwargs: self.fail("started an install")
+        service.install_tools()
+
+    def test_open_xcode_opens_the_installed_app_and_checks_again(self):
+        service, _ = self.service(xcode=xcode_state("first_launch"))
+        opened = []
+        service.manager.refresh = lambda: opened.append("refresh")
+        service.open_xcode(opener=lambda argv, **kwargs: opened.append(argv))
+        self.assertEqual(opened, [["/usr/bin/open", "/Applications/Xcode.app"], "refresh"])
+        service, _ = self.service(xcode=xcode_state("missing"))
+        with self.assertRaisesRegex(LookupError, "App Store"):
+            service.open_xcode(opener=lambda argv, **kwargs: self.fail("opened"))
 
     def test_an_expired_runner_asks_for_a_rebuild(self):
         device = {"udid": "u", "name": "iPhone", "trusted": True}
@@ -412,7 +504,7 @@ class ChecklistTests(unittest.TestCase):
                                    settings={"udid": "u", "built_for": "u"})
         build = self.step(state, "wda_build")
         self.assertEqual(steps["wda_build"], "todo")
-        self.assertIn("signature expired", build["detail"])
+        self.assertIn("needs a refresh", build["detail"])
         self.assertIn("7 days", build["detail"])
         self.assertEqual((state["build"]["expired"], state["build"]["expires_at"]), (True, 1_000_000))
         self.assertEqual(steps["wda_running"], "blocked")
@@ -425,13 +517,14 @@ class ChecklistTests(unittest.TestCase):
         self.assertIn("10 minutes or more", self.step(state, "wda_build")["detail"])
         self.assertEqual((state["build"]["started_at"], state["build"]["first"]), (100_500, True))
         state, _ = self.states(device=device, build={**running, "first": False})
-        self.assertIn("quicker than the first build", self.step(state, "wda_build")["detail"])
+        self.assertIn("quicker than the first time", self.step(state, "wda_build")["detail"])
 
     def test_the_phone_reports_developer_mode_when_it_can(self):
         device = {"udid": "u", "name": "iPhone", "trusted": True}
         state, _ = self.states(device=device, developer_mode=False)
         self.assertIs(state["device"]["developerMode"], False)
-        self.assertEqual(state["teams"], [{"id": "ABCDE12345", "name": "Test Person", "personal": True}])
+        self.assertEqual(state["teams"], [{"id": "ABCDE12345", "name": "Test Person", "personal": True,
+                                           "label": "Test Person (Personal Team)"}])
 
     def test_developer_mode_is_read_from_the_trusted_phone_and_an_off_answer_is_re_read(self):
         service, _ = self.service()
@@ -457,13 +550,39 @@ class ChecklistTests(unittest.TestCase):
         state, _ = self.states(devices=[xr], settings={"udid": "p", "device_name": "Test Pro"})
         self.assertIn("“Test Pro” isn't connected", state["steps"][2]["detail"])
         state, _ = self.states(device=pro, settings={"udid": "p", "built_for": "x"})
-        self.assertIn("built for another iPhone", state["steps"][3]["detail"])
+        self.assertIn("installed on another iPhone", state["steps"][3]["detail"])
+        state, _ = self.states(device=pro, settings={"udid": "p", "built_for": "x", "device_name": None})
+        self.assertTrue(state["steps"][3]["detail"].endswith("Install it again on your iPhone."))
 
     def test_a_fully_set_up_mac_is_complete(self):
         device = {"udid": "u", "name": "iPhone", "trusted": True}
         state, steps = self.states(device=device, built=True, runner="running", live=True, frame=True)
         self.assertTrue(state["complete"])
         self.assertTrue(all(value == "done" for value in steps.values()))
+
+    def test_the_key_step_asks_for_openai_and_a_jev_key_alone_still_counts(self):
+        for env, done, words in (({}, "todo", "Claude or OpenAI. You pay them directly"),
+                                 ({"OPENAI_API_KEY": "sk-" + "x" * 30}, "done", "uses your OpenAI account"),
+                                 ({"ANTHROPIC_API_KEY": "sk-ant-" + "x" * 30}, "done", "uses your Claude account"),
+                                 ({"TYPESAFE_API_KEY": "k"}, "done", "Quick mode is ready")):
+            service, _ = self.service(key=False)
+            with patch.dict(os.environ, env, clear=True), patch.object(dm, "executable", return_value="/bin/brew"):
+                state = service.state()
+            step = self.step(state, "api_key")
+            self.assertEqual((step["title"], step["state"]), ("Connect your AI account", done))
+            self.assertIn(words, step["detail"])
+            self.assertEqual(state["keys"], {"openai": "OPENAI_API_KEY" in env, "anthropic": "ANTHROPIC_API_KEY" in env,
+                                             "jev": "TYPESAFE_API_KEY" in env})
+
+    def test_a_failed_build_and_runner_carry_their_fix(self):
+        device = {"udid": "u", "name": "iPhone", "trusted": True}
+        problem = {"kind": "no_team", "fix": "Choose your Apple Account", "action": "choose_team", "raw": "error: x"}
+        state, _ = self.states(device=device, build={"state": "failed", "error": "Choose your team", "log_tail": [],
+                                                     "problem": problem})
+        self.assertEqual(self.step(state, "wda_build")["problem"], problem)
+        self.assertEqual(state["build"]["problem"], problem)
+        state, _ = self.states(device=device)
+        self.assertIsNone(self.step(state, "wda_build")["problem"])
 
     def test_saving_a_key_and_live_persist_privately(self):
         service, _ = self.service()
@@ -619,6 +738,139 @@ class SigningTests(unittest.TestCase):
         with patch.object(signing, "_read", return_value=None):
             self.assertIsNone(signing.profile_expiry(derived))
         self.assertIsNone(signing.profile_expiry(Path(tempfile.mkdtemp())))
+
+
+class TeamNameTests(unittest.TestCase):
+    def test_team_names_come_from_xcode_and_fall_back_to_the_id(self):
+        from mobile_agent import signing
+        defaults = {"IDEProvisioningTeamByIdentifier": {"8C2B-account": [
+            {"teamID": "ABCDE12345", "teamName": "Jane Appleseed", "teamType": "Personal Team", "isFreeProvisioningTeam": True},
+            {"teamID": "ZYXWV98765", "teamName": "Example, LLC", "teamType": "Company", "isFreeProvisioningTeam": False},
+            {"teamID": "QQQQQ11111", "teamName": "  ", "teamType": "Individual"}]}}
+        teams = signing.account_teams(defaults)
+        self.assertEqual([signing.team_label(team) for team in teams],
+                         ["Jane Appleseed (Personal Team)", "Example, LLC", "QQQQQ11111"])
+        # A team known only from its certificate still gets the certificate's name.
+        merged = signing.merge_teams(teams, [{"id": "QQQQQ11111", "name": "Sam Example", "personal": False}])
+        self.assertEqual(signing.team_label(merged[2]), "Sam Example")
+
+
+class RunnerIdTests(unittest.TestCase):
+    PBXPROJ = ("PRODUCT_BUNDLE_IDENTIFIER = com.facebook.WebDriverAgentRunner;\n"
+               "PRODUCT_BUNDLE_IDENTIFIER = com.facebook.WebDriverAgentLib;\n"
+               "PRODUCT_BUNDLE_IDENTIFIER = com.facebook.WebDriverAgentRunnerTests;\n")
+
+    def test_the_runner_gets_an_app_id_of_its_teams_own_and_follows_a_team_change(self):
+        manager = dm.DeviceManager(tempfile.mkdtemp())
+        project = manager.project / "WebDriverAgent.xcodeproj" / "project.pbxproj"
+        project.parent.mkdir(parents=True)
+        project.write_text(self.PBXPROJ)
+        from mobile_agent import signing
+        mine, theirs = signing.runner_bundle_id("ABCDE12345"), signing.runner_bundle_id("ZYXWV98765")
+        self.assertRegex(mine, r"^app\.mobster\.wda\.runner\.[0-9a-f]{10}$")
+        self.assertNotEqual(mine, theirs)
+        self.assertNotIn("abcde12345", mine.lower())    # the id on the phone doesn't spell out the team
+        self.assertEqual(signing.runner_bundle_id(None), "app.mobster.wda.runner")
+        manager._rebrand("ABCDE12345")
+        text = project.read_text()
+        self.assertIn(f"= {mine};", text)
+        self.assertIn("= app.mobster.wda.lib;", text)
+        self.assertIn("= com.facebook.WebDriverAgentRunnerTests;", text)
+        manager._rebrand("ZYXWV98765")                   # an existing clone, built for another team before
+        self.assertEqual(project.read_text().count(f"{theirs};"), 1)
+        self.assertNotIn(mine, project.read_text())
+        project.write_text(self.PBXPROJ.replace("com.facebook.WebDriverAgentRunner;", "app.mobster.wda.runner;"))
+        manager._rebrand("ABCDE12345")                   # a clone from before the suffix
+        self.assertIn(f"= {mine};", project.read_text())
+
+    def test_the_plain_id_runner_is_uninstalled_once_after_a_build_with_the_suffix(self):
+        import subprocess
+        manager = dm.DeviceManager(tempfile.mkdtemp())
+        udid = "00008130-001A2B3C4D5E6F70"
+        calls, lines = [], []
+        log = SimpleNamespace(write=lines.append)
+
+        def run(command, **kwargs):
+            calls.append(command)
+            return subprocess.CompletedProcess(command, 0, "App uninstalled.", "")
+        with patch.object(dm, "tool", lambda name: f"/usr/bin/{name}"), patch.object(dm.subprocess, "run", run), \
+                patch.object(manager, "xcode_env", return_value=None):
+            manager._remove_legacy_runner(None, udid, log)            # no team: the plain id is the runner itself
+            self.assertEqual(calls, [])
+            manager._remove_legacy_runner("ABCDE12345", udid, log)
+            manager._remove_legacy_runner("ABCDE12345", udid, log)    # once per phone
+        self.assertEqual(calls, [["/usr/bin/xcrun", "devicectl", "device", "uninstall", "app", "--device", udid,
+                                  "app.mobster.wda.runner.xctrunner"]])
+        self.assertIn("Removed the old runner (app.mobster.wda.runner.xctrunner)", lines[0])
+
+        def fails(command, **kwargs):
+            return subprocess.CompletedProcess(command, 1, "", "ERROR: The device is locked.")
+        other = dm.DeviceManager(tempfile.mkdtemp())
+        with patch.object(dm, "tool", lambda name: f"/usr/bin/{name}"), patch.object(dm.subprocess, "run", fails), \
+                patch.object(other, "xcode_env", return_value=None):
+            other._remove_legacy_runner("ABCDE12345", udid, log)
+        self.assertIn("Could not remove the old runner", lines[-1])
+        self.assertNotIn(udid, other.settings().get("legacy_removed", []))   # tried again after the next build
+
+    def test_only_expiring_profiles_for_the_runner_are_dropped_before_a_renewal(self):
+        import plistlib
+        from datetime import datetime, timezone
+        from mobile_agent import signing
+        folder = Path(tempfile.mkdtemp())
+        profiles = {"runner": ("ABCDE12345.app.mobster.wda.runner.abcde12345.xctrunner", 1),
+                    "fresh": ("ABCDE12345.app.mobster.wda.runner.abcde12345.xctrunner", 200),
+                    "wildcard": ("ABCDE12345.*", 1), "other_app": ("ABCDE12345.com.example.app", 1),
+                    "other_team": ("ZYXWV98765.app.mobster.wda.runner.zyxwv98765.xctrunner", 1)}
+        now = 1_800_000_000
+        for name, (identifier, hours) in profiles.items():
+            (folder / f"{name}.mobileprovision").write_bytes(b"signed")
+        def read(command, timeout=10, text=True, input=None):
+            identifier, hours = profiles[Path(command[-1]).stem]
+            return plistlib.dumps({"Entitlements": {"application-identifier": identifier},
+                                   "ExpirationDate": datetime.fromtimestamp(now + hours * 3600, timezone.utc).replace(tzinfo=None)}).decode()
+        with patch.object(signing, "_read", side_effect=read):
+            stale = signing.stale_runner_profiles("ABCDE12345", now + 48 * 3600, [folder])
+        self.assertEqual([path.stem for path in stale], ["runner"])
+        self.assertEqual(signing.stale_runner_profiles("bad", now, [folder]), [])
+
+    def test_a_build_inside_the_renewal_window_drops_the_old_profile_first(self):
+        manager = dm.DeviceManager(tempfile.mkdtemp())
+        stale = Path(tempfile.mkdtemp()) / "old.mobileprovision"
+        stale.write_bytes(b"x")
+        log = io.StringIO()
+        with patch.object(manager, "signature_expiry", return_value=time.time() + 3600), \
+                patch.object(dm.signing, "stale_runner_profiles", return_value=[stale]) as find:
+            manager._drop_stale_profiles("ABCDE12345", log)
+        self.assertFalse(stale.exists())
+        self.assertEqual(find.call_args[0][0], "ABCDE12345")
+        with patch.object(manager, "signature_expiry", return_value=time.time() + 5 * 86_400), \
+                patch.object(dm.signing, "stale_runner_profiles") as find:
+            manager._drop_stale_profiles("ABCDE12345", log)
+        find.assert_not_called()
+
+
+class UsbCountTests(unittest.TestCase):
+    def test_iphones_on_the_bus_are_counted_but_virtual_ones_are_not(self):
+        tree = [{"_name": "USB 3.1 Bus", "_items": [
+                    {"_name": "iPhone", "USBDeviceKeyVendorID": "0x05ac", "USBKeyHardwareType": "Removable"},
+                    {"_name": "Keyboard", "USBDeviceKeyVendorID": "0x05ac"}]},
+                {"_name": "Simulated Bus", "USBKeyHardwareType": "Simulated", "_items": [
+                    {"_name": "iPhone Research Environment Virtual Machine", "USBDeviceKeyVendorID": "0x05ac"},
+                    {"_name": "iPhone", "USBDeviceKeyVendorID": "0x05ac"}]}]
+        self.assertEqual(dm.count_iphones(tree), 1)
+        self.assertEqual(dm.count_iphones([]), 0)
+        self.assertEqual(dm.count_iphones("junk"), 0)
+
+    def test_the_count_is_read_from_system_information_and_cached(self):
+        manager = dm.DeviceManager(tempfile.mkdtemp())
+        output = '{"SPUSBHostDataType": [{"_name": "Bus", "_items": [{"_name": "iPhone", "USBDeviceKeyVendorID": "0x05ac"}]}]}'
+        with patch.object(dm, "run", return_value=output) as run:
+            self.assertEqual(manager.usb_iphones(), 1)
+            self.assertEqual(manager.usb_iphones(), 1)
+        run.assert_called_once()
+        manager.refresh()
+        with patch.object(dm, "run", return_value=None):
+            self.assertIsNone(manager.usb_iphones())
 
 
 class ExpiryTests(unittest.TestCase):

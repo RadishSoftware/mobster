@@ -1,0 +1,22 @@
+name: Feature request
+description: Something Mobster CLI should do.
+labels: [enhancement, needs-triage]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What you are trying to do
+      description: The task or workflow, and where Mobster gets in the way today.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you would like
+      description: A command, a key, a setting or a behavior. Show how you would use it.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What you do now instead

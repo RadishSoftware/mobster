@@ -1,0 +1,157 @@
+---
+title: "Start tasks from Siri, Shortcuts, Raycast or Alfred"
+sidebarTitle: "Siri, Raycast and Alfred"
+description: "Say a task to Siri on your Mac or iPhone, or type it into Raycast or Alfred, and Mobster on your Mac runs it."
+icon: "zap"
+keywords: ["siri", "hey siri", "shortcuts", "raycast", "alfred", "launcher", "run script over ssh", "ssh", "hotkey"]
+---
+
+Say "Hey Siri, Ask Mobster" on your Mac or iPhone, or type a task into Raycast or Alfred, and the task runs in Mobster on your Mac. Each launcher calls a small script that runs `mobster chat --new --json` with your words, so the task, its approvals and its answer show in Mobster like any task you type there ([`mobster chat`](/conversations#mobster-chat)).
+
+## Before you begin
+
+- Mobster for Mac is open with your iPhone set up, or `mobster serve` is running. With neither, a launcher says `Mobster isn't running on your Mac. Open it and try again.` and starts nothing.
+- The `mobster` command is installed ([Quickstart: Mobster CLI](/quickstart/cli)). Mobster for Mac doesn't install it.
+- The scripts are in `~/Library/Scripts/Mobster`:
+
+```sh
+base=https://raw.githubusercontent.com/RadishSoftware/mobster/main/examples/launchers
+dir=~/Library/Scripts/Mobster
+for file in mobster-task.sh ssh-task.sh raycast/ask-mobster.sh; do
+  curl -fsSL --create-dirs -o "$dir/$file" "$base/$file" && chmod +x "$dir/$file"
+done
+```
+
+Keep them there rather than in Desktop, Documents or Downloads: macOS doesn't let SSH sessions read those folders, and the iPhone flow runs over SSH. Read them before you run them: they're short, and their comments say what each part does ([examples/launchers](https://github.com/RadishSoftware/mobster/tree/main/examples/launchers)).
+
+Try it from Terminal:
+
+```sh
+~/Library/Scripts/Mobster/mobster-task.sh "What's my battery level?"
+```
+
+It prints one line, which the launchers show or Siri reads out:
+
+| Line | What happened |
+|---|---|
+| The answer, or `Done.` | The task finished within 25 seconds |
+| `Started. Watch it in Mobster on your Mac.` | It's still working after 25 seconds, and it goes on |
+| `Mobster is waiting for your approval on your Mac.` | It wants to send, buy, post or delete something. Choose in Mobster |
+| `Mobster has a question for you on your Mac: …` | Your request can be read two ways. Answer in Mobster |
+| `Mobster couldn't finish: …` | The task ended without finishing, and the line says why |
+| `Mobster couldn't start the task: …` | Mobster refused the task, and the line says why |
+| `Mobster isn't running on your Mac. Open it and try again.` | Neither Mobster for Mac nor `mobster serve` answered |
+| `The mobster command isn't installed. …` | The script found no `mobster` command. Install it, or set `MOBSTER_BIN` |
+
+The script always exits 0, because launchers show any other exit code as their own failure. It refuses empty text and text over 4,000 characters. Your words reach `mobster` as one argument and are never run as a command. Each launch starts a new conversation, so a follow-up goes in Mobster.
+
+| Variable | What it does |
+|---|---|
+| `MOBSTER_WAIT` | Seconds to wait for the answer, 0 to 3600. Default 25. With 0 the script returns as soon as the task starts |
+| `MOBSTER_BIN` | The `mobster` command. Default: `PATH`, then `~/.local/bin`, `/opt/homebrew/bin`, `/usr/local/bin` and `~/.mobster/current` |
+| `MOBSTER_URL` | Mobster's address on this Mac. Default `http://127.0.0.1:8765` |
+
+With `mobster serve` instead of the Mac app, approvals and questions wait for you in `mobster chat` on a terminal.
+
+## Siri and Shortcuts on your Mac
+
+1. Open Shortcuts. In **Shortcuts › Settings › Advanced**, turn on **Allow Running Scripts**.
+2. Make a new shortcut named **Ask Mobster**.
+3. Add **Ask for Input**. Set it to **Text**, with the prompt `What should Mobster do?`.
+4. Add **Run Shell Script**. Set **Shell** to `zsh`, **Input** to **Provided Input**, **Pass Input** to **as arguments**, and the script to:
+
+   ```sh
+   "$HOME/Library/Scripts/Mobster/mobster-task.sh" "$1"
+   ```
+
+5. Add **Show Result**, with **Shell Script Result**.
+6. Say "Hey Siri, Ask Mobster", then the task. You can also pin the shortcut in the menu bar, or give it a key in the shortcut's details (**Add Keyboard Shortcut**).
+
+To wait longer for answers, start the script line with `MOBSTER_WAIT=60 `.
+
+## Siri and Shortcuts on your iPhone
+
+The iPhone's shortcut sends your words to the Mac over SSH, with a key that can only start Mobster tasks. Your Mac has to be awake and on the same network as the phone.
+
+<Steps>
+  <Step title="Turn on Remote Login on the Mac">
+    In **System Settings › General › Sharing**, turn on **Remote Login** and click its info button. Set **Allow access for** to **Only these users**, with only your account in the list. Leave **Allow full disk access for remote users** off.
+
+    The same pane shows the `ssh` command that logs in to this Mac. It holds your account name and your Mac's address, which ends in `.local`, such as `your-mac.local`. The shortcut needs both.
+  </Step>
+  <Step title="Make the shortcut on the iPhone">
+    1. In **Settings › Apps › Shortcuts › Advanced**, turn on **Allow Running Scripts**.
+    2. In Shortcuts, make a new shortcut named **Ask Mobster**.
+    3. Add **Ask for Input**, set to **Text**, with the prompt `What should Mobster do?`.
+    4. Add **Run Script Over SSH**. Set **Script** to **Provided Input**, **Host** to your Mac's address (`your-mac.local`), **Port** to `22`, **User** to your Mac account name, and **Authentication** to **SSH Key**.
+    5. Tap **SSH Key**, then **Share Public Key**, and send it to your Mac with AirDrop or Notes.
+    6. Add **Show Result**, with **Shell Script Result**.
+  </Step>
+  <Step title="Give the key one job on the Mac">
+    Paste the phone's public key in place of `ssh-ed25519 AAAA…` and run:
+
+    ```sh
+    key='ssh-ed25519 AAAA…'
+    mkdir -p ~/.ssh && chmod 700 ~/.ssh
+    printf 'restrict,command="%s" %s mobster-shortcut\n' "$HOME/Library/Scripts/Mobster/ssh-task.sh" "$key" >> ~/.ssh/authorized_keys
+    chmod 600 ~/.ssh/authorized_keys
+    ```
+
+    That adds one line to `~/.ssh/authorized_keys`:
+
+    ```text
+    restrict,command="/Users/you/Library/Scripts/Mobster/ssh-task.sh" ssh-ed25519 AAAA… mobster-shortcut
+    ```
+  </Step>
+  <Step title="Ask">
+    Say "Hey Siri, Ask Mobster", then the task. `ssh-task.sh` answers `Started. Watch it in Mobster on your Mac.` as soon as the task starts, without waiting for the answer: the iPhone is usually the phone the task drives, and a shortcut still on screen would get in its way. The answer and any approval are in Mobster on your Mac.
+  </Step>
+</Steps>
+
+### What the key can do
+
+- **It can only start a Mobster task.** `command=` makes the Mac's SSH server run `ssh-task.sh` whatever the phone asks to run. `restrict` turns off the terminal, port, agent and X11 forwarding, and `~/.ssh/rc`. The key gets no shell, can't copy files and can't open tunnels.
+- **The text is words, not a command.** `ssh-task.sh` refuses text with line breaks or other control characters, text that starts with `-` or `/`, shell syntax (`` ` `` `$(` `${` `;` `|` `&&` `<` `>`), requests from scp, sftp, rsync and git, and anything over 4,000 characters. Everything else goes to `mobster chat` as one argument.
+- **Approvals stay on the Mac.** A task from the phone follows the same rules as one you type in Mobster: it stops and waits for you before it sends, buys, posts or deletes.
+- **Anyone who can use your iPhone can start tasks** with this shortcut. They can't approve them.
+- **Remote Login is SSH for your whole account**, not only for this key. Your Mac's password works over it too, from your network. Allow only your account, use a strong password, and turn Remote Login off when you stop using this.
+
+Tested on 8 Oct 2026 with the line above and macOS's own `sshd` on localhost (OpenSSH 10.2, macOS 26.5): plain text reached `mobster chat` as one argument, and shell syntax, line breaks, a login with no command, a terminal, port forwarding, sftp and scp were refused. That test didn't include an iPhone.
+
+### Turn it off
+
+1. Remove the key. The phone's key then opens nothing on your Mac:
+
+   ```sh
+   sed -i '' '/ mobster-shortcut$/d' ~/.ssh/authorized_keys
+   ```
+
+2. Turn off **Remote Login** in **System Settings › General › Sharing**, unless something else uses it.
+3. Delete the **Ask Mobster** shortcut on the iPhone.
+
+## Raycast
+
+1. In Raycast's **Settings › Extensions**, click **+**, choose **Add Script Directory**, and pick `~/Library/Scripts/Mobster/raycast`. The `Library` folder is hidden in the file dialog: press ⌘⇧G and paste the path.
+2. Open Raycast, type `Ask Mobster`, press Tab, type the task and press Enter. Raycast shows the line at the bottom of its window.
+
+To start it from a key, give **Ask Mobster** a hotkey or an alias in Raycast's settings.
+
+## Alfred
+
+Alfred's workflows need the Powerpack.
+
+1. In **Alfred Preferences › Workflows**, click **+**, choose **Blank Workflow** and name it Mobster.
+2. Right-click the canvas and add **Inputs › Keyword**. Set the keyword to `mob`, choose **Argument Required**, and set the title to `Ask Mobster`.
+3. Add **Actions › Run Script**. Set **Language** to `/bin/bash`, choose **with input as argv**, and set the script to:
+
+   ```sh
+   "$HOME/Library/Scripts/Mobster/mobster-task.sh" "$1"
+   ```
+
+4. Add **Outputs › Post Notification**, with the text `{query}`.
+5. Connect **Keyword** to **Run Script**, and **Run Script** to **Post Notification**.
+6. In Alfred, type `mob What's my next calendar event?` and press Enter.
+
+Use **with input as argv**, not `{query}` inside the script. Alfred pastes `{query}` into the script's text, so your words would depend on its escaping options.
+
+Nothing you say or type here approves a send, a purchase, a post or a delete: you approve those in Mobster.

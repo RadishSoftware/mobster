@@ -231,6 +231,12 @@ class Hedger:
                 done.wait(timeout=left)
 
 
+# Smart on Claude (frontier.AnthropicChat): a decision call carries a 6-15k token prompt and a screenshot, and
+# answers in seconds, not Jev's fraction of one. The floor keeps twins for real outliers; until a purpose has
+# MIN_SAMPLES latencies, the default waits longer still.
+FRONTIER_FLOOR, FRONTIER_DEFAULT = 4.0, 8.0
+
 # Process-wide, one per provider: windows and budgets are never shared across providers.
 HEDGERS = {"typesafe": Hedger(floor=JEV_FLOOR, default=JEV_DEFAULT),
-           "helper": Hedger(any_floor=HELPER_FLOOR, any_default=HELPER_DEFAULT)}
+           "helper": Hedger(any_floor=HELPER_FLOOR, any_default=HELPER_DEFAULT),
+           "anthropic": Hedger(any_floor=FRONTIER_FLOOR, any_default=FRONTIER_DEFAULT)}

@@ -18,7 +18,7 @@ quoted below are internal and not part of this repository; the numbers are
 copied here with their conditions.
 
 All commands assume the repository root and `PY=mobile_agent/.venv/bin/python`.
-Setup of the phone and simulators is in [running.md](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/docs/running.md).
+Setup of the phone and simulators is in [running.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/running.md).
 
 ## MobsterBench-iOS
 
@@ -56,7 +56,7 @@ The safety classes are 41 `read_only`, 19 `read_only_history` and 8
 `reversible_reset`. No task sends, buys, posts, deletes, likes or calls anything,
 and `bench/tests/test_suite.py` checks every goal for this. Which benchmark each
 category mirrors, and the full grading design, are in
-[`bench/README.md`](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/bench/README.md).
+[`bench/README.md`](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/bench/README.md).
 
 ### Ground truth and fixtures
 
@@ -108,7 +108,7 @@ the same WDA gesture primitives as Mobster's own driver. The baselines use
 Vertex AI, so they need `GOOGLE_CLOUD_PROJECT`, optionally
 `GOOGLE_CLOUD_LOCATION`, and a `gcloud` login. The Mobster agents need
 `TYPESAFE_API_KEY` and the helper variables (see
-[running.md](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/docs/running.md#configuration)).
+[running.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/running.md#configuration)).
 
 ### Commands
 
@@ -292,10 +292,18 @@ pending system alert over WDA (`clear_alerts`, via `/alert/text` and
 `/alert/accept`) and presses Home over WDA. Nothing in `iosworld.py` opens a
 window.
 
-For a pool, clone the bootstrapped simulator with iOSWorld's
-`scripts/create_sim_pool.py --source-udid <UDID> --workers N`, and start one WDA
-runner per clone on its own WDA and MJPEG ports. Starting those runners is not
-automated in this repository.
+For a pool, create each simulator fresh (`xcrun simctl create`, same device type
+and runtime) and run the bootstrap on each one (`--device "<its name>"`). Do not
+use `simctl clone` or iOSWorld's `scripts/create_sim_pool.py`: a clone copies the
+source's LaunchServices store (`data/var/db/lsd/*.csstore`), which keeps the
+source's absolute container paths. Every clone then runs the apps out of the
+source simulator's data containers, and one worker's between-task reset wipes the
+data another worker is using mid-task (found 26 Sep 2026: three clones on the
+first simulator's containers, so every earlier pooled run is suspect). `run` and
+`pool` refuse such a simulator before any task (`check_isolation`: every app's
+data container must lie under that simulator's own device folder). Then start one
+WDA runner per simulator on its own WDA and MJPEG ports. Starting those runners
+is not automated in this repository.
 
 iOSWorld's apps read `OPENAI_API_KEY` for their in-app replies (its runner writes
 it into the apps' UserDefaults). Its judge reads it from the environment, so put
@@ -317,6 +325,10 @@ $PY -m mobile_agent.bench.iosworld pool --repo <iOSWorld> \
 # iOSWorld's own judge, then the summary
 $PY -m mobile_agent.bench.iosworld judge --repo <iOSWorld> --run research/iosworld-runs/NAME --env-file <agent env file>
 $PY -m mobile_agent.bench.iosworld report --run research/iosworld-runs/NAME
+
+# Offline, $0: a paired A/B, and the pooled full-mix estimate over any runs
+$PY -m mobile_agent.bench.iosworld compare --a research/iosworld-runs/OLD-* --b research/iosworld-runs/NEW-*
+$PY -m mobile_agent.bench.iosworld estimate 'research/iosworld-runs/*' --model gpt-5.6-sol
 ```
 
 - Each task writes `NNN-<task>/trajectory.json`, `task.json` and `screens/`. The
@@ -324,16 +336,131 @@ $PY -m mobile_agent.bench.iosworld report --run research/iosworld-runs/NAME
 - `run` skips a task whose `task.json` exists, unless you pass `--force`, so a
   stopped run can be restarted with the same command.
 - `task.json` records the agent status, answer, agent seconds, screenshot
-  seconds, reset seconds, cost, model calls, policy, model, and the last 160
+  seconds, reset seconds, cost, model calls, policy, model, and the last 400
   trace events.
 - `judge` runs iOSWorld's `scripts/judge_trajectories.py --run-dir` in iOSWorld's
-  own `.venv` if one exists. The judge's evaluation lands in each `task.json`,
-  which is what `report` reads.
-- `report` prints the judged success rate, the mean rubric score, successes by
+  own `.venv` if one exists (`--force` passes the judge's `--re-judge`). The
+  judge's evaluation lands in each `task.json`, which is what `report` reads.
+  After the judge's own summary, it prints the official passes and any runs where
+  the judge's `success` flag disagrees.
+- `report` prints the official passes (see below), the mean rubric score, the
+  judge's `success` flag where it disagrees with the official rule, passes by
   category and difficulty, agent seconds (p50 and mean), and dollars per task.
 
+### Scoring, paired A/Bs and pooled estimates
+
+`bench/iosworld_stats.py` does all of this offline from the run folders. It calls
+no model and no simulator.
+
+**The official pass rule.** iOSWorld's `judge_trajectories.py` (`_aggregate`)
+counts a task as passed only when every rubric criterion is satisfied. It falls
+back to the judge's `success` flag only when an evaluation has no rubric results.
+The flag is the judge's overall opinion, and it is not the rule. Until 26 Sep
+2026, `report` counted the flag. On A/B round 2 (ab6-a2, ab6-b2) the two
+disagreed on 4 of 32 runs, in both directions. `report`, `judge`, `compare`,
+`estimate` and `bench/diagnose.py` now all count passes by the official rule,
+and show the flag separately wherever it disagrees. A test checks the rule
+against iOSWorld's own `_aggregate` when an iOSWorld checkout is present
+(`IOSWORLD_REPO`, or `../iOSWorld`).
+
+**`compare`** takes two sets of run folders (globs allowed) and pairs them by
+task. It prints:
+
+- per task and arm: official passes, mean rubric score, calls, and the mechanism
+  counts;
+- per arm: official passes, the judge flag, the mean rubric score with its
+  standard error (clustered by task), and how many tasks got the same verdict on
+  every run of the same build;
+- the paired B - A difference in pass rate and in rubric score, averaged over
+  tasks, each with its standard error and a 95% bootstrap CI (tasks resampled,
+  10,000 draws, seed 20260926);
+- tasks that worker logs show were never run (`NOT RUN`, a failed reset) and
+  workers that died with a traceback.
+
+`--json` prints everything. `--model` keeps one model's runs only.
+
+The mechanism counts are the primary A/B metrics of the 26 Sep research. Pass rate
+is a regression guard. Counts marked ~ in the output are approximations:
+
+| count | source | exact? |
+|---|---|---|
+| refusals of required commits | `frontier_refused` events from the commit guard, where the task asks for the act | ~ lenient: a noun ("my recent order") counts as asking, so this is an upper bound |
+| all guard refusals | the same events, whether or not the act was asked for | exact |
+| unrequested commits (must be 0) | executed TAP or LONG_PRESS on a commit-class control (`COMMIT_CONTROL`) the task does not ask for | ~ lower bound, for the same reason; Return-key commits (SUBMIT) are not seen |
+| DONE-deferral turns | `frontier_chunk_stop` with reason `verify_before_done` | exact |
+| false completion claims | runs that ended DONE ("completed") yet failed the official rule | ~ upper bound: it also counts judge misses and wrong answers, which only a person reading the frames can tell apart |
+| runs ended by a WDA crash | status `error` with a transport failure (connection refused or reset) as the reason | exact |
+| calls per task | `model_calls` in `task.json`, else the lines of `prompts.jsonl` | exact |
+| revisit turns | turns back on a screen seen earlier in the run, other than the turn just before | ~ a screen is the role and label of its first 40 elements, so values are ignored |
+| same-screen turns | turns on the same screen as the turn before | ~ as above; the research's `revisit.py` counted these and revisits together |
+
+"The task asks for the act" means the goal or the rubric criteria use the
+control's act or a listed synonym (`commit_requested`). A bare "Confirm" counts
+as asked for when the request asks for any other commit. `--commit-labels FILE`
+(JSON `{task: {control label: true|false}}`) overrides this with hand labels.
+The event counts come from the last 400 events that `task.json` keeps. `compare`
+warns about any run that reached that cap.
+
+**Reproduced: A/B round 1 and 2 (main against sol-fixes, 16 tasks, 2 runs each,
+`gpt-5.6-sol`).**
+
+```sh
+$PY -m mobile_agent.bench.iosworld compare --a-name main --b-name fixes \
+    --a research/iosworld-runs/ab6-a1 research/iosworld-runs/ab6-a2 \
+    --b research/iosworld-runs/ab6-b1 research/iosworld-runs/ab6-b2
+```
+
+| 32 runs each | main (a) | sol-fixes (b) |
+|---|---|---|
+| official passes | **19/32** | **19/32** |
+| judge `success` flag (the old count) | 20/32 | 16/32 |
+| mean rubric score (SE by task) | 0.863 (0.044) | 0.853 (0.042) |
+| same verdict on both runs of a task | 11/16 | 11/16 |
+| refusals of required commits ~ | 27 | 36 |
+| all guard refusals | 28 | 37 |
+| unrequested commits ~ | 0 | 0 |
+| DONE-deferral turns | 60 | 35 |
+| false completion claims (upper bound) ~ | 8 | 9 |
+| runs ended by a WDA crash | 1 | 1 |
+| calls per task | 27.1 | 26.0 |
+| revisit turns ~ | 124 | 95 |
+
+Paired over the 16 tasks, b - a:
+
+- Pass rate: +0.0 points, SE 9.1, 95% bootstrap CI -18.8 to +18.8.
+- Rubric score: -0.011, SE 0.021, 95% bootstrap CI -0.050 to +0.028.
+
+So the builds tie under the official rule, not 20 against 16. The same build got
+the same verdict on only 22 of 32 (task, build) pairs across the two rounds. A
+16-task, 2-run paired A/B has a pass-rate SE of about 9 points, which catches a
+regression but cannot show a 5-point gain. The paired rubric difference is about
+four times less noisy (SE 0.02). Of the 65 guard refusals, 63 were required
+("Post comment" 52 times in multi-083, the checkout confirm toggle 11 times in
+multi-088). The other two, "Reset" and "Delete", were correctly refused.
+
+**`estimate`** pools any set of runs into one official pass rate, reweighted to
+iOSWorld's category mix: 27 single-app, 60 multi-app and 46 memory tasks of 133
+(or the mix in `--repo`'s `tasks.json`). Within a category it averages each
+task's pass rate (`task` weighting, which is right when tasks have different
+numbers of runs), or pools runs (`run` weighting, as the 26 Sep report did). It
+prints both by default. The 95% CI is a stratified cluster bootstrap: tasks are
+resampled within each category, and a drawn task brings all of its runs. It is
+wider than a binomial interval over runs, because runs of the same task are not
+independent.
+
+All 88 `gpt-5.6-sol` runs so far (sol-a, sol-b, ab6-a1, ab6-a2, ab6-b1, ab6-b2;
+28 tasks, 52 official passes):
+
+| weighting | single | multi | memory | full-mix estimate | 95% CI |
+|---|---|---|---|---|---|
+| run (the report's 58%) | 13/20, 65.0% | 17/36, 47.2% | 22/32, 68.8% | 58.3% | 44.0-72.5% |
+| task | 71.4% | 43.2% | 67.5% | 57.3% | 43.0-71.7% |
+
+The SE is 7.3 points. That is wider than the report's "about 10 points" margin,
+which treated the 88 runs as independent.
+
 The two policies are `--policy mobster` (the default) and `--policy frontier`.
-Their options and costs are in [running.md](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/docs/running.md#frontier-step-policy).
+Their options and costs are in [running.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/running.md#frontier-step-policy).
 
 ### Iterating on failures without reruns
 
@@ -377,13 +504,14 @@ time on separate simulator pairs:
 | 24 runs each | before (c578d91) | after (checklist, macros, caching, speed paths) |
 |---|---|---|
 | mean rubric | 0.765 | 0.764 |
-| passed | 10 | 6 |
+| passed (official rule) | 11 | 6 |
+| judge `success` flag | 10 | 6 |
 | $ per task | 0.218 | 0.183 |
 | model calls | 689 | 640 |
 | seconds per call | 4.15 | 5.60 |
 
 Mean rubric held (0.765 vs 0.764) and cost fell 16%, but fully passed tasks fell
-from 10 to 6 of 24; per-call time rose (READ_LIST's swipes, and longer replies). The A/B also found regressions that were fixed before merging (a visibility
+from 11 to 6 of 24 (10 to 6 by the judge's flag, which this table first quoted); per-call time rose (READ_LIST's swipes, and longer replies). The A/B also found regressions that were fixed before merging (a visibility
 probe on every read, silent picker values, appended answer lines) and a guard bug in
 both builds (paying a second request was refused as a repeat: multi-086 0.18 -> 0.64-0.73).
 
@@ -398,7 +526,9 @@ gpt-5.5 runs had the flat $0.25 per-task cap of the time (their tasks stop at ab
 $0.25 with status `budget`); the harness now uses `task_cost_cap`, $0.10 plus $0.08
 per app, at most $0.60. The two earlier frontier smokes had no cap. Code changed
 between runs. No iOSWorld report is published: these figures are computed from the
-`task.json` files of the local run folders.
+`task.json` files of the local run folders. "Success" is the same under the
+official every-criterion rule: the judge's flag and the rule agree on all of
+these runs.
 
 | run (2026-09-24) | policy / model | success | Wilson 95% CI | mean rubric score | agent s p50 | $ / task |
 | --- | --- | ---: | --- | ---: | ---: | ---: |
@@ -429,6 +559,38 @@ What these runs show:
 - **The same model varies from run to run.** `gpt-5.6-terra` passed 2, 2 and 4 of
   the same 11 tasks, while the code changed between runs. With n = 11 the
   intervals overlap almost completely: no ranking between models is supported.
+
+#### Smart on Claude: paired A/B (28 Sep)
+
+The frozen Smart loop (`--policy frontier`, reasoning `low`, one code version) on 16 never-run tasks
+(seed 20260928, stratified 3 single-app, 7 multi-app, 6 memory), four isolated simulators, pairs
+swapped between runs, official every-criterion rule, 95% intervals by task-cluster bootstrap.
+`gpt-5.6-sol` ran each task once plus a second run on 5 tasks (a pre-registered order, cut by the
+evaluation's OpenAI budget); `claude-sonnet-5-5` twice; `claude-opus-5-5` once.
+
+| | gpt-5.6-sol | claude-sonnet-5-5 | claude-opus-5-5 |
+| --- | ---: | ---: | ---: |
+| official passes | 10/21 | 16/32 | 9/16 |
+| pass rate, task mean (95% CI) | 50% (28–72) | 50% (28–72) | 56% (31–81) |
+| mean rubric score (95% CI) | 0.851 (0.77–0.93) | 0.836 (0.75–0.92) | 0.857 (0.77–0.94) |
+| $ / task at list price | 0.291 | 0.197 | 0.297 |
+| agent s / task, p50 / p90 | 154 / 304 | 137 / 244 | 144 / 271 |
+| model s / call, p50 / p90 | 2.25 / 3.51 | 2.42 / 3.71 | 3.76 / 5.95 |
+| calls / task | 27.5 | 22.1 | 16.5 |
+| runs stopped by the cost cap | 9 of 21 | 5 of 32 | 4 of 16 |
+| runs that said DONE and failed (upper bound) | 0.10 / run | 0.28 / run | 0.19 / run |
+
+Paired over the 16 tasks: Sonnet 5.5 against sol, pass rate +0.0 points (95% CI −25 to +25), rubric
+−0.015 (−0.108 to +0.086), cost 0.68x (−$0.094 a task, −0.143 to −0.044). Opus 5.5 against Sonnet
+5.5: pass rate +6.2 points (−15.6 to +28.1), rubric +0.020 (−0.049 to +0.087), cost 1.51x. No
+quality difference is shown. sol is counted at $4/$20, its current promotional rate (OpenAI's pricing
+page, 28 Sep; the $2/$10 once read for it is gpt-6-sol's). The dollar cap stopped sol most often: it
+now scales with a model's input price (#52), so a rerun gives sol about twice these runs' budget.
+
+GPT-6, on the ab6 sample's 16 tasks (two runs each, 26 Sep): gpt-6-sol 16/32 official (rubric 0.873,
+$0.141 a task), gpt-6-astra 20/32 (0.897, $0.605), against gpt-5.6-sol's 19/32 (0.863, $0.268) from
+25 Sep. Every gap is inside the noise (about ±12 points), and the sol runs predate the simulator
+isolation fix, so neither GPT-6 model replaces gpt-5.6-sol.
 
 ### Comparing with published iOSWorld results
 

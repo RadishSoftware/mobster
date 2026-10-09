@@ -3,7 +3,7 @@
 This page covers how to start the agent, how it is configured, how to attach a
 USB iPhone or a pool of simulators, and how to use the frontier step policy. Every
 command and variable name below is taken from the code. The benchmarks are
-described in [benchmarks.md](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/docs/benchmarks.md).
+described in [benchmarks.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/benchmarks.md).
 
 Commands assume the repository root as the working directory and the project
 virtualenv. It needs Python 3.12 or later; the `python3` that ships with macOS is
@@ -34,8 +34,11 @@ the package version, which `/api/status` also reports as `version`.
 
 | command | what it does |
 | --- | --- |
+| (none), `tui` | The terminal UI (`tui/`): a Textual app over `server.Runtime` in process, with its own journal (`terminal.sqlite3`). `--demo` swaps in the scripted phone of `tui/demo_phone.py`. |
+| `doctor` | Checks the setup and prints fixes (`doctor.py`). |
+| `history`, `screen`, `version` | Past terminal UI tasks (`history.py`), the phone's screen in the terminal (`terminal_image.py`), the version. |
 | `serve` | The local dashboard API. Binds `127.0.0.1` only, port `--port` (default 8765). |
-| `run GOAL` | Previews one decision, or with `--execute` runs a bounded task. Prints events as JSON lines. |
+| `run GOAL` | Previews one decision, or with `--execute` runs a bounded task. Prints a line per step on a terminal (`console.py`), and events as JSON lines when piped or with `--json`. |
 | `demo` | Offline synthetic replay (`demo.py`). No phone and no model API. Not a benchmark. |
 | `decide-fixture` | One real Jev decision on a synthetic screen (`--goal`, default "Open Search"). Needs `TYPESAFE_API_KEY`. |
 | `build-ocr` | Compile the optional Apple Vision OCR helper. Output goes to `mobile_agent/.build/` in a source checkout, else to `~/Library/Application Support/app.mobster.desktop/build/` (`paths.build_dir`). |
@@ -44,8 +47,8 @@ Other entry points:
 
 | module | purpose |
 | --- | --- |
-| `python -m mobile_agent.bench` | MobsterBench-iOS (see [benchmarks.md](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/docs/benchmarks.md)). |
-| `python -m mobile_agent.bench.iosworld` | The iOSWorld harness (see [benchmarks.md](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/docs/benchmarks.md)). |
+| `python -m mobile_agent.bench` | MobsterBench-iOS (see [benchmarks.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/benchmarks.md)). |
+| `python -m mobile_agent.bench.iosworld` | The iOSWorld harness (see [benchmarks.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/benchmarks.md)). |
 | `python -m mobile_agent.evals.harness` | The older on-device task suite with independent oracles (`evals/tasks.py`). |
 | `python -m mobile_agent.eval_gemini` | A small paid helper-model comparison on synthetic fixtures; no phone actions. |
 
@@ -113,8 +116,10 @@ Without `--execute` this prints one decision and takes no action. Add:
 - `--max-steps` (default 30), `--max-seconds` (default 120), `--spend-cap-usd`,
   `--expected-text`.
 
-The exit code is 0 for `preview`, `expected_text_visible` and
-`completed_unverified`, and 1 otherwise.
+`--wda-url` defaults to `MOBSTER_WDA_URL`, else `http://127.0.0.1:8100`. The exit
+code is 0 for `preview`, `expected_text_visible` and `completed_unverified`, 3 when no
+WDA answers, and 1 otherwise. The full flag list is in
+[docs/cli.md](https://github.com/RadishSoftware/mobster/blob/main/docs/cli.md).
 
 ## Configuration
 
@@ -123,7 +128,10 @@ The exit code is 0 for `preview`, `expected_text_visible` and
 `config.load_env_file` reads `KEY=VALUE` lines. Blank lines and `#` comments are
 skipped, an `export ` prefix and surrounding quotes are removed, and variables
 already set in the environment win. A missing file loads nothing (the Setup flow
-creates it on first save). It returns only the names it loaded, never values.
+creates it on first save). A line it can't parse (not `KEY=VALUE`, an invalid name,
+bytes that are not UTF-8) is skipped, never fatal. It returns the names it loaded and
+one warning per skipped line, by line number; neither holds a value. `mobster` prints
+the warnings to stderr, which is `logs/agent.log` in the Mac app.
 
 The dashboard's Setup and Settings pages write the file (mode 0600). Keep keys out
 of committed files, shell history and screenshots. The API never returns a key,
@@ -133,7 +141,7 @@ only a four-character hint (`keys.hint`).
 
 | variable | used by | meaning |
 | --- | --- | --- |
-| `TYPESAFE_API_KEY` | `models.Jev` | Jev decision model key. Required for any live run. |
+| `TYPESAFE_API_KEY` | `models.Jev` | Jev decision model key. Required for the Fast engine. |
 | `TYPESAFE_MODEL` | `models.Jev` | Jev model id. Default `jev-latest`. |
 | `TEXT_MODEL_PROVIDER` | `gemini.configured`, `models` | `vertex` selects Gemini on Vertex AI; otherwise an OpenAI-compatible endpoint. |
 | `TEXT_MODEL` | helper | Helper model id. The measured default is `gemini-3.5-flash-lite` (see `gemini-eval.md`). |
@@ -141,7 +149,9 @@ only a four-character hint (`keys.hint`).
 | `TEXT_MODEL_REASONING_EFFORT` | helper | `none`, `low`, `medium` or `high`. |
 | `MOBSTER_HELPER_PROVIDER` | `keys.py` | The provider preset the Settings page saved. |
 | `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION` | Vertex clients | Your project id and location (default `global`). Tokens come from `gcloud auth print-access-token`, so an existing `gcloud` login is required. |
-| `OPENAI_API_KEY` | `frontier.OpenAIChat`, iOSWorld | The frontier policy's OpenAI models, iOSWorld's apps and iOSWorld's judge. |
+| `OPENAI_API_KEY` | `engines.smart_key`, `frontier.OpenAIChat`, iOSWorld | The Smart engine (with an OpenAI helper, saved by Settings or set by its base URL, `TEXT_MODEL_API_KEY` serves when this is unset; `keys.openai_key` is the one rule), the frontier policy's OpenAI models, iOSWorld's apps and iOSWorld's judge. |
+| `ANTHROPIC_API_KEY` | `engines.smart_key`, `frontier.AnthropicChat` | Smart on Claude: with this key and no OpenAI key, Smart runs on `claude-sonnet-5-5` (an Anthropic helper's `TEXT_MODEL_API_KEY` serves when this is unset; `keys.anthropic_key`). Also the frontier policy's `claude-*` models. |
+| `MOBSTER_SMART_MODEL` | `engines.smart_model` | The model Smart runs on, any OpenAI or Claude id (`claude-sonnet-5-5`, `claude-opus-5-5`, `gpt-5.6-sol`...); its provider's key must be set. Unset: `gpt-5.6-sol` with an OpenAI key, else `claude-sonnet-5-5` with an Anthropic key. Only the model changes: reasoning, limits and switches stay `SMART_CONFIG`'s. |
 
 Without a helper, Jev can navigate but stops when a step needs generated text.
 
@@ -150,8 +160,11 @@ Without a helper, Jev can navigate but stops when a step needs generated text.
 | variable | default | effect |
 | --- | --- | --- |
 | `MOBSTER_ENABLE_LIVE` | unset | `1`/`0` saved by Setup; overrides `--enable-live`. |
-| `MOBSTER_ASK_BEFORE_ACTING` | `1` | Pause for approval before actions Mobster recognizes as sending, buying, posting, deleting or submitting (a heuristic; see `task_policy.needs_approval`). |
-| `MOBSTER_BYPASS_CHECKS` | `0` | `1`: act on a commit the model is fairly sure of and on an unclear action check; MISMATCH and duplicate guards still stop it. |
+| `MOBSTER_ASK_BEFORE_ACTING` | `1` | Pause for approval before actions Mobster recognizes as sending, buying, posting, deleting or submitting (a heuristic; see `task_policy.approval_kind`). |
+| `MOBSTER_BYPASS_CHECKS` | `0` | `1` (Settings › Advanced › Keep going when a check is unsure): act on a commit the model is fairly sure of and on an unclear action check; MISMATCH and duplicate guards still stop it. |
+| `MOBSTER_DEFAULT_ENGINE` | see below | `smart` or `fast`, saved by Settings › Advanced › Runs on. Unset: `smart`, or `fast` for a user with a Jev key and no OpenAI key. |
+| `MOBSTER_TASK_COST_LIMIT` | `1.00` | Settings › Usage: USD a task stops at (status `spend_cap`), or `off`. The lower of this and `--spend-cap-usd` applies. |
+| `MOBSTER_MONTHLY_LIMIT` | unset | Settings › Usage: USD; new tasks are refused (`monthly_limit_reached`) once this calendar month's spend reaches it. |
 | `MOBSTER_VIDEO_FPS`, `MOBSTER_VIDEO_DETAIL` | server `DEFAULT_QUALITY` | Live view quality saved by Settings. |
 | `MOBSTER_WDA_DEVICES` | unset | Several USB phones; not yet read by `serve` (see [Several phones](#several-usb-phones)). |
 | `MOBSTER_VISION_T0` | bundled or built helper | Path override for the local Apple Vision helper used by `vision_judge`. |
@@ -187,13 +200,13 @@ The supported device path is a physical iPhone over USB, driven through
 WebDriverAgent. There are two ways to set it up.
 
 **Managed (recommended).** Start `serve --manage-device` and follow the
-dashboard's Setup flow ([setup-api.md](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/docs/setup-api.md)). It finds Xcode and
+dashboard's Setup flow ([setup-api.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/setup-api.md)). It finds Xcode and
 libimobiledevice, the connected and trusted iPhone, and your Apple development
 teams from the login keychain. It then builds WDA for that phone into the data
 folder, and supervises the runner and the USB relay: port 8100 for the WDA API
 and 9100 for its MJPEG video. They resume on the next launch.
 
-**Manual.** [usb-wda.md](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/docs/usb-wda.md) has the exact recipe: rebrand WDA's bundle
+**Manual.** [usb-wda.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/usb-wda.md) has the exact recipe: rebrand WDA's bundle
 ids for your team, `build-for-testing`, then run `test-without-building` and
 `iproxy`. `scripts/usb-wda.sh` keeps both alive and restarts either one if it
 exits:
@@ -223,7 +236,8 @@ Rules that hold on either path:
 
 `MOBSTER_WDA_DEVICES` lists phones as `;`-separated entries of `key=value` pairs.
 The keys are `id`, `udid`, `wda`, `mjpeg`, `label` and `truth`, and `wda` is
-required. `mjpeg` defaults to the WDA port plus 1000 (`pool.default_mjpeg_url`).
+required. `mjpeg` defaults to the WDA port plus 1000 (`pool.default_mjpeg_url`). A WDA port below
+8100, or one whose pair would pass 65535, has no default stream: that phone settles by time.
 
 ```sh
 MOBSTER_WDA_DEVICES='id=a,wda=http://127.0.0.1:8100,truth=iphone15pro;id=b,wda=http://127.0.0.1:8101'
@@ -254,7 +268,7 @@ folder. Creating the simulators (iOSWorld's `scripts/create_sim_pool.py` clones 
 bootstrapped one) and starting a WDA runner on each is outside this repository.
 The harness only connects to the ports you give it. Screenshots for the judge go
 through `simctl io`, never WDA, and nothing opens a Simulator window. The full
-procedure is in [benchmarks.md](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/docs/benchmarks.md#iosworld).
+procedure is in [benchmarks.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/benchmarks.md#iosworld).
 
 ## Frontier step policy
 
@@ -305,29 +319,63 @@ the current list to its end and hands every row to the next turn, and
 `SCROLL_TO text` scrolls until an item containing the text is on screen.
 `MOBSTER_FRONTIER_MACROS=off` (or `FrontierAgent(macros=False)`) removes both. On
 12 unseen iOSWorld tasks (25 Sep) READ_LIST raised the research tasks' rubric and
-cost about 18 s a use; see [benchmarks.md](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/docs/benchmarks.md#iterating-on-failures-without-reruns).
+cost about 18 s a use; see [benchmarks.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/benchmarks.md#iterating-on-failures-without-reruns).
 
 ### Where it runs
 
-Today the frontier policy is wired only into the iOSWorld harness:
+The frontier policy runs in the Mac app and `mobster serve` as the **Smart** engine
+(`POST /api/runs` with `"engine": "smart"`, the default), and in the iOSWorld harness:
 
 ```sh
-$PY -m mobile_agent.bench.iosworld run ... --policy frontier --model gpt-5.6-terra --reasoning low
-# --model defaults to gpt-5.6-luna; terra is the costlier model used in most smokes
+$PY -m mobile_agent.bench.iosworld run ... --policy frontier   # the Smart config: gpt-5.6-sol, reasoning low
 ```
+
+Both build the agent from one frozen config, `engines.SMART_CONFIG` (model, reasoning,
+step and time limits, and the switches below at their measured values), and
+`tests/test_engines.py` proves the two paths build the same agent. The only deliberate
+difference is the spend cap: the app stops at the user's per-task limit, the harness at
+`task_cost_cap`. The app pins the switches; the harness only fills in unset ones, so an
+ablation (`MOBSTER_EXACT_TEXT=off ...`) still works there. The engine's API, events and
+costs are in [engine-contract.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/engine-contract.md).
 
 - `--policy`: `mobster` (default: Jev with FrameClock, plus the helper and
   VisionJudge when a helper is configured, composed like the benchmark's
   `mobster-next`) or `frontier`.
 - `--model`: any model id. `frontier.chat_client` sends `gemini-*` to Vertex AI
-  (`GeminiChat`; needs `GOOGLE_CLOUD_PROJECT` and a `gcloud` login) and everything
-  else to the OpenAI Responses API (`OpenAIChat`; needs `OPENAI_API_KEY`). The
+  (`GeminiChat`; needs `GOOGLE_CLOUD_PROJECT` and a `gcloud` login), `claude-*` to the
+  Claude API (`AnthropicChat`; needs `ANTHROPIC_API_KEY`), and everything else to the
+  OpenAI Responses API (`OpenAIChat`; needs `OPENAI_API_KEY`). The
   prompt's first part (SYSTEM, the schema, the request and the apps) ends in an
   explicit cache breakpoint on GPT-5.6 models, so it is billed at the cached rate
   after a task's first call; the answer is one forced function call.
-  The default is `DEFAULT_FRONTIER_MODEL = "gpt-5.6-luna"`.
-- `--reasoning`: default `low`. OpenAI models get it as `reasoning.effort`, and
-  Gemini maps `minimal`, `low`, `medium` and `high` to a thinking level.
+  The default is `DEFAULT_FRONTIER_MODEL`, `engines.SMART_CONFIG.model` (`gpt-5.6-sol`).
+- `--reasoning`: default `low` (`engines.SMART_CONFIG.reasoning`). OpenAI models get it as `reasoning.effort`, and
+  Gemini maps `minimal`, `low`, `medium` and `high` to a thinking level. Claude gets adaptive
+  thinking at that effort (`output_config.effort`); `none` (the task contract and structuring
+  calls) is `thinking: between_tools` on Sonnet 5.5, `disabled` on models that take it, and
+  effort `low` on Opus 5.5 and Fable, whose thinking is always on (`frontier.anthropic_thinking`).
+
+**Claude (`AnthropicChat`).** The Messages API, over a kept-alive connection:
+
+- The answer is Claude's structured output (`output_config.format`, JSON Schema), not a forced
+  tool call: Sonnet 5.5 and Opus 5.5 refuse `tool_choice` any/tool. `frontier.anthropic_schema`
+  closes every object and leaves out what the grammar can't take (`maxItems`, `pattern`,
+  length and number limits); the loop checks those in code.
+- Two cache breakpoints (5-minute entries): the SYSTEM prompt, shared by every task, and the
+  request with its apps, shared by every turn. The first call of a task reads SYSTEM from the
+  cache when another task ran within five minutes.
+- The screenshot goes as a base64 image. OpenAI's `detail: low` has no counterpart: Claude
+  sees the whole 640-pixel shot, about 1,150 visual tokens.
+- Calls are hedged (`hedge.HEDGERS["anthropic"]`, `MOBSTER_HEDGE=0` turns it off): a call still
+  running past the rolling p90 of its purpose (at least 4 s, 8 s until 20 calls are known) gets an
+  identical twin on a fresh connection within a 10% budget, and one that failed in transit (429,
+  5xx, a dropped connection) is sent once more at once. Inside an attempt a 529 (overloaded) and
+  a 429 with `retry-after` are waited out, up to 5 times; a 429 without `retry-after` is a spend
+  cap and fails. A losing twin still bills: its tokens are added to the client's usage (and
+  counted in `usage["hedges"]`), so the spend cap and the task's cost include it, and in the app
+  `engines.meter` records it as a call of its own (purpose `hedge`) in the usage ledger.
+- A refusal (`stop_reason: refusal`), a reply cut at `max_tokens` (16,000) or a reply that is
+  not JSON ends the turn with an error, as a failed call does.
 - In the harness each task runs with at most 50 model calls (`MAX_STEPS`, iOSWorld's
   own limit), 900 s, and a spend cap that grows with the apps the task spans:
   $0.10 plus $0.08 per app, at most $0.60 (`task_cost_cap`, `MAX_TASK_COST_USD`).
@@ -342,7 +390,9 @@ waiting cannot fix an empty account.
 
 `frontier.PRICES` holds list prices in USD per million tokens. The GPT-5.6 rates
 were read from OpenAI's pricing page and model pages on 2026-09-25 (gpt-5.5 on
-2026-09-24), and the Gemini rates are `bench/vertex.py`'s, read on 2026-09-23.
+2026-09-24), the Gemini rates are `bench/vertex.py`'s, read on 2026-09-23, and the
+Claude rates are platform.claude.com's pricing page, read on 2026-09-28 (cache write is
+the 5-minute rate; Opus 5.5's cache hits are 0.05x input, Fable 5.1's 0.025x).
 They are reporting estimates, not invoices.
 
 | model | input | output | cached input | cache write |
@@ -352,6 +402,11 @@ They are reporting estimates, not invoices.
 | `gpt-5.6-terra` | 2.00 | 12.00 | 0.20 | 2.50 |
 | `gpt-5.6-luna` | 0.20 | 1.20 | 0.02 | 0.25 |
 | `gpt-5-mini` | 0.25 | 2.00 | 0.025 | = input |
+| `claude-sonnet-5-5`, `claude-sonnet-5` | 2.00 | 10.00 | 0.20 | 2.50 |
+| `claude-opus-5-5` | 4.00 | 20.00 | 0.20 | 5.00 |
+| `claude-opus-5` | 5.00 | 25.00 | 0.50 | 6.25 |
+| `claude-fable-5-1` | 10.00 | 50.00 | 0.25 | 12.50 |
+| `claude-haiku-4-5` | 1.00 | 5.00 | 0.10 | 1.25 |
 | `gemini-3.8/3.7/3.6-flash` | 1.50 | 7.50 | = input | = input |
 | `gemini-3.5-flash` | 1.50 | 9.00 | = input | = input |
 | `gemini-3.1-pro-preview` | 2.00 | 12.00 | = input | = input |
@@ -378,7 +433,7 @@ each). These come from the local, uncommitted run folders:
 
 Before the cap existed, 50-step loops cost about $0.80 each on `gpt-5.5` (the
 comment on `MAX_TASK_COST_USD`). The success rates behind these costs are in
-[benchmarks.md](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/docs/benchmarks.md#measured-results-iosworld).
+[benchmarks.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/benchmarks.md#measured-results-iosworld).
 
 On MobsterBench-iOS the Jev pipeline costs $0.0057 per task at 7.7 s p50
 (2026-09-24, pass 6). The frontier policy has not been run on MobsterBench.

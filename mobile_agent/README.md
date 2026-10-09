@@ -12,7 +12,7 @@ mobile_agent/.venv/bin/python -m unittest discover -s mobile_agent -t .
 mobile_agent/.venv/bin/python -m mobile_agent demo      # offline fixture replay: no phone, no keys
 ```
 
-`make test-backend` runs the same suite (the CI gate). Backend tests live in `mobile_agent/tests/`; design notes live in `mobile_agent/docs/`. `python -m mobile_agent --version` prints the version, which `/api/status` also reports.
+`mobile_agent/.venv/bin/python -m mobile_agent` with no command opens the terminal UI (`--demo` for the scripted phone). `make test-backend` runs the same suite (the CI gate). Backend tests live in `mobile_agent/tests/`; design notes live in `mobile_agent/docs/`. `python -m mobile_agent --version` prints the version, which `/api/status` also reports.
 
 Start the local API:
 
@@ -24,7 +24,7 @@ API tasks are live-only; an unavailable iPhone never falls back to a synthetic r
 
 ## iPhone setup
 
-With `--manage-device` the agent owns the USB iPhone, and the setup API drives it ([setup API](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/docs/setup-api.md)): it finds Xcode and libimobiledevice, the connected and trusted iPhone, and your Apple development teams (from the login keychain); builds WebDriverAgent for that phone into the data folder; and supervises the runner and the USB relay (8100 API, 9100 video), resuming them on the next launch. The Mobster desktop app is one UI for that flow. Without a UI, follow the manual recipe in [usb-wda.md](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/docs/usb-wda.md) (`scripts/usb-wda.sh` keeps WDA serving).
+With `--manage-device` the agent owns the USB iPhone, and the setup API drives it ([setup API](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/setup-api.md)): it finds Xcode and libimobiledevice, the connected and trusted iPhone, and your Apple development teams (from the login keychain); builds WebDriverAgent for that phone into the data folder; and supervises the runner and the USB relay (8100 API, 9100 video), resuming them on the next launch. The Mobster desktop app is one UI for that flow. Without a UI, follow the manual recipe in [usb-wda.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/usb-wda.md) (`scripts/usb-wda.sh` keeps WDA serving).
 
 Keys live in a private env file (`--env-file`, 0600; the setup API writes `TYPESAFE_API_KEY` there). Never put keys in frontend code, command history, screenshots, or committed files. The API never returns model credentials, only a key's last four characters. The Gemini helper uses an existing `gcloud` login with `TEXT_MODEL_PROVIDER=vertex`, an explicit `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION=global`, and `TEXT_MODEL`. Without a helper, Jev can navigate but stops when text generation is required.
 
@@ -38,9 +38,9 @@ Add `--execute` only when you want actions, and `--helper` for the text model. `
 
 ## Repeated actions (compiled loops)
 
-Requests that repeat an action over a feed ("favourite every photo with a dog", "like every post from @sam", "like anyone who doesn't have blue eyes") are compiled into a small, statically checked loop program (`loops.py`): one helper call writes it, Jev pins its controls from the accessibility tree, and an executor runs it with no model call per item except the item's judgment (the VisionJudge for image content, Jev for text). Every item passes identity and screen guards before and after acting, and is recorded in a per-request ledger before any tap, so no item is acted on twice, including after a crash. The first three items are cross-checked against the step agent. Loops never judge people by race, religion, health, disability or sexual orientation.
+Requests that repeat an action over a feed ("favourite every photo with a dog", "like every post from @sam", "delete every screenshot older than a month") are compiled into a small, statically checked loop program (`loops.py`): one helper call writes it, Jev pins its controls from the accessibility tree, and an executor runs it with no model call per item except the item's judgment (the VisionJudge for image content, Jev for text). Every item passes identity and screen guards before and after acting, and is recorded in a per-request ledger before any tap, so no item is acted on twice, including after a crash. The first three items are cross-checked against the step agent. Two kinds of loop are never run, and each ends before any tap with a plain sentence. A loop in a dating app: Mobster doesn't automate dating apps (`loops.DATING_APPS` lists them by bundle id; a repeated-action request that names one is refused too, and a single action there, such as replying to one message, is not a loop and is unaffected). And a loop whose per-item question is about a person: their race, religion, health, disability or sexual orientation, or their looks or body (eyes, hair, height, weight, age, skin, attractiveness).
 
-When the actions cannot be undone (a swipe deck, likes, follows) and the request does not say what to do with an item Mobster cannot judge or when to stop, the run asks once before starting: the approval states the actions and their bounds (for example "will like up to 20 matching items") and offers "ask me", "pass on it" or "stop" for unsure items. `POST /api/runs/{id}/approval` accepts an optional `choice` with such questions. `POST /api/runs` accepts `dryRun: true`, which judges and logs every item without tapping (scrolling stays allowed); a request that is not a loop only previews its first decision.
+When the actions cannot be undone (a photo-review deck, likes, follows) and the request does not say what to do with an item Mobster cannot judge or when to stop, the run asks once before starting: the approval states the actions and their bounds (for example "will like up to 20 matching items") and offers "ask me", "pass on it" or "stop" for unsure items. `POST /api/runs/{id}/approval` accepts an optional `choice` with such questions. `POST /api/runs` accepts `dryRun: true`, which judges and logs every item without tapping (scrolling stays allowed); a request that is not a loop only previews its first decision.
 
 ## Results and optional schemas
 
@@ -54,7 +54,7 @@ The supported Draft 2020-12 subset includes typed objects, arrays, scalar values
 
 Gemini uses native Vertex `generateContent`, JSON-object responses, minimal thinking, local schema validation, and no automatic retries. A helper's explicit `{data: null, citations: []}` response is an abstention (`insufficient_evidence`), not successful schema validation. Malformed or ungrounded responses remain extraction failures. `python -m mobile_agent.eval_gemini --project YOUR_PROJECT --repeats 2` runs a small paid comparison with synthetic text, append-only typing, planning, extraction, missing-data, and instruction-injection fixtures; it takes no phone actions. Other JSON-object chat providers remain opt-in via `TEXT_MODEL_API_KEY`, `TEXT_MODEL_BASE_URL`, and `TEXT_MODEL`.
 
-The local corrected evaluation selected `gemini-3.5-flash-lite`: 16/16 fixtures passed, with 592 ms successful median and 747 ms p95. It was faster than the other model that passed every fixture; this is not a universal ranking. See [evaluation details](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/docs/gemini-eval.md). Set `TEXT_MODEL` to choose it.
+The local corrected evaluation selected `gemini-3.5-flash-lite`: 16/16 fixtures passed, with 592 ms successful median and 747 ms p95. It was faster than the other model that passed every fixture; this is not a universal ranking. See [evaluation details](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/gemini-eval.md). Set `TEXT_MODEL` to choose it.
 
 ## Crash and failure behavior
 
@@ -79,6 +79,26 @@ Observed inference spend is folded into a per-run ledger from model telemetry. `
 ## Live video
 
 The agent relays WebDriverAgent's MJPEG stream (device port 9100, forwarded over USB) at `GET /api/device/stream`: one upstream connection whatever the number of viewers, newest-frame delivery so a slow viewer skips frames, and nothing running while nobody watches. When the video port is unreachable it falls back to screenshots. `GET /api/device/video/status` reports the source and frame rate.
+
+## Several devices
+
+A runtime drives every device in its fleet (`fleet.py`; ports, states and naming in `devices.py`): the primary phone (the one `--wda-url` or `--manage-device` names, served by the runtime's own `video`, `control` and `wda_session()`), each other USB iPhone set up here (its own pinned `DeviceManager`, relay on 8100+N, build folder and Setup), Mobster's simulators, and `MOBSTER_WDA_DEVICES` addresses. One task per device, tasks on different devices at once; each live task holds its device's `Lease.device(wda_url)`.
+
+| request | answer |
+| --- | --- |
+| `GET /api/devices` | `{"devices": [Device], "defaultDevice": id or null}` |
+| `GET /api/devices/{id}` | `{"device": Device}`; `{id}` is an id, UDID or URL-encoded name; 404 `device_not_found`, 400 `device_ambiguous` |
+| `DELETE /api/devices/{id}` | forgets an extra USB iPhone (stops its runner, frees its ports): `{"forgotten": id}`; 409 `device_refused` for the primary or a busy device |
+| `GET /api/devices/{id}/stream`, `/frame`, `/video/status`, `/info` | that device's live view and identity, as `/api/device/*` for the primary |
+| `POST /api/devices/{id}/control` | a gesture on that device, as `/api/device/control`; 409 `device_busy` only while a task runs on that device |
+| `GET /api/devices/{id}/setup` | that device's Setup checklist (as `/api/setup`), or `{"kind": "simulator", "complete", "device", "runner": {"state", "error"}}` |
+| `POST /api/devices/{id}/setup/build` `{"team"}` | builds the runner for that iPhone; the first iPhone set up becomes the primary, any other gets the next port pair |
+| `POST /api/devices/{id}/setup/start`, `/stop`, `/refresh` | starts or stops its runner (a simulator: boots it and starts WebDriverAgent, or shuts it down) |
+| `POST /api/runs` `{..., "device"}` | runs there; without it, on the default device. 409 `run_active` (with `activeRunId`) while that device has a task; 503 `device_unavailable` (with `device`) when it isn't ready |
+| `GET /api/runs?device={id}` | that device's history; runs saved before devices belong to the primary |
+| `GET /api/apps?device={id}` | the apps a task on that device can start in |
+
+`Device` is `{id, kind ("usb" | "simulator" | "wda"), name, udid, model, modelName, ios, state ("ready" | "busy" | "connected" | "needs_setup" | "disconnected"), reason, primary, setUp, default, activeRunId, approval, lastUsedAt}`. A run carries `device` and `deviceName`; a saved task carries `device` (null: `serve --device`, else the only device, else the primary; never the one used last). A workflow whose device is gone skips as `skipped_offline`.
 
 ## Deployment boundary
 

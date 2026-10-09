@@ -1,0 +1,19 @@
+---
+title: "Requirements"
+description: "What you need to run Mobster for Mac and Mobster CLI."
+icon: "clipboard-list"
+keywords: ["system requirements", "macOS version", "Xcode version", "Apple silicon", "what do I need"]
+---
+
+import Requirements from '/snippets/requirements.mdx';
+
+<Requirements />
+
+## Why each one
+
+- **Xcode and Developer Mode.** Mobster drives the iPhone through WebDriverAgent, a test runner built on Apple's XCTest framework. iOS runs it only with Developer Mode on and an Apple signature, which Xcode makes with your Apple Account. Mobster for Mac builds and signs it for you; [Device setup](/device-setup) does it by hand.
+- **A cable.** WebDriverAgent listens on the phone's own loopback, and Mobster reaches it over USB. [Wi-Fi](/wifi) is a preview that's off unless you turn it on.
+- **An AI account.** Mobster's agent runs on your own Claude or OpenAI key, billed by them. Nothing goes through a Mobster account. [Models and keys](/models-and-keys) says which key does what.
+- **The first build.** The first install of Mobster's helper on an iPhone can take 10 minutes or more, and Xcode itself is a large download.
+
+Mobster drives iPhones and iOS simulators. It doesn't drive Android devices or hosted phones.

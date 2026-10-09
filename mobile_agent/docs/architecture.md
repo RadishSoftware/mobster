@@ -58,15 +58,18 @@ There are three ways to start a run. All of them end in `agent.Agent.run` or
   python3 -m mobile_agent serve --manage-device --env-file mobile_agent/.env
   ```
 
+- **Terminal UI** (`tui/`). `mobster` with no command runs `server.Runtime` in process
+  (`tui/session.py`) and draws its runs with Textual (`tui/app.py`). It adds nothing to a
+  run: tasks, events, approvals, Stop and settings are the Runtime's own.
 - **API** (`server.py`). `Runtime.create` admits a task. It validates the request, resolves the
   `Idempotency-Key` against the journal, takes a device lease or a `pool.DevicePool` slot, and
   writes the run to the journal. `Runtime.work` then builds the models, the driver and the
-  VisionJudge, checks the phone (`prepare_wda_phone`), launches the app and calls
-  `Agent.run(f"In {app}: {goal}", ...)`. The endpoints are in [setup-api.md](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/docs/setup-api.md) and
-  the [framework README](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/README.md).
+  VisionJudge (the models through `Runtime.open_models`, which a subclass may replace), checks the phone (`prepare_wda_phone`), launches the app and calls
+  `Agent.run(f"In {app}: {goal}", ...)`. The endpoints are in [setup-api.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/setup-api.md) and
+  the [framework README](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/README.md).
 - **Benchmarks.** `bench/` (MobsterBench-iOS) and `bench/iosworld.py` (the public iOSWorld
   suite) build the same agent in process. `iosworld.py --policy frontier` runs `FrontierAgent`
-  instead. See [bench/README.md](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/bench/README.md).
+  instead. See [bench/README.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/bench/README.md).
 
 `compose.py` is the composition root that `serve` and `run` share:
 
@@ -93,7 +96,7 @@ the `DRIVERS` registry:
 
 | driver | transport | status |
 | --- | --- | --- |
-| `WDA` | WebDriverAgent over USB (`iproxy`, API port 8100, MJPEG port 9100) | the supported path; setup is in [usb-wda.md](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/docs/usb-wda.md) |
+| `WDA` | WebDriverAgent over USB (`iproxy`, API port 8100, MJPEG port 9100) | the supported path; setup is in [usb-wda.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/usb-wda.md) |
 
 `extensions.py` is the one place optional code plugs in: an extension package may register
 further drivers (`drivers.register_driver`), snapshot sources with their traits
@@ -188,7 +191,7 @@ empty tree:
 ## Decision layers
 
 `Agent.run` applies the layers below in order. Each layer either finishes the request or hands
-it to the next. [compiled-intent.md](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/docs/compiled-intent.md) documents the compiled layers in
+it to the next. [compiled-intent.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/compiled-intent.md) documents the compiled layers in
 detail; this section places them in the loop.
 
 ### Before the step loop
@@ -338,7 +341,7 @@ explains the refusal.
 | Effect ledger | `effect_ledger.EffectLedger` | Intent is recorded before dispatch. A second dispatch of the same logical effect is refused while the earlier outcome is acknowledged, observed or unknown. Only a pre-dispatch refusal (`failed_pre_dispatch`) releases it. |
 | Action verifier | `Jev.verify_action` → `ActionSupport` | TAP, TYPE, TYPE_SUBMIT and SUBMIT are checked against the original request. MISMATCH re-decides with a hint. UNCLEAR ends the run (`needs_clarification`), with two narrow exceptions: a navigation-shaped tap (`is_navigation_shaped_tap`), and an act the request names (`requested_by`). Plain navigation taps and keypad keys skip the call. |
 | Requested-action grounding | `task_policy.requested_by` | An act ("Archive", "Send", "Pay") counts as requested only when the request's own words contain it, excluding its prohibition sentences (`asked_part`). Look-only requests never qualify. |
-| Ask before acting | `task_policy.needs_approval`, `Agent._ask_approval` | In the API server, risky TAP, SUBMIT and TYPE_SUBMIT pause for the user. This is on unless `MOBSTER_ASK_BEFORE_ACTING=0` (`Runtime.ask_before_acting`). Waiting time is added back to the deadline. A TAP/SUBMIT the side-effect floor gated to WAIT at navigation confidence or more (`Decision.approvable_target`, `APPROVAL_CONFIDENCE_FLOOR`) and an UNCLEAR action check are put to the user rather than dropped. |
+| Ask before acting | `task_policy.approval_kind`, `Agent._ask_approval` | In the API server, the Fast engine pauses a TAP, SUBMIT or TYPE_SUBMIT on a control whose label names a commit (Send, Buy, Post, Delete…, and for approvals also Request, Trash, Clear, Accept, Decline, Join, Leave, Block, Report, Unsubscribe, Get, Rent, Archive: `task_policy.APPROVAL_COMMIT`), and a submit in a task whose wording is a side effect, as a `commit` approval: the request names the act (`act`, `title`, with the recipient from the conversation header for a message), the exact text going out and the target's screen rectangle (`target`). A tap on text or a picture inside a control reads as that control (`task_policy.approval_subject`: WebKit gives a checkout button as a Button with a StaticText of its label inside). A tap on a row or on text reads its words only as `task_policy.commit_label` says: the commit word first and no comma, any length for money, messages, posts and deletions, at most two words for a call, reply, comment or follow ("Call the dentist" is a reminder). A tap on a field only focuses it and never asks. A step the action check could not establish asks as `unsure` (Continue or Stop). A high side-effect score alone no longer asks; such a tap still passes the action check. A TAP/SUBMIT the side-effect floor gated to WAIT at navigation confidence or more (`Decision.approvable_target`) goes on to the action check. An answer `redirected:<text>` declines the action and continues: the helper rewrites the request with the change (`Agent._revised_request`), the field holding the declined text is emptied (`Agent._clear_declined_text`), and the next commit asks again with the new text. A message the person approved that then shows as sent finishes a one-part task (`Agent._approved_message_sent`). Done needs proof (`fast_proof.screen_proof`): the last typed text reading back outside its field, or a named switch at the value asked for; nothing else. This is on unless `MOBSTER_ASK_BEFORE_ACTING=0` (`Runtime.ask_before_acting`). Waiting time is added back to the deadline. |
 | Bypass | `Agent(bypass=True)`, `Runtime.bypass_checks` | Opt-in (`MOBSTER_BYPASS_CHECKS=1`): that same gated commit is taken and an UNCLEAR check proceeds. MISMATCH, the duplicate and replay guards, and approvals still apply. |
 | Fresh screen | `Agent._refresh_unchanged`, `WDA._check_current` | The action and its guards share one observation. A changed screen discards the decision (`stale_decision`), unless the same element is still at the same frame. Reads older than `WDA_FRESH_SECONDS` are re-read before a coordinate tap. A still MJPEG stream (`_pixels_still_since`) can stand in for the re-read. |
 | Completion | `Agent._handle_done` | DONE for an action-only task needs `goal_probability ≥ COMPLETION_GOAL_FLOOR` (.5), unless the route's last named screen is showing. It is then re-checked on a fresh read, or skipped when the screen is provably unchanged (`Jev.stable_completion`). The status is `completed_unverified`. |
@@ -392,7 +395,7 @@ accepts it.
   `data_status`, `schema_validated`, `evidence` and `independently_verified: False`. A
   completed run whose answer was not extracted becomes `completion_not_confirmed`, and a
   missing helper yields `data: null` with `helper_unavailable`. The schema subset and output
-  formats are in the [framework README](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/README.md#results-and-optional-schemas).
+  formats are in the [framework README](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/README.md#results-and-optional-schemas).
 
 ## How a run flows end to end
 
@@ -483,7 +486,7 @@ Every number below is from a dated internal run report; none is a new measuremen
 - **MobsterBench-iOS, development result** (68 tasks, pre-registered; 2026-09-24, USB iPhone 15
   Pro over WDA, 1 repeat, `mobster-next`). This is the last of six development passes on the
   same tasks, with fixes made between passes, so it is **not a held-out score** (see
-  [benchmarks.md](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/docs/benchmarks.md#what-the-pass-runs-are)):
+  [benchmarks.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/benchmarks.md#what-the-pass-runs-are)):
   - 54/66 (82%) graded tasks passed, Wilson 95% CI 71–89%;
   - by category: navigation 10/10, scroll 7/7, web 9/10, retrieval 9/10, text entry 6/8,
     visual 6/8, settings state 5/7, **multi-app 2/6**;
@@ -495,7 +498,7 @@ Every number below is from a dated internal run report; none is a new measuremen
 - **Unfamiliar apps.** The `frontier.py` module docstring records that on the iOSWorld smoke
   (24 Sep, 11 tasks) the Jev step agent passed none, mostly by waiting. The published best is
   51.9%. That gap is why `FrontierAgent` exists. The frontier policy's 11-task smoke runs are
-  summarized in [benchmarks.md](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/docs/benchmarks.md#iosworld); there is no full-suite result yet.
+  summarized in [benchmarks.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/benchmarks.md#iosworld); there is no full-suite result yet.
   Raw runs stay local (they hold screenshots and screen text).
 - **Earlier suites.** The 22 Sep USB suites: Settings 35/35 (7 tasks, 5 repeats), and the
   14-task Settings and Safari suite 39/42 and 38/42 across two runs.
@@ -508,12 +511,12 @@ Every number below is from a dated internal run report; none is a new measuremen
 
 ## Related documents
 
-- [compiled-intent.md](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/docs/compiled-intent.md): routes, probes, direct opens, plans, counts,
+- [compiled-intent.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/compiled-intent.md): routes, probes, direct opens, plans, counts,
   surveys and visual answers in detail.
-- [adaptive-architecture.md](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/docs/adaptive-architecture.md): the research-backed adaptation plan
+- [adaptive-architecture.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/adaptive-architecture.md): the research-backed adaptation plan
   and the hybrid control plane.
-- [usb-wda.md](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/docs/usb-wda.md) and [setup-api.md](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/docs/setup-api.md): device setup and the local API.
-- [running.md](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/docs/running.md) and [benchmarks.md](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/docs/benchmarks.md): commands, configuration and
+- [usb-wda.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/usb-wda.md) and [setup-api.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/setup-api.md): device setup and the local API.
+- [running.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/running.md) and [benchmarks.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/benchmarks.md): commands, configuration and
   both benchmarks.
-- [../bench/README.md](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/bench/README.md): MobsterBench-iOS and its decision rule.
-- [README.md](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/docs/README.md): the index of all docs.
+- [../bench/README.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/bench/README.md): MobsterBench-iOS and its decision rule.
+- [README.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/README.md): the index of all docs.

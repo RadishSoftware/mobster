@@ -1,0 +1,99 @@
+---
+title: "Scripts and the API"
+description: "Run tasks from shell scripts with mobster run, or from your own code with the local HTTP API."
+icon: "code"
+---
+
+There are two ways to run Mobster from code. `mobster run` runs one task per invocation and suits shell scripts and CI. The HTTP API from `mobster serve` suits long-running programs: it keeps history, lets you answer approvals, and streams events. Both run the same agent.
+
+## `mobster run` in scripts
+
+`mobster run` never prompts. Without `--execute` it previews the first decision and sends nothing, which is a safe way to check a task before you let it act. It runs Quick mode, on `TYPESAFE_API_KEY`.
+
+<Warning>`mobster run --execute` never stops for an approval: it can send, buy, post or delete. Preview first, and keep `--execute` for tasks you trust.</Warning>
+
+```sh
+mobster run "Turn on Dark Mode"                      # preview: one decision, nothing sent
+mobster run "Turn on Dark Mode" --execute            # act
+```
+
+When stdout is a terminal it prints one line per step. When stdout is a pipe or a file, or with `--json`, it prints the agent's events as JSON lines. Scripts get the same output they always did.
+
+### JSON events
+
+Every line is one JSON object with an `event` field. The ones most scripts need:
+
+| event | when | useful fields |
+| --- | --- | --- |
+| `observation` | the screen was read | `step`, `bundle_id`, `elements` (id, label, role, rect, value) |
+| `decision` | the agent chose an action | `step`, `operation` (`TAP`, `TYPE`, `SWIPE_UP`, `DONE`…), `target`, `target_label`, `confidence`, `goal_probability`, `latency_ms` |
+| `action_check` | the action was checked against the request | `support`: `allowed`, `unclear` or `mismatch` |
+| `action_started`, `action_acknowledged` | the action was sent, and the phone accepted it | `operation`, `act_ms` |
+| `observation_after_action` | the screen after the action | `changed`, `settle_ms` |
+| `result` | the run ended (always last) | `status`, `reason`, `data`, `data_status`, `actions`, `elapsed_ms`, `citations` |
+
+Text that Mobster types is never included in events. An error before or around the run prints a `result` too: `{"event": "result", "status": "error", "ok": false, "error_type": "...", "error": "...", "exit_code": N}`. Stopped with `ctrl+c` or SIGTERM, the run ends at its next safe point with `status` `stopped`, and `mobster run` exits 130 (143 for SIGTERM). So the last line is always a `result`.
+
+The final status is in the `result` line:
+
+```sh
+mobster run "What's my battery level?" --execute --helper --json \
+  | jq -c 'select(.event == "result") | {status, data, reason}'
+```
+
+| `status` | meaning | exit code |
+| --- | --- | --- |
+| `completed_unverified` | The agent judged the goal met. Nothing checked it independently. | 0 |
+| `expected_text_visible` | the `--expected-text` appeared | 0 |
+| `preview` | a preview without `--execute` | 0 |
+| `completion_not_confirmed`, `inconsistent_completion` | it looked done but could not be confirmed; `data_status` says why an answer is missing | 1 |
+| `blocked`, `no_progress`, `needs_clarification`, `needs_text_helper` | it could not go on | 1 |
+| `max_steps`, `timeout`, `spend_cap` | it hit a limit | 1 |
+| `stopped`, `error` | stopped, or failed; the reason says whether an action may have run | 1 (130 with `ctrl+c`, 143 with SIGTERM; 3 when no phone answered) |
+
+Answers (`data`) quote text Mobster saw on the screen. When no such text exists, `data` is `null` and `data_status` is `insufficient_evidence`.
+
+## Alerts for scheduled tasks
+
+Set `MOBSTER_ALERT_WEBHOOK_URL` to an https webhook (in the Mac app's Settings or the env file) and Mobster posts there when a scheduled task fails, stops before it finishes, or waits a minute or more for your approval. Slack, Discord and ntfy addresses get their own format; any other address gets JSON:
+
+```json
+{"workflow": "Morning summary", "status": "max_steps", "reason": "It ran out of steps.", "runId": "3f2a9c1b7d4e", "at": "2026-10-05T07:01:12+00:00", "text": "Mobster: “Morning summary” didn't finish (max_steps). It ran out of steps. Open the Mobster app to see it."}
+```
+
+The post never holds the task's answer, a screenshot or anything it typed. Tasks you start yourself never alert. `mobster alerts test` sends a test post.
+
+## The phone outside tasks
+
+`mobster phone clipboard set TEXT` puts text on the phone's clipboard for a task to paste, `mobster phone clipboard get` prints the phone's clipboard, and `mobster phone install PATH` installs a signed build. Each takes the device's lock while it works and prints JSON with `--json` ([CLI reference](/cli#mobster-phone)). Saved-task recipes are in [examples/workflows](https://github.com/RadishSoftware/mobster/tree/main/examples/workflows).
+
+## The HTTP API
+
+`mobster serve` starts an HTTP server on `127.0.0.1:8765`. It is the same server the Mac app runs. Each launch makes a random API token and writes it to a private file, named in the first line the server prints. Send it as `Authorization: Bearer <token>` on every request.
+
+```sh
+mobster serve --wda-url http://127.0.0.1:8100 --enable-live --env-file "$MOBSTER_ENV_FILE" > /tmp/mobster-serve.log &
+TOKEN=$(cat "$(head -1 /tmp/mobster-serve.log | jq -r .tokenFile)")
+curl -s -H "Authorization: Bearer $TOKEN" http://127.0.0.1:8765/api/status | jq '{device_ready, live_enabled, limitations}'
+```
+
+| request | what it does |
+| --- | --- |
+| `GET /api/status` | version, whether the phone is ready, configured models, and what limits live tasks |
+| `GET /api/apps` | the apps a task can run in (the catalog plus the USB iPhone's installed apps) |
+| `POST /api/runs` | start a task: `{"appId": "settings", "goal": "Turn on Dark Mode"}`; optional `outputFormat`, `outputSchema`, `helperModel`, `allowedBundles`, `dryRun`; send an `Idempotency-Key` header to make retries safe |
+| `GET /api/runs`, `GET /api/runs/{id}` | the task list, and one task with its events and any pending `approval` |
+| `GET /api/runs/{id}/events` | the task's events as server-sent events, from the start; `Last-Event-ID` resumes |
+| `POST /api/runs/{id}/approval` | answer an approval: `{"id": "<approval id>", "approve": true}` |
+| `POST /api/runs/{id}/stop` | stop at the next safe point |
+| `GET`, `POST /api/settings` | `askBeforeActing` and `bypassChecks` |
+| `GET /api/devices`, `GET /api/devices/{id}` | every device with its state, the task running on it and its pending approval ([Several phones](/devices)) |
+| `POST /api/runs` with `device` | run on that device (its id, UDID or name); without it, on the default device. One task per device; tasks on different devices run at once |
+| `GET /api/runs?device={id}` | one device's history |
+| `GET /api/events?topics=runs` | events across tasks as server-sent events (`run_created`, `run_finished`), each with an id `<boot>-<seq>`; `Last-Event-ID` resumes, and after a restart the stream starts with `{"event": "reset"}`: fetch your lists again |
+
+[examples/api_client.py](https://github.com/RadishSoftware/mobster/blob/main/examples/api_client.py) starts a task, prints its steps as they stream, and asks you at the terminal when an approval arrives. The full API contract, including setup, live video, saved workflows and exports, is in [mobile_agent/README.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/README.md#results-and-optional-schemas) and [setup-api.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/setup-api.md).
+
+The server only listens on `127.0.0.1` and accepts requests only from local origins. It has one user, you, and no rate limits. Do not expose it on a network.
+
+When the Mac app runs the server, approving an action (`"approve": true`, or a `choice`), changing `askBeforeActing` or `bypassChecks`, putting a file on the phone and resetting the Wi-Fi link work only from the app: anything else that has the token gets `403` with the code `app_only`. Declining, stopping and reading stay open to the token. A server you start with `mobster serve` works as described above. A task's optional `X-Mobster-Origin` header (`app`, `tui`, `cli` or `mcp`) only labels where it came from.

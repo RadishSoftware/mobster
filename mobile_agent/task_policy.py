@@ -1,5 +1,6 @@
 """Typed user-policy questions; inferred output never grants action authority."""
 
+from dataclasses import replace
 from enum import StrEnum
 import re
 
@@ -168,13 +169,37 @@ def is_plain_navigation_tap(operation, role, label, *, risk_tier, confidence, si
 # Keys of an on-screen keypad (Calculator, a PIN or dial pad): each press is input, like a
 # typed character, not an effect to verify or de-duplicate ("5 × 5" presses 5 twice; the
 # duplicate-effect guard stopped text.calc_multiply). Commit keys ("Call") are not here.
-KEYPAD_KEY = re.compile(r"^(\d|[+\-×x*÷/=.%,]|plus|minus|add|subtract|multiply|times|divide|equals|decimal|"
+KEYPAD_KEY = re.compile(r"^(\d|[+\-×x*÷/=.%,]|plus|minus|add|subtract|multiply|times|divide|equals|decimal|point|"
                         r"percent|clear|all clear|delete|backspace|negate|change sign|"
                         r"zero|one|two|three|four|five|six|seven|eight|nine)$", re.I)
 
 
 def is_keypad_key(operation, role, label):
     return operation == "TAP" and role in ("Key", "Button") and bool(KEYPAD_KEY.match((label or "").strip()))
+
+
+# The lock screen's passcode keypad: SpringBoard's own digit keys ("1", "2, A B C" ...). The model never acts on
+# it: Mobster handles the lock screen itself (lockscreen.py), and every model tap there is refused (B2: a run
+# tapped around the passcode screen, and the lock screen's Now Playing card).
+SPRINGBOARD_BUNDLE = "com.apple.springboard"
+_DIGIT_KEY = re.compile(r"^\s*(\d)(?!\d)")
+_PASSCODE_MARKER = re.compile(r"\b(enter passcode|passcode|emergency|touch id|face id)\b", re.I)
+
+
+def springboard_keypad(snapshot):
+    """True when ``snapshot`` is SpringBoard showing a digit keypad: at least six distinct digit keys, with a
+    passcode marker ("Enter Passcode", "Emergency") or all ten digits. Errs toward True: it only refuses."""
+    if getattr(snapshot, "bundle_id", "") != SPRINGBOARD_BUNDLE:
+        return False
+    digits, marked = set(), False
+    for element in getattr(snapshot, "elements", ()) or ():
+        label = element.label or ""
+        found = _DIGIT_KEY.match(label)
+        if found and element.role in ("Button", "Key", "Other") and len(label) <= 12:
+            digits.add(found.group(1))
+        elif _PASSCODE_MARKER.search(label):
+            marked = True
+    return len(digits) >= 10 or len(digits) >= 6 and marked
 
 
 # Controls whose tap commits something the user would want to see first:
@@ -199,27 +224,210 @@ def is_navigation_shaped_tap(operation, role, label, *, confidence, side_effect_
             and not COMMIT_CONTROL.search(label or ""))
 
 
-# Jev's side-effect Score at/above which any commit-capable action asks first.
-APPROVAL_RISK_FLOOR = .7
 APPROVAL_OPERATIONS = frozenset({"TAP", "SUBMIT", "TYPE_SUBMIT"})
 
+# Controls that put something out in the world beyond COMMIT_CONTROL's words, for "ask before acting"
+# only (COMMIT_CONTROL also steers navigation and the action check, so it stays as it is): a ride
+# request, the trash, clearing a list, answering an invite, joining or leaving a group, blocking,
+# reporting, unsubscribing, an App Store Get, a rental, a mail archive. Each exclusion is a control
+# of the same word that only opens, reads or edits ("Request Desktop Website", "Clear text",
+# "Get Directions"). The PM probe of 26 Sep found every one of these went through unasked.
+APPROVAL_COMMIT = re.compile(
+    r"\b(?:request(?!\s+(?:desktop|mobile)\b)|(?:move\s+to\s+)?trash|"
+    r"clear(?!\s+(?:text|search|query|field|filters?|selection)\b)|accept|decline|join|leave|"
+    r"block|report|unsubscribe|unfollow|unmatch|archive|mark\s+as\s+(?:junk|spam)|rent|"
+    r"cancel\s+(?:ride|trip|order|subscription|booking|reservation|membership|plan|appointment|delivery)|"
+    r"end\s+(?:call|trip|ride)|hang\s+up)\b"
+    r"|^\s*get\b(?!\s+(?:started|directions|help|info|more|support|details|tickets|the\s+app)\b)",
+    re.I)
+# The approval card's act for each of those words ("request", "trash"...).
+APPROVAL_ACT_ALIASES = {"move to trash": "trash", "mark as junk": "junk", "mark as spam": "junk", "hang up": "end call"}
 
-def needs_approval(operation, label, *, risk_tier, side_effect_risk):
-    """Whether "ask before acting" pauses this action for the user.
 
-    Only actions that can commit: a tap, a submit, or typing followed by
-    Return. The control's own label naming a commit is enough; so is a submit
-    in a task whose wording is a side effect (a message, a post), or a high
-    Jev side-effect Score. Scrolling, navigation and typing without Return
-    never ask, since each is reversible.
+# Roles whose label is what they show, not what a tap on them does: a list row (the reminder "Call the dentist",
+# a message preview), text, a field, a picture. QA on f27d229: tapping the reminder "Call the dentist, Incomplete"
+# asked "Place this call?". Only a tap reads a label this way: Return in a field does what the field's label says
+# ("Reply to Sam" sends the reply), so a submit never passes the role.
+CONTENT_ROLES = frozenset({"Cell", "StaticText", "TextField", "TextView", "SecureTextField", "SearchField", "Image",
+                           "Icon"})
+# A tap on a field only focuses it, whatever its label ("Order more coffee filters", "Comment").
+EDITABLE_ROLES = frozenset({"TextField", "TextView", "SecureTextField", "SearchField"})
+# The state iOS appends to a reminder's row ("Buy oat milk, Incomplete"): that label is always content.
+ROW_STATE = re.compile(r",\s*(?:Incomplete|Completed)$", re.I)
+# Acts that name a person or a chore in a row's words as often as they name a control ("Call the dentist",
+# "Follow up with Dana", "Reply to Sam's note"): in content they count only in a label of at most CONTROL_WORDS
+# words ("Call", "Call Sam", "Reply All"). Every other act counts in content at any length: money, messages,
+# posts and deletions ("Place your order", "Confirm and pay", "Send My Current Location", "Transfer to Checking",
+# "Block this Caller", "Erase All Content and Settings"). Review 2 of #41 found those four money and message rows
+# going through unasked when only deletions counted at any length.
+TALK_ACTS = frozenset({"call", "dial", "facetime", "reply", "comment", "follow"})
+CONTROL_WORDS = 2
+# The checkout button's own words, which COMMIT_CONTROL's "place order" does not read.
+PLACE_ORDER = re.compile(r"^place\s+(?:(?:your|the|this|my)\s+)?order\b", re.I)
+
+
+def commit_label(label, role=None):
+    """The commit a control's own label names, as it reads in the label, or None.
+
+    A control (a Button, a Link, any role but CONTENT_ROLES; None counts as one) names it anywhere in its label
+    ("Pay with Apple Pay", "Place Order · $42.00"). Content counts only when its label reads like a control's:
+    the commit word first and no comma (iOS joins a row's parts with commas), and for TALK_ACTS at most
+    CONTROL_WORDS words ("Call Sam", not "Call the dentist"). A field (EDITABLE_ROLES) never names one: a tap
+    there only focuses it. A reminder's row ("Call the dentist, Incomplete") never names one, whatever its role.
+    A spurious ask on a plain row ("Pay the rent on Friday") is the safe failure; a missed one is not."""
+    label = " ".join((label or "").split())
+    if ROW_STATE.search(label):
+        return None
+    match = COMMIT_CONTROL.search(label) or APPROVAL_COMMIT.search(label)
+    if role not in CONTENT_ROLES:
+        return match.group(0) if match else None
+    if role in EDITABLE_ROLES or "," in label:
+        return None
+    first = PLACE_ORDER.match(label) or COMMIT_CONTROL.match(label) or APPROVAL_COMMIT.match(label)
+    if first is None or _act(first.group(0)) in TALK_ACTS and len(label.split()) > CONTROL_WORDS:
+        return None
+    return first.group(0)
+
+
+# Roles that hold other elements rather than act on a tap: panes, bars, sheets. Text inside one is not its label.
+CONTAINER_ROLES = frozenset({"Application", "Window", "ScrollView", "Table", "CollectionView", "WebView", "Group",
+                             "NavigationBar", "TabBar", "Toolbar", "StatusBar", "Keyboard", "Alert", "Sheet",
+                             "Menu", "MenuBar"})
+
+
+def _holds(outer, point):
+    x, y, w, h = outer.rect
+    return x - 1e-6 <= point[0] <= x + w + 1e-6 and y - 1e-6 <= point[1] <= y + h + 1e-6
+
+
+def _same_words(a, b):
+    return " ".join((a or "").split()).casefold() == " ".join((b or "").split()).casefold()
+
+
+def approval_subject(elements, target):
+    """The element whose label and role "ask before acting" reads for a tap on ``target``.
+
+    A tap lands on the control that holds what it hits. WebKit exposes a checkout <button> as a Button with a
+    StaticText of the same label inside, both tap targets, and Fast may pick the text: review 2 of #41 saw
+    "Place your order" go through unasked that way. So content (CONTENT_ROLES) under a control reads as that
+    control: of the controls whose frame holds the tap point, the one with the same label, else the innermost.
+    A control that names no commit leaves the content its own reading, so a commit is never read away. Content
+    with no control around it, inside a row whose label reads as a row (a comma, a reminder's state), reads as
+    that row: the title "Pay the rent" inside "Pay the rent, Incomplete" is the reminder, not a payment."""
+    if target is None or target.role not in CONTENT_ROLES or target.role in EDITABLE_ROLES:
+        return target
+    point = target.tap_point
+    around = [e for e in elements if e is not target and e.id != target.id and _holds(e, point)]
+    area = lambda e: e.rect[2] * e.rect[3]
+    controls = sorted((e for e in around if e.role not in CONTENT_ROLES and e.role not in CONTAINER_ROLES),
+                      key=lambda e: (not _same_words(e.label, target.label), area(e)))
+    if controls:
+        control = controls[0]
+        if not control.label.strip():
+            # An unlabelled button is named by the text on it.
+            return replace(control, label=target.label)
+        if commit_label(control.label, control.role) or not commit_label(target.label, target.role):
+            return control
+        return target
+    rows = sorted((e for e in around if e.role == "Cell"), key=area)
+    if rows and ("," in rows[0].label or ROW_STATE.search(" ".join(rows[0].label.split()))):
+        return rows[0]
+    return target
+
+
+def label_role(operation, role):
+    """The role ``commit_label`` reads a target's label with: its own for a tap, none for a submit."""
+    return role if operation == "TAP" else None
+
+
+def approval_kind(operation, label, *, risk_tier, uncertain=False, role=None):
+    """What "ask before acting" asks about this action in the Fast engine: "commit", "unsure" or None.
+
+    "commit": the action puts something out in the world. Only a tap, a submit or typing followed
+    by Return can, and only when the control's own label names a commit (Send, Buy, Post, Delete,
+    Request, Trash, Clear All, Accept, Unsubscribe, Get...: COMMIT_CONTROL and APPROVAL_COMMIT; for a
+    tap on a row or text of ``role``, only as ``commit_label`` says) or it is a submit in a task whose
+    wording is a side effect (a message, a post). A submit reads the field's label whatever its role:
+    Return in "Reply to Sam" sends the reply.
+    "unsure": the model or its action check could not establish this step (``uncertain``), so the
+    user decides whether it continues; it never reads as a commit.
+
+    A high side-effect score alone does not ask: the audit of 26 Sep saw "Tap New Reminder"
+    (which opens a form and commits nothing) put to the user while the step that saved the
+    reminder went through. Such a tap still passes the action check, which is the safety net.
+    Scrolling, navigation and typing without Return never ask as a commit.
     """
-    if operation not in APPROVAL_OPERATIONS:
-        return False
-    if COMMIT_CONTROL.search(label or ""):
-        return True
-    if operation in {"SUBMIT", "TYPE_SUBMIT"} and risk_tier == RiskTier.SIDE_EFFECT.value:
-        return True
-    return side_effect_risk is not None and side_effect_risk >= APPROVAL_RISK_FLOOR
+    if operation in APPROVAL_OPERATIONS and (
+            commit_label(label, label_role(operation, role))
+            or operation in {"SUBMIT", "TYPE_SUBMIT"} and risk_tier == RiskTier.SIDE_EFFECT.value):
+        return "commit"
+    return "unsure" if uncertain else None
+
+
+def needs_approval(operation, label, *, risk_tier, side_effect_risk=None, role=None):
+    """Whether "ask before acting" pauses this action as a commit (see ``approval_kind``).
+
+    ``side_effect_risk`` is accepted for callers that pass it and no longer decides anything.
+    """
+    return approval_kind(operation, label, risk_tier=risk_tier, role=role) == "commit"
+
+
+# The act a commit approval names, from the control's label or else the request, and its title.
+APPROVAL_TITLES = {
+    "send": "Send this message?", "reply": "Send this reply?", "comment": "Post this comment?",
+    "post": "Post this?", "publish": "Publish this?", "tweet": "Post this?", "share": "Share this?",
+    "buy": "Buy this?", "purchase": "Buy this?", "order": "Place this order?", "place order": "Place this order?",
+    "checkout": "Check out?", "pay": "Make this payment?", "transfer": "Make this transfer?",
+    "donate": "Make this donation?", "tip": "Leave this tip?", "subscribe": "Subscribe?",
+    "book": "Make this booking?", "reserve": "Make this reservation?", "delete": "Delete this?",
+    "erase": "Erase this?", "remove": "Remove this?", "reset": "Reset this?", "install": "Install this?",
+    "upload": "Upload this?", "redeem": "Redeem this?", "call": "Place this call?", "dial": "Place this call?",
+    "facetime": "Start this FaceTime call?", "follow": "Follow this account?", "sign up": "Sign up?",
+    "submit": "Submit this?", "confirm": "Confirm this?",
+    "request": "Send this request?", "trash": "Move this to the trash?", "clear": "Clear these?",
+    "accept": "Accept this?", "decline": "Decline this?", "join": "Join this?", "leave": "Leave this?",
+    "block": "Block this contact?", "report": "Report this?", "unsubscribe": "Unsubscribe?",
+    "unfollow": "Unfollow this account?", "unmatch": "Unmatch?", "archive": "Archive this?",
+    "junk": "Mark this as junk?", "rent": "Rent this?", "get": "Get this app?", "end call": "End this call?",
+}
+MESSAGE_ACTS = frozenset({"send", "reply", "comment", "post", "publish", "tweet", "share"})
+# Acts whose card names who it goes to ("Send this message to Sam?").
+RECIPIENT_TITLES = {"send": "Send this message to {}?", "reply": "Send this reply to {}?"}
+
+
+def _act(match):
+    act = re.sub(r"[\s-]+", " ", match.casefold()).strip()
+    if PLACE_ORDER.match(act):
+        return "place order"
+    if act.replace(" ", "") == "signup":
+        return "sign up"
+    if act.startswith("cancel ") or act.startswith("end "):
+        return "end call" if act == "end call" else act
+    return APPROVAL_ACT_ALIASES.get(act, act)
+
+
+def commit_act(label, request="", role=None, operation="TAP"):
+    """The commit a control performs, as one lowercase verb ("send", "place order"), or "submit".
+
+    The request is read only for COMMIT_CONTROL's words: "Get the iOS version" asks for no App Store Get.
+    ``role`` as in ``commit_label``, for a tap only (``label_role``): a row's words name no act.
+    """
+    named = commit_label(label, label_role(operation, role))
+    if named:
+        return _act(named)
+    match = COMMIT_CONTROL.search(asked_part(request))
+    return _act(match.group(0)) if match else "submit"
+
+
+def approval_title(act, *, unsure=False, recipient=None):
+    """The approval card's title: the act as a question ("Send this message to Sam?")."""
+    if unsure:
+        return "Not sure about this step"
+    if recipient and act in RECIPIENT_TITLES:
+        return RECIPIENT_TITLES[act].format(recipient)
+    if act and act.startswith("cancel "):
+        return f"Cancel this {act.split(' ', 1)[1]}?"
+    return APPROVAL_TITLES.get(act, "Do this now?")
 
 
 def action_risk_tier(operation, target_label="", goal=""):
@@ -375,8 +583,9 @@ OUTPUT_INTENT_INSTRUCTIONS = (
 
 # Per-item predicates Mobster refuses to compile: judging people by protected
 # characteristics from photos (visual-loop design notes, 23 Sep 2026).
-# Eye colour, dogs and receipts are fine; race, religion, health, disability
-# and sexual orientation are not, whatever the app.
+# Dogs and receipts are fine; race, religion, health, disability and sexual
+# orientation are not, whatever the app. People's looks are refused too
+# (appearance_predicate below).
 PROTECTED_PREDICATE = re.compile(
     r"\b(race|racial|ethnic\w*|skin (colou?r|tone)|(black|white|brown) (people|person|men|women|man|woman|guys|girls)|"
     r"asian|latin[oax]|hispanic|arab|jewish|muslim|christian|hindu|sikh|buddhist|religio\w*|disab\w*|"
@@ -387,6 +596,49 @@ PROTECTED_PREDICATE = re.compile(
 def protected_predicate(text):
     """Whether a loop's per-item question judges a protected characteristic."""
     return bool(PROTECTED_PREDICATE.search(text or ""))
+
+
+# A person's looks or body. A loop never judges one: not to like, pass on, sort or count people by how they
+# look (product policy, 7 Oct 2026). The words are checked in two tiers so that things stay fine:
+#   * words that are about looks on their own (attractive, good-looking, handsome);
+#   * words for a trait of the body (eye colour, hair, height, weight, skin, age), which count only in a
+#     sentence that is about a person ("anyone who has blue eyes", "is this person tall"), so that
+#     "photos with a tall building", "a cat with green eyes" and "screenshots older than a month" are untouched.
+_PERSON_NOUN = (r"(?:person|persons|people|man|men|woman|women|guy|guys|girl|girls|boy|boys|lad(?:y|ies)|"
+                r"humans?|someone|somebody|anyone|anybody|everyone|everybody|profiles?|candidates?|strangers?|"
+                r"singles?|selfies?)")
+_PERSON_PRONOUN = r"(?:he|she|him|her|hers|his)"
+_NOT_A_SPAN_OF_TIME = (r"(?!\s+than\s+(?:a|an|one|\d+|[a-z]+)\s+(?:seconds?|minutes?|hours?|days?|weeks?|months?"
+                       r"|years?)\b)")
+APPEARANCE_ALONE = re.compile(
+    r"\b(?:attractive\w*|good[- ]?looking|handsome|gorgeous|sexy|hotness|hot or not|"
+    r"(?:by|on|for|based on) (?:their |his |her |the )?(?:looks|appearance)|"
+    r"physical (?:appearance|attractiveness|features?|type)|facial features?|body (?:type|shape))\b", re.I)
+APPEARANCE_BODY = re.compile(
+    r"\b(?:eye[- ]?colou?rs?|(?:blue|brown|green|hazel|gr[ae]y|amber)[- ]?eye[sd]?|hair\w*|blond\w*|brunettes?|"
+    r"redhead\w*|bald\w*|beard\w*|mou?stache\w*|clean[- ]shaven|height|weigh\w*|overweight|underweight|"
+    r"obes\w*|skinny|slim|slender|curvy|chubby|plus[- ]size|physique|muscular|muscles?|toned|six[- ]pack|skin|"
+    r"complexion|freckle\w*|wrinkle\w*|acne|tattoo\w*|piercings?|breasts?|cleavage|butt|booty|jawline|"
+    r"cheekbones|lips|nose|teeth|"
+    r"(?:fat|thin)(?:ter|ner)?\s+(?:people|person|men|man|women|woman|guys?|girls?|boys?|ones)|"
+    r"(?:tall|short)(?:er|est)?\s+(?:people|person|men|man|women|woman|guys?|girls?|boys?|ones)|"
+    r"(?:is|are|looks?|seems?)\b[^.?!]{0,25}\b(?:tall|short|fat|thin)(?:er|est)?|\d['\u2019]\s?\d{1,2}|feet tall)\b",
+    re.I)
+APPEARANCE_LOOKS = re.compile(
+    r"(?:\b(?:ages?|aged|(?:old|young)(?:er|est)?|elderly|teen\w*|middle[- ]aged|(?:over|under|above|below) \d{2}"
+    r"|\d{1,3} ?(?:years?|yrs?)[- ]old|years? old|hot|cute|pretty|beautiful|ugly|fit|buff|ripped|stunning)\b"
+    + _NOT_A_SPAN_OF_TIME + r"|\b\d{2}\+)", re.I)
+
+
+def appearance_predicate(text):
+    """Whether a loop's per-item question (or the request that wrote it) judges a person's looks or body."""
+    text = text or ""
+    if APPEARANCE_ALONE.search(text):
+        return True
+    if APPEARANCE_BODY.search(text) and (re.search(r"\b" + _PERSON_NOUN + r"\b", text, re.I)
+                                         or re.search(r"\b" + _PERSON_PRONOUN + r"\b", text, re.I)):
+        return True
+    return bool(APPEARANCE_LOOKS.search(text) and re.search(r"\b" + _PERSON_NOUN + r"\b", text, re.I))
 
 
 # Wording that says what to do with an item the loop cannot judge. A helper's
@@ -415,7 +667,7 @@ def loop_step_consequential(label, *, irreversible):
     """Whether one TAP in a compiled loop needs the user's say-so ("ask before acting").
 
     A tap on a control whose label commits (like, follow, send, delete...) always
-    does; on an irreversible feed (a swipe deck, where skipping also consumes
+    does; on an irreversible feed (a photo-review deck, where skipping also consumes
     the card) every tap does. Scrolls never do.
     """
     return bool(irreversible or COMMIT_CONTROL.search(label or "")

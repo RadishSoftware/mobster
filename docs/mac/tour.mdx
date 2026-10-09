@@ -1,0 +1,70 @@
+---
+title: "A tour of Mobster for Mac"
+sidebarTitle: "Tour of the app"
+description: "Where everything is in Mobster for Mac."
+icon: "map"
+keywords: ["mac app", "tour", "sidebar", "recent", "phone pane", "live view", "history", "workflows"]
+---
+
+Mobster for Mac is one window: a sidebar on the left, the task page or a conversation in the middle, and your iPhone's screen on the right. The app has its own 1-minute tour too: Help › **Take the tour**.
+
+<Frame caption="The task page, numbered. The phone pane on the right is left out.">
+  <img src="/images/mac/tour-light.webp" alt="The task page with numbered markers: 1 New task, 2 History, Workflows, Apps and Settings, 3 Recent, 4 Search, 5 the task box, 6 the starters, 7 Help." className="block dark:hidden" />
+  <img src="/images/mac/tour-dark.webp" alt="The task page with numbered markers: 1 New task, 2 History, Workflows, Apps and Settings, 3 Recent, 4 Search, 5 the task box, 6 the starters, 7 Help." className="hidden dark:block" />
+</Frame>
+
+1. **New task** (⌘N) starts a new conversation.
+2. **History**, **Workflows**, **Apps** and **Settings**. ⌘1 to ⌘4 go to the task page, History, Workflows and Apps, and ⌘, opens Settings.
+3. **Recent** lists your conversations, newest first. A dot says one is running, waiting for you, or worth a look.
+4. **Search** (⌘K) finds conversations, tasks and apps.
+5. **The task box.** Type a task. **+** attaches files, **Any app** picks the app it starts in, and **⋯** chooses the answer's format.
+6. **Starters** fill the task box with a task to try.
+7. **Help** answers questions about setup, your AI account, approvals and the license, offline.
+
+## Conversations
+
+Each task starts a conversation. Mobster shows each step as it goes, and the result as an answer with the screen it came from. Follow up in the same box, and the next task knows what the last one found. [Conversations](/conversations) has the details.
+
+<Frame caption="A conversation: a message sent while Mobster worked, read at its next step, then a follow-up.">
+  <img src="/images/mac/conversation-light.webp" alt="A conversation: a sent message, a note Mobster read while it worked, and the next task's result." className="block dark:hidden" />
+  <img src="/images/mac/conversation-dark.webp" alt="A conversation: a sent message, a note Mobster read while it worked, and the next task's result." className="hidden dark:block" />
+</Frame>
+
+## Approvals and questions
+
+Before anything that sends, buys, posts or deletes, a card shows the exact action and text, with the act's own verb. When a task could mean two things, Mobster may ask you which one, with each choice as a button. [Approvals and safety](/safety) has the rules.
+
+<Frame caption="A question: two contacts named Sam, so Mobster asks which one.">
+  <img src="/images/mac/clarify-light.webp" alt="Mobster asking which Sam you mean, with each Sam as a button and a field to type an answer." className="block dark:hidden" />
+  <img src="/images/mac/clarify-dark.webp" alt="Mobster asking which Sam you mean, with each Sam as a button and a field to type an answer." className="hidden dark:block" />
+</Frame>
+
+## The phone pane
+
+On the right, your iPhone's screen, live, while Mobster can see it. The phone's name at the top picks another phone when you have several, the hand button lets you tap and type on the phone yourself, and the arrows give the screen more room. When the phone needs something, such as a refresh of Mobster's helper or an unlock, the pane says what to do and offers the one button that does it.
+
+## Search
+
+⌘K opens search over your conversations, tasks and apps. ↑ and ↓ move, Enter opens, Esc closes.
+
+<Frame caption="Search, with the conversations and tasks that match.">
+  <img src="/images/mac/search-light.webp" alt="The search palette open over the task page, with conversations matching the words typed." className="block dark:hidden" />
+  <img src="/images/mac/search-dark.webp" alt="The search palette open over the task page, with conversations matching the words typed." className="hidden dark:block" />
+</Frame>
+
+## History and workflows
+
+**History** lists every task you gave your iPhone, what it found and how it ended, with filters for the ones that need a look. **Workflows** holds saved tasks: run one again with a click, or on a schedule. [Schedules and workflows](/schedules) has the details.
+
+<Frame caption="History: each task, how it ended and when.">
+  <img src="/images/mac/history-light.webp" alt="History: every task with its app, how it ended and when." className="block dark:hidden" />
+  <img src="/images/mac/history-dark.webp" alt="History: every task with its app, how it ended and when." className="hidden dark:block" />
+</Frame>
+
+## Share a task
+
+**Save as GIF**, under a finished task, saves it to Downloads as a captioned GIF you can post: the task as you typed it, each step's screen with what Mobster did, the approval if it asked, and the result. It matches the app's appearance, light or dark, and stays under X's 15 MB limit. The GIF shows every screen of the task and stays on your Mac until you share it, so look at it first. Screens after a sign-in code are left out. To blur text fields and messages, or to save an MP4, use [`mobster export`](/cli#mobster-export) with `--redact` or `--mp4`.
+
+## Settings
+
+Settings holds your AI account and spend limits, Safety, Memory, Voice, Phones, your license, Help and support, Advanced, and For developers. [Settings](/mac/settings) goes through each one.

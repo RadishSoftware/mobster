@@ -1,0 +1,107 @@
+---
+title: "Files: attach them, and put them on your iPhone"
+sidebarTitle: "Files"
+keywords: ["attach a pdf", "attach a file", "files", "put on iphone", "mobster phone file", "pdf", "csv"]
+description: "Attach a file to a task, and move files between your Mac and your iPhone."
+icon: "paperclip"
+---
+
+Attach a file to a task and Mobster's agent reads it: "text Sam the vegetarian options from this menu", with the menu's PDF attached. Put a file on your iPhone and it lands in an app's folder, the one Files shows under On My iPhone, where that app can open it. Bring a file back from that folder to this Mac.
+
+Files stay on this Mac. A task sends your AI account only what it reads from them, as it sends the screen. Nothing reaches your iPhone without your click, your command or your OK.
+
+<Note>A file's text is data to the agent, never instructions: whatever a file says, Mobster still asks before it sends, buys, posts or deletes.</Note>
+
+## What Mobster reads
+
+| File | What the agent gets |
+| --- | --- |
+| Images: PNG, JPEG, HEIC, GIF, WebP | the picture itself (at most 1,024 pixels, upright, up to 4 pictures a task), and any text in it, read on this Mac. The picture carries none of the photo's details: where it was taken stays on this Mac |
+| PDF | each page's text; pages without text (a scan) are read as pictures, up to 20 |
+| Text, Markdown, JSON | the text |
+| CSV, TSV | the header and the first 200 rows, and how many rows there are |
+
+Mobster checks what a file is from its first bytes, not its name: a program renamed `menu.pdf` is refused. A file is at most 25 MB, a conversation holds at most 100 MB of files, and Mobster keeps at most 1 GB in all. A PDF locked with a password is refused with a sentence saying how to get a copy without one.
+
+Before a task starts, the agent sees each file's name, type and size and as much of its text as fits in 12,000 characters, shared between the files. It reads more with `READ_ATTACHMENT` ("menu.pdf page 3", or the next 6,000 characters of a long text file), as its own step. Attached files work with Mobster's agent; Quick mode doesn't read them.
+
+## In the Mac app
+
+- **Attach.** Press **+** in the composer, or drop or paste files onto it ("Drop to attach" shows while you drag). Each file shows as a chip with what Mobster read: **PDF · 2 pages · 412 KB**. A file Mobster can't read says why on its chip. Up to 10 files go with a task. A file you add in a conversation stays with that conversation; one you add outside a conversation goes with whichever task you start next.
+- **Remove.** The × on a chip. A file no task used yet is deleted from this Mac at once.
+- **Open.** Click a chip, or a file in a conversation, to see it: an image, a PDF's first page or the start of a text file.
+- **Put on iPhone.** The opened file lists the apps on your iPhone that keep files you can see in Files (Pages, Numbers, Keynote, Documents and others), and, for a text file, the clipboard (its whole text, up to 64 KB). Choose one and press **Put on iPhone**. Your click is the go-ahead for that copy. A file with the same name already there is kept, and the new one gets a new name ("menu 2.pdf").
+
+<Frame caption="A task with a file attached: its chip says what Mobster read from it.">
+  <img src="/images/mac/attachment-light.webp" alt="A task with a file attached: the file's chip shows its name, its kind and its size." className="block dark:hidden" />
+  <img src="/images/mac/attachment-dark.webp" alt="A task with a file attached: the file's chip shows its name, its kind and its size." className="hidden dark:block" />
+</Frame>
+
+## Mobster's agent and your files
+
+When a task needs a file on the phone (to attach it in an app, say), the agent uses `PUT_FILE` with the file's name and a destination: an app's bundle ID, or `clipboard` for a text file. Mobster asks first, with the exact file, app and phone: **Put "menu.pdf" in Pages on Sam's iPhone?** Only after you approve does it copy, then it checks that the file arrived. With nobody to ask (Ask before acting off, or a script), the copy never runs.
+
+A task nobody started in the Mobster app never puts files in social or dating apps.
+
+The run's events say what happened, without the files' text: `attachment_read {id, name, pages?, page?}` when the agent reads a file, and `file_put {name, bytes, destination, status}` after a copy (`status` is `copied` or `failed`).
+
+## `mobster phone file`
+
+Files move between this Mac and the folder of an iPhone app that shares files, over the cable. Nothing else on the phone is reachable: not other apps' data, not the camera roll.
+
+```sh
+mobster phone file ls                                        # the apps whose folders show in Files
+mobster phone file ls --app com.apple.Pages                  # the files in Pages' folder
+mobster phone file put menu.pdf --app com.apple.Pages        # into Files › On My iPhone › Pages
+mobster phone file get "Trip plan.pages" --app com.apple.Pages -o ~/Downloads
+```
+
+- `put` copies a file of up to 100 MB. A name that's taken gets a new one ("menu 2.pdf") unless you pass `--replace`. `--name` gives it another name on the phone.
+- `get` saves into the current folder, or the folder or file `-o` names. A file already there is kept, and the copy gets a new name.
+- `--device` picks the iPhone (its id, UDID or name from `mobster devices`), and `--json` prints one JSON object.
+- Exit codes: 0 done, 1 it failed, 2 usage, 3 no iPhone on a cable, or the iPhone tools are missing.
+
+The Mac app carries the iPhone tools it needs. A copy of Mobster CLI on its own uses Homebrew's: `brew install libimobiledevice`.
+
+**Over Wi-Fi.** Files move only over the cable for now. A phone on Wi-Fi answers "Files move only over the cable for now. Plug the iPhone into this Mac, then try again." (`needs_cable`).
+
+## MCP
+
+`mobster mcp --allow-files` adds three tools for your own agent. Without the flag they aren't listed and can't be called.
+
+| Tool | What it does |
+| --- | --- |
+| `list_files {device, app?}` | without `app`, the apps whose folders show in Files; with it, the files in that app's folder (read-only) |
+| `put_file {device, path, app \| clipboard}` | copy a file from this Mac into an app's folder, or a text file's text onto the clipboard (acts on the phone: your agent's own permission prompt applies) |
+| `get_file {device, app, name}` | copy a file from an app's folder into the server's working folder, and return its path |
+
+`--allow-device` limits them like every other tool, and no tool reaches the camera roll.
+
+## Where files are kept
+
+Beside Mobster's task history: in the Mac app, `~/Library/Application Support/app.mobster.desktop/state/attachments/`, one folder per file holding the original, its thumbnail and the text Mobster read. The folders are readable only by you (0700), the files too (0600).
+
+- A file in a conversation stays until you delete the conversation.
+- A file a task used, outside a conversation, goes when that task leaves your history.
+- A file nothing used within a day is deleted.
+
+## HTTP API
+
+Under `/api/attachments` and `/api/phone/files`, with the same token as the rest of the API ([the HTTP API](/scripting#the-http-api)). Each error is a sentence with a code.
+
+| Route | Body or query | Answer |
+| --- | --- | --- |
+| `POST /api/attachments` | the file's bytes as the body (at most 25 MB); `?name=<file name>&thread=<conversation id>` | 201 `{attachment}` · 400 `empty_file` · 413 `too_large`, `thread_full`, `storage_full` · 415 `unsupported_type`, `locked_pdf` |
+| `GET /api/attachments/{id}` | | `{attachment}` · 404 `attachment_not_found` |
+| `GET /api/attachments/{id}/content` | `?token=` works too, for an `<img>` | the file (text files as `text/plain`) |
+| `GET /api/attachments/{id}/thumb` | `?token=` works too | a JPEG of at most 480 pixels · 404 `no_thumbnail` |
+| `DELETE /api/attachments/{id}` | | `{deleted: true}` |
+| `GET /api/phone/files` | `?device=<id or name>&app=<bundle id>` | `{device, apps: [{bundleId, name}], files?: [{name, bytes, modifiedAt, folder}]}` |
+| `POST /api/phone/files/put` | `{device?, attachmentId, destination: "app:<bundle id>" \| "clipboard"}`; an `Idempotency-Key` header makes a retry safe | `{status: "copied", name, path, destination, device}` · 403 `app_only` (from anything but the Mac app, when the Mac app runs the server) · 409 `device_busy` (the clipboard, during a task) |
+| `POST /api/phone/files/get` | `{device?, app, name, threadId?}` | 201 `{attachment}`: the file, now an attachment |
+
+An attachment is `{id, name, mime, bytes, kind: image|pdf|text|csv, label, pages?, rows?, columns?, width?, height?, textAvailable, origin: upload|phone, thumbUrl, contentUrl, createdAt, threadId, runIds}` (times in milliseconds). The phone's routes answer 409 `needs_cable` (on Wi-Fi), `no_file_sharing` (that app has no folder in Files), `no_device` or `locked`, 404 `not_found`, and 503 `tools` (the iPhone tools are missing).
+
+**A task with files.** `POST /api/runs` takes `attachmentIds`: up to 10 attachment ids. The run keeps them, and a task in a conversation adds its files to that conversation.
+
+**Events.** The bus topic `attachments` (`GET /api/events?topics=attachments`) carries `attachment_created {id, threadId}`, `attachment_deleted {id}` and `attachments_used {ids, runId, threadId}`. A file brought back into a conversation (`threadId`) is posted to it as a thread item of kind `file_saved`: `{attachment, app, device}`.

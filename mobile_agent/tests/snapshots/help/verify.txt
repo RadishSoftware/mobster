@@ -1,0 +1,57 @@
+usage: mobster verify [-h] [--check FILE] [--app PATH] [--bundle ID] [--device NAME]
+                      [--runtime NAME] [--reset LEVEL] [--launch-arg ARG] [--launch-env KEY=VALUE]
+                      [--open-url URL] [--text TEXT] [--no-text TEXT] [--visible SEL] [--absent SEL]
+                      [--expect JSON] [--name TEXT] [--keyless] [--max-usd USD] [--max-seconds S]
+                      [--assert-timeout S] [--out DIR] [--save NAME] [--json] [--env-file PATH]
+                      [STEP ...]
+
+Check an iOS app on a headless simulator that Mobster manages. Mobster installs and
+launches the app, runs the steps (Smart, on your OpenAI or Anthropic key) or none
+(a launch-only check), and decides the verdict from your expectations on the
+accessibility tree, never from a model. Each run writes a report with the frames
+that prove it.
+
+positional arguments:
+  STEP                    one step of the flow in plain English; none means a launch-only check
+
+options:
+  -h, --help              show this help and exit
+  --check FILE            run a saved check (.yaml or .json); not combined with steps or
+                          expectations
+  --app PATH              the .app built for the iOS Simulator; it is installed before the run
+  --bundle ID             the app's bundle ID (default: read from --app)
+  --device NAME           a device from `mobster devices` (its id, UDID or name), or the simulator
+                          device type (default: iPhone 17 Pro, else the newest iPhone)
+  --runtime NAME          the iOS runtime, such as "iOS 26.4" (default: the newest installed)
+  --reset LEVEL           none, data or reinstall (default: reinstall with --app, else data;
+                          com.apple.* apps are never reset)
+  --launch-arg ARG        a launch argument; repeatable (write --launch-arg=-Flag for one that
+                          starts with -)
+  --launch-env KEY=VALUE  a launch environment variable; repeatable
+  --open-url URL          a deep link opened after launch
+  --text TEXT             expect TEXT on screen; repeatable
+  --no-text TEXT          expect TEXT not on screen; repeatable
+  --visible SEL           expect an element on screen: key=value[,key=value] with keys id, label,
+                          value, role, enabled and selected; repeatable
+  --absent SEL            expect no element to match SEL; repeatable
+  --expect JSON           any expectation as JSON, such as '{"count": {"id": "/^plan_/"}, "equals":
+                          3}'; repeatable
+  --name TEXT             the check's name in reports (default: the first step, or "Launch check")
+  --keyless               never call a model; a check with steps then can't run
+  --max-usd USD           Smart's spend cap for the run (default: 0.25, at most 1.00)
+  --max-seconds S         Smart's time limit for the flow (default: 180, at most 600)
+  --assert-timeout S      how long expectations may wait for the screen to settle (default: 5)
+  --out DIR               where runs go (default: ./.mobster/runs)
+  --save NAME             also save the check as .mobster/checks/NAME.yaml (a-z, 0-9 and -)
+  --json                  print the result as JSON (the default when stdout isn't a terminal)
+  --env-file PATH         load KEY=VALUE lines, such as OPENAI_API_KEY or ANTHROPIC_API_KEY for
+                          Smart; variables already set win; default: $MOBSTER_ENV_FILE
+
+exit codes: 0 passed, 1 failed, 2 needs review, 3 couldn't run (usage errors too),
+            130 ctrl+c
+
+examples:
+  mobster verify --bundle com.apple.Preferences --text General
+  mobster verify --app build/Daybreak.app --open-url daybreak://paywall --text "Choose your plan"
+  mobster verify "Open General, then About" --bundle com.apple.Preferences --text "iOS Version"
+  mobster verify --check .mobster/checks/paywall.yaml --json

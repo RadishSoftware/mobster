@@ -4,7 +4,7 @@ import time
 import unittest
 from types import SimpleNamespace
 
-from mobile_agent.bench.iosworld import RecordingDriver, answer_text, describe
+from mobile_agent.bench.iosworld import RecordingDriver, answer_text, describe, task_cost_cap
 
 
 class FakeShots:
@@ -65,3 +65,19 @@ class IOSWorldAdapterTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TaskCostCapTests(unittest.TestCase):
+    """The spend cap buys every model the same turns: set in terra dollars, scaled by input price."""
+
+    def test_a_terra_task_keeps_its_cap(self):
+        self.assertAlmostEqual(task_cost_cap(["a"], "gpt-5.6-terra"), 0.18)
+        self.assertAlmostEqual(task_cost_cap(["a"] * 9, "gpt-5.6-terra"), 0.60)
+
+    def test_a_pricier_model_gets_a_proportionally_larger_cap(self):
+        self.assertAlmostEqual(task_cost_cap(["a"], "gpt-5.6-sol"), 0.36)
+        self.assertAlmostEqual(task_cost_cap(["a"] * 9, "gpt-5.6-sol"), 1.20)
+
+    def test_a_cheaper_or_unpriced_model_is_never_cut_below_it(self):
+        for model in ("gpt-5.6-luna", "an-unpriced-model", None):
+            self.assertAlmostEqual(task_cost_cap(["a", "b"], model), 0.26)

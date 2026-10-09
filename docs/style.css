@@ -1,0 +1,344 @@
+/* Mintlify loads every .css file in docs/ on every page. This one puts the docs in the same family as mobster.dev and
+   Mobster for Mac: warm neutrals, headings at 500 to 560 and never bold, flat soft cards with no outline, pill
+   buttons, and colour transitions of 120 ms with nothing else animated. Selectors stop at Mintlify's own hooks
+   (ids, data-component-part and component class names). */
+
+/* Commands, keys and IDs in Google Sans Code, the brand's monospace. */
+@import url("https://fonts.googleapis.com/css2?family=Google+Sans+Code:wght@400;500&display=swap");
+
+:root {
+  --mob-ink: #18171c;
+  --mob-ink-secondary: #5c5a63;
+  --mob-paper: #faf8f5;
+  --mob-card: color-mix(in srgb, #18171c 3.5%, #faf8f5);
+  --mob-card-hover: color-mix(in srgb, #18171c 6%, #faf8f5);
+  --mob-line: #e8e4de;
+  --mob-panel: #ffffff;
+  --mob-pass: #1a7f37;
+  --mob-fail: #c4321f;
+  --mob-ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:root.dark {
+  --mob-ink: #f4f2ee;
+  --mob-ink-secondary: #b4b1ba;
+  --mob-paper: #111014;
+  --mob-card: color-mix(in srgb, #ffffff 4.5%, #111014);
+  --mob-card-hover: color-mix(in srgb, #ffffff 7.5%, #111014);
+  --mob-line: #2a2930;
+  --mob-panel: color-mix(in srgb, #ffffff 7%, #111014);
+  --mob-pass: #3fb950;
+  --mob-fail: #ff7b72;
+}
+
+code,
+kbd,
+pre {
+  font-family: "Google Sans Code", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* Long code wraps instead of hiding under a fade, and the copy button still copies each line as one line. Mintlify
+   sizes the code to its longest line (width: max-content), so the width is reset here. A block without a title keeps
+   its copy button over its top right corner, beside the first line only: instead of Mintlify's 99px margin down the
+   whole block, a 2.75rem spacer beside the first line keeps text out from under the button, and the lines below
+   it get the full width. */
+pre.shiki code {
+  width: auto !important;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.code-block[data-has-floating-buttons] {
+  --code-padding-right: 0px !important;
+}
+
+/* Nothing runs under the button now, so the fade Mintlify lays over the first line beside it only greys out text. */
+.code-block [data-fade-overlay] {
+  display: none;
+}
+
+.code-block[data-has-floating-buttons] pre.shiki code::before {
+  content: "";
+  float: right;
+  width: 2.75rem;
+  height: 1.5rem;
+}
+
+/* Headings: display weight on the title, 500 to 560 below it, tight tracking that grows with size. */
+#page-title {
+  font-weight: 560;
+  letter-spacing: -0.025em;
+}
+
+#content h2 {
+  font-weight: 540;
+  letter-spacing: -0.015em;
+}
+
+#content h3,
+#content h4 {
+  font-weight: 540;
+  letter-spacing: -0.01em;
+}
+
+/* Cards: a flat soft fill at the app's card radius, no outline. Hover deepens the fill. */
+.card {
+  border-color: transparent !important;
+  background-color: var(--mob-card) !important;
+  border-radius: 20px;
+  transition: background-color 120ms var(--mob-ease);
+}
+
+.card:hover {
+  background-color: var(--mob-card-hover) !important;
+}
+
+[data-component-part="card-title"] {
+  font-weight: 540;
+  letter-spacing: -0.01em;
+}
+
+/* Violet is the agent and links. Card icons are ink. */
+[data-component-part="card-icon"] svg {
+  background-color: var(--mob-ink-secondary) !important;
+}
+
+/* The landing page's tiles show a whole frame, and their descriptions wrap instead of cutting off. A tile is as tall
+   as its picture, so nothing in the picture is cut at its edge. */
+[data-component-part="tile-children-container"] {
+  height: auto;
+  flex-grow: 1;
+  background-color: var(--mob-card);
+  border-radius: 20px;
+}
+
+[data-component-part="tile-children-inner-container"] {
+  padding: 24px 24px 0;
+  align-items: flex-end;
+}
+
+[data-component-part="tile-children-inner-container"] img {
+  border-radius: 12px 12px 0 0;
+  box-shadow: 0 0 0 1px var(--mob-line), 0 8px 24px -12px rgb(24 23 28 / 0.18);
+}
+
+/* The test tile: a real verdict as text, on a panel shaped like the screenshot beside it. */
+.mob-verdict {
+  align-self: stretch;
+  width: 100%;
+  padding: 20px 20px 24px;
+  border-radius: 12px 12px 0 0;
+  background-color: var(--mob-panel);
+  box-shadow: 0 0 0 1px var(--mob-line), 0 8px 24px -12px rgb(24 23 28 / 0.18);
+  color: var(--mob-ink);
+  text-align: left;
+}
+
+.mob-verdict p {
+  margin: 0;
+}
+
+.mob-verdict-head {
+  font-size: 0.875rem;
+  color: var(--mob-ink-secondary);
+}
+
+.mob-verdict-head strong {
+  font-weight: 560;
+  color: var(--mob-fail);
+}
+
+.mob-verdict .mob-verdict-check {
+  margin-top: 6px;
+  font-size: 1rem;
+  font-weight: 540;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+  text-wrap: pretty;
+}
+
+.mob-verdict-lines {
+  display: grid;
+  gap: 8px;
+  margin: 16px 0 0;
+  padding: 16px 0 0;
+  border-top: 1px solid var(--mob-line);
+  list-style: none;
+}
+
+/* Each line hangs on its mark, so a wrapped line lines up under the text, not the mark. */
+.mob-verdict-lines li {
+  margin: 0;
+  padding-left: 2ch;
+  text-indent: -2ch;
+  font-family: "Google Sans Code", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.mob-verdict .mob-pass {
+  color: var(--mob-pass);
+}
+
+.mob-verdict .mob-fail {
+  color: var(--mob-fail);
+}
+
+[data-component-part="tile-background-light"],
+[data-component-part="tile-background-dark"] {
+  opacity: 0.5;
+}
+
+[data-component-part="tile-title"] {
+  font-weight: 540;
+  font-size: 1.0625rem;
+}
+
+[data-component-part="tile-description"] {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  text-align: center;
+  text-wrap: balance;
+}
+
+/* The agent prompt sits on the same soft fill as a card. */
+.prompt {
+  border-color: transparent;
+  background-color: var(--mob-card);
+  border-radius: 20px;
+}
+
+/* Pill buttons, as on mobster.dev: Ink with a Paper label for the main action, a soft fill for the quiet one. */
+.mob-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 24px 0;
+}
+
+.mob-button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 18px;
+  border-radius: 9999px;
+  border: 0 !important;
+  background-color: var(--mob-ink);
+  color: var(--mob-paper) !important;
+  font-weight: 540;
+  font-size: 0.9375rem;
+  text-decoration: none !important;
+  transition: background-color 120ms var(--mob-ease), color 120ms var(--mob-ease);
+}
+
+.mob-button:hover {
+  background-color: color-mix(in srgb, var(--mob-ink) 86%, #6e56f6);
+}
+
+.mob-button-quiet {
+  background-color: var(--mob-card);
+  color: var(--mob-ink) !important;
+}
+
+.mob-button-quiet:hover {
+  background-color: var(--mob-card-hover);
+}
+
+/* A price on the pricing cards, at heading size. */
+.mob-price {
+  margin: 4px 0 0;
+  font-size: 1.75rem;
+  font-weight: 560;
+  letter-spacing: -0.02em;
+  color: var(--mob-ink);
+}
+
+.mob-price span {
+  font-size: 0.9375rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--mob-ink-secondary);
+  white-space: nowrap;
+}
+
+/* A command name in a narrow card stays on one line. */
+.card code {
+  white-space: nowrap;
+}
+
+/* Keys as keycaps. */
+kbd {
+  display: inline-block;
+  min-width: 1.6em;
+  padding: 0.1em 0.45em;
+  border-radius: 6px;
+  background-color: var(--mob-card);
+  box-shadow: inset 0 -1px 0 var(--mob-line), 0 0 0 1px var(--mob-line);
+  font-size: 0.85em;
+  line-height: 1.4;
+  text-align: center;
+  color: var(--mob-ink);
+}
+
+/* Pager: show the previous page's name, and don't cut the next page's description. */
+#pagination [data-component-part="pagination-description"] {
+  display: none;
+}
+
+#pagination [data-component-part="pagination-prev"] [data-component-part="pagination-label"] {
+  display: none;
+}
+
+#pagination [data-component-part="pagination-prev"]::after {
+  content: attr(aria-label);
+}
+
+#pagination [data-component-part="pagination-prev"],
+#pagination [data-component-part="pagination-next"] > div {
+  background-color: var(--mob-card);
+  border-radius: 16px;
+}
+
+/* The two sides share the row and match the next side's 4rem, and a long title wraps instead of ending in "…". On a
+   phone the sides stack, so neither is squeezed. */
+#pagination [data-component-part="pagination-prev"],
+#pagination [data-component-part="pagination-next"] {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+#pagination [data-component-part="pagination-prev"] {
+  min-height: 4rem;
+  justify-content: flex-start;
+}
+
+#pagination [data-component-part="pagination-title"] {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+@media (max-width: 639px) {
+  #pagination {
+    flex-direction: column;
+    gap: 4px;
+  }
+}
+
+/* Links and buttons change colour in 120 ms on the standard curve. Nothing else moves. */
+#content a {
+  transition: color 120ms var(--mob-ease), text-decoration-color 120ms var(--mob-ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .mob-button,
+  #content a {
+    transition: none;
+  }
+
+  video {
+    display: none;
+  }
+}

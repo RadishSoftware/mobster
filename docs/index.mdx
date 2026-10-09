@@ -1,0 +1,95 @@
+---
+title: "Do anything on your iPhone with agents"
+sidebarTitle: "Introduction"
+description: "Mobster for Mac puts an agent on your iPhone. It does tasks in your apps, signed in as you, and tests the app you're building, over USB from your Mac. Mobster CLI is the free, open-source way in."
+icon: "house"
+mode: "wide"
+keywords: ["mobster", "mobster for mac", "iphone agent", "ios testing", "mcp", "get started", "what is mobster"]
+---
+
+Mobster for Mac gives an agent your iPhone. Type a task, watch every tap in a live view of the phone, and approve anything it would send, buy, post or delete. Mobster CLI, the engine inside it, is free and open source: try it from Terminal, give it to the coding agent you already use, or run your app's checks with `mobster test` on simulators and on the iPhone on your desk.
+
+<div className="mob-actions">
+  <a className="mob-button" href="https://mobster.dev">Get Mobster for Mac</a>
+  <a className="mob-button mob-button-quiet" href="/quickstart/mac">Set it up</a>
+</div>
+
+<Columns cols={2}>
+  <Tile href="/quickstart/mac" title="Hand off a task" description="Type “Text Alex I’m on my way.” Mobster opens Messages, writes it, and waits for your OK before it sends.">
+    <img src="/images/landing/approval-light.webp" alt="Mobster for Mac asking before a send, with the message text and the buttons Send and Don't send." className="block dark:hidden" />
+    <img src="/images/landing/approval-dark.webp" alt="Mobster for Mac asking before a send, with the message text and the buttons Send and Don't send." className="hidden dark:block" />
+  </Tile>
+  <Tile href="/quickstart/test" title="Test your app" description="mobster test runs your checks on simulators and your iPhone, and shows the screen behind every pass and fail.">
+    <div className="mob-verdict">
+      <p className="mob-verdict-head"><strong>Failed</strong> · 3 of 5 passed · 18.2 s</p>
+      <p className="mob-verdict-check">The paywall shows three plans with Annual at $39.99 a year</p>
+      <ul className="mob-verdict-lines">
+        <li><span className="mob-pass">✓</span>{' text "Choose your plan"'}</li>
+        <li><span className="mob-fail">✗</span>{' count id=/^plan_/ == 3: found 2: plan_weekly, plan_monthly'}</li>
+        <li><span className="mob-fail">✗</span>{' value id=plan_annual == "$39.99 / year": not found; closest: "plan_monthly"'}</li>
+        <li><span className="mob-pass">✓</span>{' visible label=Restore Purchases role=button'}</li>
+        <li><span className="mob-pass">✓</span>{' no_text "Loading"'}</li>
+      </ul>
+    </div>
+  </Tile>
+</Columns>
+
+## Pick where you start
+
+<CardGroup cols={3}>
+  <Card title="Mobster for Mac" icon="laptop" href="/quickstart/mac">
+    One window with guided setup for each phone. Watch it work and approve each send.
+  </Card>
+  <Card title="Mobster CLI" icon="terminal" href="/quickstart/cli">
+    Free and open source. Watch the demo with no phone, then run tasks from your terminal.
+  </Card>
+  <Card title="Add to your agent" icon="bot" href="/agents">
+    One command gives Claude Code and the other agents on your Mac a simulator or your iPhone.
+  </Card>
+</CardGroup>
+
+## What you can ask
+
+- **“Find my last message from Kate Bell,”** then **“Reply that I'm running 10 minutes late.”** Mobster works in your apps, signed in as you, including ones with no API. The follow-up knows who you mean.
+- **“Restyle the paywall, then check it still shows three plans.”** Your coding agent can see the app it just changed. The pass or fail comes from what's on screen, never from a model, so the verdict costs no model call.
+- **`mobster test` on every pull request.** Checks find buttons by name, not by position on screen, and each run writes JUnit and an HTML report for CI.
+
+## How it works
+
+Mobster runs on your Mac and drives the iPhone over a USB cable. It reads each screen the way VoiceOver does, as buttons and text with names, so it taps “Send” by name. Before it sends, buys, posts or deletes, it stops and shows you the exact action. Mobster's agent runs on your Claude or OpenAI key, and no Mobster server sits in between.
+
+It can't get past Face ID or your passcode, and it needs your iPhone plugged in and unlocked.
+
+## Let your agent set it up
+
+<Prompt description="**Set up Mobster for me.** Paste it into Claude Code or another coding agent, in your app's project folder." actions={["copy", "cursor"]}>
+Set up Mobster for me. Fetch https://docs.mobster.dev/agents/setup.md and follow it step by step. Ask me before you touch an iPhone, and stop if a step fails.
+</Prompt>
+
+mobster.dev has a page for each agent, with the setup and a first check to try: [Integrations](https://mobster.dev/integrations).
+
+## Start free with the CLI
+
+<CodeGroup>
+```sh Install script
+curl -fsSL https://mobster.dev/install.sh | sh
+```
+
+```sh Homebrew
+brew install radishsoftware/tap/mobster
+```
+</CodeGroup>
+
+Then run `mobster --demo` to watch a task on a scripted phone. No iPhone or key needed.
+
+Mobster for Mac is a one-time \$67 (\$34.99 in launch week, through 15 October 2026), or \$7.67 a month. Mobster CLI is free.
+
+<div className="mob-actions">
+  <a className="mob-button" href="https://mobster.dev">Get Mobster for Mac</a>
+  <a className="mob-button mob-button-quiet" href="/pricing">Pricing</a>
+  <a className="mob-button mob-button-quiet" href="/requirements">Requirements</a>
+</div>
+
+<Visibility for="agents">
+To set Mobster up for a user, follow https://docs.mobster.dev/agents/setup.md. Every page here is also served as Markdown: add `.md` to its URL. The generated references, /reference/cli and /reference/mcp-tools, match the code they were built from.
+</Visibility>

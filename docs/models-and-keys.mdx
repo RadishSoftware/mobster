@@ -1,0 +1,64 @@
+---
+title: "Models, keys and costs"
+sidebarTitle: "Models and keys"
+description: "Mobster runs on your own Claude or OpenAI key. Which key each command needs, spend caps, and what a task costs."
+icon: "key-round"
+keywords: ["api key", "anthropic key", "claude key", "openai key", "cost", "price per task", "spend cap", "quick mode"]
+---
+
+Mobster has no model account of its own. Its agent runs on your own Claude or OpenAI account, which bills you directly, and your key stays on your Mac.
+
+## Which key does what
+
+| You run | Engine | Key |
+|---|---|---|
+| A task in Mobster for Mac or the terminal UI | Mobster's agent, or Quick mode if you pick it | `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` |
+| `mobster chat`, `phone_task` | Mobster's agent, in the Mac app or `mobster serve` (`mobster chat` runs it in Terminal when neither is running) | The same |
+| `mobster verify` or `mobster test` with steps, the `verify` MCP tool | Mobster's agent (`Smart`) | The same |
+| A launch-only check, or your coding agent driving over `mobster mcp` | None: Mobster calls no model | None |
+| `mobster run` | Quick mode | `TYPESAFE_API_KEY` |
+
+- **Mobster's agent** works across apps and finishes long tasks. With only a Claude key it runs on a Claude model, and with an OpenAI key on an OpenAI model. In the Mac app, Settings › AI account chooses which account is in use. `MOBSTER_SMART_MODEL` picks another model by its id. Flags and statuses call it `Smart`.
+- **Quick mode** does quick tasks in one app, on a key from TypeSafe, its provider. It's optional: Settings › Advanced › Runs on picks it in the Mac app, and `mobster run` always uses it. It doesn't take messages while it works, read attached files, or use what Mobster remembers.
+
+## Get a key
+
+<Tabs>
+  <Tab title="Claude">
+    In the [Claude Console](https://console.anthropic.com): add credit in Billing, then **Create Key** in API keys and copy it. It starts with `sk-ant-`. A Claude Console account is separate from a Claude subscription.
+  </Tab>
+  <Tab title="OpenAI">
+    On the [OpenAI Platform](https://platform.openai.com): add credit in Billing, then **Create new secret key** in API keys and copy it. It starts with `sk-`. An OpenAI Platform account is separate from ChatGPT Plus.
+  </Tab>
+</Tabs>
+
+Mobster for Mac asks for it in Setup and keeps it on the Mac. For the CLI, put it in a private env file:
+
+```sh ~/.config/mobster/agent.env
+ANTHROPIC_API_KEY=sk-ant-…
+```
+
+[Configuration](/configuration#env-files) explains env files.
+
+## What a task costs
+
+- Mobster's agent spends on your key. The Mac app shows an estimate before each task, in cents on your Claude or OpenAI account, and Settings › AI account shows what your tasks cost this month at your provider's published rates.
+- An agent you connect over MCP spends on its own model.
+- Launch-only checks call no model at all.
+
+Mobster adds up the priced cost of every model call in a task from the provider's own usage reports. A call with no reported price is shown as unpriced, never counted as free.
+
+## Spend caps
+
+A cap stops a task before its next model call once the task's spend reaches it, and the task ends with status `spend_cap`.
+
+| Where | How |
+|---|---|
+| Mobster for Mac | Settings › AI account: **Stop a task that reaches $…** and **Monthly limit** |
+| Terminal UI | `/cap 0.50`, or `/cap off` |
+| `mobster run`, `mobster serve` | `--spend-cap-usd 0.50` |
+| `mobster verify`, a check file | `--max-usd`, or `budget.max_usd` (default 0.25, at most 1.00) |
+
+## What the model sees
+
+Mobster's agent sends your provider the task, the text on the iPhone's screen and a small screenshot of each step, plus what a task needs from your conversation, memory and files. [Privacy and your data](/privacy) has the whole list.

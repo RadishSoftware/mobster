@@ -1,0 +1,54 @@
+# Daybreak, the sample app for Mobster's docs and tests.
+# The generated Daybreak.xcodeproj is committed, so building needs only Xcode.
+# After editing this file, regenerate it with: xcodegen generate
+name: Daybreak
+options:
+  bundleIdPrefix: dev.mobster
+  deploymentTarget:
+    iOS: "17.0"
+  developmentLanguage: en
+  createIntermediateGroups: true
+settings:
+  base:
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "6.0"
+targets:
+  Daybreak:
+    type: application
+    platform: iOS
+    sources:
+      - path: Daybreak
+    info:
+      path: Daybreak/Info.plist
+      properties:
+        CFBundleDisplayName: Daybreak
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        CFBundleURLTypes:
+          - CFBundleURLName: dev.mobster.daybreak
+            CFBundleURLSchemes: [daybreak]
+        ITSAppUsesNonExemptEncryption: false
+        LSRequiresIPhoneOS: true
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UILaunchScreen:
+          UIColorName: LaunchBackground
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.mobster.daybreak
+        PRODUCT_NAME: Daybreak
+        TARGETED_DEVICE_FAMILY: "1"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        ENABLE_PREVIEWS: YES
+schemes:
+  Daybreak:
+    build:
+      targets:
+        Daybreak: all
+    run:
+      config: Debug
+    archive:
+      config: Release

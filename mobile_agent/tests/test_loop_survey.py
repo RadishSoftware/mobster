@@ -22,9 +22,9 @@ DRY = (" This is a dry run: only look at the images (you may open each one to vi
        "Do not favorite, share, rename, move, edit or delete anything.")
 DOGS_GOAL = ("In Files: In Files, open On My iPhone > MobsterBench > dogs12. Which of the 12 images contain a real "
              "dog (not a toy, statue, drawing or sign)? Report the file names." + DRY)
-EYES_GOAL = ("In Files: In Files, open On My iPhone > MobsterBench > eyes8. For each of the 8 images, report the eye "
-             "colour of the person (blue, green, grey, hazel or brown), or 'unsure' when the eyes cannot be seen "
-             "clearly enough to tell." + DRY)
+COLOURS_GOAL = ("In Files: In Files, open On My iPhone > MobsterBench > colours8. For each of the 8 images, report "
+                "its main colour (red, green, blue, yellow or white), or 'unsure' when it cannot be told clearly "
+                "enough." + DRY)
 ALBUM_GOAL = ("In Photos: In Photos, open the album 'MobsterBench Dogs'. How many of its photos contain a real dog "
               "(not a toy, statue, drawing or sign)?" + DRY)
 NAMES_SCHEMA = {"type": "object", "properties": {"dog_files": {"type": "array", "items": {"type": "string"},
@@ -32,10 +32,10 @@ NAMES_SCHEMA = {"type": "object", "properties": {"dog_files": {"type": "array", 
                 "required": ["dog_files"], "additionalProperties": False}
 COUNT_SCHEMA = {"type": "object", "properties": {"count": {"type": "string"}}, "required": ["count"],
                 "additionalProperties": False}
-LABELS_SCHEMA = {"type": "object", "properties": {"eye_colours": {"type": "array", "items": {
+LABELS_SCHEMA = {"type": "object", "properties": {"colours": {"type": "array", "items": {
     "type": "object", "properties": {"file": {"type": "string"}, "label": {"type": "string"}},
     "required": ["file", "label"], "additionalProperties": False}, "maxItems": 100}},
-    "required": ["eye_colours"], "additionalProperties": False}
+    "required": ["colours"], "additionalProperties": False}
 
 
 def files_label(name):
@@ -115,10 +115,10 @@ def survey_program(kind="names", *, prefix="dogs12-", app=FILES, unsure="stop", 
     return program
 
 
-def eyes_program():
-    return survey_program("labels", prefix="eyes8-", predicate={
-        "question": "What colour are this person's eyes?",
-        "choices": ["blue", "green", "grey", "hazel", "brown", "unsure"], "decompose": "eye_colour"},
+def colours_program():
+    return survey_program("labels", prefix="colours8-", predicate={
+        "question": "What is the main colour of this image?",
+        "choices": ["red", "green", "blue", "yellow", "white", "unsure"]},
         branches={"true": [], "false": [], "unsure": "skip"}, stop={"count_items": 8})
 
 
@@ -150,23 +150,23 @@ def no_model():
 
 class DetectionTests(unittest.TestCase):
     def test_questions_over_every_item_are_surveys_and_one_item_questions_are_not(self):
-        for goal in (DOGS_GOAL.replace(DRY, ""), EYES_GOAL.replace(DRY, ""), ALBUM_GOAL.replace(DRY, ""),
+        for goal in (DOGS_GOAL.replace(DRY, ""), COLOURS_GOAL.replace(DRY, ""), ALBUM_GOAL.replace(DRY, ""),
                      "In which of the 12 images is a person wearing sunglasses on their face?",
                      "How many of the photos in this album are receipts?"):
             self.assertTrue(looks_iterative(goal), goal)
-        for goal in ("In Files, open eyes8 and view eyes8-01. What colour are the person's eyes?",
-                     "what colour are the person's eyes in eyes8-01?",
+        for goal in ("In Files, open colours8 and view colours8-01. What is its main colour?",
+                     "what is the main colour of colours8-01?",
                      "In Reminders, report how many incomplete reminders it has",
                      "Which of these settings is on?"):
             self.assertFalse(looks_iterative(goal), goal)
 
     def test_the_stated_collection_size_and_file_names_are_read_in_code(self):
         self.assertEqual(stated_count(DOGS_GOAL), 12)
-        self.assertEqual(stated_count(EYES_GOAL), 8)
+        self.assertEqual(stated_count(COLOURS_GOAL), 8)
         self.assertIsNone(stated_count(ALBUM_GOAL))
         self.assertEqual(item_name("dogs12-01, jpg, 12:15 AM, 50 KB"), "dogs12-01")
         self.assertEqual(item_name("dogs12-01.jpg, Sep 23, 2026, 50 KB"), "dogs12-01.jpg")
-        self.assertEqual(item_name("eyes8-03, JPEG image, 1.2 MB"), "eyes8-03")
+        self.assertEqual(item_name("colours8-03, JPEG image, 1.2 MB"), "colours8-03")
         self.assertEqual(item_name("Settings"), "Settings")
 
 
@@ -192,23 +192,18 @@ class SurveyValidationTests(unittest.TestCase):
                survey_program(report={"kind": "summary"}),
                survey_program(report={"kind": "names", "extra": 1}),
                survey_program("labels", predicate={"question": "Which colour?",
-                                                   "choices": ["red", "blue", "green"]}),  # no unsure choice
-               survey_program("labels", predicate={"question": "Eye colour?", "decompose": "eye_colour",
-                                                   "choices": ["red", "blue", "unsure"]})]
+                                                   "choices": ["red", "blue", "green"]})]  # no unsure choice
         for program in bad:
             with self.assertRaises(ProgramError):
                 validate_program(program, request=DOGS_GOAL)
 
     def test_labels_answer_the_colour_itself_and_unsure_only_when_the_request_allows_it(self):
-        program = validate_program(eyes_program(), request=EYES_GOAL)
+        program = validate_program(colours_program(), request=COLOURS_GOAL)
         self.assertEqual(program["branches"]["unsure"], "skip")
-        self.assertEqual(program["predicate"]["true_choices"], ["blue", "green", "grey", "hazel", "brown"])
+        self.assertEqual(program["predicate"]["true_choices"], ["red", "green", "blue", "yellow", "white"])
         self.assertEqual(program["stop"]["count_items"], 8)
-        strict = validate_program(eyes_program(), request="For each of the 8 images, report the eye colour.")
+        strict = validate_program(colours_program(), request="For each of the 8 images, report its main colour.")
         self.assertEqual(strict["branches"]["unsure"], "stop")
-        steps = loops.eye_colour_steps(program["predicate"])
-        self.assertEqual(steps[-1].mapping, {"blue": "blue", "green": "green", "grey": "grey", "hazel": "hazel",
-                                             "brown": "brown", "unclear": "unsure"})
 
     def test_a_grid_survey_compiles_without_a_pin_call_and_defers_when_off_screen(self):
         tools = FakeTools()
@@ -363,15 +358,28 @@ class SurveyAgentTests(unittest.TestCase):
             for b in range(a + 1, len(base)):
                 self.assertGreater(bin(base[a] ^ base[b]).count("1"), loops.PIXEL_MATCH_BITS)
 
-    def test_eye_colour_labels_report_unsure_where_the_judge_abstained(self):
-        names = [f"eyes8-{i:02d}" for i in range(1, 9)]
-        colours = ["blue", "unsure", "brown", "green", "unsure", "hazel", "grey", "brown"]
-        app = GridApp([files_label(n) for n in names], folder="eyes8")
-        result = Agent(app, no_model(), Helper(eyes_program()), settle_seconds=0, loop_mode="dry_run",
+    def test_colour_labels_report_unsure_where_the_judge_abstained(self):
+        names = [f"colours8-{i:02d}" for i in range(1, 9)]
+        colours = ["blue", "unsure", "red", "green", "unsure", "yellow", "white", "red"]
+        app = GridApp([files_label(n) for n in names], folder="colours8")
+        result = Agent(app, no_model(), Helper(colours_program()), settle_seconds=0, loop_mode="dry_run",
                        vision_judge=GridJudge(dict(zip(names, colours)))).run(
-            EYES_GOAL, execute=True, output_schema=LABELS_SCHEMA, output_format="json")
-        self.assertEqual(result["data"], {"eye_colours": [{"file": n, "label": c} for n, c in zip(names, colours)]})
+            COLOURS_GOAL, execute=True, output_schema=LABELS_SCHEMA, output_format="json")
+        self.assertEqual(result["data"], {"colours": [{"file": n, "label": c} for n, c in zip(names, colours)]})
         self.assertEqual((result["status"], result["data_status"]), ("completed_unverified", "extracted"))
+
+    def test_a_survey_of_the_eye_colour_of_the_people_in_a_folder_is_refused(self):
+        # A loop never judges a person's looks, read-only or not: nothing is compiled, opened or judged.
+        names = [f"eyes8-{i:02d}" for i in range(1, 9)]
+        app, helper, events = GridApp([files_label(n) for n in names], folder="eyes8"), Helper(None), []
+        goal = ("In Files, open On My iPhone > MobsterBench > eyes8. For each of the 8 images, report the eye colour "
+                "of the person (blue, green, grey, hazel or brown)." + DRY)
+        result = Agent(app, no_model(), helper, settle_seconds=0, loop_mode="dry_run", emit=events.append,
+                       vision_judge=GridJudge({})).run(goal, execute=True)
+        self.assertEqual((result["status"], result["actions"], app.actions), ("blocked", 0, []))
+        self.assertIn("how they look", result["reason"])
+        self.assertEqual(helper.calls, 0)
+        self.assertIn({"event": "loop_not_compiled", "reason": "appearance"}, events)
 
     def test_an_item_that_cannot_be_judged_is_an_honest_abstention(self):
         app = GridApp([files_label(n) for n in dogs()])
@@ -397,16 +405,16 @@ class SurveyAgentTests(unittest.TestCase):
 
 
     def test_a_survey_that_cannot_fit_the_requested_answer_goes_to_the_step_agent(self):
-        names = [f"eyes8-{i:02d}" for i in range(1, 9)]
-        app = GridApp([files_label(n) for n in names], folder="eyes8")
+        names = [f"colours8-{i:02d}" for i in range(1, 9)]
+        app = GridApp([files_label(n) for n in names], folder="colours8")
         model = Mock(spec=["decide", "stable_completion"], stable_completion=True)
         model.decide.return_value = Decision("BLOCKED", None, .9, 0, .9, "t", 0, {}, StopGate.CONTINUE)
         events = []
-        schema = {"type": "object", "properties": {"eye_colour": {"type": "string"}}, "required": ["eye_colour"],
+        schema = {"type": "object", "properties": {"colour": {"type": "string"}}, "required": ["colour"],
                   "additionalProperties": False}
-        Agent(app, model, Helper(eyes_program()), settle_seconds=0, loop_mode="dry_run", max_steps=1,
+        Agent(app, model, Helper(colours_program()), settle_seconds=0, loop_mode="dry_run", max_steps=1,
               emit=events.append, vision_judge=GridJudge({})).run(
-            "In Files, open eyes8 and view eyes8-06. What colour are the person's eyes? Look at each one if needed "
+            "In Files, open colours8 and view colours8-06. What is its main colour? Look at each one if needed "
             "but do not favorite anything.", execute=True, output_schema=schema, output_format="json")
         self.assertIn({"event": "loop_not_compiled", "reason": "survey_schema_mismatch"}, events)
         self.assertNotIn("loop_item", [e["event"] for e in events])

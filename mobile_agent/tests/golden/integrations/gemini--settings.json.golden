@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "mobster": {
+      "command": "/opt/mobster/bin/mobster",
+      "args": ["mcp"]
+    }
+  }
+}

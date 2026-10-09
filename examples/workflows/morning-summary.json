@@ -1,0 +1,10 @@
+{
+ "name": "Morning summary",
+ "appId": null,
+ "engine": "smart",
+ "goal": "Read my notifications with READ_NOTIFICATIONS and today's events in Calendar, then tell me in at most five short lines what needs my attention today. Only read: don't open, reply to, clear or change anything.",
+ "outputFormat": "auto",
+ "cron": "0 7 * * *",
+ "timezone": "America/Los_Angeles",
+ "enabled": false
+}

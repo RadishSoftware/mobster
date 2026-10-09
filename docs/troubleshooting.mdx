@@ -1,0 +1,40 @@
+---
+title: "Troubleshooting"
+description: "Find the fix for what you see. Start with mobster doctor."
+icon: "life-buoy"
+keywords: ["troubleshooting", "error", "not working", "help", "fix", "doctor"]
+---
+
+Run a doctor first. It checks each part in order and prints the fix under anything that's wrong.
+
+<CodeGroup>
+```sh Your iPhone
+mobster doctor
+```
+
+```sh Checks on a simulator
+mobster sim doctor
+```
+</CodeGroup>
+
+Use `mobster doctor` for tasks on your iPhone, and `mobster sim doctor` for checks on a simulator.
+
+## Find what you see
+
+| You see | Go to |
+|---|---|
+| `mobster: command not found`, an old version, or no terminal UI | [Install issues](/troubleshooting/install) |
+| WebDriverAgent isn't answering, no iPhone, not trusted, the helper expired | [iPhone issues](/troubleshooting/iphone) |
+| Your iPhone is locked, unplugged, or asks for Face ID | [iPhone issues](/troubleshooting/iphone#locked) |
+| No model key, a task ends blocked or needs review, the spend cap | [Task issues](/troubleshooting/tasks) |
+| `couldnt_run`, a slow first build, or no Smart in `mobster mcp` | [Check issues](/troubleshooting/checks) |
+| License, Setup, the helper's weekly refresh, voice, your AI account | [Mac app issues](/troubleshooting/mac) |
+| A status or exit code you don't know | [Errors and exit codes](/reference/errors) |
+
+## Report a problem
+
+Open an [issue](https://github.com/RadishSoftware/mobster/issues/new/choose) with the output of `mobster version` and `mobster doctor`, the task you gave, and the status it ended with. `mobster run … --json > run.jsonl` captures the events of one run.
+
+<Warning>A run's events and Mobster's logs hold the text Mobster read on your screen. Read them before you attach them.</Warning>
+
+For Mobster for Mac, write to [support@radish.software](mailto:support@radish.software). Say what you were doing and what you saw; a screenshot helps.

@@ -1,0 +1,147 @@
+---
+title: "Changelog"
+description: "What's new in Mobster for Mac and Mobster CLI."
+icon: "history"
+rss: true
+---
+
+New in Mobster for Mac and Mobster CLI, newest first. Run `mobster version` to see which CLI you have. [Subscribe with RSS](https://docs.mobster.dev/changelog/rss.xml), or read Mobster CLI's full list, with every flag and fix, in its [CHANGELOG.md](https://github.com/RadishSoftware/mobster/blob/main/CHANGELOG.md).
+
+<Update label="8 October 2026" description="Save a task as a GIF" tags={["Mac app", "CLI"]}>
+  - **Save as GIF**, under a finished task in the Mac app, saves it to Downloads as a captioned GIF: the task as you typed it, each step's screen with what Mobster did, the approval card if it asked, and the result. It stays under X's 15 MB limit and stays on your Mac until you share it. [Share a task](/mac/tour#share-a-task)
+  - `mobster export ID --gif` does the same from Terminal, with `--mp4` for an MP4 (it needs ffmpeg), `--redact` to blur text fields and messages, and `--theme night` for the dark ground. `mobster history` says how. [`mobster export`](/cli#mobster-export)
+</Update>
+
+<Update label="7 October 2026" description="Conversations, memory, files, voice and mobster test" tags={["Mac app", "CLI", "MCP"]} rss={{ title: "Conversations, memory, files, voice and mobster test", description: "Tasks belong to conversations, Mobster remembers what you tell it, takes files and listens in the Mac app, and mobster test runs your app's checks on simulators and your own iPhone. One command adds Mobster to every agent on your Mac." }}>
+  Tasks now belong to conversations: a follow-up knows what the last task found, and a message you send while Mobster works steers it. Mobster remembers what you choose to keep, reads files you attach, and in the Mac app you can say a task instead of typing it. For app developers, `mobster test` runs every check in your project on simulators and your own iPhone.
+
+  <Frame caption="A task stopped at its approval: nothing is sent until you choose.">
+    <img src="/images/changelog/approval-card-light.webp" alt="Mobster for Mac asking before a send, with the message text and the buttons Send and Don't send." className="block dark:hidden" />
+    <img src="/images/changelog/approval-card-dark.webp" alt="Mobster for Mac asking before a send, with the message text and the buttons Send and Don't send." className="hidden dark:block" />
+  </Frame>
+
+  ## Conversations
+
+  - A follow-up uses what earlier tasks found: ask for your last message from Kate Bell, then say "now reply to that". Rules you gave ("don't send anything yet") carry over word for word.
+  - A message sent while Mobster works reaches it before its next step. A message never approves anything.
+  - **Pause** stops between steps, **Stop after this step** ends cleanly, and **Pick up where it left off** starts an interrupted task again from its last finished step, after looking at your iPhone.
+  - When a task could mean two things, Mobster may ask which one you meant, with each choice as a button. Settings › Advanced turns this off.
+  - **Recent** in the sidebar lists your newest conversations, and ⌘K finds them by title. `mobster chat` holds the same conversations from Terminal. [Conversations](/conversations)
+
+  ## Memory
+
+  - Mobster remembers what you tell it, in your words, on this Mac. Nothing is saved until you choose **Remember**, and it never remembers passwords, codes or card numbers.
+  - A task gets only the few things that fit it, at most 12. Settings › Memory and `mobster memory` list, edit, pin, export and delete them. [Memory](/memory)
+
+  ## Files
+
+  - Attach images, PDFs, text and CSV files to a task, up to 10 files of 25 MB each. Files stay on your Mac, a task sends only what it reads, and a file's text never approves anything.
+  - Put a file in an app's folder on your iPhone from the app, from `mobster phone file put`, or from Mobster's agent after it asks you. [Files](/files)
+
+  ## Voice
+
+  - In Mobster for Mac on macOS 26 or later, hold the mic or ⌥ Space and say the task. What you say becomes text on this Mac and lands in the task box for you to check. Nothing is recorded, and voice never answers an approval. [Voice](/voice)
+
+  ## mobster test
+
+  - `mobster test` runs every check in `.mobster/checks` on simulators in parallel, with retries from a fresh app, flaky-check detection, a quarantine file, tags and shards.
+  - It writes `results.json`, JUnit XML and an HTML report with each run's frames, so CI can keep one folder.
+  - `--device` runs checks on your own iPhone, only on builds you installed, and never clears the app's data.
+  - `mobster test record` turns a finished task into a check. [Run every check](/testing)
+
+  ## For coding agents
+
+  - `phone_task` hands a whole task to Mobster's agent in a conversation, and you approve sends, buys, posts and deletes in the Mobster app. `run_tests` and `record_check` run and record checks. [MCP server](/mcp-server)
+  - `mobster mcp install --all` adds Mobster's MCP server to Claude Code, Codex, Cursor, VS Code, Claude Desktop, opencode, Gemini CLI, Windsurf, Zed, Goose, Amp, Cline and oh-my-pi, with the full path to `mobster`. It keeps each file's comments, leaves a backup, changes nothing when run again and never writes a key. `--remove` undoes it.
+  - `mobster mcp clients` shows which agents are installed and which run Mobster. `mobster mcp doctor` starts the server as a desktop app would and calls `status`.
+  - The mobster skill teaches any agent the verify loop, driving an iPhone and the safety rules: `npx skills add RadishSoftware/mobster`. A Claude Code plugin adds the server, the skill and `/mobster:verify`. [Plugin and skill](/agents/plugin-and-skill)
+
+  ## Safety
+
+  - A repeated action in a dating app, such as swiping or messaging people one after another, now ends before any tap with "Mobster doesn't automate dating apps." One action there, such as replying to one message, runs as before. [Approvals and safety](/safety)
+
+  ## Mobster for Mac
+
+  - The task page is a conversation, with the approval and the composer docked under it.
+  - The app uses the same colours, type and controls as mobster.dev.
+</Update>
+
+<Update label="6 October 2026" description="Several phones, sign-in codes and a new look" tags={["Mac app", "CLI", "MCP"]}>
+  ## Several phones at once
+
+  Mobster drives any number of USB iPhones and Mobster simulators, one task per device, with tasks on different devices running at the same time. With one phone, nothing changes.
+
+  - `mobster devices` lists every device with its state: ready, busy, connected, needs setup or disconnected.
+  - `--device` names a device on `run`, `screen`, `doctor`, `serve`, `mcp`, `verify` and the terminal UI.
+  - In the Mac app, a second iPhone shows as **Needs setup**, and Setup runs again for that phone only.
+  - Over MCP, `list_devices` names the devices, and the phone tools take `device` to drive one directly, a real USB iPhone included. `mobster mcp --allow-device` keeps a server to the iPhones you name.
+
+  ## New things Mobster can do on your iPhone
+
+  - **Sign-in codes.** Mobster finds a code the phone just received, asks you before it uses it, and types it into the code field. The model never sees the code.
+  - **Notifications.** Mobster can read Notification Center without tapping anything, with codes masked.
+  - **`mobster phone`** puts text on the phone's clipboard, prints what it holds, and installs a signed `.app` or `.ipa`.
+  - **Alerts for schedules.** A webhook hears when a scheduled task fails, stops early or waits for your approval, and your Mac stays awake for scheduled runs.
+
+  ## Safer on a real iPhone
+
+  - A locked, unplugged or sheet-covered iPhone stops a task before any model call, with a sentence that says what to do.
+  - Every MCP tool says whether it only reads or acts on the device, so a client that asks before acting asks for these.
+  - A check file can name only a simulator, so a check in a repository never drives someone's phone.
+  - Mobster doesn't unlock iPhones, and the docs no longer say it does.
+
+  ## The Mac app
+
+  - A redesigned app with Setup in three parts: your Mac, your AI account and your iPhone.
+  - A license, checked offline, managed in Settings › License.
+  - Plainer words throughout, and Settings › For developers.
+  - A new mark and app icon: a phone with two eyes.
+
+  ## Mobster CLI
+
+  - Options must be spelled in full: `--exec` no longer means `--execute`. A mistyped command or option suggests the one you meant.
+  - `mobster help COMMAND` prints a command's help.
+  - Sending a message takes exactly one approval, after the text is typed, and Smart's first action comes sooner.
+</Update>
+
+<Update label="5 October 2026" description="Mobster CLI 0.2.0: check the screens your agent builds" tags={["CLI", "MCP"]}>
+  - **`mobster verify`** checks an iOS app on a headless simulator. It installs the app, runs the flow, and decides the verdict from assertions on the accessibility tree, never from a model. Every run leaves a report with the frames it was decided on.
+  - **`mobster mcp`** lets your coding agent do the same: drive the app with Mobster's tools and get the verdict, with no key, or let Mobster run the steps on your Claude or OpenAI key.
+  - **`mobster sim`** creates, prepares and cleans up the simulators Mobster uses, and never touches your own.
+  - **Daybreak**, a sample SwiftUI app with a paywall, sample checks and bugs you can plant.
+  - **A standalone, signed build** for Apple silicon that needs no Python, installed with one line from mobster.dev.
+</Update>
+
+<Update label="29 September 2026" description="Smart on Claude" tags={["Mac app", "CLI"]}>
+  Smart runs on an Anthropic key as well as an OpenAI one, and you can choose the Smart model.
+</Update>
+
+<Update label="28 September 2026" tags={["Mac app"]}>
+  - Smart says when your AI account is out of credit, gives full answers, and titles each approval with what it will do.
+  - History, the task library and saved workflows are quicker to use from the keyboard.
+</Update>
+
+<Update label="27 September 2026" description="Smart in the Mac app, and a terminal UI" tags={["Mac app", "CLI"]}>
+  ## The Mac app
+
+  - **Smart** is the default engine. Its cost shows before a task and is capped.
+  - **Setup in one sitting**, with readable errors, and a helper that renews itself.
+  - **The composer**: Enter sends, Shift+Enter starts a new line, a task can start in any app, and schedules read in your local time.
+  - **Results with proof**: a task counts as done only when the screen shows it, and each approval names the act it guards.
+  - ⌘K finds every task, and workflows can be edited and deleted.
+  - Updates and downloads come from mobster.dev.
+
+  ## Mobster CLI
+
+  - **The terminal UI**: `mobster` opens it. Type a task, watch each step beside the phone's screen, and answer approvals inline. `mobster --demo` runs it with a scripted phone.
+  - One command surface with `doctor`, `history`, `screen`, `run`, `serve`, `demo` and `version`, and docs for each.
+</Update>
+
+<Update label="26 September 2026" description="Any app on your iPhone" tags={["Mac app"]}>
+  - Mobster can use any app installed on your iPhone, not only the ones it knew about.
+  - Signed and notarized releases, with in-app updates that install only a signed version.
+</Update>
+
+<Update label="25 September 2026" tags={["Mac app", "CLI"]}>
+  Mobster's agent got faster and handles more of iOS: keypads, switches, share sheets, long presses and paging through lists.
+</Update>

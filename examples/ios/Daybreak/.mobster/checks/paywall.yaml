@@ -1,0 +1,19 @@
+# Launch-only: no steps and no model calls. Mobster installs Daybreak, opens the paywall by
+# deep link, and checks it against the accessibility tree.
+#   mobster verify --check .mobster/checks/paywall.yaml
+version: 1
+name: The paywall shows three plans with Annual at $39.99 a year
+app:
+  bundle: dev.mobster.daybreak
+  path: .build/Build/Products/Debug-iphonesimulator/Daybreak.app
+tags: [smoke, paywall]
+launch:
+  url: daybreak://paywall
+expect:
+  - text: Choose your plan
+  - count: { id: /^plan_/ }
+    equals: 3
+  - value: { id: plan_annual }
+    equals: $39.99 / year
+  - visible: { label: Restore Purchases, role: button }
+  - no_text: Loading

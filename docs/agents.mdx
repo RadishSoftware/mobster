@@ -1,0 +1,273 @@
+---
+title: "Add Mobster to your agent"
+sidebarTitle: "Add to your agent"
+description: "One command adds Mobster to Claude Code and the other MCP clients on your Mac, so your agent can use a simulator or your iPhone."
+icon: "plug"
+keywords: ["mcp", "claude code", "codex", "cursor", "vs code", "add to claude code", "mcp server", "coding agent"]
+---
+
+`mobster mcp` is a local MCP server. With it, your coding agent can read the screen and tap and type on a simulator or your own iPhone, then check its UI change with a pass or fail. It can also run your saved checks (`run_tests`) or hand a whole task to Mobster's agent (`phone_task`).
+
+## Let your agent do it
+
+<Prompt description="**Set up Mobster for me.** Paste it into your coding agent, in your app's project folder." actions={["copy", "cursor"]}>
+Set up Mobster for me. Fetch https://docs.mobster.dev/agents/setup.md and follow it step by step. Ask me before you touch an iPhone, and stop if a step fails.
+</Prompt>
+
+## Add it with one command
+
+Install Mobster, prepare the simulator once, then add the server to every agent on this Mac:
+
+```sh
+curl -fsSL https://mobster.dev/install.sh | sh
+mobster sim doctor --fix
+mobster mcp install --all
+mobster mcp doctor
+```
+
+`mobster mcp install` finds each client on this Mac and adds the server with the full path to `mobster`, because apps opened from the Dock don't see your shell's `PATH`. It keeps your config's comments and saves a backup beside it. It never writes a key, and `--remove` takes Mobster out again. `mobster mcp doctor` then starts the server the way a desktop app would and calls `status`.
+
+<Note>
+  Tested on 7 October 2026 with Claude Code 2.1.290, Codex 0.161.0, opencode 1.17.18 and oh-my-pi 18.2.8: a real session of each called Mobster's `status` tool. The other setups follow each client's own documentation as it read that day. [MCP server](/mcp-server#which-clients-are-tested) has the table.
+</Note>
+
+## Add it by hand
+
+mobster.dev also has a page for each agent, from install to a first check on the sample app: [Integrations](https://mobster.dev/integrations).
+
+<Tabs>
+  <Tab title="Claude Code">
+    ```sh
+    claude mcp add mobster -- mobster mcp
+    ```
+
+    Or share it with your team in the project's `.mcp.json`:
+
+    ```json .mcp.json
+    {
+      "mcpServers": {
+        "mobster": { "command": "mobster", "args": ["mcp"] }
+      }
+    }
+    ```
+
+    `/mcp` in Claude Code lists the server and its tools. The [plugin](/agents/plugin-and-skill) adds the server, the mobster skill and `/mobster:verify`.
+  </Tab>
+  <Tab title="Codex">
+    ```sh
+    codex mcp add mobster -- mobster mcp
+    ```
+
+    Or in `~/.codex/config.toml`, or `.codex/config.toml` in a trusted project:
+
+    ```toml ~/.codex/config.toml
+    [mcp_servers.mobster]
+    command = "mobster"
+    args = ["mcp"]
+    ```
+
+    Codex's default tool timeout of 60 seconds is enough: every Mobster tool call returns within 50.
+  </Tab>
+  <Tab title="Cursor">
+    <a className="mob-button" href="cursor://anysphere.cursor-deeplink/mcp/install?name=mobster&config=eyJjb21tYW5kIjoibW9ic3RlciIsImFyZ3MiOlsibWNwIl19">Add Mobster to Cursor</a>
+
+    Or in `.cursor/mcp.json` for one project, or `~/.cursor/mcp.json` for every project, with the path `command -v mobster` prints:
+
+    ```json ~/.cursor/mcp.json
+    {
+      "mcpServers": {
+        "mobster": {
+          "type": "stdio",
+          "command": "/Users/you/.local/bin/mobster",
+          "args": ["mcp"]
+        }
+      }
+    }
+    ```
+
+    The button adds `mobster mcp` by name. If Cursor can't start it, run `mobster mcp install cursor`, which writes the full path.
+  </Tab>
+  <Tab title="VS Code">
+    In `.vscode/mcp.json` for one workspace, or the `mcp.json` in your user profile. VS Code's key is `servers`, not `mcpServers`:
+
+    ```json .vscode/mcp.json
+    {
+      "servers": {
+        "mobster": {
+          "type": "stdio",
+          "command": "/Users/you/.local/bin/mobster",
+          "args": ["mcp"]
+        }
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+The examples use `/Users/you/.local/bin/mobster`, where the install script links it. Put in the path `command -v mobster` prints.
+
+<AccordionGroup>
+  <Accordion title="Claude Desktop">
+    In `~/Library/Application Support/Claude/claude_desktop_config.json`, then quit and reopen Claude:
+
+    ```json claude_desktop_config.json
+    {
+      "mcpServers": {
+        "mobster": { "command": "/Users/you/.local/bin/mobster", "args": ["mcp"] }
+      }
+    }
+    ```
+
+    Runs go to `.mobster/runs` in the folder the client starts the server in, or to `runs/` in Mobster's data folder when that folder is `/` or your home folder. Add `"--out"` and a folder after `"mcp"` to choose.
+  </Accordion>
+  <Accordion title="opencode">
+    In `opencode.json` in your project, or `~/.config/opencode/opencode.json`. opencode takes the command and its arguments as one list:
+
+    ```json opencode.json
+    {
+      "$schema": "https://opencode.ai/config.json",
+      "mcp": {
+        "mobster": { "type": "local", "command": ["mobster", "mcp"], "enabled": true }
+      }
+    }
+    ```
+  </Accordion>
+  <Accordion title="Gemini CLI">
+    In `~/.gemini/settings.json`, or `.gemini/settings.json` in your project:
+
+    ```json ~/.gemini/settings.json
+    {
+      "mcpServers": {
+        "mobster": { "command": "mobster", "args": ["mcp"] }
+      }
+    }
+    ```
+  </Accordion>
+  <Accordion title="Windsurf">
+    In `~/.codeium/windsurf/mcp_config.json`. Windsurf is now Devin Desktop, whose documentation names `~/.config/devin/mcp_config.json`; use that file if you have that folder.
+
+    ```json mcp_config.json
+    {
+      "mcpServers": {
+        "mobster": { "command": "/Users/you/.local/bin/mobster", "args": ["mcp"] }
+      }
+    }
+    ```
+  </Accordion>
+  <Accordion title="Zed">
+    In `~/.config/zed/settings.json`, or `.zed/settings.json` in your project. Zed calls MCP servers context servers:
+
+    ```json ~/.config/zed/settings.json
+    {
+      "context_servers": {
+        "mobster": { "command": "/Users/you/.local/bin/mobster", "args": ["mcp"], "env": {} }
+      }
+    }
+    ```
+  </Accordion>
+  <Accordion title="Goose">
+    In `~/.config/goose/config.yaml`, under `extensions`:
+
+    ```yaml ~/.config/goose/config.yaml
+    extensions:
+      mobster:
+        enabled: true
+        type: stdio
+        name: mobster
+        cmd: /Users/you/.local/bin/mobster
+        args: [mcp]
+        envs: {}
+        timeout: 300
+    ```
+  </Accordion>
+  <Accordion title="Amp">
+    In `~/.config/amp/settings.json`. `amp.mcpServers` is one key with a dot in it:
+
+    ```json ~/.config/amp/settings.json
+    {
+      "amp.mcpServers": {
+        "mobster": { "command": "/Users/you/.local/bin/mobster", "args": ["mcp"] }
+      }
+    }
+    ```
+  </Accordion>
+  <Accordion title="Cline">
+    In `~/.cline/data/settings/cline_mcp_settings.json`, which the VS Code extension, the CLI and JetBrains share. Leave `autoApprove` empty: a phone tool acts on a real iPhone.
+
+    ```json cline_mcp_settings.json
+    {
+      "mcpServers": {
+        "mobster": {
+          "command": "/Users/you/.local/bin/mobster",
+          "args": ["mcp"],
+          "disabled": false,
+          "autoApprove": []
+        }
+      }
+    }
+    ```
+  </Accordion>
+  <Accordion title="oh-my-pi">
+    In `~/.omp/agent/mcp.json`, or `.omp/mcp.json` in your project:
+
+    ```json ~/.omp/agent/mcp.json
+    {
+      "mcpServers": {
+        "mobster": { "type": "stdio", "command": "/Users/you/.local/bin/mobster", "args": ["mcp"] }
+      }
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Check that it works
+
+Ask your agent to call Mobster's `status` tool. It answers with Mobster's version, the simulator setup, whether Mobster's agent is on, and where runs go. If the client can't start the server, run `mobster mcp` in a terminal: it prints `Serving MCP on stdio.`, or the problem that stopped it. `ctrl+c` leaves.
+
+## Turn on Mobster's agent
+
+Without a key, your agent drives with its own model and Mobster calls no model at all. With your Claude or OpenAI key, the server also offers `verify`, which runs a check's steps itself. Keep the key in a file only you can read, and point the server at it:
+
+```sh
+mkdir -p ~/.config/mobster
+echo 'ANTHROPIC_API_KEY=…' > ~/.config/mobster/agent.env
+chmod 600 ~/.config/mobster/agent.env
+claude mcp add mobster -- mobster mcp --env-file ~/.config/mobster/agent.env
+```
+
+In a JSON config, add `"--env-file", "/Users/you/.config/mobster/agent.env"` after `"mcp"` in `args`. Never put a key in a config file that lives in a repository.
+
+## Keep it to the devices you choose
+
+<Warning>
+  Your client approves a tool, not a device: allowing `tap` for simulator work allows it on your iPhone too. Add `--allow-device` to keep a server to the iPhones you name. Any other real iPhone is refused, and simulators are always allowed.
+</Warning>
+
+```sh
+claude mcp add mobster -- mobster mcp --allow-device "Test iPhone"
+```
+
+## Search these docs from your agent
+
+These docs have their own MCP server, which searches these pages and never touches a phone. It's separate from `mobster mcp`:
+
+```sh
+claude mcp add --transport http mobster-docs https://docs.mobster.dev/mcp
+```
+
+## Next
+
+<CardGroup cols={2}>
+  <Card title="MCP server" icon="bot" href="/mcp-server">
+    The key-less and Smart loops, devices, safety on your iPhone, and timeouts.
+  </Card>
+  <Card title="MCP tools" icon="wrench" href="/reference/mcp-tools">
+    Every tool with its arguments, and whether it only reads or acts on a device.
+  </Card>
+  <Card title="Instructions for your agent" icon="file-text" href="/agents/instructions">
+    A block to paste into `CLAUDE.md` or `AGENTS.md`.
+  </Card>
+  <Card title="Run your checks" icon="list-checks" href="/testing">
+    `mobster test` and `run_tests`: every check, with reports for CI.
+  </Card>
+</CardGroup>

@@ -1,0 +1,249 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "maple",
+  "name": "Mobster",
+  "description": "Mobster puts agents on your iPhone. It tests the app you're building and does tasks in your apps, signed in as you, over USB from your Mac.",
+  "colors": {
+    "primary": "#5B41E8",
+    "light": "#A493FF",
+    "dark": "#6E56F6"
+  },
+  "background": {
+    "color": {
+      "light": "#FAF8F5",
+      "dark": "#111014"
+    }
+  },
+  "logo": {
+    "light": "/brand/logo/lockup-light.svg",
+    "dark": "/brand/logo/lockup-dark.svg"
+  },
+  "favicon": "/brand/favicon/favicon.svg",
+  "fonts": {
+    "family": "Google Sans Flex"
+  },
+  "icons": {
+    "library": "lucide"
+  },
+  "appearance": {
+    "default": "system"
+  },
+  "styling": {
+    "eyebrows": "section",
+    "codeblocks": {
+      "theme": {
+        "light": "github-light-default",
+        "dark": "github-dark-default"
+      }
+    }
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "Support",
+        "href": "mailto:support@radish.software"
+      },
+      {
+        "label": "GitHub",
+        "href": "https://github.com/RadishSoftware/mobster"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Get Mobster",
+      "href": "https://mobster.dev"
+    }
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Get started",
+        "icon": "rocket",
+        "groups": [
+          {
+            "group": "Get started",
+            "pages": ["index", "quickstart/mac", "quickstart/cli", "quickstart/test"]
+          },
+          {
+            "group": "Concepts",
+            "pages": ["how-it-works", "safety", "models-and-keys", "privacy", "requirements"]
+          },
+          {
+            "group": "Your iPhone",
+            "pages": ["device-setup", "devices", "capabilities", "wifi"]
+          },
+          {
+            "group": "Plans",
+            "pages": ["pricing", "faq"]
+          }
+        ]
+      },
+      {
+        "tab": "Test your app",
+        "icon": "list-checks",
+        "groups": [
+          {
+            "group": "Run checks",
+            "pages": ["testing", "test/steps"]
+          },
+          {
+            "group": "Automate",
+            "pages": ["ci"]
+          },
+          {
+            "group": "Reference",
+            "pages": ["checks", "simulators"]
+          },
+          {
+            "group": "Help",
+            "pages": ["troubleshooting/checks"]
+          }
+        ]
+      },
+      {
+        "tab": "Your tasks",
+        "icon": "messages-square",
+        "groups": [
+          {
+            "group": "Mobster for Mac",
+            "pages": ["mac/tour", "conversations", "voice", "memory", "files", "schedules", "launchers", "mac/settings", "mac/shortcuts"]
+          },
+          {
+            "group": "In the terminal",
+            "pages": ["tui", "scripting"]
+          },
+          {
+            "group": "Help",
+            "pages": [
+              "troubleshooting",
+              "troubleshooting/install",
+              "troubleshooting/iphone",
+              "troubleshooting/tasks",
+              "troubleshooting/mac"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Agents & MCP",
+        "icon": "bot",
+        "groups": [
+          {
+            "group": "Set up",
+            "pages": ["agents", "agents/plugin-and-skill"]
+          },
+          {
+            "group": "Use",
+            "pages": ["mcp-server", "agents/instructions", "agents/setup"]
+          }
+        ]
+      },
+      {
+        "tab": "Reference",
+        "icon": "book-open",
+        "groups": [
+          {
+            "group": "CLI",
+            "pages": ["cli", "reference/cli"]
+          },
+          {
+            "group": "MCP",
+            "pages": ["reference/mcp-tools"]
+          },
+          {
+            "group": "Settings and errors",
+            "pages": ["configuration", "reference/errors"]
+          },
+          {
+            "group": "Inside Mobster",
+            "pages": ["architecture", "benchmarks"]
+          }
+        ]
+      },
+      {
+        "tab": "Changelog",
+        "icon": "history",
+        "pages": ["changelog"]
+      }
+    ]
+  },
+  "redirects": [
+    {
+      "source": "/mac-app",
+      "destination": "/quickstart/mac"
+    },
+    {
+      "source": "/getting-started",
+      "destination": "/quickstart/cli"
+    },
+    {
+      "source": "/verify",
+      "destination": "/quickstart/test"
+    },
+    {
+      "source": "/threads",
+      "destination": "/conversations"
+    }
+  ],
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "claude",
+      "chatgpt",
+      {
+        "title": "Add Mobster to Cursor",
+        "description": "Install mobster mcp in Cursor",
+        "icon": "plug",
+        "href": "cursor://anysphere.cursor-deeplink/mcp/install?name=mobster&config=eyJjb21tYW5kIjoibW9ic3RlciIsImFyZ3MiOlsibWNwIl19"
+      }
+    ]
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/RadishSoftware/mobster",
+      "website": "https://mobster.dev"
+    },
+    "links": [
+      {
+        "header": "Product",
+        "items": [
+          { "label": "Mobster for Mac", "href": "https://mobster.dev" },
+          { "label": "Mobster CLI", "href": "/quickstart/cli" },
+          { "label": "Pricing", "href": "/pricing" },
+          { "label": "Changelog", "href": "/changelog" }
+        ]
+      },
+      {
+        "header": "Resources",
+        "items": [
+          { "label": "Integrations", "href": "https://mobster.dev/integrations" },
+          { "label": "Compare", "href": "https://mobster.dev/compare" },
+          { "label": "Blog", "href": "https://mobster.dev/blog" },
+          { "label": "GitHub", "href": "https://github.com/RadishSoftware/mobster" },
+          { "label": "Troubleshooting", "href": "/troubleshooting" },
+          { "label": "Support", "href": "mailto:support@radish.software" }
+        ]
+      },
+      {
+        "header": "Legal",
+        "items": [
+          { "label": "Privacy", "href": "https://mobster.dev/privacy" },
+          { "label": "Terms", "href": "https://mobster.dev/terms" }
+        ]
+      }
+    ]
+  },
+  "errors": {
+    "404": {
+      "redirect": false,
+      "title": "This page moved or never existed",
+      "description": "Start from the [quickstarts](/quickstart/mac), [Add Mobster to your agent](/agents), [Troubleshooting](/troubleshooting) or the [CLI reference](/cli), or search with ⌘K."
+    }
+  },
+  "seo": {
+    "metatags": {
+      "canonical": "https://docs.mobster.dev"
+    }
+  }
+}

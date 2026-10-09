@@ -1,0 +1,10 @@
+{
+ "name": "Battery and storage report",
+ "appId": "settings",
+ "engine": "smart",
+ "goal": "Open Settings and report the battery's maximum capacity (Battery › Battery Health), how much storage is used and free (General › iPhone Storage), and the three largest apps with their sizes. Change nothing.",
+ "outputFormat": "auto",
+ "cron": "0 18 * * SUN",
+ "timezone": "America/Los_Angeles",
+ "enabled": false
+}

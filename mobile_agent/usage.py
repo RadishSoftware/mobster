@@ -7,7 +7,12 @@ Historical uninstrumented calls and external account usage are not invented.
 
 import time
 
+from datetime import datetime
+
 from .costs import NANODOLLARS
+
+# Who priced a call: Jev, Gemini on Vertex, an OpenAI-compatible helper, and OpenAI or Anthropic (the Smart engine).
+PROVIDERS = frozenset({"typesafe", "google", "helper", "openai", "anthropic"})
 
 
 def initialize(connection):
@@ -30,7 +35,7 @@ def record_call(connection, run_id, event):
         return
     call_id, provider, model = (event.get(key) for key in ("call_id", "provider", "model"))
     if (not isinstance(call_id, str) or not 1 <= len(call_id) <= 128
-            or provider not in {"typesafe", "google", "helper"}
+            or provider not in PROVIDERS
             or not isinstance(model, str) or not 1 <= len(model) <= 200):
         raise ValueError("Invalid inference usage identity")
     if kind == "inference_started":
@@ -81,3 +86,16 @@ def close_pending(connection, run_id, timestamp):
     # Unknown usage remains NULL, including interrupted requests that may bill.
     connection.execute("UPDATE usage_calls SET finished_at=? WHERE run_id=? AND finished_at IS NULL",
                        (timestamp, run_id))
+
+
+def month_start(now=None):
+    """Milliseconds at the start of this calendar month in the Mac's local time zone."""
+    now = datetime.fromtimestamp(time.time() if now is None else now).astimezone()
+    return now.replace(day=1, hour=0, minute=0, second=0, microsecond=0).timestamp() * 1000
+
+
+def month_usd(connection, now=None):
+    """Published-rate spend of the calls started this calendar month (unpriced calls add nothing)."""
+    cost = connection.execute("SELECT sum(cost_nanodollars) FROM usage_calls WHERE started_at>=?",
+                              (month_start(now),)).fetchone()[0]
+    return (cost or 0) / NANODOLLARS

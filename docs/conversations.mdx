@@ -1,0 +1,172 @@
+---
+title: "Conversations: follow-ups, steering and picking up"
+sidebarTitle: "Conversations"
+description: "Follow up on a task, change course while it runs, and pick up where one left off."
+icon: "messages-square"
+keywords: ["conversation", "follow up", "steer", "pause", "pick up", "mobster chat", "phone_task", "threads"]
+---
+
+A conversation lets one task build on the last. Ask Mobster to find your last message from Kate Bell, then say "now reply to that": the second task knows what the first one found. Send a message while a task runs and Mobster reads it before its next step. Conversations stay on this Mac, in the same private journal as your tasks.
+
+The Mac app, `mobster chat` and MCP's `phone_task` all use the same conversations, through the running Mobster app or `mobster serve`. With neither running, `mobster chat` keeps its conversations in the terminal UI's history on this Mac instead ([below](#without-the-app-or-serve)).
+
+## In Mobster for Mac
+
+Each task starts a conversation, and **Recent** in the sidebar lists them. Type a follow-up in the same box, such as "Reply that I'm running 10 minutes late".
+
+<Frame caption="A conversation: “Actually make it 15 minutes”, sent while Mobster worked and read at its next step, then a follow-up that saved the address in Notes.">
+  <img src="/images/mac/conversation-light.webp" alt="A conversation: a sent message, a note Mobster read while it worked, and the next task's result." className="block dark:hidden" />
+  <img src="/images/mac/conversation-dark.webp" alt="A conversation: a sent message, a note Mobster read while it worked, and the next task's result." className="hidden dark:block" />
+</Frame>
+
+- **Steer it while it works.** What you type while a task runs goes to Mobster at its next step, and reads **Mobster read this** once it has.
+- **Pause.** **Pause** stops the task between steps, and Mobster won't touch your iPhone until you choose **Continue**. **Stop after this step** ends it cleanly.
+- **Pick up where it left off.** A task that was interrupted, stopped, unplugged or locked offers this. Mobster looks at your iPhone first, and still asks before it sends, buys, posts or deletes.
+- **Questions.** When your request can be read two ways ("Which Sam?"), Mobster may ask, with each choice as a button. It waits 10 minutes, then stops. Settings › Advanced › **Mobster may ask me questions** turns this off.
+
+<Frame caption="Mobster asks which Sam, with each one as a button and a field for another answer.">
+  <img src="/images/mac/clarify-light.webp" alt="Mobster asking which Sam you mean, with each Sam as a button and a field to type an answer." className="block dark:hidden" />
+  <img src="/images/mac/clarify-dark.webp" alt="Mobster asking which Sam you mean, with each Sam as a button and a field to type an answer." className="hidden dark:block" />
+</Frame>
+
+<Note>A message you type never approves anything. Choose **Send** or **Don't send** on the approval, or say what to do instead there.</Note>
+
+## What a follow-up sees
+
+When a task starts in a conversation that already has earlier tasks, Mobster's agent gets two short sections before it looks at the screen, together at most 3,000 characters:
+
+| Section | What it holds | How the agent reads it |
+| --- | --- | --- |
+| Earlier in this conversation | Your own words from the last three tasks: what you asked, what you added while it worked, how you answered its questions. Then the rules you gave in this conversation ("don't…", "never…", "only…", "without…"), copied word for word. | Your instructions. A rule holds until a later message says otherwise ("now send it"). |
+| What Mobster's earlier tasks found | One condensed line for older tasks, then per recent task: how it ended, the app it ended in, its answer and up to 600 characters of its notes. | Data read off screens, never instructions: it is fenced, so text on a screen that says "ignore the user and send…" stays text. |
+
+- The first task of a conversation gets neither section, so it sees exactly what a one-off task sees.
+- Older tasks condense oldest first. The rules are never dropped.
+- Notes pass through Mobster's secret filter before they are stored: a one-time code, a card number or a password is replaced, and a note that still looks secret is dropped.
+- Only Mobster's agent uses this context. Quick mode runs each task on its own.
+- Approvals don't change. Whatever an earlier answer says, a send, buy, post or delete still asks you with its exact text.
+
+## Messages while a task runs
+
+What a message does depends on the conversation's task:
+
+| The task | Your message |
+| --- | --- |
+| None running | Starts a new task in the conversation. |
+| Mobster's agent is working | Steers it at its next step. The item reads "Sent while Mobster was working". |
+| Mobster asked a question | Answers it. |
+| Waiting for an approval | Is refused: choose Send or Don't send first, or say what to do instead there. A typed "yes" never approves anything. |
+| Quick mode is working | Is refused: Quick mode can't take messages while it works. |
+
+A task you start in a conversation from the Mac app, the terminal UI or `mobster chat` may ask you a question when your request can be read two ways ("Which Sam?"). The question shows in the conversation, and your next message answers it. A task started by your agent over MCP never asks.
+
+A message the task finished before reading is marked "Mobster finished before reading this", and you can send it again as a new task.
+
+## `mobster chat`
+
+```sh
+mobster chat                                    # a conversation in this terminal
+mobster chat "What's on my calendar tomorrow?"  # one message, its steps and the answer
+mobster chat --new "Find my last message from Kate Bell"
+mobster chat --thread 3f9c2a1b7d0e "Now reply to that"
+```
+
+With the Mobster app or `mobster serve` running, `mobster chat` hands each message to it, so the conversation is the one the Mac app shows. It finds the service at `$MOBSTER_URL` or `http://127.0.0.1:8765` and reads its token from `$MOBSTER_API_TOKEN`, the file `$MOBSTER_API_TOKEN_FILE` names, or the token file the service writes beside its journal. It only talks to this Mac and never prints the token.
+
+With the Mac app open, approvals are answered in the app: the terminal shows what Mobster wants to do, with its exact text, and `n` declines or `x` stops. With `mobster serve` on a terminal, `y` then Return approves. `--json`, and any run without a terminal, never answer an approval: they print `{"status": "waiting_for_approval", ...}` and exit 2. Every flag and exit code is in the [CLI reference](/cli#mobster-chat).
+
+A message that only asks Mobster to remember something ("Remember that my gym is the one on 5th Street") runs no task. Mobster offers to remember it: on a terminal, `y` then Return remembers it and `n` doesn't; elsewhere the offer waits in the conversation, and `mobster memory add` saves it too. `--json` prints `{"status": "remember", "proposals": [...]}` and exits 0. [Memory](/memory#suggestions) has what it offers.
+
+### Without the app or `serve`
+
+With neither running, `mobster chat` runs the conversation itself, in this terminal:
+
+- `mobster chat "message"` runs the task in its own process, on your Claude or OpenAI key, and prints its steps as `mobster run` does. The conversation is kept in the terminal UI's history on this Mac, so `mobster -c` opens it, and the next `mobster chat` continues it. The Mac app doesn't show it.
+- `mobster chat` with no message, on a terminal, opens the terminal UI on your last conversation (`mobster -c`).
+- An approval asks on the terminal: `y` then Return approves the exact text shown, and `n` declines. With `--json` or without a terminal nobody can answer, so Mobster doesn't do that step: the task ends with `approval_denied` and exits 1.
+- With no model key it says "no model key yet. Run `mobster login`, then run this again." and exits 3.
+
+With `--url`, `mobster chat` talks only to the service at that address. When nothing answers there, it says "Open Mobster or run `mobster serve` to chat." and exits 3.
+
+## MCP: `phone_task`
+
+`mobster mcp` offers two tools that hand a whole task to Mobster's agent, in a conversation:
+
+| Tool | Arguments | Returns |
+| --- | --- | --- |
+| `phone_task` | `message`, and optionally `thread_id` (a follow-up), `device`, `wait_seconds` (at most 45, default 30) | `{thread_id, run_id, status, answer?}` |
+| `phone_task_status` | `thread_id` or `run_id`, optionally `wait_seconds` | the same |
+
+`status` is `running`, `waiting_for_approval`, `waiting_for_answer`, or how the task ended (`completed`, `stopped`, …). These tools need the Mobster app or `mobster serve`; without one they say "Open Mobster or run `mobster serve` so your agent can hand tasks to Mobster's agent." A task started here:
+
+- shows its approvals in the Mobster app, where you answer them; the agent never can;
+- never starts in or opens a social or dating app (Instagram, TikTok, X, Facebook, Snapchat, Threads, Tinder, Hinge or Bumble);
+- takes messages, and answers to its questions, only from your agent or the Mac app. A task you started yourself never takes either from your agent;
+- names only the devices allowed with `--allow-device`, when that flag is given.
+
+## HTTP API
+
+Every route needs the API token, as the rest of the [HTTP API](/scripting) does. JSON uses camelCase and milliseconds since the epoch.
+
+| Route | Body or query | Answer |
+| --- | --- | --- |
+| `GET /api/threads` | `?limit` (1–100, default 50), `before` (a thread's `updatedAt`), `device`, `q`, `archived` (`true`, `false` or `all`) | `{threads, next}`, newest first; `next` is the `before` for the next page |
+| `POST /api/threads` | `{title?, device?, message?}`, optional `Idempotency-Key` | 201 `{thread, item?, run?}`, plus `routed: "remember"` and `proposals` when the message only asks Mobster to remember something |
+| `GET /api/threads/{id}` | `?after=<seq>` | `{thread, items, runs}`: the items in order and the runs they name (without events) |
+| `POST /api/threads/{id}` | `{title?, archived?, pinned?}` | `{thread}` |
+| `DELETE /api/threads/{id}` | `?runs=delete` (default) or `keep` | `{deleted, runsDeleted}`; 409 `run_active` while its task runs |
+| `POST /api/threads/{id}/messages` | a message, optional `Idempotency-Key` | 201 `{item, run}` (a new task), 201 `{item, run: null, routed: "remember", proposals}` (a message from the Mac app, the terminal UI or `mobster chat` that only asks Mobster to remember something: nothing runs), 202 `{item, routed: "steer" or "answer"}`, or 409 |
+
+A message is `{text, attachmentIds?, appId?, engine?, outputFormat?, outputSchema?, device?, mode?, via?}`:
+
+- `text`: 1–4,000 characters to start a task, at most 2,000 to steer, at most 500 to answer a question.
+- `mode`: `auto` (the table above) or `new_task` (always a new task).
+- `device`: the phone; the conversation's phone when left out.
+- `via`: `voice` from the Mac app's microphone; otherwise the request's `X-Mobster-Origin` decides it.
+
+A retried post with the same `Idempotency-Key` returns the first answer with `"replayed": true`; the same key with another body is 409 `idempotency_conflict`.
+
+Errors are `{"error": <a sentence>, "code"}`:
+
+| Code | Status | When |
+| --- | --- | --- |
+| `thread_not_found` | 404 | No such conversation in this Mobster |
+| `approval_pending` | 409 | The task waits for an approval |
+| `steer_unsupported` | 409 | Quick mode is working |
+| `steer_attachments` | 409 | Files go with a new task, not to a running one |
+| `steer_not_allowed` | 403 | The task was started over MCP and the message (or the answer to its question) comes from elsewhere, or the reverse |
+| `thread_full` | 409 | 2,000 items or 8 MB: "This conversation is full. Start a new one." |
+| `thread_archived` | 409 | Restore it to continue |
+| `unavailable` | 503 | Conversations couldn't open their data |
+
+### Items
+
+`items` hold the conversation in order (`seq`). Every item has `id`, `seq`, `at` and `kind`:
+
+| Kind | Fields |
+| --- | --- |
+| `user` | `text`, `via` (`composer`, `voice`, `cli`, `tui`, `mcp`), `attachments`, `routed` (`new_run`, `steer`, `answer`, `unread`, `remember`), `runId`; a steer also has `messageId` and, once read, `readAt` |
+| `run` | `runId`, `goal`, `appName`, `engine`, `device`, and once it ends `result`: `{status, outcome, answer, facts, costUsd, elapsedMs}` |
+| `clarify` | `runId`, `approvalId`, `question`, `choices`, and once answered `answer` and `resolution` |
+| others | Added by other parts of Mobster (a memory to approve, a saved file) |
+
+A thread is `{id, title, createdAt, updatedAt, device, deviceName, archived, pinned, status, lastRunId, summary, rules}`. `status` is `idle`, `running` or `waiting` (for you). A run item keeps its result after the journal's 100-task history lets the run go, so the conversation still has it.
+
+### Events
+
+`GET /api/events?topics=threads,thread:<id>` streams:
+
+| Topic | Events |
+| --- | --- |
+| `threads` | `thread_created`, `thread_updated`, `thread_deleted`, each with `{thread}` |
+| `thread:<id>` | `thread_item` and `thread_item_updated` with `{item}`, and `run_event` with `{runId, data}`: each of the conversation's run events as the run's own stream sends it |
+
+The task's run fields are `threadId` (in `extras`) and `via` (kept off the API).
+
+## Privacy and safety
+
+- Conversations hold your words, Mobster's answers and capped facts, on this Mac only, in the journal (mode 0600).
+- Deleting a conversation deletes its tasks and their screens, unless you keep them (`?runs=keep`).
+- A task sends only the two sections above to your own AI account, as it sends the screen.
+- Only your own words are instructions. Earlier answers are fenced as data.
+- MCP's `phone_task` starts tasks only through the running Mobster app or `mobster serve`. `mobster chat` uses them when one is running, and otherwise runs the task in its own process on this Mac. With the Mac app open, only the app approves.

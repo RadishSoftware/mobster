@@ -49,11 +49,19 @@ def _local_http_url(value, what):
 
 
 def default_mjpeg_url(wda_url):
-    """The MJPEG port paired with a WDA port: 8100 -> 9100, 8101 -> 9101 (one iproxy pair per phone)."""
-    parts = urlsplit(wda_url)
-    port = parts.port or WDA_BASE_PORT
-    video = MJPEG_BASE_PORT + (port - WDA_BASE_PORT) if port >= WDA_BASE_PORT else MJPEG_BASE_PORT
-    return urlunsplit((parts.scheme, f"{parts.hostname}:{video}", "", "", ""))
+    """The MJPEG URL paired with a WDA port: 8100 -> 9100, 8101 -> 9101 (one iproxy pair per phone), a
+    simulator's 8203 -> 9203. None when the port has no pair (below 8100, or a pair past 65535): 9100 there
+    would be another device's stream, and settling on it would watch the wrong screen."""
+    parts = urlsplit(wda_url or "")
+    try:
+        port = parts.port  # None without one: http's 80 or https's 443, which have no pair either
+    except ValueError:
+        return None
+    video = MJPEG_BASE_PORT + (port - WDA_BASE_PORT) if port is not None and port >= WDA_BASE_PORT else None
+    if not parts.hostname or video is None or video > 65535:
+        return None
+    host = f"[{parts.hostname}]" if ":" in parts.hostname else parts.hostname  # an IPv6 address keeps its brackets
+    return urlunsplit((parts.scheme, f"{host}:{video}", "", "", ""))
 
 
 @dataclass(frozen=True)
@@ -76,7 +84,8 @@ class WdaDeviceSpec:
         if not isinstance(self.id, str) or not self.id or len(self.id) > 64:
             raise ValueError("A device needs a short id")
         object.__setattr__(self, "wda_url", _local_http_url(self.wda_url, "wda_url"))
-        mjpeg = _local_http_url(self.mjpeg_url, "mjpeg_url") if self.mjpeg_url else default_mjpeg_url(self.wda_url)
+        mjpeg = (_local_http_url(self.mjpeg_url, "mjpeg_url") if self.mjpeg_url
+                 else default_mjpeg_url(self.wda_url) or "")  # "": no stream paired, settle by time
         object.__setattr__(self, "mjpeg_url", mjpeg)
         if self.udid and not UDID_PATTERN.fullmatch(self.udid):
             raise ValueError("Invalid device UDID")

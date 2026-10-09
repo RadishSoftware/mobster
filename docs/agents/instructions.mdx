@@ -1,0 +1,35 @@
+---
+title: "Instructions for your coding agent"
+sidebarTitle: "Instructions for your agent"
+description: "A block for CLAUDE.md, AGENTS.md or .cursor/rules that makes your coding agent check each UI change with Mobster."
+icon: "file-text"
+keywords: ["CLAUDE.md", "AGENTS.md", "cursor rules", "verify ui changes", "agent instructions"]
+---
+
+Your agent checks its own work when its instructions tell it to. Put this in `CLAUDE.md`, `AGENTS.md` or `.cursor/rules`, with your scheme and app names:
+
+```markdown CLAUDE.md
+## Verifying UI changes
+After you change a screen in this iOS app, verify it before you say it works.
+1. Build for the simulator:
+   xcodebuild -scheme <Scheme> -destination 'generic/platform=iOS Simulator' -derivedDataPath .mobster/build CODE_SIGNING_ALLOWED=NO build
+2. Call mobster's verify_start with app_path set to the absolute path of
+   .mobster/build/Build/Products/Debug-iphonesimulator/<App>.app, the steps in plain English, and expect:
+   what must be true when the steps are done.
+3. Drive with screen, tap, type_text and swipe, then call verify_finish.
+4. If the verdict is failed, fix the code and verify again. Report the verdict and the report path.
+```
+
+## Make your controls findable
+
+Give the controls your checks need an accessibility identifier, such as `.accessibilityIdentifier("plan_annual")` in SwiftUI. An `id` selector then survives copy changes and translations, where a label wouldn't.
+
+## Run the whole suite
+
+To run every saved check instead of one flow, the agent calls `run_tests`, or runs `mobster test` in a shell:
+
+```markdown AGENTS.md
+Before you open a pull request, run `mobster test`. If a check fails, read its line and the report it names, fix the code and run it again.
+```
+
+[Run every check](/testing) explains the suite, and [MCP server](/mcp-server#run-your-checks) the tool.

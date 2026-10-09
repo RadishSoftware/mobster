@@ -1,0 +1,14 @@
+{
+  "name": "mobster",
+  "displayName": "Mobster",
+  "version": "0.3.0",
+  "description": "Verify iOS UI changes on a headless simulator Mobster manages, and, after setup, a USB iPhone. The ios-testing skill, Mobster's MCP server and /mobster:verify. Needs the mobster command (curl -fsSL https://mobster.dev/install.sh | sh).",
+  "author": {
+    "name": "Radish Retail, LLC",
+    "url": "https://mobster.dev"
+  },
+  "homepage": "https://mobster.dev",
+  "repository": "https://github.com/RadishSoftware/mobster",
+  "license": "MIT",
+  "keywords": ["ios", "iphone", "simulator", "xcode", "testing", "mcp"]
+}

@@ -1,0 +1,17 @@
+usage: mobster doctor [-h] [--wda-url URL] [--device NAME] [--env-file PATH] [--json] [--simulator]
+
+Check everything a task needs and print how to fix what is missing. It changes
+nothing on the phone. Keys are shown masked: their first characters and last four.
+
+options:
+  -h, --help       show this help and exit
+  --wda-url URL    the phone's address, for a phone you set up by hand (default:
+                   http://127.0.0.1:8100) [env: MOBSTER_WDA_URL]
+  --device NAME    the iPhone or simulator to use: an id, UDID or name from `mobster devices`
+                   (default: your iPhone)
+  --env-file PATH  load KEY=VALUE lines (ANTHROPIC_API_KEY, OPENAI_API_KEY, TYPESAFE_API_KEY, ...);
+                   variables already set win [env: MOBSTER_ENV_FILE]
+  --json           print the checks as JSON
+  --simulator      skip the USB iPhone and Xcode checks (a simulator's phone)
+
+exit codes: 0 ready for tasks (warnings allowed), 1 at least one problem

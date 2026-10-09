@@ -3,6 +3,7 @@
 from datetime import datetime, timezone
 import io
 import json
+import os
 from email.message import Message
 from pathlib import Path
 import tempfile
@@ -14,7 +15,7 @@ from zoneinfo import ZoneInfo
 
 from mobile_agent.api_errors import APIError
 from mobile_agent.journal import Journal, JournalError
-from mobile_agent.schedule import next_occurrences, preview, validate_cron
+from mobile_agent.schedule import local_timezone, next_occurrences, preview, validate_cron
 from mobile_agent.server import make_handler
 from mobile_agent.workflows import Workflows
 from mobile_agent.workflow_scheduler import WorkflowScheduler
@@ -64,12 +65,31 @@ class CronTests(unittest.TestCase):
         self.assertEqual(validate_cron("*/30 * * * *", "UTC"), "*/30 * * * *")
 
     def test_dst_occurrences_are_distinct_monotonic_utc_instants(self):
-        now = datetime(2026, 10, 31, 12, tzinfo=ZoneInfo("America/Los_Angeles")).timestamp() * 1000
+        # An hour field of '*' or a step runs in both of the fall-back night's 1 AM hours: each is a real hour.
+        now = datetime(2026, 11, 1, 0, 45, tzinfo=ZoneInfo("America/Los_Angeles")).timestamp() * 1000
+        for expression in ("30 * * * *", "30 */1 * * *"):
+            with self.subTest(expression=expression):
+                result = next_occurrences(expression, "America/Los_Angeles", now, 3)
+                local = [datetime.fromtimestamp(value / 1000, ZoneInfo("America/Los_Angeles")) for value in result]
+                self.assertEqual([(item.hour, item.minute, item.fold) for item in local], [(1, 30, 0), (1, 30, 1), (2, 30, 0)])
+                self.assertEqual(result[1] - result[0], 3600_000)
+                self.assertTrue(all(b > a for a, b in zip(result, result[1:])))
+
+    def test_a_schedule_at_fixed_hours_runs_once_when_the_clock_goes_back(self):
+        zone = ZoneInfo("America/Los_Angeles")
+        now = datetime(2026, 10, 31, 12, tzinfo=zone).timestamp() * 1000
         result = next_occurrences("30 1 * * *", "America/Los_Angeles", now, 3)
-        local = [datetime.fromtimestamp(value / 1000, ZoneInfo("America/Los_Angeles")) for value in result]
-        self.assertEqual([item.fold for item in local[:2]], [0, 1])
-        self.assertEqual(result[1] - result[0], 3600_000)
-        self.assertTrue(all(b > a for a, b in zip(result, result[1:])))
+        local = [datetime.fromtimestamp(value / 1000, zone) for value in result]
+        self.assertEqual([(item.day, item.hour, item.minute, item.fold) for item in local],
+                         [(1, 1, 30, 0), (2, 1, 30, 0), (3, 1, 30, 0)])
+        # From inside the repeated hour, after the first 1:30, the next one is the following night's.
+        between = datetime(2026, 11, 1, 1, 40, tzinfo=zone).timestamp() * 1000
+        after = datetime.fromtimestamp(next_occurrences("30 1 * * *", "America/Los_Angeles", between)[0] / 1000, zone)
+        self.assertEqual((after.day, after.hour, after.minute, after.fold), (2, 1, 30, 0))
+        # Fixed hours given as a range or a list skip only the repeat, and keep the hours after it.
+        result = next_occurrences("0 1-2 * * *", "America/Los_Angeles", now, 3)
+        local = [datetime.fromtimestamp(value / 1000, zone) for value in result]
+        self.assertEqual([(item.day, item.hour, item.fold) for item in local], [(1, 1, 0), (1, 2, 0), (2, 1, 0)])
 
     def test_sparse_leap_day_is_bounded_and_supported(self):
         expression = validate_cron("0 9 29 2 *", "UTC")
@@ -418,6 +438,262 @@ class WorkflowTests(unittest.TestCase):
         status, replay = self.request(path, {}, "uncertain-http")
         self.assertEqual(status, 200)
         self.assertEqual(replay["run"]["id"], response["activeRunId"])
+        self.assertEqual(len(self.runtime.calls), 1)
+
+
+BUILDER_CRONS = Path(__file__).resolve().parents[2] / "dashboard" / "src" / "test" / "schedule-crons.json"
+
+
+class WorkflowCase(unittest.TestCase):
+    """WorkflowTests' fixture without re-running its tests."""
+    setUp, tearDown, saved, request, scheduled = WorkflowTests.setUp, WorkflowTests.tearDown, WorkflowTests.saved, WorkflowTests.request, WorkflowTests.scheduled
+
+
+class LocalTimeTests(WorkflowCase):
+    """New schedules read in the Mac's own time zone; saved ones keep theirs."""
+
+    def test_the_local_zone_comes_from_tz_then_etc_localtime(self):
+        self.assertEqual(local_timezone({"TZ": "America/Chicago"}, "/nonexistent"), "America/Chicago")
+        self.assertEqual(local_timezone({"TZ": ":Europe/Paris"}, "/nonexistent"), "Europe/Paris")
+        with tempfile.TemporaryDirectory() as directory:
+            zoneinfo = Path(directory) / "var" / "db" / "timezone" / "zoneinfo" / "Asia"
+            zoneinfo.mkdir(parents=True)
+            (zoneinfo / "Tokyo").write_bytes(b"")
+            link = Path(directory) / "localtime"
+            link.symlink_to(zoneinfo / "Tokyo")
+            self.assertEqual(local_timezone({}, str(link)), "Asia/Tokyo")
+            self.assertEqual(local_timezone({"TZ": "Not/AZone"}, str(link)), "Asia/Tokyo")
+        self.assertEqual(local_timezone({}, "/nonexistent"), "UTC")
+
+    def test_a_new_workflow_uses_the_macs_iana_zone(self):
+        with patch.dict(os.environ, {"TZ": "America/Los_Angeles"}):
+            workflow = self.saved()
+        self.assertEqual(workflow["timezone"], "America/Los_Angeles")
+        ZoneInfo(workflow["timezone"])
+        # The caller's own zone wins (the editor sends Intl's resolved zone).
+        self.assertEqual(self.saved(timezone="Europe/Berlin")["timezone"], "Europe/Berlin")
+
+    def test_existing_workflows_keep_their_zone(self):
+        with patch.dict(os.environ, {"TZ": "UTC"}):
+            workflow = self.saved()
+        with patch.dict(os.environ, {"TZ": "America/New_York"}):
+            renamed = self.workflows.update(workflow["id"], {"revision": 1, "name": "Renamed"})
+            self.assertEqual(Workflows(self.runtime, lambda: self.time).get(workflow["id"])["timezone"], "UTC")
+        self.assertEqual(renamed["timezone"], "UTC")
+
+
+class ScheduleBuilderTests(WorkflowCase):
+    """The crons the dashboard's schedule builder writes are accepted unchanged and scheduled as shown."""
+
+    def cases(self):
+        if not BUILDER_CRONS.exists():
+            self.skipTest("the dashboard is not part of this checkout")
+        return json.loads(BUILDER_CRONS.read_text())["cases"]
+
+    def test_builder_crons_round_trip_through_the_service(self):
+        for case in self.cases():
+            with self.subTest(cron=case["cron"]):
+                self.assertEqual(validate_cron(case["cron"], "America/Los_Angeles"), case["cron"])
+                workflow = self.saved(cron=case["cron"], timezone="America/Los_Angeles", enabled=True)
+                stored = self.workflows.get(workflow["id"])
+                self.assertEqual((stored["cron"], stored["timezone"], stored["enabled"]), (case["cron"], "America/Los_Angeles", True))
+                self.assertEqual(stored["nextAt"], next_occurrences(case["cron"], "America/Los_Angeles", round(self.time * 1000))[0])
+                updated = self.workflows.update(workflow["id"], {"revision": 1, "cron": case["cron"], "enabled": False})
+                self.assertEqual((updated["cron"], updated["nextAt"]), (case["cron"], None))
+
+    def test_weekdays_at_nine_means_nine_in_the_workflows_zone(self):
+        workflow = self.saved(cron="0 9 * * 1-5", timezone="America/Los_Angeles", enabled=True)
+        local = datetime.fromtimestamp(workflow["nextAt"] / 1000, ZoneInfo("America/Los_Angeles"))
+        self.assertEqual((local.hour, local.minute, local.weekday() < 5), (9, 0, True))
+
+    def test_a_schedule_saved_at_creation_is_validated_like_an_update(self):
+        with self.assertRaises(ValueError):
+            self.saved(cron="* * * * *", timezone="UTC", enabled=True)
+        with self.assertRaises(ValueError):
+            self.saved(enabled=True)
+        self.assertEqual(self.workflows.list(), [])
+        self.assertEqual(self.runtime.calls, [])
+
+
+class EngineTests(WorkflowCase):
+    """A saved engine is stored and passed to Runtime.create only when it is set."""
+
+    def test_engine_is_stored_and_passed_only_when_set(self):
+        plain = self.saved()
+        self.assertIsNone(plain["engine"])
+        self.workflows.run(plain["id"], "no-engine")
+        self.assertNotIn("engine", self.runtime.calls[-1][-1])
+        smart = self.saved(engine="smart")
+        self.assertEqual(Workflows(self.runtime, lambda: self.time).get(smart["id"])["engine"], "smart")
+        self.workflows.run(smart["id"], "smart")
+        self.assertEqual(self.runtime.calls[-1][-1]["engine"], "smart")
+
+    def test_engine_update_changes_later_runs(self):
+        workflow = self.saved(engine="smart")
+        updated = self.workflows.update(workflow["id"], {"revision": 1, "engine": "fast"})
+        self.assertEqual(updated["engine"], "fast")
+        self.workflows.run(workflow["id"], "fast")
+        self.assertEqual(self.runtime.calls[-1][-1]["engine"], "fast")
+        cleared = self.workflows.update(workflow["id"], {"revision": 2, "engine": None})
+        self.workflows.run(workflow["id"], "default")
+        self.assertIsNone(cleared["engine"])
+        self.assertNotIn("engine", self.runtime.calls[-1][-1])
+
+    def test_only_smart_starts_without_an_app(self):
+        workflow = self.workflows.create({"name": "Pizza", "goal": "Find a pizza place that is open now", "engine": "smart"})
+        self.assertIsNone(workflow["appId"])
+        self.workflows.run(workflow["id"], "home-screen")
+        self.assertIsNone(self.runtime.calls[-1][0])
+        with self.assertRaisesRegex(ValueError, "Choose the app"):
+            self.workflows.create({"name": "Pizza", "goal": "Find pizza", "engine": "fast"})
+        with self.assertRaisesRegex(ValueError, "Choose the app"):
+            self.workflows.create({"name": "Pizza", "goal": "Find pizza"})
+        with self.assertRaisesRegex(ValueError, "Choose the app"):
+            self.workflows.update(workflow["id"], {"revision": 1, "engine": "fast"})
+        self.assertEqual(self.workflows.get(workflow["id"])["engine"], "smart")
+
+    def test_unknown_engines_and_engineless_runtimes_are_refused(self):
+        with self.assertRaises(ValueError):
+            self.saved(engine="turbo")
+
+        class EnginelessRuntime(FakeRuntime):
+            def create(self, app_id, goal, mode, key, output_schema=None, output_format="auto", helper_model=None):
+                return super().create(app_id, goal, mode, key, output_schema=output_schema,
+                                      output_format=output_format, helper_model=helper_model)
+
+        runtime = EnginelessRuntime(self.journal)
+        workflows = Workflows(runtime, lambda: self.time)
+        with self.assertRaisesRegex(ValueError, "one engine"):
+            workflows.create({"name": "Read About", "appId": "settings", "goal": "Read iOS version", "engine": "smart"})
+        saved = workflows.create({"name": "Read About", "appId": "settings", "goal": "Read iOS version"})
+        workflows.run(saved["id"], "engineless")
+        self.assertEqual(len(runtime.calls), 1)
+
+    def test_http_new_workflow_with_schedule_and_engine(self):
+        body = {"name": "Morning meeting", "goal": "Tell me my first meeting", "engine": "smart",
+                "cron": "0 8 * * 1-5", "timezone": "America/Los_Angeles", "enabled": True,
+                "outputFormat": "auto", "outputSchema": None}
+        status, data = self.request("/api/workflows", body)
+        self.assertEqual(status, 201)
+        workflow = data["workflow"]
+        self.assertEqual((workflow["appId"], workflow["engine"], workflow["cron"], workflow["enabled"]), (None, "smart", "0 8 * * 1-5", True))
+        self.assertIsNotNone(workflow["nextAt"])
+        self.assertEqual(self.runtime.calls, [])
+
+
+class EditAndDeleteTests(WorkflowCase):
+    """A saved task can be deleted, and its task and app edited, without touching the runs it started."""
+
+    def delete_request(self, path):
+        handler = object.__new__(make_handler(self.runtime))
+        handler.headers = Message()
+        handler.headers["Host"] = "127.0.0.1:8765"
+        handler.path, handler.rfile, handler.wfile = path, io.BytesIO(), io.BytesIO()
+        statuses = []
+        handler.send_response = statuses.append
+        handler.send_header = lambda *_: None
+        handler.end_headers = lambda: None
+        handler.do_DELETE()
+        return statuses[-1], json.loads(handler.wfile.getvalue())
+
+    def dispatches(self, identifier):
+        with self.journal.lock:
+            return self.journal.connection.execute("SELECT count(*) FROM workflow_dispatches WHERE workflow_id=?", (identifier,)).fetchone()[0]
+
+    def test_delete_removes_the_workflow_and_its_dispatch_rows(self):
+        workflow = self.saved()
+        run, _ = self.workflows.run(workflow["id"], "before-delete")
+        self.assertEqual(self.dispatches(workflow["id"]), 1)
+        self.assertEqual(self.workflows.delete(workflow["id"]), workflow["id"])
+        self.assertEqual(self.dispatches(workflow["id"]), 0)
+        self.assertEqual(self.workflows.list(), [])
+        with self.assertRaises(APIError) as missing:
+            self.workflows.get(workflow["id"])
+        self.assertEqual(missing.exception.status, 404)
+        # The task it started stays: only the saved definition goes.
+        self.assertIn(run.id, self.runtime.runs)
+        self.assertEqual(Workflows(self.runtime, lambda: self.time).list(), [])
+
+    def test_a_deleted_schedule_never_fires(self):
+        workflow = self.scheduled()
+        self.workflows.delete(workflow["id"])
+        self.time = workflow["nextAt"] / 1000
+        self.workflows.tick()
+        self.assertEqual(self.runtime.calls, [])
+
+    def test_delete_of_a_missing_workflow_is_a_404(self):
+        with self.assertRaises(APIError) as missing:
+            self.workflows.delete("0123456789ab")
+        self.assertEqual((missing.exception.status, missing.exception.code), (404, "not_found"))
+
+    def test_http_delete_route(self):
+        workflow = self.saved()
+        status, data = self.delete_request(f"/api/workflows/{workflow['id']}")
+        self.assertEqual((status, data), (200, {"deleted": workflow["id"]}))
+        status, data = self.delete_request(f"/api/workflows/{workflow['id']}")
+        self.assertEqual((status, data["code"]), (404, "not_found"))
+        status, _ = self.delete_request("/api/workflows/not-an-id")
+        self.assertEqual(status, 404)
+        self.assertEqual(self.runtime.calls, [])
+
+    def test_update_changes_the_goal_for_later_runs(self):
+        workflow = self.saved()
+        updated = self.workflows.update(workflow["id"], {"revision": 1, "goal": "  Read the model name  "})
+        self.assertEqual((updated["goal"], updated["revision"]), ("Read the model name", 2))
+        self.workflows.run(workflow["id"], "edited")
+        self.assertEqual(self.runtime.calls[-1][1], "Read the model name")
+
+    def test_an_empty_or_oversized_goal_is_rejected_without_saving(self):
+        workflow = self.saved()
+        for goal in ("", "   ", "x" * 4001, None, 7):
+            with self.subTest(goal=goal), self.assertRaisesRegex(ValueError, "1–4000"):
+                self.workflows.update(workflow["id"], {"revision": 1, "goal": goal})
+        self.assertEqual(self.workflows.get(workflow["id"]), workflow)
+
+    def test_update_changes_the_app_and_checks_it(self):
+        workflow = self.saved()
+        updated = self.workflows.update(workflow["id"], {"revision": 1, "appId": "notes"})
+        self.assertEqual((updated["appId"], updated["appName"]), ("notes", "Notes"))
+        with self.assertRaisesRegex(ValueError, "Choose an app"):
+            self.workflows.update(workflow["id"], {"revision": 2, "appId": "not-an-app"})
+        with self.assertRaisesRegex(ValueError, "Choose the app"):
+            self.workflows.update(workflow["id"], {"revision": 2, "appId": None})
+        home = self.workflows.update(workflow["id"], {"revision": 2, "appId": None, "engine": "smart"})
+        self.assertEqual((home["appId"], home["appName"]), (None, None))
+
+    def test_http_update_accepts_goal_and_app(self):
+        workflow = self.saved()
+        status, data = self.request(f"/api/workflows/{workflow['id']}", {"revision": 1, "goal": "Read the build number", "appId": "notes"})
+        self.assertEqual(status, 200)
+        self.assertEqual((data["workflow"]["goal"], data["workflow"]["appId"]), ("Read the build number", "notes"))
+        status, data = self.request(f"/api/workflows/{workflow['id']}", {"revision": 2, "goal": ""})
+        self.assertEqual(status, 400)
+
+    def test_app_name_is_filled_on_create_and_kept_for_phone_apps(self):
+        self.assertEqual(self.saved()["appName"], "Settings")
+        self.runtime.apps = lambda: [{"id": "com.strava.stravaride", "name": "Strava"}]
+        strava = self.saved(appId="com.strava.stravaride")
+        self.assertEqual(strava["appName"], "Strava")
+        # The phone goes away: the saved name stays.
+        self.runtime.apps = lambda: []
+        self.assertEqual(self.workflows.get(strava["id"])["appName"], "Strava")
+        renamed = self.workflows.update(strava["id"], {"revision": 1, "name": "Weekly runs"})
+        self.assertEqual(renamed["appName"], "Strava")
+        self.assertEqual(self.saved(appName="Settings app")["appName"], "Settings app")
+        with self.assertRaises(ValueError):
+            self.saved(appName="")
+        home = self.workflows.create({"name": "Pizza", "goal": "Find pizza", "engine": "smart", "appName": "Ignored"})
+        self.assertIsNone(home["appName"])
+
+    def test_rows_saved_before_app_names_still_load(self):
+        workflow = self.saved()
+        legacy = {key: value for key, value in workflow.items() if key != "appName"}
+        with self.journal.transaction() as connection:
+            connection.execute("UPDATE workflows SET data=? WHERE id=?", (json.dumps(legacy), workflow["id"]))
+        self.assertNotIn("appName", self.workflows.get(workflow["id"]))
+        renamed = self.workflows.update(workflow["id"], {"revision": 1, "name": "Renamed"})
+        self.assertEqual(renamed["name"], "Renamed")
+        self.workflows.run(workflow["id"], "legacy")
         self.assertEqual(len(self.runtime.calls), 1)
 
 

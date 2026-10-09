@@ -1,0 +1,41 @@
+---
+title: "Troubleshooting: install"
+sidebarTitle: "Install issues"
+description: "Fix command not found, an old version, or a terminal UI that won't open."
+icon: "download"
+keywords: ["command not found", "install", "upgrade", "path", "homebrew"]
+---
+
+<span id="command-not-found"></span>
+
+### mobster: command not found
+
+`~/.local/bin`, where the installer links `mobster`, isn't on your `PATH`.
+
+1. Add this line to `~/.zshrc`: `export PATH="$HOME/.local/bin:$PATH"`.
+2. Open a new terminal and run `mobster version`.
+
+With Homebrew, run `brew doctor`: it says when Homebrew's own folder isn't on your `PATH`.
+
+<span id="old-version"></span>
+
+### mobster runs an old version
+
+1. Run the installer again: `curl -fsSL https://mobster.dev/install.sh | sh`, or `brew upgrade mobster`.
+2. Check with `mobster version`.
+
+<span id="needs-terminal"></span>
+
+### the terminal UI needs an interactive terminal
+
+You ran `mobster` in a pipe or a script. Use `mobster run "TASK"` there: it prints plain lines, or JSON with `--json`.
+
+<span id="no-tui"></span>
+
+### the terminal UI is not available in this build
+
+This copy of Mobster was built without the terminal UI, like the agent inside Mobster for Mac. Install Mobster CLI with the installer or Homebrew: [Quickstart: Mobster CLI](/quickstart/cli).
+
+<Card title="Still stuck?" icon="life-buoy" href="/troubleshooting#report-a-problem">
+  Send the output of `mobster version` and `mobster doctor`, the task you gave and what you saw.
+</Card>

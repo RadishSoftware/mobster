@@ -1,0 +1,66 @@
+---
+title: "Add steps, save checks and script them"
+sidebarTitle: "Steps and saved checks"
+description: "Add steps to a check, save it to your project, and use its exit code in scripts."
+icon: "footprints"
+keywords: ["verify steps", "smart", "save check", "exit code", "json"]
+---
+
+A launch-only check proves what's on a screen right after launch or a deep link. To prove a flow, such as finishing onboarding and reaching the paywall, give the check steps. This picks up where [Quickstart: test your app](/quickstart/test) ends.
+
+## Add steps
+
+From the command line, steps run on Mobster's agent (`Smart` in flags and statuses): it performs the steps on your Claude or OpenAI key, then Mobster decides the verdict from your assertions, as always. A coding agent can drive the steps itself instead, with no key: see [MCP server](/mcp-server#the-key-less-loop).
+
+```sh
+mobster verify "Complete onboarding. Don't allow notifications." "Reach the paywall." \
+  --app .build/Build/Products/Debug-iphonesimulator/Daybreak.app \
+  --text "Choose your plan" --env-file ~/.config/mobster/agent.env
+```
+
+- Each positional argument is one step.
+- `--max-usd` caps the run's spend (default 0.25, at most 1.00), and `--max-seconds` its time (default 180, at most 600). The result's `cost_usd` is what it spent.
+- It runs on a Claude model when your only key is Anthropic's, and on an OpenAI model with an OpenAI key. `MOBSTER_SMART_MODEL` picks another model, and then only that provider's key will do.
+- It sends each screen's image and accessibility text to the provider whose key it runs on. Launch-only and key-less runs send nothing anywhere.
+
+Without a key, a check with steps can't run: it exits 3 and says to set `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`, or to let your coding agent drive through `mobster mcp`.
+
+<Note>Write each expectation so it holds only after the steps. If every expectation already holds right after launch, the run ends `needs_review`, because it doesn't show that the flow works.</Note>
+
+## Save the check
+
+Add `--save NAME` to keep a run's check as `.mobster/checks/NAME.yaml`:
+
+```sh
+mobster verify --app .build/Build/Products/Debug-iphonesimulator/Daybreak.app --open-url daybreak://paywall \
+  --text "Choose your plan" --expect '{"count": {"id": "/^plan_/"}, "equals": 3}' --save paywall
+mobster verify --check .mobster/checks/paywall.yaml
+```
+
+A check file is plain YAML you can edit and commit. Every run also writes its own `check.yaml`, and the report's `Rerun` line runs it. Daybreak ships three in [`.mobster/checks`](https://github.com/RadishSoftware/mobster/tree/main/examples/ios/Daybreak/.mobster/checks). [Checks](/checks#the-check-file) documents every key.
+
+## Use it in scripts
+
+The exit code is the verdict:
+
+| Exit | Verdict | Means |
+|---|---|---|
+| 0 | `passed` | Every assertion held on one settled screen |
+| 1 | `failed` | An assertion didn't hold, or the app wasn't in front |
+| 2 | `needs_review` | Nothing decided it: no assertions, or they held before the flow ran |
+| 3 | `couldnt_run` | The check is invalid, or this Mac couldn't run it |
+
+```sh
+mobster verify --check .mobster/checks/paywall.yaml --json > result.json
+case $? in
+  0) echo "paywall ok" ;;
+  1) jq -r '.summary, .report' result.json; exit 1 ;;
+  *) jq -r '.reason.message' result.json; exit 1 ;;
+esac
+```
+
+With `--json`, or when stdout isn't a terminal, stdout carries exactly one JSON object, [the result](/checks#the-result-json). Progress stays on stderr.
+
+## Run every check
+
+Once you have a few checks in `.mobster/checks`, `mobster test` runs them all, on several simulators or your own iPhone, with retries, flaky-check detection, and JUnit and HTML reports. [Run every check](/testing) walks through it, and [CI](/ci) puts it in a pull request. When a check couldn't run, [Troubleshooting: checks](/troubleshooting/checks) goes by its `reason.class`.

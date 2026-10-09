@@ -1,0 +1,75 @@
+---
+title: "Settings in Mobster for Mac"
+sidebarTitle: "Settings"
+description: "What each section of Settings in Mobster for Mac does."
+icon: "settings"
+keywords: ["settings", "preferences", "open at login", "notifications", "ai account", "license", "advanced"]
+---
+
+Open Settings with ⌘,. Its sections are listed on the left, in this order.
+
+## General
+
+- **Open at login.** Start Mobster when you log in, so scheduled workflows run even if you haven't opened it. Closing the window keeps Mobster running; quit with ⌘Q.
+- **Task notifications.** Tell me when a task finishes or needs my OK while Mobster is in the background.
+- **About.** Mobster's version.
+
+## Voice
+
+On macOS 26 or later: the language you speak, the ⌥ Space shortcut, **Review before sending** and **Test the microphone**. [Voice](/voice) has the details.
+
+## AI account
+
+Mobster's agent runs on your own AI account, Claude or OpenAI. You pay them directly, and your key stays on this Mac.
+
+<Frame caption="Settings › AI account: Claude in use, OpenAI connected and not in use, and the spend limits.">
+  <img src="/images/mac/settings-ai-light.webp" alt="Settings › AI account: Claude in use, OpenAI connected but not in use, and the spend limits." className="block dark:hidden" />
+  <img src="/images/mac/settings-ai-dark.webp" alt="Settings › AI account: Claude in use, OpenAI connected but not in use, and the spend limits." className="hidden dark:block" />
+</Frame>
+
+- **Claude** and **OpenAI**, each with **Connect**, **Test** and **Replace**. When both are connected, **Use Claude instead** or **Use OpenAI instead** picks the one Mobster's agent runs on.
+- **This month.** What your tasks cost at your provider's published rates.
+- **Stop a task that reaches $…** ends a task at that cost, with what it found so far.
+- **Monthly limit.** Mobster won't start new tasks once this month's spend reaches it.
+
+## Safety
+
+- **Ask before acting.** Mobster stops and shows you exactly what it will do before it sends, buys, posts, deletes or submits anything. On by default.
+- **Let Mobster tap and type.** When this is off, new tasks and your own control can't act on your iPhone. To end a task that is already running, use Stop (⌘ .).
+
+## Memory
+
+**Use memory in tasks**, **Suggest things to remember**, the list of what Mobster remembers, **Export as Markdown** and **Delete everything Mobster remembers**. [Memory](/memory) has the details.
+
+## Phones
+
+Each iPhone with its model and iOS version, and **Mobster's helper on your iPhone**: whether it's running, when its signature ends, and **Refresh now**. Mobster refreshes it by itself when your iPhone is plugged in and unlocked. The **⋯** beside a phone has **Set up again**.
+
+## License
+
+Your plan, your license key (with **Copy key**), this Mac's name, **Manage subscription** on a monthly plan (it opens mobster.dev/manage), and **Deactivate this Mac**. [Pricing and license](/pricing)
+
+## Help and support
+
+- **Take the tour.** A 1-minute look around: the task box, your iPhone and approvals.
+- **Contact support.** Write to support@radish.software. A person reads every message.
+
+## Advanced
+
+Optional extras, and the choices behind the defaults.
+
+- **Runs on.** Mobster's agent or Quick mode, for new tasks. [Models and keys](/models-and-keys)
+- **Quick mode key**, and a **text helper** for Quick mode.
+- **Mobster's helper, by hand.** Stop it to free your iPhone for Xcode or another tool; Mobster starts it again when a task needs it.
+- **Live picture smoothness** (Saver, Smooth, Smoothest) and **Live picture sharpness** (Low, Medium, High).
+- **Keep going when a check is unsure.** In Quick mode, when Mobster isn't sure a step is right, it keeps going instead of stopping to ask. Anything that sends, buys, posts or deletes still waits for your OK while Ask before acting is on.
+- **Mobster may ask me questions.** When a task could mean two things and your iPhone's screen can't settle it, Mobster asks you first, at most twice a task.
+
+## For developers
+
+Mobster CLI is the free, open-source part of Mobster, under the MIT license. With it, Claude Code or your own agent can use your iPhone.
+
+- **Connect your own agent.** The command for Claude Code, `claude mcp add mobster -- mobster mcp`, and a link to Mobster CLI. [Add Mobster to your agent](/agents)
+- **Approvals.** Mobster asks before it sends, buys, posts or deletes in the tasks it runs here. When your own agent uses your iPhone, your agent's own permission prompts apply.
+- **Test your app.** Run your app's checks on simulators and your iPhone, with reports for CI. [Run every check](/testing)
+- **Copy tasks as checks.** Finished tasks get **Copy as check**: their steps and what they proved, ready to paste into your project's `.mobster/checks`.

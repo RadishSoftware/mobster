@@ -1,0 +1,14 @@
+# Launch-only: opens Settings by deep link, no model calls.
+#   mobster test .mobster/checks/settings.yaml
+version: 1
+name: Settings shows the daily reminder and where the data lives
+app:
+  bundle: dev.mobster.daybreak
+  path: .build/Build/Products/Debug-iphonesimulator/Daybreak.app
+tags: [smoke]
+launch:
+  url: daybreak://settings
+expect:
+  - visible: { role: navbar, id: Settings }
+  - visible: { id: daily_reminder }
+  - text: On this iPhone only

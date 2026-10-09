@@ -1,0 +1,108 @@
+---
+title: "Without the cable"
+description: "Preview: reach an iPhone over Wi-Fi after one cable pairing, through the encrypted link between this Mac and the phone. Off unless you turn it on."
+icon: "wifi"
+---
+
+**Preview.** Wi-Fi for iPhones is being tested on real phones. It's off unless you turn it on, and with it off Mobster works exactly as before, on the cable only, and the Mac app shows nothing about it.
+
+After you set up an iPhone with a cable once, Mobster can reach it over Wi-Fi when it's unplugged. Tasks, the live view, manual control, approvals and `--device` work the same as on the cable.
+
+## How it stays private
+
+Everything goes through Apple's encrypted link between this Mac and the iPhone, the same one Xcode uses for "Connect via network". The link is mutually authenticated with the pairing keys this Mac and the phone made when you tapped Trust.
+
+- Mobster's helper on the iPhone (WebDriverAgent) listens only on the phone's end of that encrypted link: an address in `fd00::/8` that only this Mac can reach. It never listens on the phone's Wi-Fi address, so nothing else on your network can reach it. Any other address is refused, and so is an `fd00::/8` address this Mac reaches through Wi-Fi or Ethernet rather than through the link (some home networks use that range too).
+- On this Mac, a small relay listens on `127.0.0.1` only, on the phone's usual ports (`8100` and `9100`, or `8101` and `9101` for a second phone, and so on). Nothing else on your network can connect to it.
+- Mobster never uses usbmux over the network (`iproxy -n`) for WebDriverAgent: that would be plain TCP on your network.
+- Every send, purchase, post or delete still asks first, with the exact text, the same as on the cable. Mobster never unlocks the phone.
+
+## Try it
+
+1. Turn it on for this Mobster: add `MOBSTER_WIFI_TRANSPORT=1` to your env file (the Mac app's is `~/Library/Application Support/app.mobster.desktop/agent.env`), then quit and reopen the app. `POST /api/wireless` with `{"wifiTransport": true}` does the same while it runs.
+2. Plug the iPhone in, unlock it, and turn on Wi-Fi for it:
+
+   ```sh
+   mobster wifi on --device "Sam's iPhone"
+   ```
+
+   This sets the same switch as Xcode's "Connect via network", over the cable, once. It needs the phone plugged in and trusting this Mac. When Mobster can't set it by itself, it tells you to tick "Connect via network" for the phone in Xcode › Window › Devices and Simulators instead.
+   In the Mac app, the same switch is **Use over Wi-Fi**: on Setup's last screen ("Use Sam's iPhone over Wi-Fi", **Turn on**) and for each phone in Settings › Phones.
+3. Unplug it, keep it unlocked and on the same Wi-Fi as this Mac, and check the link:
+
+   ```sh
+   mobster wifi probe --device "Sam's iPhone"
+   ```
+
+`mobster wifi off --device "Sam's iPhone"` stops using it over Wi-Fi. When Mobster turned the switch on and the phone is plugged in, it turns it off on the phone too.
+
+## Cable or Wi-Fi
+
+| The phone is | Mobster uses |
+| --- | --- |
+| plugged in | the cable, as always |
+| unplugged, Wi-Fi on for it, and the encrypted link up | Wi-Fi |
+| unplugged otherwise | nothing: it shows as not plugged in, with what to do |
+
+A change waits until no task is running on the phone, here or in another Mobster command. Plug the cable in during a task over Wi-Fi and the task finishes over Wi-Fi, then Mobster switches to the cable. Unplug it during a task on the cable and the task stops, as it does today.
+
+Mobster checks the link every 10 seconds. When it drops, Mobster tries again after 1, 2, 4, 8 and up to 60 seconds, and at once when this Mac joins another network. A phone you stopped in Setup stays stopped.
+
+With two phones, each has its own link and its own ports, and every command names its phone.
+
+In the Mac app, the iPhone's pane shows a Wi-Fi glyph while it's on Wi-Fi. When Wi-Fi is on for it but Mobster can't reach it, the pane and the conversation say so, and **Try again** in the pane looks for it at once.
+
+## Status and the probe
+
+`mobster wifi status` lists each iPhone set up here: on the cable, on Wi-Fi, or not reachable over Wi-Fi, and whether Wi-Fi is on for it. It reads only.
+
+`mobster wifi probe` checks one unplugged phone step by step and prints what it saw:
+
+1. Whether this network lets devices see each other (see below).
+2. What Xcode's device service reports for the phone, with every connection field it gives.
+3. Whether the encrypted link is up, that its address is in `fd00::/8`, and that this Mac reaches it through the link (a `utun` interface), not through Wi-Fi.
+4. Whether WebDriverAgent on the phone answers through a relay on `127.0.0.1`. With `--start`, the probe launches Mobster's helper over Wi-Fi first, and stops it at the end (quit the Mac app before you use it).
+5. That the phone's Wi-Fi addresses don't answer on `8100` or `9100`.
+6. Whether usbmux lists the phone over the network, for the record only.
+
+It exits 0 when every check passed and 1 when one failed. `--json` prints one object with each step and the fields.
+
+## Networks that keep devices apart
+
+Guest, hotel and campus Wi-Fi often stop devices on it from reaching each other, and block Bonjour, the way Macs and iPhones find each other. On such a network this Mac can't find the iPhone however it's set up. Mobster checks for it: it listens for a couple of seconds for the things phones, TVs, speakers, printers and other computers announce on the network, leaving out this Mac's own and AirDrop's. Hearing nothing on a network that's up means the network keeps devices apart, and Mobster says:
+
+> This network stops devices from seeing each other. Use the cable or your phone's hotspot.
+
+`mobster doctor`, `mobster wifi probe`, Setup's Wi-Fi card and Settings › Phones all say it. The check only listens through macOS's own Bonjour service; it sends nothing to the phone and opens nothing on this Mac.
+
+## When it doesn't work
+
+| What you see | What to do |
+| --- | --- |
+| Plug Sam's iPhone into this Mac with a cable to turn on Wi-Fi for it. | Plug it in, unlock it and tap Trust if it asks, then try again. |
+| Sam's iPhone doesn't trust this Mac yet. | Unlock it and tap Trust, then try again. |
+| Mobster couldn't turn on Wi-Fi for Sam's iPhone by itself. | In Xcode, open Window › Devices and Simulators, select it and tick Connect via network. |
+| Sam's iPhone isn't reachable over Wi-Fi. | Keep it unlocked and on the same Wi-Fi as this Mac, or plug it in. |
+| The encrypted link to Sam's iPhone isn't up yet. | Unlock it and keep it on the same Wi-Fi as this Mac; Mobster tries again by itself. |
+| Wi-Fi isn't available for this iPhone yet. | Plug it in to use it now. |
+| Xcode's device service stopped answering. | Plug the phone in once, or restart this Mac if it keeps happening. |
+| Your iPhone went out of reach over Wi-Fi, so Mobster stopped. | Keep it unlocked and on the same Wi-Fi as this Mac, or plug it in, then try again. |
+| This network stops devices from seeing each other. | Use the cable or your phone's hotspot. |
+| macOS doesn't let Mobster reach devices on your network. | Turn on Mobster in System Settings › Privacy & Security › Local Network. |
+| A VPN on this Mac can keep it and Sam's iPhone apart. | Turn the VPN off, or use the cable. |
+
+`mobster doctor` adds a few lines for a phone with Wi-Fi on: whether Xcode's device service sees it over the network, Developer Mode, whether macOS lets Mobster reach your network (System Settings › Privacy & Security › Local Network), a warning when a VPN is on, and whether this network lets devices see each other.
+
+The phone has to be awake for Wi-Fi. For scheduled workflows, keep it unlocked and on the charger.
+
+## For scripts
+
+| Route | Body | Answer |
+| --- | --- | --- |
+| `GET /api/wireless` | | `wifiTransport`; `network` (null until checked, or `state` and `problem`); and per phone: `id`, `udid`, `name`, `primary`, `enabled`, `transport` (`usb`, `wifi` or null), `tunnel` (`up`, `connecting`, `down` or `unknown`), `reachable`, `lastSeenAt` and `problem` (null, or `code`, `message` and `fix`) |
+| `GET /api/wireless/network` | | `network`: checks now (at most about 3 seconds) whether this network lets devices see each other. `state` is `ok`, `blocked`, `no_permission`, `vpn`, `offline` or `unknown`; `problem` is null or its `code`, `message` and `fix` |
+| `POST /api/wireless` | `{"wifiTransport": true}` | turns Wi-Fi for iPhones on or off for this Mobster, and saves it in the env file |
+| `POST /api/devices/DEVICE/wifi` | `{"enabled": true}` | `device`, as above. Turning it on needs the phone plugged in and trusting this Mac: 409 `needs_cable` or `not_trusted` otherwise |
+| `POST /api/wireless/reconnect` | `{"device": "Sam's iPhone"}` | 202: look again now, without waiting out the backoff |
+
+Every route needs the API token. With Wi-Fi for iPhones on, each iPhone in `GET /api/devices` also has `transport` and `wifi` (`enabled`, `reachable`), and `GET /api/events?topics=devices` sends `transport_changed` with `device`, `transport` and `reachable` when a phone moves between the cable and Wi-Fi.

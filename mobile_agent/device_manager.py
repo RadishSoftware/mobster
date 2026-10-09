@@ -20,11 +20,13 @@ import shlex
 import shutil
 import signal
 import subprocess
+import sys
 import tempfile
 import threading
 import time
 import urllib.request
 
+from . import setup_errors
 from . import signing
 from . import wda_source
 from .device_info import MODEL_NAMES
@@ -33,6 +35,9 @@ from .device_info import MODEL_NAMES
 # of the Mac (lsof: *:8100) and WDA on the phone's Wi-Fi address; neither has auth.
 LOOPBACK = "127.0.0.1"
 TOOL_DIRS = ("/opt/homebrew/bin", "/usr/local/bin", "/usr/bin", "/Applications/Xcode.app/Contents/Developer/usr/bin")
+# The iPhone connection tools: libimobiledevice's and libusbmuxd's. Mobster for Mac carries its own build of them
+# (desktop/scripts/build-iphone-tools.sh), found before any Homebrew copy, so nobody needs Homebrew or Terminal.
+IPHONE_TOOLS = ("idevice_id", "ideviceinfo", "ideviceinstaller", "iproxy")
 # /usr/bin/xcodebuild and /usr/bin/git exist on every Mac: they are stubs that forward to the active
 # developer directory (and fail, or open an install dialog, without one). They never count as Xcode or
 # git: both come from the Xcode app itself, git also from the Command Line Tools or Homebrew.
@@ -44,6 +49,7 @@ GIT_DIRS = ("/opt/homebrew/bin", "/usr/local/bin", CLT_DIR + "/usr/bin")
 # needs fixing often enough that the fix shows up on its own.
 XCODE_OK_TTL, XCODE_RETRY_TTL = 300.0, 10.0
 TEAMS_TTL = 60.0
+USB_TTL = 5.0
 WDA_PORT, VIDEO_PORT = 8100, 9100
 TEAM_PATTERN = re.compile(r"[A-Z0-9]{10}")
 UDID_PATTERN = re.compile(r"[0-9A-Fa-f-]{24,40}")
@@ -61,9 +67,34 @@ PROBE_TIMEOUT = 3.0
 WEDGED_RESTART_SECONDS = 90.0
 MIN_RESTART_GAP = 180.0
 LOG_TAIL = 40
-# Rebranded so free/personal teams can sign them (the stock com.facebook ids fail).
+# Rebranded so free/personal teams can sign them (the stock com.facebook ids fail). The runner's id
+# also gets the team's suffix at build time (signing.runner_bundle_id): App IDs are unique across
+# every Apple team, so a free account can't register an id someone else's team already has.
 BUNDLE_REBRAND = {"com.facebook.WebDriverAgentRunner": "app.mobster.wda.runner",
                   "com.facebook.WebDriverAgentLib": "app.mobster.wda.lib"}
+# The runner earlier versions installed under the plain id; removed after the first build with the suffix.
+LEGACY_RUNNER = "app.mobster.wda.runner.xctrunner"
+RUNNER_ID = re.compile(r"(?<![\w.])(?:com\.facebook\.WebDriverAgentRunner|app\.mobster\.wda\.runner(?:\.[a-z0-9]{10})?)(?=[\s\";])")
+# A runner whose signature ends within this long is renewed (runner_renewal.py), and a build in this
+# window first drops Xcode's cached profile so the new signature starts a fresh 7 days.
+RENEW_WINDOW = 48 * 3600
+# To prove a renewal on a real phone in one sitting, MOBSTER_RENEW_WINDOW_HOURS=170 (in the agent's
+# env file, e.g. the Mac app's agent.env) widens the window past a fresh 7-day signature, so the
+# runner renews within seconds of Mobster opening. Remove it afterwards: a signature is never older
+# than 168 hours, so with it set the runner is always due (retried at most every 6 hours).
+MAX_RENEW_WINDOW_HOURS = 170
+
+
+def renew_window(env=None):
+    """RENEW_WINDOW, or MOBSTER_RENEW_WINDOW_HOURS (1 to 170) when set for a verification run."""
+    value = (os.environ if env is None else env).get("MOBSTER_RENEW_WINDOW_HOURS")
+    try:
+        hours = float(value) if value else None
+    except ValueError:
+        hours = None
+    if hours is None or not 1 <= hours <= MAX_RENEW_WINDOW_HOURS:
+        return RENEW_WINDOW
+    return int(hours * 3600)
 # xcodebuild failures users can act on, in their words.
 BUILD_HINTS = (
     ("isn't registered in your developer account",
@@ -86,10 +117,10 @@ BUILD_HINTS = (
                                      "Developer Mode. If iOS is newer than your Xcode, update Xcode."),
 )
 # A free Apple account's signature lasts 7 days; after that iOS refuses to launch the runner.
-EXPIRED_HINT = "The runner's signature expired. Rebuild it in Setup."
+EXPIRED_HINT = "Mobster's helper needs a refresh: its signature expired. Refresh it in Setup."
 # Why a started runner is not answering yet, read from the tail of its log.
 RUNNER_HINTS = (
-    ("because the device is locked", "Unlock your iPhone. The runner starts as soon as it is unlocked."),
+    ("because the device is locked", "Unlock your iPhone. Mobster's helper starts as soon as it is unlocked."),
     ("Developer Mode", "Turn on Developer Mode on the iPhone: Settings › Privacy & Security › Developer Mode."),
     ("has not been explicitly trusted", "On the iPhone, open Settings › General › VPN & Device Management and trust "
                                         "your developer app."),
@@ -173,9 +204,32 @@ def executable(directory, name):
     return str(path) if path.is_file() and os.access(path, os.X_OK) else None
 
 
+def bundled_tools_dir():
+    """Where the app's own iPhone connection tools are: MOBSTER_IPHONE_TOOLS, else the desktop app's
+    Contents/Resources/iphone-tools/bin next to the frozen runtime. None outside the app (a source checkout)."""
+    override = os.environ.get("MOBSTER_IPHONE_TOOLS")
+    if override:
+        return Path(override)
+    frozen = getattr(sys, "_MEIPASS", None)
+    if not frozen:
+        return None
+    for resources in (Path(frozen).parent / "Resources", Path(sys.executable).resolve().parent.parent / "Resources"):
+        if (resources / "iphone-tools" / "bin").is_dir():
+            return resources / "iphone-tools" / "bin"
+    return None
+
+
+def bundled_tool(name):
+    """The app's own copy of an iPhone connection tool, or None."""
+    directory = bundled_tools_dir() if name in IPHONE_TOOLS else None
+    return executable(directory, name) if directory else None
+
+
 def tool(name):
     if name in XCODE_SHIMS:
         return xcode_tool(name)
+    if path := bundled_tool(name):
+        return path
     for directory in TOOL_DIRS:
         if path := executable(directory, name):
             return path
@@ -270,6 +324,21 @@ def xcode_status():
     return status
 
 
+def count_iphones(items, simulated=False):
+    """iPhones in a system_profiler USB tree; a virtual one on a simulated bus doesn't count."""
+    total = 0
+    for item in items if isinstance(items, list) else ():
+        if not isinstance(item, dict):
+            continue
+        on_simulated = simulated or item.get("USBKeyHardwareType") == "Simulated"
+        name = str(item.get("_name") or "")
+        vendor = str(item.get("USBDeviceKeyVendorID") or item.get("vendor_id") or "").lower()
+        if name.startswith("iPhone") and "virtual" not in name.lower() and "0x05ac" in vendor and not on_simulated:
+            total += 1
+        total += count_iphones(item.get("_items"), on_simulated)
+    return total
+
+
 def run(command, timeout=10):
     """stdout of a short command, or None if it failed."""
     try:
@@ -277,6 +346,29 @@ def run(command, timeout=10):
     except (OSError, subprocess.SubprocessError):
         return None
     return completed.stdout if completed.returncode == 0 else None
+
+
+# How long one USB listing answers ``usb_attached``: a pulled cable is known within this many seconds.
+ATTACHED_TTL = 2.0
+_attached_cache = {"at": None, "udids": None}
+_attached_lock = threading.Lock()
+
+
+def usb_attached(udid, now=None, ttl=ATTACHED_TTL):
+    """Whether the iPhone ``udid`` is on this Mac's USB now: True, False, or None when that can't be told
+    (no libimobiledevice, or its listing failed). One ``idevice_id -l`` (tens of ms) serves every caller for
+    ``ttl`` seconds, so a run that asks after each failed call costs nothing while the phone is there."""
+    if not isinstance(udid, str) or not UDID_PATTERN.fullmatch(udid):
+        return None
+    now = time.monotonic() if now is None else now
+    with _attached_lock:
+        at, udids = _attached_cache["at"], _attached_cache["udids"]
+        if at is None or now - at >= ttl:
+            listing = tool("idevice_id")
+            output = run([listing, "-l"], timeout=3) if listing else None
+            udids = None if output is None else {line.strip().upper() for line in output.splitlines() if line.strip()}
+            _attached_cache.update(at=now, udids=udids)
+    return None if udids is None else udid.upper() in udids
 
 
 @functools.lru_cache(maxsize=4)
@@ -289,14 +381,25 @@ def iproxy_binds_loopback(path):
     return "--source" in completed.stdout + completed.stderr
 
 
-def relay_command(udid):
-    """iproxy for the API and video ports on 127.0.0.1 only, or LookupError when it can't be."""
+def relay_command(udid, wda_port=WDA_PORT, video_port=VIDEO_PORT):
+    """iproxy for the API and video ports on 127.0.0.1 only, or LookupError when it can't be.
+
+    WDA always listens on 8100 and 9100 on the phone; ``wda_port`` and ``video_port`` are this Mac's side, so a
+    second phone's relay (8101 -> its 8100) never meets the first's (devices.py allocates them)."""
     iproxy = tool("iproxy")
     if not iproxy:
-        raise LookupError("Install iproxy first: brew install libimobiledevice")
+        raise LookupError("The iPhone connection tools aren't installed. Open Setup › Get your Mac ready.")
     if not iproxy_binds_loopback(iproxy):
         raise LookupError("This iproxy can't be limited to this Mac. Update it: brew upgrade libimobiledevice libusbmuxd")
-    return [iproxy, "-s", LOOPBACK, "-u", udid, f"{WDA_PORT}:{WDA_PORT}", f"{VIDEO_PORT}:{VIDEO_PORT}"]
+    return [iproxy, "-s", LOOPBACK, "-u", udid, f"{wda_port}:{WDA_PORT}", f"{video_port}:{VIDEO_PORT}"]
+
+
+def wifi_runner_command(xcodebuild, plan, udid):
+    """xcodebuild for the runner over Wi-Fi: the per-launch test plan (wireless/xctestrun.py, USE_IP the phone's
+    tunnel address) on the phone ``udid``, which CoreDevice reaches through its encrypted tunnel."""
+    if not isinstance(udid, str) or not UDID_PATTERN.fullmatch(udid):
+        raise ValueError("A UDID is 24 to 40 hex digits and dashes")
+    return [xcodebuild, "test-without-building", "-xctestrun", str(plan), "-destination", f"id={udid}"]
 
 
 def patch_wda(project):
@@ -363,17 +466,20 @@ def update_env_file(path, changes):
     """Set (str) or remove (None) several KEY=value lines in one private, atomic rewrite."""
     for key, value in changes.items():
         if not re.fullmatch(r"[A-Z_][A-Z0-9_]*", key) or value is not None and (
-                not isinstance(value, str) or any(c in value for c in "\r\n")):
+                not isinstance(value, str) or any(c in "\r\n" or "\ud800" <= c <= "\udfff" for c in value)):
             raise ValueError("Invalid environment entry")
-    path = Path(path)
+    path = Path(path).expanduser()
     path.parent.mkdir(parents=True, exist_ok=True)
-    lines = path.read_text().splitlines() if path.exists() else []
+    # A line that is not UTF-8 is kept byte for byte, so Setup can still save a key into such a file (and
+    # a byte-order mark goes, as load_env_file ignores it: a key on the first line is still replaced).
+    text = path.read_bytes().decode("utf-8", "surrogateescape").removeprefix("\ufeff") if path.exists() else ""
+    lines = text.splitlines()
     for key in changes:
         lines = [line for line in lines if not re.match(rf"\s*(export\s+)?{re.escape(key)}\s*=", line)]
     lines += [f"{key}={value}" for key, value in changes.items() if value is not None]
     handle, temporary = tempfile.mkstemp(dir=path.parent, prefix=".env-")
     try:
-        with os.fdopen(handle, "w") as stream:
+        with os.fdopen(handle, "w", encoding="utf-8", errors="surrogateescape") as stream:
             stream.write("\n".join(lines) + ("\n" if lines else ""))
         os.chmod(temporary, 0o600)
         os.replace(temporary, path)
@@ -451,18 +557,34 @@ class Supervised:
         self._terminate()
 
 
+# One build at a time across phones: every build rebrands and patches the shared WebDriverAgent clone, and
+# two xcodebuilds at once would also double the heaviest job Mobster runs.
+BUILD_LOCK = threading.Lock()
+
+
 class DeviceManager:
-    def __init__(self, data_dir, wda_url=f"http://127.0.0.1:{WDA_PORT}"):
+    """One USB iPhone's lifecycle. The primary phone's (``udid`` None) lives where it always has: device.json,
+    wda-build/ and logs/ in the data folder, relayed on 8100 and 9100, and follows the phone chosen in Setup.
+    Another phone's is pinned to its ``udid`` and keeps its files in ``root`` (devices/<udid>/), relayed on the
+    ports devices.py gave it; the WebDriverAgent clone is shared."""
+
+    def __init__(self, data_dir, wda_url=f"http://127.0.0.1:{WDA_PORT}", *, udid=None, root=None,
+                 video_port=VIDEO_PORT):
         self.data_dir = Path(data_dir)
         try:
             private_dir(self.data_dir)  # keys, journal, team id and logs live here
         except OSError:
             pass
         self.wda_url = wda_url.rstrip("/")
+        from urllib.parse import urlsplit
+        self.wda_port = urlsplit(self.wda_url).port or WDA_PORT
+        self.video_port = video_port
+        self.pinned = udid
+        home = Path(root) if root is not None else self.data_dir
         self.project = self.data_dir / "WebDriverAgent"
-        self.derived = self.data_dir / "wda-build"
-        self.logs = self.data_dir / "logs"
-        self.settings_path = self.data_dir / "device.json"
+        self.derived = home / "wda-build"
+        self.logs = home / "logs"
+        self.settings_path = home / "device.json"
         self.lock = threading.Lock()
         self.build = {"state": "idle", "error": None, "log_tail": []}
         self.runner_log_start = 0
@@ -473,7 +595,21 @@ class DeviceManager:
         self.runner_lock = threading.RLock()
         self.runner = None
         self.relay = None
+        # What the runner started last uses: "usb" (iproxy), "wifi" (the tunnel and wireless.relay) or None (stopped).
+        # Only wireless/monitor.py starts it over Wi-Fi, with MOBSTER_WIFI_TRANSPORT on.
+        self.transport = None
+        self.wifi_address = None
+        self.runner_line = None
         self.cache = {}
+        # Rebuilds the runner before its signature runs out (runner_renewal.RunnerRenewal); set by SetupService.
+        self.renewal = None
+        # Phones other managers drive (devices.py): the primary never picks one as "the only phone connected".
+        self.claimed = lambda: ()
+        if udid is not None and self.settings_path.parent.exists() and self.settings().get("udid") != udid:
+            try:
+                self.save_settings(udid=udid)
+            except OSError:
+                pass
 
     # -- inspection ----------------------------------------------------------
 
@@ -487,6 +623,7 @@ class DeviceManager:
     def save_settings(self, **changes):
         settings = {**self.settings(), **changes}
         private_dir(self.data_dir)
+        private_dir(self.settings_path.parent)
         with open_private(self.settings_path, "w") as stream:
             stream.write(json.dumps(settings, indent=1))
         return settings
@@ -507,7 +644,7 @@ class DeviceManager:
 
     def refresh(self):
         """Forget the cached tool and team checks, so the next read sees a fix the user just made."""
-        for key in ("xcode", "teams"):
+        for key in ("xcode", "teams", "usb"):
             self.cache.pop(key, None)
 
     def xcode_env(self):
@@ -543,6 +680,28 @@ class DeviceManager:
                             "trusted": bool(info)})
         return devices
 
+    def usb_iphones(self):
+        """How many iPhones are on this Mac's USB, read without libimobiledevice (System Information).
+
+        Setup's first screen uses it to say the cable works before the iPhone tools are installed.
+        None when System Information can't say. Only counts; nothing identifying is kept.
+        """
+        cached = self.cache.get("usb")
+        if cached and time.monotonic() - cached[0] < USB_TTL:
+            return cached[1]
+        count = None
+        for data_type in ("SPUSBHostDataType", "SPUSBDataType"):
+            output = run(["/usr/sbin/system_profiler", data_type, "-json"], timeout=8)
+            try:
+                tree = json.loads(output) if output else None
+            except ValueError:
+                tree = None
+            if isinstance(tree, dict) and isinstance(tree.get(data_type), list):
+                count = count_iphones(tree[data_type])
+                break
+        self.cache["usb"] = (time.monotonic(), count)
+        return count
+
     def device(self, devices=None):
         """The chosen iPhone while it is connected, else None.
 
@@ -552,14 +711,20 @@ class DeviceManager:
         choice yet, a single connected phone is the natural one.
         """
         devices = self.devices() if devices is None else devices
-        chosen = self.settings().get("udid")
+        chosen = self.pinned or self.settings().get("udid")
         if chosen:
             return next((d for d in devices if d["udid"] == chosen), None)
-        return devices[0] if len(devices) == 1 else None
+        claimed = set(self.claimed())
+        free = [d for d in devices if d["udid"] not in claimed]
+        return free[0] if len(free) == 1 else None
 
     def choose(self, udid):
         if not isinstance(udid, str) or not UDID_PATTERN.fullmatch(udid):
             raise ValueError("Choose a connected iPhone")
+        if self.pinned and udid != self.pinned:
+            raise LookupError("This device is one iPhone; set up another iPhone as its own device")
+        if udid in set(self.claimed()):
+            raise LookupError("That iPhone is already set up as another device. Choose a different iPhone.")
         if not any(d["udid"] == udid for d in self.devices()):
             raise LookupError("That iPhone is not connected")
         name = next(d["name"] for d in self.devices() if d["udid"] == udid)
@@ -620,6 +785,10 @@ class DeviceManager:
                 time.sleep(gap)
         return False
 
+    def attached(self, udid=None):
+        """Whether the chosen (or ``udid``'s) iPhone is plugged in now; None when that can't be told."""
+        return usb_attached(udid or self.pinned or self.settings().get("udid"))
+
     def health_error(self):
         """What to tell the user when WDA answers but cannot reach the phone's UI."""
         if self.health["locked"] is True:
@@ -639,7 +808,7 @@ class DeviceManager:
         failing = self.runner.restarts >= 3 and self.runner.last_exit not in (None, 0)
         hint = self.runner_hint()
         return {"state": "failed" if failing else "starting",
-                "error": hint or ("The runner keeps exiting. Unlock your iPhone and check Developer Mode."
+                "error": hint or ("Mobster's helper keeps stopping. Unlock your iPhone and check Developer Mode."
                                   if failing else None)}
 
     def runner_hint(self):
@@ -657,18 +826,27 @@ class DeviceManager:
             return None
         # The newest matching line wins: an unlock prompt followed by success is stale.
         latest = None
+        self.runner_line = None
         for line in text.splitlines():
             for needle, hint in RUNNER_HINTS:
                 if needle in line:
-                    latest = hint
+                    latest, self.runner_line = hint, line
                     break
             if "ServerURLHere" in line:
-                latest = None
+                latest = self.runner_line = None
         return latest
+
+    def runner_problem(self):
+        """The runner's current failure as a one-line fix (setup_errors), from the line runner_hint matched."""
+        if self.expired():
+            return {"kind": "expired", "fix": "Refresh Mobster's helper", "action": "renew", "raw": EXPIRED_HINT}
+        line = getattr(self, "runner_line", None)
+        return setup_errors.translate(line) if line else None
 
     # -- actions ---------------------------------------------------------------
 
-    def start_build(self, team):
+    def start_build(self, team, renewal=False):
+        """Build and install the runner in the background. renewal marks one runner_renewal started."""
         if not TEAM_PATTERN.fullmatch(team or ""):
             raise ValueError("A team id is 10 letters and digits")
         device = self.device()
@@ -676,13 +854,13 @@ class DeviceManager:
             raise LookupError("Connect and choose your iPhone first")
         tools = self.tools()
         if tools["xcode"]["state"] != "ok" or not tools["git"]:
-            raise LookupError("Finish installing Xcode first (Setup › Install the iPhone tools)")
+            raise LookupError("Finish installing Xcode first (Setup › Get your Mac ready)")
         with self.lock:
             if self.build["state"] == "running":
                 return
             # The first build also fetches WebDriverAgent and prepares the phone, so it takes longest.
             self.build = {"state": "running", "error": None, "log_tail": [], "started_at": time.time(),
-                          "first": not any(self.derived.glob("Build/Products/*.xctestrun"))}
+                          "first": not any(self.derived.glob("Build/Products/*.xctestrun")), "renewal": renewal}
         self.save_settings(team=team, udid=device["udid"], device_name=device["name"])
         threading.Thread(target=self._build, args=(team, device["udid"]), name="mobster-wda-build",
                          daemon=True).start()
@@ -691,6 +869,16 @@ class DeviceManager:
         log_path = self.logs / "wda-build.log"
         private_dir(self.logs)
         tail = []
+        if not BUILD_LOCK.acquire(blocking=False):
+            with self.lock:
+                self.build["log_tail"] = ["Waiting for another iPhone's build to finish."]
+            BUILD_LOCK.acquire()
+        try:
+            self._build_locked(team, udid, log_path, tail)
+        finally:
+            BUILD_LOCK.release()
+
+    def _build_locked(self, team, udid, log_path, tail):
         try:
             with open_private(log_path, "w") as log:
                 git = tool("git") or "git"
@@ -700,7 +888,8 @@ class DeviceManager:
                     self._step(wda_source.clone_command(git, self.project), log, tail)
                     wda_source.verify(git, self.project)
                 log.write(f"WebDriverAgent {wda_source.REF} ({wda_source.COMMIT})\n")
-                self._rebrand()
+                self._rebrand(team)
+                self._drop_stale_profiles(team, log)
                 try:
                     patch_wda(self.project)
                 except RuntimeError as error:
@@ -713,13 +902,16 @@ class DeviceManager:
                             "-scheme", "WebDriverAgentRunner", "-destination", f"id={udid}",
                             "-allowProvisioningUpdates", "-derivedDataPath", str(self.derived),
                             f"DEVELOPMENT_TEAM={team}", f"USE_IP={LOOPBACK}", "build-for-testing"], log, tail)
+                self._remove_legacy_runner(team, udid, log)
             self.save_settings(built_for=udid, expires_at=signing.profile_expiry(self.derived))
             with self.lock:
-                self.build = {"state": "succeeded", "error": None, "log_tail": tail[-LOG_TAIL:]}
-        except Exception as error:
-            with self.lock:
-                self.build = {"state": "failed", "error": build_hint(tail) if tail else str(error)[:300],
+                self.build = {**self.build, "state": "succeeded", "error": None, "problem": None,
                               "log_tail": tail[-LOG_TAIL:]}
+        except Exception as error:
+            text = "\n".join(tail) if tail else str(error)
+            with self.lock:
+                self.build = {**self.build, "state": "failed", "error": build_hint(tail) if tail else str(error)[:300],
+                              "problem": setup_errors.problem(text), "log_tail": tail[-LOG_TAIL:]}
 
     def _step(self, command, log, tail):
         # git and xcodebuild come from Xcode, never the /usr/bin stubs, and run with its developer directory.
@@ -736,18 +928,69 @@ class DeviceManager:
         if process.wait() != 0:
             raise RuntimeError(f"{Path(command[0]).name} exited with {process.returncode}")
 
-    def _rebrand(self):
+    def _rebrand(self, team=None):
+        """Mobster's bundle ids in the clone; the runner's carries the team's suffix (see BUNDLE_REBRAND)."""
         project = self.project / "WebDriverAgent.xcodeproj" / "project.pbxproj"
         text = project.read_text()
         for old, new in BUNDLE_REBRAND.items():
-            text = text.replace(old, new)
+            if old != "com.facebook.WebDriverAgentRunner":
+                text = text.replace(old, new)
+        text = RUNNER_ID.sub(signing.runner_bundle_id(team), text)
         project.write_text(text)
+
+    def _remove_legacy_runner(self, team, udid, log):
+        """Once the team's own runner is built, uninstall the plain-id runner earlier versions put on this
+        phone: it is a second identical icon, and on a free Apple ID it holds one of the 3 app slots.
+        Exactly LEGACY_RUNNER is removed, once per phone, and a failure never fails the build."""
+        if signing.runner_bundle_id(team) == signing.RUNNER_BUNDLE or udid in self.settings().get("legacy_removed", []):
+            return
+        xcrun = tool("xcrun")
+        if not xcrun:
+            return
+        try:
+            result = subprocess.run([xcrun, "devicectl", "device", "uninstall", "app", "--device", udid,
+                                     LEGACY_RUNNER], capture_output=True, text=True, timeout=90, env=self.xcode_env())
+        except (OSError, subprocess.SubprocessError) as error:
+            log.write(f"Could not remove the old runner ({LEGACY_RUNNER}): {error}\n")
+            return
+        output = (result.stdout + result.stderr).strip()
+        if result.returncode == 0:
+            log.write(f"Removed the old runner ({LEGACY_RUNNER}) from the iPhone.\n")
+        elif re.search(r"not (installed|found)|no such app|couldn.t find|does not exist", output, re.I):
+            log.write(f"The old runner ({LEGACY_RUNNER}) isn't on the iPhone.\n")
+        else:
+            log.write(f"Could not remove the old runner ({LEGACY_RUNNER}): {output[-300:]}\n")
+            return
+        self.save_settings(legacy_removed=[*self.settings().get("legacy_removed", []), udid][-8:])
+
+    def _drop_stale_profiles(self, team, log):
+        """Before renewing, remove Xcode's cached runner profiles that expire within the renewal window,
+        so -allowProvisioningUpdates fetches a new one instead of signing with the old one again."""
+        window = renew_window()
+        expires = self.signature_expiry()
+        if expires is None or expires - time.time() > window:
+            return
+        for path in signing.stale_runner_profiles(team, time.time() + window):
+            try:
+                path.unlink()
+                log.write(f"Removed an expiring runner profile: {path.name}\n")
+            except OSError:
+                pass
 
     def start_runner(self):
         with self.runner_lock:
+            if self.transport == "wifi" and self.wifi_address and self.attached() is not True:
+                # A runner on Wi-Fi restarts on Wi-Fi (Setup's Start, a wedged runner), while the phone stays unplugged.
+                self._start_wifi_runner(self.wifi_address)
+                return
             self._start_runner()
 
     def _start_runner(self):
+        # Every start (Setup's Start, autostart, probe()'s restart, a renewal's restart) runs here under
+        # runner_lock, and close() sets ``watching`` before it takes that lock to stop the runner: a start
+        # that gets here afterwards would undo that stop.
+        if self.watching.is_set():
+            raise LookupError("Mobster is quitting")
         settings = self.settings()
         device = self.device()
         if device is None:
@@ -757,18 +1000,18 @@ class DeviceManager:
         if not self.built() or not settings.get("team"):
             raise LookupError("Build the runner first")
         udid = device["udid"]
-        relay = relay_command(udid)
+        relay = relay_command(udid, self.wda_port, self.video_port)
         self.stop_runner()
         pin_loopback(self.derived / "Build" / "Products")
         try:
             self.runner_log_start = (self.logs / "wda-runner.log").stat().st_size
         except OSError:
             self.runner_log_start = 0
-        self.watching = threading.Event()  # set to stop watch()
+        # A new runner's health is unknown. ``watching`` and ``runner_lock`` stay the ones __init__ made: the
+        # watch loop waits on that Event (close() sets it) and a second start waits on that lock.
+        # ``last_restart`` stays too: probe() sets it just before it calls start_runner(), and MIN_RESTART_GAP
+        # between wedged-runner restarts depends on it.
         self.health = {"responsive": None, "locked": None, "since": None, "probed_at": 0.0}
-        self.last_restart = float("-inf")
-        # One start or stop at a time: the watcher and the setup flow can both start the runner.
-        self.runner_lock = threading.RLock()
         self.runner = Supervised("wda-runner", [
             tool("xcodebuild"), "-project", str(self.project / "WebDriverAgent.xcodeproj"),
             "-scheme", "WebDriverAgentRunner", "-destination", f"id={udid}",
@@ -777,7 +1020,54 @@ class DeviceManager:
         self.relay = Supervised("usb-relay", relay, self.logs / "usb-relay.log")
         self.relay.start()
         self.runner.start()
+        self.transport = "usb"
         self.save_settings(autostart=True)
+
+    def start_wifi_runner(self, address):
+        """Start the runner over Wi-Fi (SPEC §3.7 item 3): WebDriverAgent listens only on the phone's tunnel address
+        ``address`` (fd00::/8, else refused), and this Mac's side is a relay bound to 127.0.0.1 on the phone's own
+        ports, so its WDA address, lease and live view are the cable's. LookupError when it can't start now."""
+        with self.runner_lock:
+            self._start_wifi_runner(address)
+
+    def _start_wifi_runner(self, address):
+        from .wireless import relay as wifi_relay
+        from .wireless import xctestrun
+        if self.watching.is_set():
+            raise LookupError("Mobster is quitting")
+        settings = self.settings()
+        udid = self.pinned or settings.get("udid")
+        if not udid:
+            raise LookupError("Choose your iPhone in Setup first")
+        if self.expired():
+            raise LookupError(EXPIRED_HINT)
+        if not self.built() or not settings.get("team"):
+            raise LookupError("Build the runner first")
+        xcodebuild = tool("xcodebuild")
+        if not xcodebuild:
+            raise LookupError("Finish installing Xcode first (Setup › Get your Mac ready)")
+        try:
+            # A tunnel address (fd00::/8) that this Mac reaches through the CoreDevice tunnel, never through Wi-Fi.
+            target = wifi_relay.require_tunnel(address)
+            plan = xctestrun.write(self.derived / "Build" / "Products", self.derived / xctestrun.FOLDER, target)
+        except ValueError as error:
+            raise LookupError(str(error)) from None
+        self._stop_runner(False)
+        relay = wifi_relay.Relay(target, [(self.wda_port, WDA_PORT), (self.video_port, VIDEO_PORT)])
+        try:
+            relay.start()
+        except OSError:
+            raise LookupError(f"Another program is using port {self.wda_port} or {self.video_port} on this Mac") from None
+        try:
+            self.runner_log_start = (self.logs / "wda-runner.log").stat().st_size
+        except OSError:
+            self.runner_log_start = 0
+        self.health = {"responsive": None, "locked": None, "since": None, "probed_at": 0.0}
+        self.relay = relay
+        self.runner = Supervised("wda-runner", wifi_runner_command(xcodebuild, plan, udid), self.logs / "wda-runner.log",
+                                 env=self.xcode_env())
+        self.runner.start()
+        self.transport, self.wifi_address = "wifi", target
 
     def stop_runner(self, remember=False):
         with self.runner_lock:
@@ -788,6 +1078,7 @@ class DeviceManager:
             if service is not None:
                 service.stop()
         self.runner = self.relay = None
+        self.transport = None
         if remember:
             self.save_settings(autostart=False)
 
@@ -836,6 +1127,11 @@ class DeviceManager:
                 self.probe()
             except Exception:
                 pass
+            if self.renewal is not None:
+                try:
+                    self.renewal.tick()
+                except Exception:
+                    pass
             stop.wait(WATCH_INTERVAL)
 
     def close(self):

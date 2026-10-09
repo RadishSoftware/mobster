@@ -1,0 +1,161 @@
+---
+title: "Quickstart: test your app"
+sidebarTitle: "Test your app"
+description: "Run your first check on a simulator. No iPhone, and no API key for a launch-only check."
+icon: "circle-check"
+keywords: ["mobster verify", "first check", "ios ui test", "simulator", "assertions"]
+---
+
+import Requirements from '/snippets/requirements.mdx';
+
+`mobster verify` checks that a screen in your iOS app shows what it should. Give it your app and what must be true, such as "three plans on the paywall". It installs the app on a simulator, opens the screen, and returns passed or failed with the screenshots that show why. The verdict is decided from what's on screen, never by a model.
+
+This guide uses Daybreak, the sample app in Mobster CLI's repository. The steps are the same for your own app.
+
+<Info>
+  Want your coding agent to run the checks? Set it up with [Add Mobster to your agent](/agents). Already have checks? [Run every check](/testing) with `mobster test`.
+</Info>
+
+## Before you begin
+
+<Accordion title="What you need">
+  <Requirements />
+</Accordion>
+
+<Steps>
+  <Step title="Install Mobster">
+    <CodeGroup>
+    ```sh Install script
+    curl -fsSL https://mobster.dev/install.sh | sh
+    ```
+
+    ```sh Homebrew
+    brew install radishsoftware/tap/mobster
+    ```
+    </CodeGroup>
+
+    You should see `mobster 0.2.0` from `mobster version`.
+  </Step>
+  <Step title="Prepare the simulator">
+    ```sh
+    mobster sim doctor --fix
+    ```
+
+    It checks Xcode, the runtime and disk space, then creates Mobster's own simulator, boots it headless and builds WebDriverAgent, once per Xcode version. You should see `Ready for mobster verify.` on the last line. A line with `✗` is a problem, and the line under it is the fix. If the iOS runtime is missing, run `xcodebuild -downloadPlatform iOS`: Mobster never downloads one on its own.
+
+    <Accordion title="What sim doctor printed on a new Mac">
+      On 28 Sep 2026, with `MOBSTER_SIM_PORT_BASE=8340` (the default is 8310) and the data folder shortened:
+
+      ```text
+      Mobster sim doctor
+
+        ✓ Apple silicon     arm64
+        ✓ Xcode             Xcode 26.4 (17E192) at /Applications/Xcode.app
+        ✓ Xcode components  installed
+        ✓ iOS runtime       iOS 26.4
+        ✓ Device type       iPhone 17 Pro
+        ✓ git               /Applications/Xcode.app/Contents/Developer/usr/bin/git
+        ✓ Free space        487 GB free for ~/Library/Application Support/app.mobster.desktop/dev
+        ! WebDriverAgent    not built yet: the first run builds it, once per Xcode version
+                            → mobster sim doctor --fix
+        · Simulators        none yet: the first run creates one
+        ✓ Ports             WebDriverAgent on 127.0.0.1:8340–8379, MJPEG on +1000; 8340 is free
+        · Smart key         not set: launch-only and key-less checks need none; Smart needs your OpenAI or Anthropic key
+
+      Ready for `mobster verify`.
+      ```
+    </Accordion>
+  </Step>
+  <Step title="Build your app for the simulator">
+    A simulator build needs no signing team. For your own app, build your scheme into `.mobster/build`:
+
+    ```sh
+    xcodebuild -scheme <Scheme> \
+      -destination 'generic/platform=iOS Simulator' \
+      -derivedDataPath .mobster/build \
+      CODE_SIGNING_ALLOWED=NO build
+    ```
+
+    The app lands in `.mobster/build/Build/Products/Debug-iphonesimulator/<App>.app`. For Daybreak, from the root of Mobster CLI's repository:
+
+    ```sh
+    cd examples/ios/Daybreak
+    xcodebuild -project Daybreak.xcodeproj \
+      -scheme Daybreak \
+      -destination 'generic/platform=iOS Simulator' \
+      -derivedDataPath .build \
+      CODE_SIGNING_ALLOWED=NO build
+    ```
+  </Step>
+  <Step title="Run a launch-only check">
+    A launch-only check has no steps. Mobster launches the app, opens a deep link if you give one, and checks the screen. It calls no model.
+
+    ```sh
+    mobster verify \
+      --app .build/Build/Products/Debug-iphonesimulator/Daybreak.app \
+      --open-url daybreak://paywall \
+      --text "Choose your plan" \
+      --expect '{"count": {"id": "/^plan_/"}, "equals": 3}'
+    ```
+
+    You should see the verdict, one line per assertion, and the report (28 Sep 2026, on a warm simulator):
+
+    ```text
+    Simulator: Mobster · iPhone 17 Pro · iOS 26.4
+    Installing Daybreak 1.0 (1)
+    ✓ passed  Launch check  (9.3 s)
+      ✓ text "Choose your plan"
+      ✓ count id=/^plan_/ == 3
+      Report  .mobster/runs/20260928-152901-5bd6/report.html
+      Rerun   mobster verify --check .mobster/runs/20260928-152901-5bd6/check.yaml
+    ```
+
+    The first run creates and boots the simulator and builds WebDriverAgent, and took 77.7 s and 103.6 s on an M5 Max (n = 2). Warm runs took 6.8 s and 8.6 s. Mobster waits up to 240 s for each before it ends `couldnt_run`.
+  </Step>
+  <Step title="Read the report and the verdict">
+    Every run writes `.mobster/runs/<run_id>/`. Its `report.html` is one file with no external requests: the verdict, each assertion with what was on screen, numbered like the pills on the verdict frame beside them, a switch to the plain frame, and each step.
+
+    When a check fails, its line says what Mobster found instead. With Daybreak's `missing-plan` bug planted:
+
+    ```text
+    ✗ failed  The paywall shows three plans with Annual at $39.99 a year  (18.2 s)
+      ✓ text "Choose your plan"
+      ✗ count id=/^plan_/ == 3: found 2: plan_weekly, plan_monthly
+      ✗ value id=plan_annual == "$39.99 / year": not found; closest: "plan_monthly"
+    ```
+
+    The exit code is the verdict: 0 passed, 1 failed, 2 needs review, 3 couldn't run. With `--json`, stdout is one object:
+
+    ```json
+    {
+      "schema": "mobster.verify/1",
+      "verdict": "failed",
+      "exit_code": 1,
+      "summary": "count id=/^plan_/ == 3 failed: found 2",
+      "reason": {
+        "class": "assertion",
+        "message": "1 of 3 expectations failed",
+        "fix": null
+      },
+      "report": "/abs/…/report.html",
+      "repro": "mobster verify --check /abs/…/check.yaml"
+    }
+    ```
+
+    That's an excerpt. [Checks](/checks#the-result-json) has every field.
+  </Step>
+</Steps>
+
+## Next
+
+<CardGroup cols={3}>
+  <Card title="Add steps and save the check" icon="footprints" href="/test/steps">
+    Steps in plain English, `--save`, and the exit code in scripts.
+  </Card>
+  <Card title="Run every check" icon="list-checks" href="/testing">
+    `mobster test`: simulators and your iPhone, retries, flaky checks, reports.
+  </Card>
+  <Card title="Checks reference" icon="file-check" href="/checks">
+    The check file, every assertion and the verdict rules.
+  </Card>
+</CardGroup>

@@ -1,0 +1,170 @@
+---
+title: "Run every check with mobster test"
+sidebarTitle: "Run every check"
+keywords: ["mobster test", "flaky", "retries", "quarantine", "junit", "test report", "test suite", "shards"]
+description: "Run every check in your project on simulators and your iPhone, with reports for CI."
+icon: "list-checks"
+---
+
+`mobster test` runs every check in your project and tells you, in one report, what passed on which device. It runs on simulators Mobster manages and on your own iPhone, on this Mac, with no per-device fee. It retries a failure from a fresh app, finds flaky checks, and writes JUnit for CI and an HTML report with the frames that prove each verdict.
+
+A check is the file `mobster verify` already runs ([Checks](/checks)), and every check runs the way `mobster verify --check` runs it: the verdict comes from the app's accessibility tree, never from a model. No checks yet? [Quickstart: test your app](/quickstart/test) writes the first one. Coming from Maestro or XCUITest? [Maestro vs XCUITest vs Mobster](https://mobster.dev/blog/maestro-vs-xcuitest-vs-mobster) on the blog sets the three side by side.
+
+
+<Prompt description="**Set up checks for this app.** Paste it into your coding agent, in your app's project folder." actions={["copy", "cursor"]}>
+Set up Mobster checks for this iOS app. Follow https://docs.mobster.dev/agents/setup.md to install Mobster and prepare the simulator. Then write a launch-only check in .mobster/checks for the app's first screen, run `mobster test`, and show me the verdict and the report path. Don't run anything on a real iPhone.
+</Prompt>
+
+## Run your checks
+
+From your project folder (or any folder under it):
+
+```sh
+mobster test
+```
+
+Mobster finds every `.yaml`, `.yml` and `.json` check in `.mobster/checks`, runs each on its own simulator (its `device`, else iPhone 17 Pro), and prints a line per check, then the totals and where the reports are:
+
+```text
+✓ passed  The paywall shows three plans with Annual at $39.99 a year  ·  iPhone 17 Pro · iOS 26.4
+✗ failed  The daily reminder stays on after a relaunch  ·  iPhone 17 Pro · iOS 26.4
+    1 of 1 expectations failed
+~ flaky  A new user finishes onboarding and reaches the paywall  ·  iPhone 17 Pro · iOS 26.4  (2 attempts)
+    text "Choose your plan" failed: not on screen
+
+2 passed, 1 flaky, 1 failed · 2 min 41 s · $0.11
+Report  .mobster/test-results/20261007-142233-9c1e/index.html
+JUnit   .mobster/test-results/20261007-142233-9c1e/junit.xml
+```
+
+Progress goes to stderr as each run starts and ends. Pass check files or folders to run only those: `mobster test .mobster/checks/paywall.yaml`.
+
+Launch-only checks make no model calls. Checks with `steps` run Smart on your Claude or OpenAI key, as `mobster verify` does, within each check's `budget`; `--keyless` skips them as couldn't run instead.
+
+## Several simulators
+
+```sh
+mobster test --sim "iPhone 17 Pro" --sim "iPhone SE (3rd generation)@iOS 26.4" --parallel 2
+```
+
+Every check runs on every `--sim`: a device type, with an optional `@` runtime. To keep the list in the repository, write `.mobster/matrix.yaml` and leave out `--sim`:
+
+```yaml
+# .mobster/matrix.yaml: simulators only
+simulators:
+  - iPhone 17 Pro@iOS 26.4
+  - iPhone SE (3rd generation)@iOS 26.4
+  - { device: iPhone 16e, runtime: iOS 26.4 }
+```
+
+`--matrix FILE` reads another file. A matrix file names simulators only: an entry is always a device type, never looked up as one of your devices.
+
+`--parallel N` runs up to N checks at once (at most 8). Each run takes its own simulator and holds it for the whole run, so two runs never share one; Mobster creates more simulators of a type when it needs them (each takes about 1.6 GB of disk, and `mobster sim prune` removes unused ones after 14 days). Leave room for them: four booted simulators want a Mac with 16 GB of memory or more.
+
+## On your iPhone
+
+```sh
+mobster test --device "Sam's iPhone"
+```
+
+`--device` takes a device from `mobster devices`. A real iPhone is reached only through this flag on the command line: a check file, a matrix file and an MCP tool can't name one. On your iPhone:
+
+- A check drives only its own app, and only a build you put there: Mobster installs the check's `app.path` when it's an `.ipa` or a build for devices, or it uses the build already on the phone when devicectl lists it as built by a developer (from Xcode or `xcrun devicectl`). An app from the App Store couldn't run: "Mobster tests your own apps on your iPhone. Daybreak is from the App Store." Apps that are part of iOS couldn't run either, and neither can a build of another app than the check's `app.bundle`.
+- Smart steps stay in that app. If one opens another app (Messages, Photos), the check stops at once, couldn't run, and its report has no frame of the other app. A `launch.url` opens in the app itself, or the check couldn't run.
+- The app's data is never cleared. A check with `reset: data` or `reinstall` runs with `reset: none`, and the report says so.
+- Smart steps never send, buy, post or delete there: every commit is refused, with nobody asked. On a simulator, Smart refuses every purchase.
+- The iPhone runs one check at a time, beside any simulators.
+
+Keep the phone unlocked and connected, with its runner started in the Mobster app or by `mobster serve --manage-device`.
+
+## Retries and flaky checks
+
+A failed run is tried again once (`--retries N`, from 0 to 5) with the check's own reset, which by default reinstalls the app or clears its data. A check that couldn't run because of the machine (WebDriverAgent, the simulator, the launch, a busy device) is tried again too; a usage error, a missing key, the spend cap or a refused app isn't.
+
+A check that passes on a retry passed, and is **flaky**: the summary marks it `~ flaky`, the report lists it in its Flaky table, and JUnit gives it the property `flaky=true`. `--strict` makes a flaky check fail the run.
+
+To measure a flaky check, run it several times:
+
+```sh
+mobster test --repeat 5 .mobster/checks/onboarding.yaml
+```
+
+With `--repeat K`, each check runs K times, retries are off unless you pass `--retries`, and each result has a pass rate. A check passes only when all K runs passed.
+
+## Quarantine
+
+A check you know is flaky can keep running without failing the run. List it in `.mobster/quarantine.yaml`:
+
+```yaml
+- onboarding                     # a check's file name, its path, or its name
+- check: restore-purchases
+  reason: Flaky on iOS 26.4 (FB13579)
+```
+
+A quarantined check runs and is reported (JUnit `<skipped>` with the reason), and never changes the exit code. `--quarantine FILE` reads another file, and stderr says when a listed name matches no check.
+
+## Tags and shards
+
+Give a check `tags` (`tags: [smoke, paywall]`) and pick by them: `mobster test --tag smoke`. A tag no check has is a usage error, so a typo can't pass CI by running nothing.
+
+`--shard 2/4` runs the second of four even shards, every fourth check in file order, so four CI machines split one suite.
+
+## Reports
+
+<Frame caption="A failed check in the report, from a real run of Daybreak's paywall check with its missing-plan bug planted.">
+  <img src="/images/test/report-light.webp" alt="A failed check in a mobster test report, open: count id=/^plan_/ == 3 found 2 plans, beside the paywall frame with the two plan cards outlined in red and numbered 2." className="block dark:hidden" />
+  <img src="/images/test/report-dark.webp" alt="A failed check in a mobster test report, open: count id=/^plan_/ == 3 found 2 plans, beside the paywall frame with the two plan cards outlined in red and numbered 2." className="hidden dark:block" />
+</Frame>
+
+Every run writes a folder, `.mobster/test-results/<suite-id>/`, that stands on its own: upload it as a CI artifact and every link in it works.
+
+| file | what it holds |
+| --- | --- |
+| `index.html` | What didn't pass, then every check with its file, tags and verdict on each device. A check that didn't pass opens to its expectations, what was found instead, the verdict frame, and links to the run's report and video. Then the Flaky table |
+| `junit.xml` | One `<testsuite>` per device (`iPhone 17 Pro · iOS 26.4`), one `<testcase classname="checks.<file>">` per check, with `<failure type="assertion">` or `type="couldnt_run"`, `<skipped>` for quarantine, and the properties `status`, `attempts`, `flaky`, `passRate` and `report` |
+| `results.json` | Everything, `schema: "mobster.test/1"`: below |
+| `runs/<run-id>.html` | A copy of each run's own report (self-contained, frames included) |
+| `videos/` | Each simulator run's screen, with `--video` |
+
+`--junit FILE` and `--html DIR` also write the JUnit file and the HTML report (with `runs/` and `videos/`) where your CI expects them. `--json` prints `results.json` on stdout.
+
+```json
+{"schema": "mobster.test/1", "suite": "20261007-142233-9c1e", "exitCode": 1,
+ "devices": [{"key": "sim:iPhone 17 Pro@iOS 26.4", "name": "iPhone 17 Pro · iOS 26.4", "kind": "simulator"}],
+ "checks": [{"name": "The paywall shows three plans", "file": ".mobster/checks/paywall.yaml",
+             "results": [{"device": "iPhone 17 Pro · iOS 26.4", "status": "passed", "attempts": 1, "flaky": false,
+                          "report": "runs/20261007-142240-a1b2.html", "durationMs": 21400, "healed": [],
+                          "runs": [{"attempt": 1, "runId": "20261007-142240-a1b2", "verdict": "passed"}]}]}],
+ "summary": {"passed": 1, "failed": 0, "needsReview": 0, "couldntRun": 0, "flaky": 0, "quarantined": 0}}
+```
+
+`status` is a verify verdict: `passed`, `failed`, `needs_review` or `couldnt_run`. `passRate` is there with `--repeat`. A flaky check counts under its status and under `flaky`.
+
+## Exit codes
+
+From the checks that aren't quarantined: 1 when one failed (or was flaky, with `--strict`), else 3 when one couldn't run, else 2 when one needs review, else 0. A usage error exits 3, and `ctrl+c` 130, after the runs in flight stop and the reports are written. The [CLI reference](/cli#mobster-test) lists every flag.
+
+## Record a check from a task
+
+A task you ran in the Mobster app can become a check. In the app, open the finished task and choose **Copy as check**, then paste it into a file in `.mobster/checks`. Or in Terminal, with the task's id:
+
+```sh
+mobster test record --run 3f9c2a1b7d0e --name "The annual plan" -o .mobster/checks/annual-plan.yaml
+```
+
+The check's steps are the task's steps in plain words ("Tap Settings", "Tap Show paywall"), and its expectations are what the task proved: the text it quoted, and the screen it ended on. It names no device, so it runs on a simulator. Read it before you commit it: text Mobster masked (a password, a code) stays masked, and a task that proved nothing needs an `expect` you write. Tasks in social and dating apps aren't recorded.
+
+## For coding agents
+
+`mobster mcp` offers two tools for this ([MCP server](/mcp-server)):
+
+- `run_tests {path?, sims?, parallel?, retries?, tags?}` runs the project's checks on simulators and answers with the summary and the report paths. A suite that takes longer than the call answers with its `suite_id`; `run_tests {suite_id}` waits for it. It never runs on a real iPhone.
+- `record_check {run_id, name?}` returns a finished task as a check's YAML, for the agent to save.
+
+## What it doesn't do
+
+<Note>
+  - It doesn't heal checks or cache steps yet: every step runs live, and a failed assertion fails.
+  - It has no cloud devices or hosted dashboard. Reports stay in your project folder.
+  - It never runs on someone's iPhone from a file in a repository, never drives an App Store app there, and never clears an app's data on a phone.
+</Note>

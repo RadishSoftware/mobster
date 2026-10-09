@@ -103,8 +103,13 @@ class WdaVideo:
         self.wda_url = wda_url.rstrip("/")
         self.settings = mjpeg_settings(*quality)
         self.configured = None  # (session, settings) last applied successfully
-        parts = urlsplit(self.wda_url)
-        self.mjpeg_url = (mjpeg_url or f"{parts.scheme}://{parts.hostname}:9100").rstrip("/")
+        if not mjpeg_url:
+            # The stream paired with this WDA's port (8100 -> 9100, a simulator's 8203 -> 9203): a caller
+            # that names none must never watch, and settle on, another device's screen. A port with no pair
+            # (8080) has no stream: screenshots only, or none for a private consumer.
+            from .pool import default_mjpeg_url
+            mjpeg_url = default_mjpeg_url(self.wda_url)
+        self.mjpeg_url = mjpeg_url.rstrip("/") if mjpeg_url else None
         self.session = session  # callable returning the current WDA session id, or None
         self.on_activity = on_activity or (lambda active: None)
         self.clock = clock
@@ -243,7 +248,8 @@ class WdaVideo:
                 self._configure()  # a no-op once applied for this session and quality
                 self._streamed = 0
                 try:
-                    self._stream_mjpeg()
+                    if self.mjpeg_url:
+                        self._stream_mjpeg()
                 except Exception as error:
                     with self.condition:
                         self.error = type(error).__name__

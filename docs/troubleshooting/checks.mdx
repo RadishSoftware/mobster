@@ -1,0 +1,60 @@
+---
+title: "Troubleshooting: checks"
+sidebarTitle: "Check issues"
+description: "Fix a check that couldn't run, by the reason it gives."
+icon: "file-x"
+keywords: ["couldnt_run", "verify failed", "webdriveragent build", "no ios runtime", "needs_review", "check troubleshooting"]
+---
+
+Run `mobster sim doctor`, not `mobster doctor`. Checks run on a simulator Mobster manages, so the iPhone checks don't apply. `mobster sim doctor --fix` creates the simulator and builds WebDriverAgent, once.
+
+<span id="wda-building"></span>
+
+### Building WebDriverAgent … then Still building WebDriverAgent (… so far)
+
+The first build takes 2 to 5 minutes, once per Xcode version. Its log is the path the first line names. Run `mobster sim doctor --fix` beforehand to build it ahead of time.
+
+<span id="couldnt-run"></span>
+
+### couldnt_run, and the exit code 3
+
+The result's `reason.class` says why, and `reason.fix` what to do:
+
+| `reason.class` | What happened | Fix |
+|---|---|---|
+| `environment` | Xcode isn't selected, or the iOS runtime is missing | Install Xcode from the App Store and open it once, then run `sudo xcode-select -s /Applications/Xcode.app` yourself. For the runtime, `xcodebuild -downloadPlatform iOS` |
+| `install` | The `.app` is a device build, or didn't install | Build with `-destination 'generic/platform=iOS Simulator'` |
+| `wda` | WebDriverAgent couldn't be built, started or read | The last error line is in the result, and the whole log in `logs/wda-build.log` in Mobster's data folder |
+| `busy` | Every one of Mobster's simulators for that device is running checks | Wait, or set `MOBSTER_MAX_SIMS` higher |
+| `usage` | The check is invalid, or it has steps and no key | Fix the check, or give steps a key ([Steps](/test/steps#add-steps)), or let your coding agent drive through `mobster mcp` |
+| `model` | Mobster's agent had no key for its model, a model failure, or no credit | Check the key and the account's credit |
+
+[Checks](/checks#verdicts-and-exit-codes) has the full precedence.
+
+### failed, class app_not_running
+
+The app crashed or the flow left it. The result names the app that was in front at the end, and any alert.
+
+### needs_review, held_before_flow
+
+Every expectation already held right after launch, so the run doesn't show the flow works. Add an expectation that holds only after the steps.
+
+### An element you can see isn't found
+
+Give it an accessibility identifier, such as `.accessibilityIdentifier("plan_annual")`, or check its label in the overlay frame of the report. Content scrolled out of view doesn't count as shown: scroll to it first.
+
+<span id="out-not-writable"></span>
+
+### --out: can't write runs to …
+
+Pass a folder you can write to with `--out DIR`.
+
+<span id="smart-off"></span>
+
+### Smart is off in mobster mcp
+
+`status` says why: no `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`, an env file that doesn't exist, or `--keyless`. [Add Mobster to your agent](/agents#turn-on-mobsters-agent)
+
+<Card title="Still stuck?" icon="life-buoy" href="/troubleshooting#report-a-problem">
+  Send the output of `mobster version` and `mobster doctor`, the task you gave and what you saw.
+</Card>

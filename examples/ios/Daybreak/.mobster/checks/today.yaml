@@ -1,0 +1,13 @@
+# Launch-only: opens Today by deep link, no model calls.
+#   mobster test .mobster/checks/today.yaml
+version: 1
+name: Today lists the three habits and the streak
+app:
+  bundle: dev.mobster.daybreak
+  path: .build/Build/Products/Debug-iphonesimulator/Daybreak.app
+tags: [smoke]
+launch:
+  url: daybreak://today
+expect:
+  - text: [Drink water, Read 10 pages, "Walk 5,000 steps"]
+  - visible: { id: streak_count }

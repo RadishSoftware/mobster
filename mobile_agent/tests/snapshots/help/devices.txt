@@ -1,0 +1,26 @@
+usage: mobster devices [-h] [--json] [--wda-url URL] [--device NAME] [lock-probe]
+
+List every device Mobster can drive: USB iPhones (set up or just plugged in),
+Mobster's simulators, and phone addresses from MOBSTER_WDA_DEVICES. Each shows
+its state: Ready, In use, Connected, Needs setup or Unplugged. Name one with
+--device on run, screen, doctor, serve, mcp and the terminal UI. It changes nothing.
+
+`mobster devices lock-probe` reads whether an iPhone is locked or showing a system
+sheet (Face ID, a locked app, the App Store's side-button confirmation) the way a
+task's check does, and lists what the lock screen shows. It taps and types nothing.
+
+positional arguments:
+  lock-probe     read the iPhone's lock state and system sheets; taps nothing
+
+options:
+  -h, --help     show this help and exit
+  --json         print the devices (or the probe) as JSON
+  --wda-url URL  lock-probe: the phone's address (default: $MOBSTER_WDA_URL, else
+                 http://127.0.0.1:8100)
+  --device NAME  lock-probe: the iPhone to read, by id, UDID or name
+
+examples:
+  mobster devices
+  mobster devices --json
+  mobster devices lock-probe --device "Sam's iPhone"
+  mobster run "Turn on Dark Mode" --execute --device "Sam's iPhone"

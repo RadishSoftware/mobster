@@ -1,0 +1,84 @@
+---
+title: "Several phones"
+description: "Run tasks and checks on several iPhones and simulators at once."
+icon: "smartphone"
+---
+
+Mobster can drive more than one device at a time: USB iPhones, Mobster's simulators, and any WebDriverAgent you give it by address. Each device runs one task at a time, and tasks on different devices run at once. With one phone, nothing changes: every command, request and tool works as before, on that phone.
+
+## The devices
+
+`mobster devices` lists every device Mobster can drive, with its state. It reads the machine and changes nothing.
+
+```sh
+mobster devices
+```
+
+```text
+Work iPhone  [iPhone (USB), iPhone XR, iOS 18.6]  ready
+    id <UDID>  ·  WebDriverAgent 127.0.0.1:8101
+New iPhone  [iPhone (USB)]  needs setup: Set it up once. Mobster walks you through it.
+    id <UDID>  ·  not set up
+Mobster · iPhone 17 Pro · iOS 26.4  [Simulator, iPhone 17 Pro, iOS 26.4]  disconnected: The simulator is shut down. Start it to use it.
+    id <UDID>  ·  WebDriverAgent 127.0.0.1:8310
+```
+
+| kind | what it is | its id |
+| --- | --- | --- |
+| `usb` | an iPhone on this Mac's USB, set up in the Mac app (or `mobster serve --manage-device`), or plugged in and not set up yet | its UDID |
+| `simulator` | one of Mobster's simulators (`mobster sim`) | its UDID |
+| `wda` | a WebDriverAgent given by address: `MOBSTER_WDA_DEVICES`, or `serve --wda-url` | `wda-<port>` |
+
+Each device has one of five states:
+
+| state | meaning |
+| --- | --- |
+| `ready` | WebDriverAgent answers and reaches the screen; nothing is running on it |
+| `busy` | a task runs on it, here or in another Mobster app or command |
+| `connected` | it is there and set up, but its runner isn't answering yet, or the phone is locked |
+| `needs_setup` | it is plugged in, but Mobster can't drive it until Setup is done: it doesn't trust this Mac yet, or its runner isn't built for it, or the runner's signature expired |
+| `disconnected` | an iPhone set up earlier that isn't plugged in, a simulator that is shut down, or an address where nothing answers |
+
+Every state but `ready` comes with a sentence that says what to do.
+
+## Locked phones and system sheets
+
+Before a task's first model call, Mobster checks the phone in code. A task you start in the Mac app, the terminal UI or `mobster chat` on a locked iPhone waits up to 2 minutes for you to unlock it ([What it can and can't do](/capabilities)). In a schedule, in `mobster run` and over MCP, a locked iPhone stops the task at once with "Your iPhone is locked. Unlock it and try again. No action was taken.", at no cost. The same check runs again when the task suspects the phone locked or a system sheet came up: a Face ID prompt, an app locked with Require Face ID, or the App Store's side-button confirmation each stop the task with a sentence that says what to do. Mobster never enters a passcode, never uses Face ID and never confirms a purchase.
+
+`mobster devices lock-probe [--device NAME] [--json]` prints what that check sees: whether the phone is locked, the app in front, and the labels SpringBoard shows. It taps and types nothing, and waits for no task: a phone a task is using is refused as busy.
+
+## Naming a device
+
+`--device` takes a device's id, its UDID, or its name, in any case. A name two devices share has to be given as an id.
+
+| command | what `--device` does |
+| --- | --- |
+| `mobster run`, `mobster screen`, `mobster doctor`, `mobster` (the terminal UI) | drive or check that device: it stands for that device's WebDriverAgent address, so it can't be combined with `--wda-url` |
+| `mobster serve` | the device a task that names none runs on |
+| `mobster mcp`, `mobster verify` | the device a run uses when it names none; a value that names no device is a simulator device type, as before |
+
+```sh
+mobster run "Turn on Dark Mode" --execute --device "Work iPhone"
+```
+
+A device that isn't set up yet, or isn't there, exits with code 3 and says why.
+
+## Ports
+
+Every device has its own WebDriverAgent port, its own video port and its own device lock, so two devices never meet.
+
+- The first iPhone you set up keeps `127.0.0.1:8100` for WebDriverAgent and `9100` for its video, where it always was. Its files stay where they were in the data folder (`device.json`, `wda-build/`, `logs/`).
+- Every other iPhone gets the next free pair from `8101`/`9101` up to `8199`/`9199`, and keeps it. A port another program listens on is skipped, never taken over. The pairs are kept in `devices.json` in the data folder, and each such iPhone keeps its runner build, settings and logs in `devices/<UDID>/`.
+- Simulators keep the ports `mobster sim` gave them, from `8310` and `9310` up.
+
+On the phone itself WebDriverAgent always listens on 8100 and 9100. The USB relay maps this Mac's pair to it: `iproxy -s 127.0.0.1 -u <UDID> 8101:8100 9101:9100`.
+
+The runner is built once per iPhone, because a runner's signature has to include that phone. Builds run one at a time: a second iPhone's build waits for the first and says so.
+
+## In the Mac app and the API
+
+The server behind the Mac app (`mobster serve`) keeps the list, runs one task per device, and keeps each device's approvals, live view, history and Setup apart. A task names its device with `device`; without one it runs on the default device: the one `serve --device` names, else the only device, else the one the last task ran on, else the first iPhone. A saved task (a workflow) runs on the phone saved with it; with none it runs on the one `serve --device` names, else the only device, else the first iPhone, never on whichever phone was used last, since a schedule runs while nobody watches. [Scripts and the API](/scripting#the-http-api) lists the requests.
+
+## In coding agents
+
+`mobster mcp` has a `list_devices` tool, and every phone tool takes `device`. Called with `device` and no `run_id`, `screen`, `tap`, `type_text`, `swipe`, `alert`, `open_url`, `launch_app` and `home` drive that device directly: Mobster takes the device's lock, and `stop` or 90 idle seconds release it (the next call takes it again). `verify_start` with a USB iPhone's `device` checks an app already installed on it (`bundle_id`), and never clears its data. A Smart check (`verify`) on an iPhone or a WebDriverAgent address declines every send, delete, post and purchase the agent asks to make: nobody is there to approve it, and the phone is someone's own. [MCP server](/mcp-server) has the details.

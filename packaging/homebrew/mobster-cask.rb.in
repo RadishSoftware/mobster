@@ -1,0 +1,16 @@
+cask "mobster" do
+  version "@VERSION@"
+  sha256 "@SHA256@"
+
+  url "@URL@"
+  name "Mobster"
+  desc "Let AI agents use a real iPhone over USB"
+  homepage "https://mobster.dev/"
+
+  depends_on arch: :arm64
+  depends_on macos: :ventura
+
+  binary "mobster-macos-arm64/mobster"
+
+  caveats "Save your Claude or OpenAI key: mobster login. Check your iPhone: mobster doctor. A simulator for testing: mobster sim doctor"
+end

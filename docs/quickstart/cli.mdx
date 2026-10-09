@@ -1,0 +1,149 @@
+---
+title: "Quickstart: Mobster CLI"
+sidebarTitle: "Mobster CLI"
+description: "Install the free CLI, watch the demo, then run a task on your iPhone from the terminal."
+icon: "terminal"
+keywords: ["install", "cli", "terminal", "homebrew", "demo", "first task"]
+---
+
+import Requirements from '/snippets/requirements.mdx';
+
+Go from nothing installed to a task running on your iPhone. The demo in step 2 needs no phone and no key.
+
+<Info>
+  Rather have a window and guided setup? Start with [Mobster for Mac](/quickstart/mac). Only testing your app? [Quickstart: test your app](/quickstart/test) needs no iPhone.
+</Info>
+
+## Before you begin
+
+<Accordion title="What you need">
+  <Requirements />
+</Accordion>
+
+<Steps>
+  <Step title="Install">
+    <CodeGroup>
+    ```sh Install script
+    curl -fsSL https://mobster.dev/install.sh | sh
+    ```
+
+    ```sh Homebrew
+    brew install radishsoftware/tap/mobster
+    ```
+    </CodeGroup>
+
+    The script downloads the signed release, checks its SHA-256 and signature, and links `~/.local/bin/mobster`. It never uses `sudo` and needs no Python. Run it again to upgrade. Check the install:
+
+    ```text
+    $ mobster version
+    mobster 0.2.0
+    ```
+
+    If your shell says `command not found`, see [Install problems](/troubleshooting/install#command-not-found).
+  </Step>
+  <Step title="Try the demo">
+    ```sh
+    mobster --demo
+    ```
+
+    The terminal UI opens with a scripted phone, and the header says `DEMO`. Type `Text Alex "on my way"` and press Enter. Mobster opens Messages, types the text and stops before Send. Press `y` to send or `n` to stop.
+
+    `?` lists the keys, and `ctrl+d` quits.
+  </Step>
+  <Step title="Add your Claude key">
+    Real tasks need a model key. Keep it in a private env file, not on the command line:
+
+    ```sh
+    mkdir -p ~/.config/mobster
+    touch ~/.config/mobster/agent.env && chmod 600 ~/.config/mobster/agent.env
+    open -e ~/.config/mobster/agent.env      # add: ANTHROPIC_API_KEY=sk-ant-…
+    ```
+
+    Then tell Mobster where it is. Put the same line in `~/.zshrc` so every terminal has it:
+
+    ```sh
+    export MOBSTER_ENV_FILE=~/.config/mobster/agent.env
+    ```
+
+    An OpenAI key works too, as `OPENAI_API_KEY`. [Models and keys](/models-and-keys) says which model runs on which key.
+
+    <Accordion title="Quick mode, for mobster run">
+      `mobster run` runs Quick mode, which needs its own key as `TYPESAFE_API_KEY` in the same file. The terminal UI and the Mac app run Mobster's agent on your Claude or OpenAI key, and need no other.
+    </Accordion>
+  </Step>
+  <Step title="Connect your iPhone">
+    Mobster drives the phone through WebDriverAgent, a small test runner that Xcode signs and installs on it. The easy way is Setup in [Mobster for Mac](/quickstart/mac), which builds, signs and refreshes it for you.
+
+    <Accordion title="By hand, from the terminal">
+      1. Turn on Developer Mode (Settings › Privacy & Security › Developer Mode), plug the iPhone in, unlock it and tap **Trust**.
+      2. Install the tools: `brew install libimobiledevice ideviceinstaller`. Open Xcode once and sign in to your Apple Account.
+      3. Run `mobster serve --manage-device` and drive its setup API. [Device setup](/device-setup#guided-setup) lists the calls.
+    </Accordion>
+  </Step>
+  <Step title="Check the setup">
+    On a Mac that is ready, with a Claude key, `mobster doctor` prints this:
+
+    ```text
+    $ mobster doctor
+    Mobster doctor
+
+      ✓ Python            3.12.2
+      ✓ Mobster           0.2.0 · installed · data in ~/Library/Application Support/app.mobster.desktop
+      ! Model key         ANTHROPIC_API_KEY is set for Smart on claude-sonnet-5-5 (the terminal UI and the Mac app) (from ~/.config/mobster/agent.env); `mobster run` needs TYPESAFE_API_KEY
+                          → To run tasks from scripts with `mobster run`, add TYPESAFE_API_KEY=… to your env file
+      ✓ Xcode             Xcode 26.4
+      ✓ libimobiledevice  idevice_id, ideviceinfo, iproxy, ideviceinstaller
+      ✓ USB iPhone        iPhone 15 Pro, iOS 26.0.1, trusted
+      ✓ WDA runner        built for the chosen iPhone, signature valid 6 more days
+      ✓ WebDriverAgent    127.0.0.1:8100 · iOS 26.0.1 · ready
+      ✓ Screen            unlocked
+      ✓ Device lock       free
+
+    Ready for live tasks, with 1 warning.
+    ```
+
+    A `✗` line is a problem, and the arrow under it is the fix. [Troubleshooting](/troubleshooting) covers each one.
+  </Step>
+  <Step title="Run a task">
+    ```sh
+    mobster
+    ```
+
+    Type `Open Settings and tell me which iOS version this is` and press Enter. Each step appears as it happens. When a task needs your approval, a card appears above the prompt.
+  </Step>
+</Steps>
+
+## From a script
+
+`mobster run "Turn on Dark Mode"` previews the first decision and sends nothing. With `--execute` it acts, without asking first, so preview before you add it.
+
+<Warning>`mobster run --execute` never stops for an approval: it can send, buy, post or delete. Use it only for tasks you've previewed.</Warning>
+
+`mobster demo` is an offline replay in the same format:
+
+```text
+$ mobster demo
+❯ Search for coffee  scripted replay · no phone, no model calls
+  ● Tapped “Search”  98%
+    ⎿ 2 elements → screen changed
+  ● Typed into “Search”  98%
+    ⎿ 2 elements → screen changed
+  ✓ Checked the task is done
+    ⎿ 2 elements → goal met
+✓ Expected text visible  2 actions · 2 ms
+  Text assertion passed; it does not prove the entire task
+```
+
+## Next
+
+<CardGroup cols={3}>
+  <Card title="Conversations" icon="messages-square" href="/conversations">
+    `mobster chat`: follow-ups that know what the last task found.
+  </Card>
+  <Card title="Terminal UI" icon="square-terminal" href="/tui">
+    Every key, command and approval in `mobster`.
+  </Card>
+  <Card title="Scripts" icon="code" href="/scripting">
+    JSON events and exit codes from `mobster run`.
+  </Card>
+</CardGroup>

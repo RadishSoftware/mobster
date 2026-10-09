@@ -2,7 +2,8 @@
 # "mobster" on PyPI is an unrelated SBOM tool. The import package is mobile_agent; the command is `mobster`.
 name = "mobster-cli"
 dynamic = ["version"]
-description = "Mobster CLI: the open-source iPhone agent and command line that the Mobster Mac app is built on"
+# The positioning's one line for package indexes.
+description = "The open-source harness that lets AI agents use a real iPhone over USB"
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
@@ -15,18 +16,25 @@ dependencies = [
     "referencing>=0.35",  # imported directly (extraction.py, loops.py); also a jsonschema dependency
     "croniter>=6,<7",
     "Pillow>=11,<13",
+    "PyYAML>=6.0.2,<7",  # check files (`mobster verify --check`, verify/checks.py)
+    "textual>=8,<9",  # the terminal UI (`mobster`); imported only when it opens
+    "textual-image>=0.14,<0.15",  # the phone's real screenshot in terminals that draw images
 ]
-keywords = ["ios", "iphone", "agent", "accessibility", "webdriveragent", "automation", "benchmark"]
+keywords = ["ios", "iphone", "agent", "accessibility", "webdriveragent", "automation", "mcp", "mcp-server",
+            "model-context-protocol", "ios-simulator", "ios-testing", "e2e-testing", "ui-testing", "claude-code"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Console",
+    "Environment :: Console :: Curses",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "Operating System :: MacOS",
+    "Operating System :: MacOS :: MacOS X",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.12",
     "Topic :: Software Development :: Testing",
+    "Topic :: Software Development :: Testing :: Acceptance",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 
@@ -35,12 +43,15 @@ dev = ["pytest>=8"]
 
 [project.urls]
 Homepage = "https://mobster.dev"
-Repository = "https://github.com/uninstantiated/mobster-cli"
-Documentation = "https://github.com/uninstantiated/mobster-cli/tree/main/mobile_agent/docs"
-Issues = "https://github.com/uninstantiated/mobster-cli/issues"
+Repository = "https://github.com/RadishSoftware/mobster"
+Documentation = "https://docs.mobster.dev"
+Changelog = "https://docs.mobster.dev/changelog"
+Issues = "https://github.com/RadishSoftware/mobster/issues"
 
 [project.scripts]
 mobster = "mobile_agent.__main__:main"
+# The package's own name works too, so `uvx mobster-cli mcp` runs the MCP server.
+mobster-cli = "mobile_agent.__main__:main"
 
 [build-system]
 requires = ["setuptools>=77"]

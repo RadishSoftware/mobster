@@ -1,0 +1,88 @@
+---
+title: "Troubleshooting: tasks"
+sidebarTitle: "Task issues"
+description: "Fix a task that won't start or stops before it's done."
+icon: "list-todo"
+keywords: ["task failed", "no key", "spend cap", "blocked", "needs review", "declined", "wrong app"]
+---
+
+A task's status says why it ended. These are the ones you're most likely to see. [Errors and exit codes](/reference/errors#statuses) lists every status.
+
+<span id="no-key"></span>
+
+### ✗ Model key  OPENAI_API_KEY is not set
+
+Mobster's agent has no key.
+
+1. Put `ANTHROPIC_API_KEY=…` (or `OPENAI_API_KEY=…`) in your env file.
+2. Pass `--env-file PATH`, or set `MOBSTER_ENV_FILE` in `~/.zshrc`.
+
+`mobster run` uses Quick mode, which needs `TYPESAFE_API_KEY` in the same file. [Models and keys](/models-and-keys)
+
+<span id="env-file-missing"></span>
+
+### … does not exist; no keys or settings were loaded from it
+
+The `--env-file` or `$MOBSTER_ENV_FILE` path is wrong. Check it with `ls -l`, and fix the path.
+
+<span id="not-ready"></span>
+
+### ✗ Not started  Your iPhone is not ready for live tasks
+
+The terminal UI can't reach Mobster's helper, or has no key for the engine it's set to. The hints under the message say which: see [WebDriverAgent not answering](/troubleshooting/iphone#wda-not-answering) or [the model key](#no-key).
+
+<span id="needs-text-helper"></span>
+
+### Text entry unavailable (needs_text_helper)
+
+A Quick mode task needed text Mobster had to write, and no text helper is set up.
+
+1. Put the exact text in quotes in your task: `Text Alex "on my way"`.
+2. Or run the task on Mobster's agent, which writes text itself.
+3. Or add a text helper for Quick mode: [Configuration](/configuration#helper-model).
+
+<span id="blocked"></span>
+
+### No way forward found (blocked, no_progress)
+
+Nothing on the screen moved the task forward. Look at the phone: the app may need a sign-in, a permission, or a control that has no accessibility label. Then give the task more detail and run it again.
+
+<span id="needs-review"></span>
+
+### Needs review
+
+The task looked done, but Mobster couldn't confirm it on the screen. The message under it says why. Look at your iPhone before you run it again; in Mobster for Mac, **Looks right** marks it done.
+
+<span id="declined"></span>
+
+### Declined, or Approval expired
+
+You declined an approval, or nobody answered for 10 minutes. Nothing was sent. Run the task again when you can answer.
+
+<span id="spend-cap"></span>
+
+### Spend cap reached
+
+The task's model spend reached your cap. Raise it in Settings › AI account, with `/cap` in the terminal UI, or with `--spend-cap-usd`.
+
+<span id="step-limit"></span>
+
+### Step limit reached, or Time limit reached
+
+Long tasks need higher limits: `mobster run --max-steps 60 --max-seconds 300`. Or split the task into two.
+
+<span id="wrong-app"></span>
+
+### Mobster opens the wrong app
+
+Name the app: start the task with it ("In Safari, …"), choose it in the app picker, or write `@safari …` in the terminal UI.
+
+<span id="missing-controls"></span>
+
+### An app's controls are missing from the steps
+
+Mobster reads the accessibility tree. Apps that draw their screens as pixels without labels, such as games, maps, canvases and text inside images, give it little to read.
+
+<Card title="Still stuck?" icon="life-buoy" href="/troubleshooting#report-a-problem">
+  Send the output of `mobster version` and `mobster doctor`, the task you gave and what you saw.
+</Card>

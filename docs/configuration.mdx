@@ -1,0 +1,135 @@
+---
+title: "Configure Mobster: keys, env files and settings"
+sidebarTitle: "Configuration"
+description: "Where Mobster reads your keys and settings, and where it keeps its files."
+icon: "settings"
+keywords: ["environment variables", "env file", "MOBSTER_ENV_FILE", "configuration", "settings", "data folder"]
+---
+
+Mobster reads its settings from environment variables. Keep them in an env file and point Mobster at it, so keys stay out of your shell history, your repositories and your screenshots.
+
+## Env files
+
+An env file has one `KEY=VALUE` per line. Blank lines and `#` comments are skipped, an `export ` prefix and surrounding quotes are removed, and a variable already set in your environment wins over the file. A line Mobster can't read is skipped, and Mobster prints its line number, never its text, to stderr.
+
+```sh ~/.config/mobster/agent.env
+ANTHROPIC_API_KEY=sk-ant-…
+MOBSTER_ALERT_WEBHOOK_URL=https://ntfy.sh/your-topic
+```
+
+Mobster loads one file:
+
+- the one you pass with `--env-file PATH`, or
+- `$MOBSTER_ENV_FILE`, for every command except `serve`. Set it in `~/.zshrc` and you never need `--env-file`.
+
+Mobster never loads a file on its own. A file you name that doesn't exist is reported on stderr, and `mobster mcp` gives it as the reason Smart is off. The Mac app keeps its own file at `~/Library/Application Support/app.mobster.desktop/agent.env`; to share keys with the app, point `MOBSTER_ENV_FILE` at it.
+
+<Warning>Make the file readable by you only: `chmod 600`. Never commit it, and never put a key in a config file that lives in a repository.</Warning>
+
+## Environment variables
+
+### Keys and models
+
+| Variable | Meaning |
+|---|---|
+| `ANTHROPIC_API_KEY` | Your Claude key, for Mobster's agent (Smart). With only this key, Smart runs on a Claude model |
+| `OPENAI_API_KEY` | Your OpenAI key, for Mobster's agent (Smart) |
+| `MOBSTER_SMART_PROVIDER` | `anthropic` or `openai`: whose key Smart uses when both are set. Setup and Settings › AI account save it |
+| `MOBSTER_SMART_MODEL` | Another model for Smart, by its id. Its provider's key must be set |
+| `TYPESAFE_API_KEY` | Quick mode's key. Required for `mobster run` and for Quick mode in the app and the terminal UI |
+| `TYPESAFE_MODEL` | Quick mode's model id |
+| `TEXT_MODEL_PROVIDER`, `TEXT_MODEL`, `TEXT_MODEL_API_KEY`, `TEXT_MODEL_BASE_URL`, `TEXT_MODEL_REASONING_EFFORT` | Quick mode's text helper: see [Helper model](#helper-model) |
+| `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION` | The project and location for a helper on Vertex AI |
+
+[Models and keys](/models-and-keys) says which command needs which key.
+
+### The phone and the service
+
+| Variable | Meaning |
+|---|---|
+| `MOBSTER_WDA_URL` | WebDriverAgent's address for the terminal UI, `run`, `doctor` and `screen`. Default `http://127.0.0.1:8100` |
+| `MOBSTER_WDA_DEVICES` | More WebDriverAgent addresses to list as devices |
+| `MOBSTER_ENABLE_LIVE` | `0` stops the terminal UI and `serve` from acting on the phone |
+| `MOBSTER_PHONE_VIEW` | The terminal UI's phone view: `auto` (default), `text` or `image` |
+| `MOBSTER_URL` | Where `mobster chat` finds the service. Default `http://127.0.0.1:8765` |
+| `MOBSTER_API_TOKEN`, `MOBSTER_API_TOKEN_FILE` | The service's token, or the file that holds it, for `mobster chat` |
+| `MOBSTER_WIFI_TRANSPORT` | `1` turns on the [Wi-Fi](/wifi) preview |
+
+### Settings the app saves
+
+The Mac app writes these when you change a setting, and the terminal UI changes the first two the same way. Each takes effect from the next task.
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `MOBSTER_ASK_BEFORE_ACTING` | `1` | Stop for your approval before an action that can send, buy, post, delete or submit. `shift+tab` or `/ask` in the terminal UI |
+| `MOBSTER_BYPASS_CHECKS` | `0` | `1`: keep going when the action check is unsure. A mismatch with your request and the duplicate guards still stop it. `/bypass` in the terminal UI |
+| `MOBSTER_DEFAULT_ENGINE` | | `smart` or `fast`: what new tasks run on (Mobster's agent or Quick mode) |
+| `MOBSTER_TASK_COST_LIMIT` | | Stop a task that reaches this many dollars |
+| `MOBSTER_MONTHLY_LIMIT` | | Start no new task once this month's spend reaches it |
+| `MOBSTER_VIDEO_FPS`, `MOBSTER_VIDEO_DETAIL` | | The live picture's smoothness and sharpness |
+
+### Schedules and alerts
+
+| Variable | Meaning |
+|---|---|
+| `MOBSTER_ALERT_WEBHOOK_URL` | An https webhook for scheduled tasks that fail, stop early or wait for you: [Schedules](/schedules#alerts) |
+| `MOBSTER_KEEP_AWAKE` | `0` stops Mobster from keeping the Mac awake for a scheduled task |
+| `MOBSTER_BLOCKED_APPS` | Bundle ids, comma-separated, that Mobster never opens |
+
+### Files and folders
+
+| Variable | Meaning |
+|---|---|
+| `MOBSTER_ENV_FILE` | The env file every command but `serve` loads |
+| `MOBSTER_DATA_DIR` | Where the simulator registry, the WebDriverAgent build and the logs go |
+| `MOBSTER_RUNS_DIR` | Where `mobster mcp` writes runs, when `--out` names none |
+| `MOBSTER_MEMORY_DIR` | Where what Mobster remembers is kept. For tests |
+| `MOBSTER_SIM_PORT_BASE` | The first WebDriverAgent port for simulators. Default 8310 |
+| `MOBSTER_MAX_SIMS` | How many simulators Mobster keeps per device type and runtime. Default 2 |
+
+[running.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/running.md#speed-paths-and-feature-switches) lists the `MOBSTER_*` switches that turn individual speed paths off for A/B tests, such as `MOBSTER_FRAME_CLOCK`, `MOBSTER_ROUTES` and `MOBSTER_PLANS`. Everyday use needs none of them.
+
+## Helper model
+
+Quick mode can use a text helper to write text the request doesn't spell out and to extract answers. Mobster's agent needs none. Without one, a Quick mode task stops with `needs_text_helper` when a step needs generated text.
+
+<CodeGroup>
+```sh Gemini on Vertex AI
+TEXT_MODEL_PROVIDER=vertex
+GOOGLE_CLOUD_PROJECT=your-project
+GOOGLE_CLOUD_LOCATION=global
+TEXT_MODEL=gemini-3.5-flash-lite
+```
+
+```sh OpenAI-compatible
+TEXT_MODEL_PROVIDER=openai-compatible
+TEXT_MODEL_API_KEY=...
+TEXT_MODEL_BASE_URL=https://openrouter.ai/api/v1
+TEXT_MODEL=your-model
+```
+</CodeGroup>
+
+Vertex AI takes its tokens from `gcloud auth print-access-token`, so it needs an existing `gcloud` login. In the terminal UI, `/model` switches the helper for the next task, and `mobster run --helper` turns it on for one run.
+
+## Spend caps
+
+A cap stops a task before its next model call once the task's priced spend reaches it, and the task ends with status `spend_cap`.
+
+| Where | How |
+|---|---|
+| Mobster for Mac | Settings › AI account |
+| Terminal UI | `/cap 0.50` for \$0.50 a task, `/cap off` to remove it |
+| `mobster run`, `mobster serve` | `--spend-cap-usd 0.50` |
+
+When a provider doesn't report a price for a call, it's counted as unpriced and shown beside the total (`+1 unpriced`), never as free.
+
+## Where Mobster keeps files
+
+| What | Installed | Source checkout |
+|---|---|---|
+| Terminal UI history | `~/Library/Application Support/app.mobster.desktop/state/terminal.sqlite3` | `mobile_agent/.state/terminal.sqlite3` |
+| `serve`'s journal and API token | `<data dir>/state/` | `mobile_agent/.state/` |
+| WebDriverAgent build, logs, device choice | `~/Library/Application Support/app.mobster.desktop` | the same |
+| Compiled helpers (`build-ocr`) | `<data dir>/build/` | `mobile_agent/.build/` |
+
+Journals hold your task text and what Mobster read on the screen. They're private to your user account. Don't commit or share them.

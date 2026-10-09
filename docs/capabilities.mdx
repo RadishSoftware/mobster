@@ -1,0 +1,86 @@
+---
+title: "What Mobster can and can't do on your iPhone"
+sidebarTitle: "What it can and can't do"
+description: "What Mobster can do on your iPhone besides tap and type, and what it won't do."
+icon: "list-checks"
+keywords: ["locked iPhone", "unlock", "passcode", "face id", "apple pay", "sign-in code", "2fa", "notifications", "clipboard"]
+---
+
+Besides tapping and typing, Mobster can enter a sign-in code, read your notifications, set the clipboard and install your own builds. Further down is what it won't do, such as enter your passcode.
+
+## What it can do
+
+### Wait for you on a locked iPhone
+
+When you start a task in Mobster for Mac, the terminal UI or `mobster chat` and your iPhone is locked, Mobster says "Look at your iPhone: unlock it and Mobster starts". The Mac app also sends a notification when it's in the background. The task starts the moment you unlock the phone.
+
+```sh
+mobster chat "What's on my calendar tomorrow?"
+```
+
+```text
+  ! Look at your iPhone: unlock it and Mobster starts
+  · Your iPhone is unlocked: starting
+```
+
+While it waits, Mobster only reads whether the phone is locked, once a second. It doesn't tap, type, press a button or make a model call. If the phone is still locked after 2 minutes, the task stops with "Still locked, so the task didn't start. Unlock your iPhone and try again." It costs nothing.
+
+Schedules, `mobster run` and coding agents over MCP don't wait: a locked iPhone stops their task at once with "Your iPhone is locked. Unlock it and try again. No action was taken." A phone that locks while a task runs stops it the same way. For long or scheduled tasks, keep the phone unlocked while it's plugged in (Settings › Display & Brightness › Auto-Lock).
+
+<Note>Mobster doesn't unlock your iPhone and never enters its passcode.</Note>
+
+### Enter sign-in codes
+
+When an app asks for a code sent by text or email, Mobster finds the code itself: in the keyboard's suggestion ("From Messages"), in Notification Center, or in the newest messages. It asks you first ("Use the code Chase sent 40 seconds ago to sign in to Chase?") and types it into the code field. The model never sees the code.
+
+It looks in Messages only when the keyboard and Notification Center have no code. If you left Messages open in a conversation, opening Messages shows that conversation again, which can mark its new messages as read.
+
+It types a code only into a field that looks like a code field, in the app it was signing in to. It refuses search boxes, message boxes, password, PIN, card and promo-code fields, and any field in Messages, Mail or Notes. It refuses a code older than 10 minutes, and two different codes when it can't tell which one is meant.
+
+### Read your notifications
+
+Mobster can read Notification Center (up to 30 notifications) and tell the task what is there, without tapping any of them. Any code in a notification is hidden from the model.
+
+### Put text on the phone's clipboard
+
+`mobster phone clipboard set "text"` (or a coding agent's `set_clipboard`) puts up to 64 KB of text on the phone's clipboard, ready to paste. `mobster phone clipboard get` prints what the phone's clipboard holds, at the terminal only: coding agents can't read it, because it may hold a password.
+
+### Use your files
+
+Attach an image, a PDF, a text or a CSV file to a task, and Mobster's agent reads it on your Mac: "text Sam the vegetarian options from this menu", with the menu attached. Mobster can also put a file in an app's folder on your iPhone, the one Files shows under On My iPhone, over the cable. When its agent wants to, it asks you first. [Files](/files) has the limits and `mobster phone file`.
+
+### Install your own builds
+
+`mobster phone install MyApp.ipa` installs a build signed for your iPhone (Developer Mode must be on), or a simulator build on one of Mobster's simulators.
+
+### Tell you when a scheduled task needs you
+
+Set a webhook (Slack, Discord, ntfy or any https address that takes JSON) in Settings, and Mobster posts there when a scheduled task fails, stops before it finishes, or waits a minute for your approval. The post says which task and why, never the answer or anything it typed. `mobster alerts test` checks it.
+
+While a scheduled task is due within 10 minutes, or running, Mobster keeps your Mac from going to sleep on its own. A closed laptop on battery still sleeps.
+
+## What it won't or can't do
+
+- **Face ID.** Mobster can't look at the phone. When an app asks for Face ID, the task stops and tells you; open the app once yourself and run the task again.
+- **Double-click the side button.** App Store installs and purchases, and Apple Pay, need you to double-click the side button. Mobster stops and asks you to confirm on the phone. It never does that for you.
+- **Apple Pay.** Mobster never pays with Apple Pay.
+- **Locked and hidden apps.** If you locked an app with Face ID or a passcode in iOS, Mobster won't open it.
+- **Passcodes and PINs.** Mobster never enters your iPhone's passcode or an app's PIN.
+- **Without the cable.** The iPhone stays plugged in. [Wi-Fi](/wifi) after one cable pairing is a preview that's off unless you turn it on.
+- **Photos into your Camera Roll.** There is no supported way to add photos to a real iPhone from the Mac.
+- **Typing a code where it could be sent or kept.** Never into Messages, Mail or Notes.
+- **Dating apps, in bulk.** A repeated action in a dating app, such as swiping or messaging people one after another, ends before any tap with "Mobster doesn't automate dating apps." One action there, such as replying to one message, runs as usual, with its approval.
+- **Judging people.** When it repeats an action over a list, Mobster never picks people by how they look, or by race, religion, health, disability or sexual orientation.
+
+## Your own accounts
+
+<Warning>
+  You are responsible for what Mobster does in your accounts: it acts as you, on your phone. Approvals reduce risk; they don't remove it.
+</Warning>
+
+Mobster is for your own tasks in your own accounts, and for testing your own app. It isn't for running accounts in bulk, or for liking, following, sharing or messaging at volume. Apps such as Instagram watch for automated use, and their terms limit it.
+
+- Keep **Ask before acting** on, so you see each post, message, follow and offer before it happens.
+- A task another agent starts over MCP never starts in or opens the social and dating apps Mobster lists: Instagram, TikTok, X, Facebook, Snapchat, Threads, Tinder, Hinge and Bumble. `mobster test` doesn't run checks in them on your iPhone, and Copy as check doesn't make checks from them.
+- If an app shows a warning, a captcha or "Try again later", stop and do the task yourself.
+

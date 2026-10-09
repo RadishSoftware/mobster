@@ -1,0 +1,49 @@
+---
+title: "Benchmarks"
+description: "How Mobster is measured, the latest results, and how to run the same suites yourself."
+icon: "gauge"
+---
+
+Mobster is measured on a real iPhone and on a public simulator benchmark. Each number below gives its date, device and task count. Graders never read the agent's own claims. The full method, commands and every run are in [mobile_agent/docs/benchmarks.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/benchmarks.md).
+
+## Oracle-graded task suites
+
+On one iPhone 15 Pro running iOS 26 over USB, 22 Sep 2026. An independent oracle grades each task, either from its own WDA reads of the device or from ground truth fixed before the run.
+
+| suite | result |
+| --- | --- |
+| Settings, 7 tasks × 5 repeats | 35/35 |
+| Settings and Safari, 14 tasks × 3 repeats, two full runs | 39/42 and 38/42 |
+| Abstention: questions whose answer is not on the device | 9/9 in each run; Mobster declined to invent the facts |
+
+An accessibility read takes about 130–210 ms, and a Settings lookup about 8 s end to end.
+
+## MobsterBench-iOS
+
+This project's pre-registered suite: 68 tasks on stock Apple apps and a few stable web pages, on the same iPhone, graded by oracles (`mobile_agent/bench/`).
+
+On 24 Sep 2026 six development passes ran the same 68 tasks with the `mobster-next` configuration, one repeat each. Failures in each pass guided the fixes before the next, so these are development results, not a held-out score.
+
+| pass | passed / graded | task time p50 | cost per task |
+| --- | ---: | ---: | ---: |
+| 4 | 42/67 (63%) | 6.6 s | \$0.0059 |
+| 5 | 48/68 (71%) | 7.1 s | \$0.0060 |
+| 6 | 54/66 (82%) | 7.7 s | \$0.0057 |
+
+In pass 6, navigation and scrolling passed every task, and multi-app tasks were the weakest category at 2/6. It blocked one risky tap and recorded two unintended actions. The benchmark's bar is zero. The number to quote is a fresh 3-repeat run on frozen code against the pre-registered baselines. That run has not happened yet.
+
+## iOSWorld
+
+[iOSWorld](https://github.com/ljang0/iOSWorld) is a published benchmark: 133 tasks over 26 SwiftUI apps on an iPhone simulator, scored by its own LLM judge. The best published score is 51.9%. `python -m mobile_agent.bench.iosworld` runs it with iOSWorld's own reset and judge.
+
+Quick mode's step policy passed none of an 11-task smoke subset. It kept waiting in apps it did not know. A frontier-model step policy (`frontier.py`, `--policy frontier`) was added for this benchmark and passes between 2 and 5 of the same 11 tasks across runs, with the code changing between them. No full 133-task result has been published yet. [The detailed notes](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/benchmarks.md#iosworld) have every run, the paired A/B protocol and the pooled estimate.
+
+## Run them yourself
+
+The offline checks need no phone:
+
+```sh
+python -m mobile_agent.bench dry-plan     # suite hash, ground-truth coverage, fixtures, time and cost estimate
+```
+
+The device runs need a USB iPhone set up as in [Device setup](/device-setup), with the benchmark's fixtures installed. The iOSWorld runs need simulators and an OpenAI key for iOSWorld's judge. [mobile_agent/bench/README.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/bench/README.md) has the commands and the decision rule.

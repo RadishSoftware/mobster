@@ -73,6 +73,20 @@ class StateHardeningTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             from_wda(xml)
 
+    def test_a_view_wider_than_a_double_has_no_size_and_the_screen_still_reads(self):
+        # Reminders on iOS 26.4 (27 Sep) lists a spacer 1.797693134862316e+308 wide: past DBL_MAX, so inf.
+        for rich in (False, True):
+            xml = ('<XCUIElementTypeApplication width="400" height="800"><XCUIElementTypeOther>'
+                   '<XCUIElementTypeOther x="0" y="0" width="1.797693134862316e+308" height="1"/>'
+                   '<XCUIElementTypeOther x="0" y="0" width="1.797693134862316e+308" height="1"/></XCUIElementTypeOther>'
+                   '<XCUIElementTypeButton label="New Reminder" x="10" y="700" width="140" height="44"/>'
+                   '<XCUIElementTypeStaticText label="nan" x="nan" y="20" width="40" height="20"/>'
+                   '</XCUIElementTypeApplication>')
+            with self.subTest(rich=rich):
+                state = from_wda(xml, rich=rich)
+                self.assertIn("New Reminder", [e.label for e in state.elements])
+                self.assertTrue(all(all(abs(v) < 1e6 for v in e.rect) for e in state.elements))
+
     def test_text_blocks_control_and_unicode_submission_characters(self):
         for text in [None, "", "\t", "hello\n", "hello\r", "x\x7f", "x\x85", "x\u2028", "x\ud800"]:
             with self.subTest(text=repr(text)), self.assertRaises(ValueError):

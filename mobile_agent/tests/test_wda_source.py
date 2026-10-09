@@ -67,7 +67,8 @@ class BuildTests(unittest.TestCase):
         # hold no WDA sources to patch.
         with patch.object(manager, "_step", step), patch.object(dm, "tool", lambda name: f"/bin/{name}"), \
                 patch.object(wda_source, "checkout_commit", lambda git, project: commits["now"]), \
-                patch.object(dm, "patch_wda", lambda project: None):
+                patch.object(dm, "patch_wda", lambda project: None), \
+                patch.object(manager, "_remove_legacy_runner", lambda team, udid, log: None):
             manager._build("ABCDE12345", "00008130-001A2B3C4D5E6F70")
         return manager, commands
 

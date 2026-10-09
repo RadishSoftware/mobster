@@ -1,0 +1,30 @@
+# Dependency updates. Each update is applied in Mobster's source repository too (CONTRIBUTING.md,
+# "How a pull request lands"), so the batches are small and infrequent.
+version: 2
+updates:
+  # The workflows pin actions by commit SHA; this keeps the pins current.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  # The CLI's tested pins, as one grouped pull request a month.
+  - package-ecosystem: pip
+    directory: /mobile_agent
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 1
+    groups:
+      python:
+        patterns: ["*"]
+
+  # The Vercel AI SDK example.
+  - package-ecosystem: npm
+    directory: /examples/agents/vercel_ai
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 1
+    groups:
+      npm:
+        patterns: ["*"]

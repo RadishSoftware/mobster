@@ -1,0 +1,4 @@
+2026-09-26 10:31:44.108 xcodebuild[5120:91022] Error Domain=IXUserPresentableErrorDomain Code=14 "This app cannot be installed because its integrity could not be verified." UserInfo={NSLocalizedRecoverySuggestion=The maximum number of apps for free development profiles has been reached., NSLocalizedDescription=Unable to Install "WebDriverAgentRunner-Runner"}
+Testing failed:
+	WebDriverAgentRunner-Runner encountered an error (Failed to install or launch the test runner. (Underlying Error: Unable to Install "WebDriverAgentRunner-Runner". The maximum number of apps for free development profiles has been reached.))
+** TEST EXECUTE FAILED **

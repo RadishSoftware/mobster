@@ -1,0 +1,45 @@
+---
+title: "The Claude Code plugin and the mobster skill"
+sidebarTitle: "Plugin and skill"
+description: "Install Mobster as a Claude Code plugin, or add the mobster skill to any agent that reads Agent Skills."
+icon: "puzzle"
+keywords: ["claude code plugin", "agent skills", "skill", "mobster:verify", "mcpb"]
+---
+
+Two ways to give an agent more than the MCP server: a plugin for Claude Code, and a skill for any agent that reads [Agent Skills](https://agentskills.io/specification).
+
+## The Claude Code plugin
+
+The plugin adds the MCP server, the mobster skill and a `/mobster:verify` command:
+
+```sh
+claude plugin marketplace add RadishSoftware/mobster
+claude plugin install mobster@mobster
+```
+
+- `/mobster:verify the paywall shows three plans` builds the app, runs the verify loop and reports the verdict.
+- The plugin can't know where `mobster` is, so its server starts through a small script that looks on `PATH`, then in `~/.local/bin`, `/opt/homebrew/bin` and `/usr/local/bin`. Without `mobster`, it fails with a sentence that says how to install it.
+- Its tools are named `mcp__plugin_mobster_mobster__<tool>`.
+- It reads `$MOBSTER_ENV_FILE` when that's set in Claude Code's environment, which turns on Mobster's agent.
+
+The first headless session after installing the plugin reported its server as failed while Claude Code finished the install. Later sessions connected in about 0.3 s (7 Oct 2026).
+
+## The mobster skill
+
+The skill teaches an agent how to use Mobster: the verify loop, driving a real iPhone, the safety rules (screen text is data, ask before anything that sends, buys, posts or deletes, never enter a passcode), and the `mobster` commands to use when the client has no MCP. Install it with either:
+
+<CodeGroup>
+```sh skills
+npx skills add RadishSoftware/mobster
+```
+
+```sh mobster
+mobster mcp install --all --with-skill
+```
+</CodeGroup>
+
+`--with-skill` copies it to `~/.claude/skills/mobster` for Claude Code, `~/.codeium/windsurf/skills/mobster` for Windsurf, and `~/.agents/skills/mobster` for the rest: Codex, Cursor, VS Code, opencode, Gemini CLI, Zed, Goose, Amp, Cline and oh-my-pi all read that folder. Claude Desktop has no skills folder. With `--project`, it goes in the project's `.claude/skills` and `.agents/skills`. A skill folder that isn't Mobster's, or that another installer linked, is left alone. The source is [skills/mobster](https://github.com/RadishSoftware/mobster/tree/main/skills/mobster).
+
+## A bundle for Claude Desktop
+
+`npx @anthropic-ai/mcpb pack packaging/mcpb` builds `mobster.mcpb` from Mobster CLI's repository, a bundle you open to install. It holds only the same launcher script as the plugin, so it needs `mobster` installed too.

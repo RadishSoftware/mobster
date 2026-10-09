@@ -1,0 +1,9 @@
+usage: mobster demo [-h] [--json]
+
+Run the agent loop once against a scripted screen and model, offline. It is a
+fixture for trying the output and for tests, not a device benchmark. For the
+terminal UI with a scripted phone, run `mobster --demo`.
+
+options:
+  -h, --help  show this help and exit
+  --json      print raw JSON events, even on a terminal

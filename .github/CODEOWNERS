@@ -1,0 +1,15 @@
+# The maintainers review everything. GitHub ignores a team that can't write to this repository,
+# so the team needs write access here.
+*                                   @RadishSoftware/mobster-maintainers
+
+# Safety code fails closed: a second look on any change.
+/mobile_agent/journal.py            @RadishSoftware/mobster-maintainers
+/mobile_agent/task_policy.py        @RadishSoftware/mobster-maintainers
+/mobile_agent/effect_ledger.py      @RadishSoftware/mobster-maintainers
+/mobile_agent/secret_filter.py      @RadishSoftware/mobster-maintainers
+/mobile_agent/keys.py               @RadishSoftware/mobster-maintainers
+
+# What users run or download: the installer, the release build, the workflows.
+/packaging/                         @RadishSoftware/mobster-maintainers
+/.github/                           @RadishSoftware/mobster-maintainers
+/SECURITY.md                        @RadishSoftware/mobster-maintainers

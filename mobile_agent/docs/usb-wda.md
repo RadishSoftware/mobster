@@ -16,15 +16,18 @@ git clone --depth 1 --branch v16.12.10 https://github.com/appium/WebDriverAgent.
 cd wda
 ```
 
-Bundle IDs must be unique within your team — the stock `com.facebook.*` IDs
-fail provisioning. Rebrand the two built targets plus your team (this exact
-recipe was used live):
+App IDs are unique across every Apple team, so the stock `com.facebook.*` IDs
+fail provisioning, and so does a plain `app.mobster.wda.runner` once any other
+team has registered it. Give the runner an ID of your own: the suffix below is
+the one the Mac app uses (`signing.runner_bundle_id`), so both builds share one
+App ID and one runner on the phone.
 
 ```sh
-sed -i '' 's/com\.facebook\.WebDriverAgentRunner/app.mobster.wda.runner/g; s/com\.facebook\.WebDriverAgentLib/app.mobster.wda.lib/g' \
-  WebDriverAgent.xcodeproj/project.pbxproj
 TEAM=<your 10-char team id>   # Xcode → Settings → Accounts → team details
 UDID=<device udid>            # idevice_id -l
+SUFFIX=$(printf %s "$TEAM" | shasum -a 256 | cut -c1-10)
+sed -i '' "s/com\.facebook\.WebDriverAgentRunner;/app.mobster.wda.runner.$SUFFIX;/g; s/com\.facebook\.WebDriverAgentLib;/app.mobster.wda.lib;/g" \
+  WebDriverAgent.xcodeproj/project.pbxproj
 xcodebuild -project WebDriverAgent.xcodeproj -scheme WebDriverAgentRunner \
   -destination "id=$UDID" -allowProvisioningUpdates \
   -derivedDataPath ./dd "DEVELOPMENT_TEAM=$TEAM" USE_IP=127.0.0.1 build-for-testing

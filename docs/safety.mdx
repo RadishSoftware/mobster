@@ -1,0 +1,60 @@
+---
+title: "Approvals and safety"
+sidebarTitle: "Approvals and safety"
+description: "When Mobster stops to ask you, and what it never does."
+icon: "shield-check"
+keywords: ["approval", "ask before acting", "safe", "passcode", "face id", "send", "permission"]
+---
+
+Mobster's agent stops before a tap that would send, buy, post or delete, and shows you the action, the app and the exact text. It acts only when you approve.
+
+## When Mobster asks
+
+With **Ask before acting** on, which is the default in Mobster for Mac and the terminal UI, Mobster stops:
+
+- before a tap or submit on a control that can commit something: Send, Buy, Pay, Post, Book, Delete, Submit and the like;
+- when its own check of an action against your request is unsure.
+
+The approval names the act ("Send this message to Kate Bell?") and its buttons use the same verb: **Send** and **Don't send**, **Pay** and **Don't pay**, otherwise **Approve** and **Decline**. If nobody answers within 10 minutes, the task ends without that action.
+
+<Note>A message you type while a task works, a file's text, something Mobster remembers and your voice never approve anything. Only your click on the approval, or `y` in the terminal, does.</Note>
+
+## Who answers
+
+| The task came from | Its approvals show in |
+|---|---|
+| Mobster for Mac, a workflow | The Mac app |
+| The terminal UI | The terminal UI |
+| `mobster chat` | The Mac app when it's open, otherwise the terminal |
+| Your coding agent, with `phone_task` | The Mac app. Your agent can't answer them |
+| Your coding agent's own taps over MCP | Your agent's own permission prompts. Mobster doesn't add one |
+
+<Warning>`mobster run --execute` never stops for an approval: it can send, buy, post or delete. Preview a task without `--execute` first, and add it only when you're sure.</Warning>
+
+## What it never does
+
+- Enter your iPhone's passcode or an app's PIN, or unlock the phone. A task you start on a locked iPhone waits up to 2 minutes for you to unlock it, reading only whether it's locked; any other task stops at once, before any model call.
+- Use Face ID, or double-click the side button to confirm an App Store purchase or Apple Pay.
+- Open an app you locked with Face ID or a passcode in iOS.
+- Retry an action whose outcome is unknown.
+- Start in or open Instagram, TikTok, X, Facebook, Snapchat, Threads, Tinder, Hinge or Bumble in a task another agent started.
+- Repeat an action in a dating app, such as swiping or messaging people one after another. That ends before any tap with "Mobster doesn't automate dating apps." One action there, such as replying to one message, runs as usual and asks first.
+- Choose people by how they look, or by race, religion, health, disability or sexual orientation, when it repeats an action over a list.
+
+[What it can and can't do](/capabilities) has the details.
+
+## Keep your accounts safe
+
+<Warning>
+  Approvals reduce risk; they don't remove it. Mobster acts as you, on your phone, and you're responsible for what it does in your accounts. Use accounts you're comfortable handing to an agent.
+</Warning>
+
+Mobster is for your own tasks and for testing your own app. It isn't for running accounts in bulk, or for liking, following or messaging at volume. If an app shows a warning, a CAPTCHA or "Try again later", stop and do the task yourself.
+
+## The switches
+
+| Setting | Where | What it does |
+|---|---|---|
+| Ask before acting | Settings › Safety, `shift+tab` or `/ask` in the terminal UI | On by default. Off, Mobster doesn't stop to ask |
+| Let Mobster tap and type | Settings › Safety | Off, no new task and no manual control can act on your iPhone. Stop (⌘ .) ends a running task |
+| Keep going when a check is unsure | Settings › Advanced, `/bypass` in the terminal UI | Off by default. On, in Quick mode, Mobster keeps going when it isn't sure a step is right. A send, buy, post or delete still waits while Ask before acting is on |

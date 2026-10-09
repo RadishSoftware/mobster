@@ -1,16 +1,19 @@
 """Device adapters: the driver contract and WebDriverAgent (WDA). Extensions may register more."""
 
 import abc
+import base64
 import json
 import math
 import os
 import threading
 import re
 import time
+import unicodedata
 from typing import Literal, TypedDict
 from urllib.parse import quote
 
-from .state import HOST_KEY_OPERATIONS, WDA_HOST_KEY_NAMES, _parse_wda, from_wda_root, has_trait, pane_key, validate_bundle_id, validate_input_text
+from .state import (HOST_KEY_OPERATIONS, WDA_HOST_KEY_NAMES, _parse_wda, from_wda_root, has_trait, pane_key,
+                    truncated_field_value, validate_bundle_id, validate_input_text)
 from .transport import Deadline, HTTP, TransportError
 
 _SWIPE_X = .5
@@ -143,6 +146,57 @@ WDA_SCROLL_SLOP = .018
 WDA_SCROLL_GLIDES = 12
 WDA_SCROLL_ROUNDS = 3
 
+# -- The frontier policy's options (WDA.tune). Jev and the plain driver keep every default above. --
+# Its source read keeps the traits ("Selected"): no measurable cost on the simulator (90 ms with or
+# without, 26 Sep). ``accessible`` stays out: it tripled the read (0.14 -> 0.35 s).
+WDA_RICH_SOURCE_PATH = "/source?format=xml&excluded_attributes=visible,accessible,index"
+# snapshotMaxChildren (WDA's default is unbounded): a bound on one node's children in a snapshot.
+# iOSWorld mem-046's runner died on CityRide's map screens in 2 of 4 runs (ConnectionReset, then refused).
+WDA_MAX_CHILDREN = 300
+# maxTypingFrequency on a simulator (WDA's default 60 types ~57 characters a second). Measured on an
+# iOSWorld simulator (F2, 26 Sep; 20 bodies of 500 characters typed into a Notes body at each rate, read
+# back whole): 60, 120, 180, 240, 360, 480, 720 and 960 all dropped no character; 500 characters took
+# 8.8 / 4.6 / 3.3 / 2.6 / 1.9 / 1.6 / 1.2 / 1.1 s. The phone keeps WDA's default until measured there.
+WDA_SIMULATOR_TYPING_FREQUENCY = 960
+# Text at least this long goes in through the pasteboard and the edit menu's Paste, not keystrokes, at
+# WDA's typing rate (~57 characters a second: 1,000 take ~18 s, a paste ~2.4 s). A faster rate moves the
+# line (WDA.tune): at 960 a simulator typed 1,000 characters in 1.5 s, faster than the paste (F2, 26 Sep).
+WDA_PASTE_MIN_CHARS = 200
+# Characters typed per second per unit of maxTypingFrequency at high rates (450 a second at 960), and a
+# paste's usual seconds: typing is kept while it is expected to be quicker.
+WDA_TYPED_PER_RATE, WDA_PASTE_SECONDS = .47, 2.5
+# Longest text a write takes (a document body); typing keeps validate_input_text's limits.
+WDA_WRITE_MAX_CHARS = 20000
+# The press that opens the edit menu (Paste), and how long its menu is looked for.
+WDA_PASTE_PRESS_MS = 600
+WDA_PASTE_MENU_SECONDS = 3.0
+# A value read from the source is complete below this length (state._wda_text cuts longer ones).
+WDA_SOURCE_VALUE_LIMIT = 500
+# Recovery: how long a restarted or re-supervised runner has to answer /status again.
+WDA_RECOVER_SECONDS = 90
+# Settle reads are spaced at least this far apart (start to start). Back-to-back reads every 80-90 ms during
+# settle ("Find the Application 'com.apple.Preferences'" bursts) preceded runner restarts on the phone
+# (quality baseline B4, 5 Oct); a read takes 130-210 ms there, so this mostly spaces the fast ones.
+WDA_SETTLE_POLL_SECONDS = .25
+# Screenshot timeouts (a /screenshot that times out, or the MJPEG stream stalling this long) after which the
+# driver settles from AX reads alone for the next AX_ONLY_STEPS steps: XCTest screenshots block WDA's main
+# queue in GPU-heavy apps (Maps, Spotify: "Cannot take a screenshot within 20000 ms", B4).
+WDA_SCREENSHOT_TIMEOUTS_FOR_AX_ONLY = 2
+WDA_AX_ONLY_STEPS = 5
+
+# Smart punctuation a keyboard may type for plain ASCII (a typed read-back is compared without it).
+_TYPOGRAPHIC = str.maketrans({"‘": "'", "’": "'", "“": '"', "”": '"', "–": "-", "—": "-", "\u00a0": " "})
+
+
+def _env_int(name):
+    """A positive integer from the environment, else None."""
+    try:
+        value = int(os.environ.get(name, "") or 0)
+    except ValueError:
+        return None
+    return value if value > 0 else None
+
+
 class ActivationDiagnostics(TypedDict, total=False):
     activation_route: Literal["table_selection", "control_primary_action", "control_primary_event",
                               "control_touch_up_inside", "accessibility", "physical_tap",
@@ -212,14 +266,20 @@ def grounded_target(operation, target, snapshot):
 DRAG_SENSITIVE_ROLES = frozenset({"Slider", "Switch", "Stepper", "Picker", "PickerWheel", "DatePicker",
                                   "SegmentedControl"})
 SWIPE_START_STEP = .01
+SCROLLING_MARKERS = ("XCUIElementTypeScrollView[", "XCUIElementTypeTable[", "XCUIElementTypeCollectionView[")
 SWIPE_START_LIMIT = .3  # the farthest a start moves (in screen heights) before giving up
 
 
-def clear_stroke_start(snapshot, operation, x, y, width, height):
-    """``y`` moved along the stroke until its touch-down point misses every drag-sensitive control."""
+def clear_stroke_start(snapshot, operation, x, y, width, height, fixed=False):
+    """``y`` moved along the stroke until its touch-down point misses every drag-sensitive control.
+    ``fixed`` (glides in every app, WDA.tune): also every control outside the scrolling content, a
+    floating button over the list: SplitPay's Pay/Request button sits under the glide's start (y .80),
+    and every glide there pressed it instead of scrolling (F2, 26 Sep)."""
     if operation not in {"SWIPE_UP", "SWIPE_DOWN"} or snapshot is None or not width or not height:
         return y
-    controls = [e.rect for e in getattr(snapshot, "elements", ()) if e.role in DRAG_SENSITIVE_ROLES]
+    controls = [e.rect for e in getattr(snapshot, "elements", ()) if e.role in DRAG_SENSITIVE_ROLES or fixed and (
+        e.role in ("Button", "Other", "TextField", "SearchField") and e.rect[2] * e.rect[3] < .25
+        and not any(marker in e.locator for marker in SCROLLING_MARKERS))]
     if not controls:
         return y
     nx, ny = x / width, y / height
@@ -251,7 +311,11 @@ def switch_point(target, screen_width_pt):
     return x, y
 
 
-def _swipe_points(operation, width, height):
+def _swipe_points(operation, width, height, target_rect=None):
+    """The stroke's (x1, y1, x2, y2) in points. A sideways swipe with ``target_rect`` (screen fractions) strokes
+    through that row: at its centre Y, from 75 % to 25 % of its width (or back). Without one it crosses the
+    middle of the screen, where a row's swipe actions would open on whichever row is there (alarm-delete swiped
+    the owner's 5:55 AM alarm open 15 times while aiming at another, B7)."""
     if operation in {"SWIPE_UP", "SWIPE_DOWN"}:
         start, end = _SWIPE_UP_Y if operation == "SWIPE_UP" else _SWIPE_DOWN_Y
         x = width * _SWIPE_X
@@ -259,6 +323,11 @@ def _swipe_points(operation, width, height):
     if operation not in {"SWIPE_LEFT", "SWIPE_RIGHT"}:
         raise ValueError(f"Unsupported swipe {operation!r}")
     start, end = _SWIPE_LEFT_X if operation == "SWIPE_LEFT" else _SWIPE_RIGHT_X
+    if target_rect is not None:
+        left, top, w, h = target_rect
+        left, right = max(0.0, left), min(1.0, left + w)
+        y = height * min(max(top + h / 2, 0.0), 1.0)
+        return (width * (left + (right - left) * start), y, width * (left + (right - left) * end), y)
     y = height * _SWIPE_Y
     return width * start, y, width * end, y
 
@@ -397,9 +466,27 @@ class WDA(Driver):
     # per-action cost report. None (the default) records nothing.
     call_trace = None
     # wait_for_change accepts single_read; settled_by says how the last settle ended ("one_read":
-    # a single read, not yet proven by a second one).
+    # a single read, not yet proven by a second one; "agreeing_reads": two agreeing reads, before the
+    # quiet period that proves them).
     settles_on_one_read = True
+    settles_early = True
     settled_by = None
+    # WDA.tune (the frontier): rich rows (Other leaves, disabled and selected controls), glides in
+    # every app (FrameClock demotes one that keeps moving), and the settings below.
+    rich_rows = False
+    glide_everywhere = False
+    tuned_settings = None
+    paste_min_chars = WDA_PASTE_MIN_CHARS
+    last_swipe_glided = False
+    # A callable that restarts this WDA runner (a simulator's xcodebuild; see bench/sim_wda.py).
+    # None: recover() waits for a supervisor to bring it back (the USB runner is supervised).
+    restarter = None
+    last_recovery = None
+    # Simulators by WDA URL (None: not asked yet).
+    _simulators = {}
+    # Steps left of AX-only settling after repeated screenshot timeouts (see note_screenshot_timeout).
+    ax_only_steps = 0
+    screenshot_timeouts = 0
 
     def __init__(self, url, session):
         if not session:
@@ -554,8 +641,9 @@ class WDA(Driver):
 
     def _observe(self, timeout):
         deadline = Deadline(timeout)
+        source = WDA_RICH_SOURCE_PATH if self.rich_rows else WDA_SOURCE_PATH
         try:
-            xml = self.call("GET", WDA_SOURCE_PATH, timeout=deadline.remaining())
+            xml = self.call("GET", source, timeout=deadline.remaining())
         except TransportError:
             # Measured 2026-09-23 (iOS 26.0.1): with Safari in front, WDA resolved
             # the "active application" to an invisible system overlay
@@ -571,20 +659,21 @@ class WDA(Driver):
             # Re-applied on every failed read: another client of the same session (a
             # harness probe, the app's video) can put detection back on "auto".
             self._hint_app(hint, min(2, deadline.remaining()))
-            xml = self.call("GET", WDA_SOURCE_PATH, timeout=deadline.remaining())
+            xml = self.call("GET", source, timeout=deadline.remaining())
             WDA._overlay_apps.setdefault(self.url, set()).add(hint)
             self._save_overlay_hints()
         if not isinstance(xml, str):
             raise ValueError("WDA did not return XML")
         root = _parse_wda(xml)
-        result = from_wda_root(root)
+        rich = self.rich_rows
+        result = from_wda_root(root, rich=rich)
         if result.stacked_panes or result.stacked_layers or result.stacked_pages:
             hidden = self._hidden_panes(result.stacked_panes, deadline) if result.stacked_panes else frozenset()
             layers = self._hidden_layers(result.stacked_layers, deadline) if result.stacked_layers else frozenset()
             if result.stacked_pages:
                 layers |= self._hidden_pages(result.stacked_pages, deadline, result.bundle_id)
             if hidden or layers:
-                result = from_wda_root(root, hidden, layers)  # the same tree, not parsed again
+                result = from_wda_root(root, hidden, layers, rich=rich)  # the same tree, not parsed again
         self._last_bundle = result.bundle_id or self._last_bundle
         if getattr(self, "_detection_point_pending", False):
             # configure() could not read the window size; the app frame is the screen.
@@ -742,6 +831,7 @@ class WDA(Driver):
         clock = self._frame_clock("on")
         previous_started = since
         while time.monotonic() < cap:
+            self._poll_pause(previous_started, cap)
             started = time.monotonic()
             current = self.observe(timeout=deadline.remaining())
             if current.content_fingerprint != previous.content_fingerprint:
@@ -759,7 +849,15 @@ class WDA(Driver):
             previous, previous_started = current, started
         return previous
 
-    def wait_for_change(self, snapshot, timeout=2, wait_seconds=.6, on_settling=None, single_read=False):
+    @staticmethod
+    def _poll_pause(last_read, cap):
+        """Wait until WDA_SETTLE_POLL_SECONDS after the last settle read began (never past ``cap``)."""
+        pause = min(last_read + WDA_SETTLE_POLL_SECONDS, cap) - time.monotonic()
+        if pause > 0:
+            time.sleep(pause)
+
+    def wait_for_change(self, snapshot, timeout=2, wait_seconds=.6, on_settling=None, single_read=False,
+                        early=False):
         """Read back to back until the screen differs from ``snapshot`` and is at
         rest: two consecutive agreeing reads, or one read identical to a screen
         already proven at rest. A mid-transition frame is never returned while it
@@ -790,6 +888,12 @@ class WDA(Driver):
         the agreeing read costs as much again. The caller proves the read later
         (frontier: a second read while the model thinks). Anything else falls
         back to the loop above.
+
+        ``early``: the AX loop returns the first changed read that agrees with
+        the read before it, without waiting out the quiet period
+        (``settled_by`` "agreeing_reads"). The caller proves it later, as for
+        ``single_read``: the frontier starts its next model call on it and
+        reads again meanwhile (0.5 s a turn when the pixels cannot settle it).
         """
         watch, self._frame_watch = self._frame_watch, None
         action, self._frame_action = self._frame_action, None
@@ -831,7 +935,7 @@ class WDA(Driver):
             elif clock is not None and watch is not None and self.frame_clock_mode == "on":
                 info = {"fallback": watch.reason or "unusable"}
             result = self._ax_settle(snapshot, deadline, started, started + wait_seconds, cap, settling, reads,
-                                     accept)
+                                     accept, early=early)
             if clock is not None and watch is not None:
                 self._frame_report(clock, watch, action, snapshot, result, started, reads, info)
             return result
@@ -858,7 +962,7 @@ class WDA(Driver):
             return current
         return None
 
-    def _ax_settle(self, snapshot, deadline, started, quiet_end, cap, settling, reads, accept=None):
+    def _ax_settle(self, snapshot, deadline, started, quiet_end, cap, settling, reads, accept=None, early=False):
         """The AX-only settle loop (see wait_for_change). ``reads`` collects
         (start, end, content fingerprint) per read for the FrameClock log.
         ``accept(since, read_started, read_ended)``, when given, may also prove a
@@ -867,8 +971,11 @@ class WDA(Driver):
         before = snapshot.content_fingerprint
         previous, since = None, started
         current = snapshot
+        last_read = None
         while True:
-            read_started = time.monotonic()
+            if last_read is not None:
+                self._poll_pause(last_read, cap)
+            read_started = last_read = time.monotonic()
             try:
                 current = self.observe(timeout=deadline.remaining())
             except (TransportError, TimeoutError):
@@ -886,6 +993,10 @@ class WDA(Driver):
                 if (accept is not None and previous is not None and previous.content_fingerprint == fingerprint
                         and accept(since, read_started, now)):
                     return self._prove_settled(current)
+                if early and previous is not None and previous.content_fingerprint == fingerprint \
+                        and not self._known_at_rest(current):
+                    self.settled_by = "agreeing_reads"  # unproven: the caller reads again
+                    return current
                 if (self._known_at_rest(current) or previous is not None
                         and previous.content_fingerprint == fingerprint
                         and now - since >= WDA_SETTLE_QUIET_SECONDS):
@@ -905,11 +1016,37 @@ class WDA(Driver):
     def _frame_clock(self, mode=None):
         """The attached FrameClock when active (in ``mode``, if given), else None."""
         clock = self.frame_clock
-        if clock is None or self.frame_clock_mode not in ("on", "shadow"):
+        if clock is None or self.frame_clock_mode not in ("on", "shadow") or self.ax_only_steps > 0:
             return None
         if mode is not None and self.frame_clock_mode != mode:
             return None
         return clock
+
+    def note_screenshot_timeout(self):
+        """A screenshot timed out (or the stream stalled). The second in a row switches settling to AX reads
+        alone, and the model's screenshot to the free stream frame only, for the next WDA_AX_ONLY_STEPS steps.
+        Returns True when this one switched it."""
+        self.screenshot_timeouts += 1
+        if self.screenshot_timeouts >= WDA_SCREENSHOT_TIMEOUTS_FOR_AX_ONLY:
+            self.screenshot_timeouts = 0
+            started = self.ax_only_steps == 0
+            self.ax_only_steps = WDA_AX_ONLY_STEPS
+            return started
+        return False
+
+    def next_step(self):
+        """A new agent step: counts down AX-only settling, and counts stream stalls the FrameClock saw since the
+        last step as screenshot timeouts. Returns the AX-only steps left."""
+        clock = self.frame_clock
+        stalls = getattr(clock, "stalls", 0) if clock is not None else 0
+        seen = getattr(self, "_stalls_seen", 0)
+        if isinstance(stalls, int) and stalls > seen:
+            self._stalls_seen = stalls
+            for _ in range(stalls - seen):
+                self.note_screenshot_timeout()
+        elif self.ax_only_steps > 0:
+            self.ax_only_steps -= 1
+        return self.ax_only_steps
 
     def _frame_mark(self, operation, **extra):
         """Remember the pre-dispatch frame; called immediately before dispatch."""
@@ -1048,14 +1185,28 @@ class WDA(Driver):
         except Exception:
             pass
 
+    def drag_next(self):
+        """The next vertical swipe is XCTest's drag even where a glide would be used; False when it would
+        be a drag anyway (glides off, or only in the measured apps: WDA.tune turns them on everywhere)."""
+        if (os.environ.get("MOBSTER_GLIDE", "").strip().casefold() in {"0", "off", "false", "no"}
+                or not self.glide_everywhere):
+            return False
+        self._drag_once = True
+        return True
+
     def _glide_ok(self, operation, snapshot):
         if operation not in {"SWIPE_UP", "SWIPE_DOWN"}:
+            return False
+        if getattr(self, "_drag_once", False):
+            self._drag_once = False
             return False
         if os.environ.get("MOBSTER_GLIDE", "").strip().casefold() in {"0", "off", "false", "no"}:
             return False
         bundle = snapshot.bundle_id
         if not bundle or bundle in WDA._momentum_apps.get(self.url, ()):
             return False
+        if self.glide_everywhere:
+            return True  # WDA.tune: every app until the FrameClock sees one keep moving
         extra = {item.strip() for item in os.environ.get("MOBSTER_GLIDE_BUNDLES", "").split(",") if item.strip()}
         # Unmeasured apps keep XCTest's drag: a paging feed could snap back
         # from a velocity-free glide (the FrameClock would then demote the app).
@@ -1182,8 +1333,18 @@ class WDA(Driver):
         return bundle
 
     def capture_preview(self, timeout=3):
-        result = self.preview_http.request("GET", self.prefix + "/screenshot", timeout=timeout)
+        try:
+            result = self.preview_http.request("GET", self.prefix + "/screenshot", timeout=timeout)
+        except (TransportError, TimeoutError) as error:
+            if isinstance(error, TimeoutError) or "timeout" in str(error).casefold():
+                self.note_screenshot_timeout()
+            raise
+        value = result.get("value") if isinstance(result, dict) else None
+        if isinstance(value, dict) and "screenshot" in str(value.get("message") or "").casefold() \
+                and "timeout" in str(value.get("message") or "").casefold():
+            self.note_screenshot_timeout()
         image = self.response_value(result)
+        self.screenshot_timeouts = 0
         if not isinstance(image, str) or not image:
             raise TransportError("WDA screenshot unavailable")
         return "data:image/png;base64," + image
@@ -1233,44 +1394,15 @@ class WDA(Driver):
             self._frame_dispatched()
         elif operation in {"TYPE", "TYPE_SUBMIT"}:
             grounded_target(operation, target, snapshot)
-            validate_input_text(text, multiline=target.role == "TextView" and operation == "TYPE")
-            self._check_current(snapshot, deadline)
-            focused = self._clear_stale_query(target, deadline)
-            keyboard = getattr(snapshot, "keyboard", "") or ("visible" if "SUBMIT" in target.actions else "")
-            if focused:
-                # The clear left keyboard focus in the field: no focusing tap, no keyboard wait.
-                keyboard = "visible"
-            elif keyboard == "visible" and self._focused_elsewhere(target, snapshot, deadline):
-                # The keyboard belongs to another field: keystrokes would go there (iOSWorld mem-048,
-                # 24 Sep: a whole note body typed into its title). Focus has to move first.
-                keyboard = ""
-            # A visible keyboard keeps the one-call path; otherwise focus must move, and the element
-            # itself moves it reliably (a coordinate tap left mem-041's focus in the title).
-            if keyboard != "visible" and self._type_into_element(target, text, deadline,
-                                                                 submit=operation == "TYPE_SUBMIT"):
-                return None
-            if keyboard != "visible":
-                # No keyboard yet: focus the field with a tap. Many iOS fields
-                # (Safari's address bar, search bars) swap in a different
-                # editing field on focus, so an element-bound type fails as
-                # "stale element"; keystrokes go to whatever holds focus.
-                x, y = target.center
-                if target.role == "TextView":
-                    # A text view's centre puts the cursor mid-text and keystrokes insert there;
-                    # its last line puts it at the end, where added text belongs.
-                    left, top, w, h = target.rect
-                    x, y = left + w * .9, top + h * .92
-                self._tap(x * snapshot.width, y * snapshot.height, deadline)
-                if not self._await_keyboard(deadline):
-                    raise TransportError("The field did not take keyboard focus; nothing was typed")
-            self._stable = None
-            # Return is sent by the driver, never carried in model-generated text.
-            keys = [text, "\n"] if operation == "TYPE_SUBMIT" else [text]
-            self._frame_mark(operation)
-            self.call("POST", "/wda/keys", {"value": keys}, deadline.remaining())
-            self._frame_dispatched()
+            return self._type_text(operation, target, snapshot, text, deadline)
         elif operation in {"SWIPE_UP", "SWIPE_DOWN", "SWIPE_LEFT", "SWIPE_RIGHT"}:
-            x1, y1, x2, y2 = _swipe_points(operation, snapshot.width, snapshot.height)
+            aimed = None
+            if target is not None and operation in {"SWIPE_LEFT", "SWIPE_RIGHT"}:
+                grounded = any(target is element or target == element for element in snapshot.elements)
+                if not grounded:
+                    raise ValueError("Action target is not part of the supplied observation")
+                aimed = target.rect
+            x1, y1, x2, y2 = _swipe_points(operation, snapshot.width, snapshot.height, aimed)
             self._stable = None
             glide = self._glide_ok(operation, snapshot)
             if glide and operation in WDA_GLIDE_SPAN:
@@ -1279,9 +1411,11 @@ class WDA(Driver):
                 # cost, and still overlaps the previous screen by about a third.
                 start, end = WDA_GLIDE_SPAN[operation]
                 y1, y2 = snapshot.height * start, snapshot.height * end
-            y1 = clear_stroke_start(snapshot, operation, x1, y1, snapshot.width, snapshot.height)
+            y1 = clear_stroke_start(snapshot, operation, x1, y1, snapshot.width, snapshot.height,
+                                    fixed=glide and self.glide_everywhere)
             self._frame_mark(operation, glide=glide)
             self._swiped_at = time.monotonic()
+            self.last_swipe_glided = bool(glide)
             if glide:
                 self._glide(x1, y1, x2, y2, deadline)
             elif operation in {"SWIPE_LEFT", "SWIPE_RIGHT"} and os.environ.get("MOBSTER_FLICK", "on") != "off":
@@ -1297,6 +1431,49 @@ class WDA(Driver):
             self._frame_dispatched()
         else:
             raise ValueError("Unsupported WDA operation")
+
+    def _type_text(self, operation, target, snapshot, text, deadline, multiline=None):
+        """TYPE / TYPE_SUBMIT into ``target``. ``multiline``: line breaks are text (a text view by
+        default; write_text also passes a text field it has seen hold line breaks)."""
+        if multiline is None:
+            multiline = target.role == "TextView"
+        grounded_target(operation, target, snapshot)
+        validate_input_text(text, multiline=multiline and operation == "TYPE")
+        self._check_current(snapshot, deadline)
+        focused = self._clear_stale_query(target, deadline)
+        keyboard = getattr(snapshot, "keyboard", "") or ("visible" if "SUBMIT" in target.actions else "")
+        if focused:
+            # The clear left keyboard focus in the field: no focusing tap, no keyboard wait.
+            keyboard = "visible"
+        elif keyboard == "visible" and self._focused_elsewhere(target, snapshot, deadline):
+            # The keyboard belongs to another field: keystrokes would go there (iOSWorld mem-048,
+            # 24 Sep: a whole note body typed into its title). Focus has to move first.
+            keyboard = ""
+        # A visible keyboard keeps the one-call path; otherwise focus must move, and the element
+        # itself moves it reliably (a coordinate tap left mem-041's focus in the title).
+        if keyboard != "visible" and self._type_into_element(target, text, deadline,
+                                                             submit=operation == "TYPE_SUBMIT", multiline=multiline):
+            return None
+        if keyboard != "visible":
+            # No keyboard yet: focus the field with a tap. Many iOS fields
+            # (Safari's address bar, search bars) swap in a different
+            # editing field on focus, so an element-bound type fails as
+            # "stale element"; keystrokes go to whatever holds focus.
+            x, y = target.center
+            if multiline:
+                # A text view's centre puts the cursor mid-text and keystrokes insert there;
+                # its last line puts it at the end, where added text belongs.
+                left, top, w, h = target.rect
+                x, y = left + w * .9, top + h * .92
+            self._tap(x * snapshot.width, y * snapshot.height, deadline)
+            if not self._await_keyboard(deadline):
+                raise TransportError("The field did not take keyboard focus; nothing was typed")
+        self._stable = None
+        # Return is sent by the driver, never carried in model-generated text.
+        keys = [text, "\n"] if operation == "TYPE_SUBMIT" else [text]
+        self._frame_mark(operation)
+        self.call("POST", "/wda/keys", {"value": keys}, deadline.remaining())
+        self._frame_dispatched()
 
     def _clear_stale_query(self, target, deadline):
         """Empty a search field that still holds an earlier query before typing a new one.
@@ -1325,7 +1502,7 @@ class WDA(Driver):
         x, y, w, h = target.rect
         return not (x - .01 <= cx <= x + w + .01 and y - .01 <= cy <= y + h + .01)
 
-    def _type_into_element(self, target, text, deadline, submit=False):
+    def _type_into_element(self, target, text, deadline, submit=False, multiline=False):
         """Type through the element itself (XCUITest focuses it), when it can be found uniquely.
 
         A focusing tap by coordinates can leave focus in the previous field: iOSWorld mem-041
@@ -1335,7 +1512,9 @@ class WDA(Driver):
         nothing was typed and the caller uses its own path.
         """
         filled = (target.value or "").strip() and (target.value or "").strip() != (target.label or "").strip()
-        if target.role not in ("TextField", "TextView") or target.role == "TextView" and filled:
+        # A multi-line text field (SwiftUI's vertical TextField) is a text view here: CloudSlides' body
+        # took the typed text mid-way (cloudslides-002, 4 of 4 runs, 25 Sep).
+        if target.role not in ("TextField", "TextView") or (target.role == "TextView" or multiline) and filled:
             return False
         name = (target.label or "").replace("\\", "\\\\").replace("'", "\\'")
         if not name:
@@ -1535,6 +1714,397 @@ class WDA(Driver):
         if parked:
             WDA._parked_keyboards.add(self.url)
         return parked
+
+    # -- The frontier's options (Jev and the plain driver never call these) -------------------
+
+    def is_simulator(self, timeout=3):
+        """True when this WDA runs on a simulator (its /status names a simulator version); asked once
+        per URL. Unknown (no answer) is False, and is asked again next time."""
+        known = WDA._simulators.get(self.url)
+        if known is None:
+            try:
+                status = self.http.request("GET", "/status", timeout=timeout)
+                ios = (status.get("value") or {}).get("ios") if isinstance(status, dict) else None
+                known = bool(isinstance(ios, dict) and ios.get("simulatorVersion"))
+            except (TransportError, TimeoutError, ValueError, AttributeError):
+                return False
+            WDA._simulators[self.url] = known
+        return known
+
+    def tune(self, rich=True, glide=True, max_children=WDA_MAX_CHILDREN, typing_frequency=None, timeout=5):
+        """The frontier policy's driver: rich rows (state.from_wda_root), glides in every app, and WDA
+        settings: a bound on a snapshot's children and, on a simulator, the measured typing rate
+        (MOBSTER_TYPING_FREQUENCY sets one on any device). Returns the settings applied; they are
+        applied again after a recovery."""
+        self.rich_rows, self.glide_everywhere = bool(rich), bool(glide)
+        settings = {}
+        if max_children:
+            settings["snapshotMaxChildren"] = int(max_children)
+        rate = typing_frequency or _env_int("MOBSTER_TYPING_FREQUENCY")
+        if not rate and WDA_SIMULATOR_TYPING_FREQUENCY and self.is_simulator():
+            rate = WDA_SIMULATOR_TYPING_FREQUENCY
+        if rate:
+            settings["maxTypingFrequency"] = int(rate)
+        self.paste_min_chars = max(WDA_PASTE_MIN_CHARS, round(WDA_PASTE_SECONDS * WDA_TYPED_PER_RATE * (rate or 0)))
+        self.tuned_settings = settings
+        if settings:
+            self.call("POST", "/appium/settings", {"settings": settings}, timeout)
+        return settings
+
+    # -- Exact text -------------------------------------------------------------------------
+
+    def write_text(self, target, snapshot, text, append=False, submit=False, timeout=30):
+        """Write ``text`` into the field ``target`` and prove it by reading the whole field back.
+
+        ``append`` adds it at the end (TYPE); otherwise it replaces the field's text (SET_TEXT; ""
+        empties the field). ``submit`` presses Return once the text is written (TYPE_SUBMIT).
+        Text of WDA_PASTE_MIN_CHARS or more, and text with line breaks for a field not known to take
+        them, goes in through the pasteboard and the edit menu's Paste: exact, far faster than
+        keystrokes on a long body, and a one-line field turns pasted line breaks into spaces where a
+        typed Return could submit it. An append that is pasted rewrites the field (its text, then the
+        addition): Paste is only offered in an empty field. When Paste cannot be reached the text is
+        typed. A read-back that differs is repaired once (emptied and written again) when the field's
+        earlier text is known. Returns a receipt: {"method": "type", "paste" or "clear", "value": the
+        field's text read back (None: not read), "expected", "matches", "repaired", "flattened" (a
+        one-line field took the line breaks as spaces), "chars"}.
+        """
+        deadline = Deadline(timeout)
+        grounded_target("TYPE", target, snapshot)
+        rank = self._write_rank = self._rank(snapshot, target)
+        if (not isinstance(text, str) or len(text) > WDA_WRITE_MAX_CHARS or append and not text.strip()
+                or any(unicodedata.category(c) in {"Cc", "Cs", "Zl", "Zp"} and c not in "\n\t" for c in text)):
+            raise ValueError("TYPE requires bounded text without control characters")
+        text = text.replace("\t", " ")
+        shown = target.text if target.placeholder else (target.value or "")
+        multiline = target.role == "TextView" or "\n" in shown
+        breaks = "\n" in text and not multiline
+        old = self._field_text(target, snapshot, deadline) if append else ""
+        # An empty field reads as its placeholder, which not every field names (SwiftUI's vertical
+        # TextField does not): an earlier text is known only when it cannot be a placeholder.
+        known = old is not None and (not old or target.role == "TextView" or bool(target.placeholder)
+                                     or "\n" in old or len(old) >= 60)
+        paste = bool(text) and (len(text) >= self.paste_min_chars or breaks) and old is not None
+        receipt = {"method": "clear" if not text else "paste" if paste else "type", "repaired": False,
+                   "flattened": False}
+        current, field = snapshot, target
+        if paste or not append:
+            if self._emptied(field, current, deadline):
+                current, field = self._reread(field, deadline)
+                if append and not known and (field.value or "") == old:
+                    old, known = "", True  # emptying changed nothing: it showed its placeholder
+            elif append:
+                old, known = "", True
+        expected = (old or "") + text if append else text
+        if paste and not self._paste(field, current, expected, deadline):
+            receipt["method"], paste = "type", False
+        if receipt["method"] == "type":
+            typed = expected if (not append or current is not snapshot) else text
+            if breaks:
+                # Never Return in a field not known to take line breaks: it may submit.
+                typed, receipt["flattened"] = " ".join(typed.split("\n")), True
+                expected = " ".join(expected.split("\n"))
+            self._type_chunks(field, current, typed, deadline, multiline)
+        value, current = self._read_back(target, deadline, rank)
+        matches = self._fits(value, expected, text, append and not known, breaks, field)
+        if not matches and value is not None and breaks and self._same_text(value, " ".join(expected.split("\n"))):
+            receipt["flattened"], matches = True, True  # a one-line field: its line breaks became spaces
+        if not text and not matches and value is not None and value != shown:
+            # Emptied, yet it reads as something: emptied again, what stays is its placeholder.
+            field = self._same_field(current, target, rank) or field
+            self._emptied(field, current, deadline)
+            again, current = self._read_back(target, deadline, rank)
+            if again == value:
+                receipt["placeholder"], value, matches = value, "", True
+        elif not matches and value is not None and (not append or known):
+            receipt["repaired"] = True
+            field = self._same_field(current, target, rank) or field
+            if self._emptied(field, current, deadline):
+                current, field = self._reread(field, deadline)
+            if not self._paste(field, current, expected, deadline):
+                self._type_chunks(field, None, " ".join(expected.split("\n")) if breaks else expected,
+                                  deadline, multiline)
+            value, current = self._read_back(target, deadline, rank)
+            matches = self._fits(value, expected, text, False, breaks, field)
+        if submit:
+            self._stable = None
+            self._frame_mark("SUBMIT")
+            self.call("POST", "/wda/keys", {"value": ["\n"]}, deadline.remaining())
+            self._frame_dispatched()
+        receipt.update(value=value, expected=expected, matches=bool(matches),
+                       chars=None if value is None else len(value))
+        return receipt
+
+    def _fits(self, value, expected, text, unknown_start, breaks, field):
+        """The field's text read back is what was written: ``expected``, or with an earlier text that
+        could not be known (``unknown_start``), anything ending in ``text``; line breaks a one-line
+        field made spaces count."""
+        if self._same_text(value, expected, field=field):
+            return True
+        if unknown_start and value is not None:
+            return self._same_text(value, text, suffix=True) or breaks and self._same_text(
+                value, " ".join(text.split("\n")), suffix=True)
+        return False
+
+    @staticmethod
+    def _same_text(value, expected, suffix=False, field=None):
+        """``value`` (a field read back) is ``expected``: exactly, or but for typographic quotes and
+        dashes (smart punctuation); ``suffix``: it ends with it (text added to a field whose earlier
+        text was not read). An empty field may read as its placeholder."""
+        if value is None:
+            return False
+        if not expected and field is not None and field.placeholder and value == field.placeholder:
+            return True
+
+        def plain(text):
+            return text.translate(_TYPOGRAPHIC).replace("\r\n", "\n")
+        return (value == expected or plain(value) == plain(expected)
+                or suffix and plain(value).endswith(plain(expected)))
+
+    @staticmethod
+    def _rank(snapshot, target):
+        """(fields of ``target``'s kind on ``snapshot``, its place among them)."""
+        fields = [e for e in snapshot.elements if e.editable and e.role == target.role]
+        return len(fields), next((i for i, e in enumerate(fields) if e == target), None)
+
+    def _same_field(self, snapshot, target, rank=None):
+        """``target`` on a later ``snapshot``: the same path, else the same label, else (``rank``, from
+        _rank on the earlier read) the field in its place among as many of its kind (CloudSlides' editor
+        moved its fields sideways as the keyboard came up), else the nearest field of its kind (a
+        vertical text field grows as it fills)."""
+        fields = [e for e in snapshot.elements if e.editable and e.role == target.role]
+        same = [e for e in fields if e.locator == target.locator]
+        if len(same) == 1:
+            return same[0]
+        if target.label:
+            named = [e for e in fields if e.label == target.label]
+            if len(named) == 1:
+                return named[0]
+        if rank is not None and rank[1] is not None and len(fields) == rank[0]:
+            return fields[rank[1]]
+
+        def distance(e):
+            return abs(e.rect[0] - target.rect[0]) + abs(e.rect[1] - target.rect[1])
+        near = min(fields, key=distance, default=None)
+        return near if near is not None and distance(near) < .08 else None
+
+    def _field_text(self, target, snapshot, deadline):
+        """The field's whole text now: from the read when it is not cut there, else from WDA. None
+        when it cannot be read."""
+        if target.placeholder and target.value == target.placeholder:
+            return ""
+        if not truncated_field_value(target.value):
+            return target.value or ""
+        return self._active_text(target, snapshot, deadline, focus=True)
+
+    def _active_id(self, target, snapshot, deadline, focus=False):
+        """WDA's id for the field holding keyboard focus when it is ``target`` (their frames agree), else
+        None. ``focus``: when it is not, tap the field and ask again."""
+        for attempt in range(2 if focus else 1):
+            try:
+                identifier = _element_id(self.call("GET", "/element/active", None, min(3, deadline.remaining())) or {})
+                if identifier:
+                    rect = self.call("GET", f"/element/{quote(identifier, safe='')}/rect", None,
+                                     min(3, deadline.remaining()))
+                    if self._frame_agrees(rect, target, snapshot):
+                        return identifier
+            except (TransportError, KeyError, TypeError):
+                pass
+            if attempt == 0 and focus:
+                x, y = target.center
+                self._tap(x * snapshot.width, y * snapshot.height, deadline)
+                time.sleep(WDA_PARKED_FOCUS_SECONDS)
+        return None
+
+    def _active_text(self, target, snapshot, deadline, focus=False):
+        """The whole text of ``target`` read through the field holding focus ("" when it shows only its
+        placeholder), or None when that field is not ``target``."""
+        identifier = self._active_id(target, snapshot, deadline, focus)
+        if identifier is None:
+            return None
+        path = f"/element/{quote(identifier, safe='')}/attribute/"
+        try:
+            value = self.call("GET", path + "value", None, min(3, deadline.remaining()))
+            if value and target.role != "TextView":
+                placeholder = self.call("GET", path + "placeholderValue", None, min(3, deadline.remaining()))
+                if placeholder and value == placeholder:
+                    return ""
+        except (TransportError, TypeError):
+            return None
+        return value if isinstance(value, str) else ""
+
+    @staticmethod
+    def _frame_agrees(rect, target, snapshot):
+        """A WDA rect (points) is ``target``'s frame: either one's centre lies in the other (a vertical
+        text field grows down as it fills)."""
+        if not isinstance(rect, dict):
+            return False
+        try:
+            ax, ay, aw, ah = (float(rect[k]) / d for k, d in (("x", snapshot.width), ("y", snapshot.height),
+                                                             ("width", snapshot.width), ("height", snapshot.height)))
+        except (KeyError, TypeError, ValueError):
+            return False
+        tx, ty, tw, th = target.rect
+        slack = .01
+        return (ax - slack <= tx + tw / 2 <= ax + aw + slack and ay - slack <= ty + th / 2 <= ay + ah + slack
+                or tx - slack <= ax + aw / 2 <= tx + tw + slack and ty - slack <= ay + ah / 2 <= ty + th + slack)
+
+    def _emptied(self, target, snapshot, deadline):
+        """True once ``target`` was emptied, False when it already was (and is left alone). The field keeps
+        its top as it empties (the paste presses there); typing after it reads the screen again."""
+        text = target.text if target.placeholder else (target.value or "")
+        if not text.strip() or text.strip() == (target.label or "").strip() and not target.placeholder:
+            return False
+        self._stable = None
+        # A named field is cleared by its name; an unnamed one (CloudSlides' slide body, one of several
+        # text fields) through the field holding focus: asking WDA for every field of its kind took 1.8 s.
+        if not (target.label and self._clear_field(target, deadline)):
+            identifier = self._active_id(target, snapshot, deadline, focus=True)
+            if identifier is not None:
+                try:
+                    self.call("POST", f"/element/{quote(identifier, safe='')}/clear", {}, min(8, deadline.remaining()))
+                except TransportError:
+                    pass  # the read-back shows what is there
+        return True
+
+    def _paste(self, target, snapshot, text, deadline):
+        """Put ``text`` on the pasteboard and choose Paste in the empty field's edit menu (pressed twice at
+        most: the second time after a focusing tap). False when no Paste was offered: nothing pasted."""
+        try:
+            self.call("POST", "/wda/setPasteboard", {"content": base64.b64encode(text.encode()).decode(),
+                                                     "contentType": "plaintext"}, min(5, deadline.remaining()))
+        except TransportError:
+            return False
+        left, top, width, height = target.rect
+        x = left + width / 2
+        y = top + min(height / 2, 22 / snapshot.height)  # the first line: a long press on text moves the caret
+        self._stable = None
+        self._frame_mark("TYPE")
+        try:
+            for attempt in range(2):
+                if attempt:
+                    self._tap(x * snapshot.width, y * snapshot.height, deadline)
+                    time.sleep(WDA_PARKED_FOCUS_SECONDS)
+                self.call("POST", "/actions", {"actions": [{
+                    "type": "pointer", "id": "finger", "parameters": {"pointerType": "touch"},
+                    "actions": [{"type": "pointerMove", "duration": 0, "x": round(x * snapshot.width),
+                                 "y": round(y * snapshot.height)},
+                                {"type": "pointerDown"}, {"type": "pause", "duration": WDA_PASTE_PRESS_MS},
+                                {"type": "pointerUp"}]}]}, deadline.remaining())
+                end = time.monotonic() + WDA_PASTE_MENU_SECONDS
+                while time.monotonic() < end and deadline.end - time.monotonic() > WDA_READ_MARGIN_SECONDS:
+                    # One query, not a screen read: a read may also ask WDA which layers show (up to 3 s
+                    # a read in CloudSlides' editor, 26 Sep).
+                    try:
+                        found = self.call("POST", "/elements", {"using": "predicate string", "value":
+                                          "type == 'XCUIElementTypeMenuItem' AND label == 'Paste'"},
+                                          min(3, deadline.remaining()))
+                        identifier = _element_id(found[0]) if isinstance(found, list) and found else None
+                        rect = identifier and self.call("GET", f"/element/{quote(identifier, safe='')}/rect", None,
+                                                        min(3, deadline.remaining()))
+                    except TransportError:
+                        identifier = rect = None
+                    if isinstance(rect, dict) and all(finite_positive(rect.get(k)) or rect.get(k) == 0
+                                                      for k in ("x", "y", "width", "height")):
+                        self._tap(rect["x"] + rect["width"] / 2, rect["y"] + rect["height"] / 2, deadline)
+                        return True
+                    time.sleep(.1)
+            return False
+        finally:
+            self._frame_dispatched()
+
+    def _reread(self, target, deadline):
+        """(a new read, ``target`` on it)."""
+        fresh = self.observe(timeout=min(5, deadline.remaining()))
+        return fresh, self._same_field(fresh, target, getattr(self, "_write_rank", None)) or target
+
+    def _type_chunks(self, target, snapshot, text, deadline, multiline):
+        """Type ``text`` (a known multi-line field takes its line breaks), in chunks typing accepts.
+        ``snapshot`` None: the field changed since it was read (emptied), so it is read again."""
+        limit = 4000 if multiline else 1000
+        chunks = [text[i:i + limit] for i in range(0, len(text), limit)] or [""]
+        fresh = snapshot
+        if fresh is None or time.monotonic() - fresh.captured_at > WDA_FRESH_SECONDS:
+            fresh, target = self._reread(target, deadline)
+        first = chunks[0]
+        if first.strip() and self._active_id(target, fresh, deadline) is not None:
+            # The field holds focus (it was just emptied through it): keystrokes, no focusing tap. A tap on
+            # an emptied CloudSlides body left it without focus every second write (F2, 26 Sep).
+            self._stable = None
+            self._frame_mark("TYPE")
+            self.call("POST", "/wda/keys", {"value": [first]}, deadline.remaining())
+            self._frame_dispatched()
+        elif first.strip():
+            try:
+                self._type_text("TYPE", target, fresh, first, deadline, multiline=multiline)
+            except TransportError as error:
+                # The focusing tap was made but no keyboard was seen (none shows with a hardware keyboard
+                # on some screens): keystrokes go where focus is, so only when the field holds it.
+                if "keyboard focus" not in str(error) or self._active_id(target, fresh, deadline) is None:
+                    raise
+                self._frame_mark("TYPE")
+                self.call("POST", "/wda/keys", {"value": [first]}, deadline.remaining())
+                self._frame_dispatched()
+        for chunk in chunks[1:]:
+            self.call("POST", "/wda/keys", {"value": [chunk]}, deadline.remaining())
+
+    def _read_back(self, target, deadline, rank=None):
+        """(the field's whole text, the read): from a source read when the text is not cut there, else
+        from the field holding focus. None when the field is not found."""
+        fresh = self.observe(timeout=min(5, deadline.remaining()))
+        field = self._same_field(fresh, target, rank)
+        if field is not None and not truncated_field_value(field.value):
+            return (field.text if field.placeholder else field.value or ""), fresh
+        return self._active_text(field or target, fresh, deadline), fresh
+
+    # -- Recovery -------------------------------------------------------------------------------
+
+    def _status_ok(self, timeout=3):
+        try:
+            status = self.http.request("GET", "/status", timeout=timeout)
+        except (TransportError, TimeoutError, ValueError):
+            self.http.close()
+            return False
+        value = status.get("value") if isinstance(status, dict) else None
+        return isinstance(value, dict) and value.get("ready", True) is not False
+
+    def recover(self, timeout=WDA_RECOVER_SECONDS):
+        """Bring back a runner that reset or refused the connection, and attach to it: restart it
+        (``restarter``) when it does not answer, or wait for its supervisor (the USB runner), then take
+        its session (``new_session`` or resolve_wda_session), apply the session and tuned settings
+        again and forget what belonged to the old session. Returns the seconds it took; raises
+        TransportError when no runner answers within ``timeout``."""
+        started = time.monotonic()
+        deadline = Deadline(timeout)
+        phases = self.last_recovery = {"restarted": False}
+        if not self._status_ok(min(3, deadline.remaining())) and callable(self.restarter):
+            self.restarter(deadline.remaining())
+            phases["restarted"] = True
+        while not self._status_ok(min(3, deadline.remaining())):
+            if deadline.end - time.monotonic() < 1.5:
+                raise TransportError("WDA did not come back")
+            time.sleep(.5)
+        phases["ready_ms"] = round((time.monotonic() - started) * 1000)
+        self.reattach(timeout=min(30, deadline.remaining()))
+        phases["total_ms"] = round((time.monotonic() - started) * 1000)
+        return time.monotonic() - started
+
+    def reattach(self, timeout=30):
+        """Drive the runner's current session (a new one when it has none), set up as configure() does."""
+        for client in (self.http, self.preview_http):
+            client.close()
+        _settled_sessions.pop(self.url, None)
+        factory = getattr(self, "new_session", None)
+        session = factory() if callable(factory) else resolve_wda_session(self.url, timeout=min(10, timeout))
+        if not session:
+            raise TransportError("WDA has no session")
+        self.prefix = "/session/" + quote(session, safe="")
+        self._stable, self._settled, self._pane_visibility = None, {}, {}
+        self._hinted, self._frame_watch, self._frame_action, self._frame_followup = None, None, None, None
+        self._pages_stale = True
+        self.configure(timeout=min(10, timeout))
+        if self.tuned_settings:
+            self.call("POST", "/appium/settings", {"settings": dict(self.tuned_settings)}, min(5, timeout))
+        return session
 
     def long_press(self, target, snapshot, timeout=10):
         """Press and hold ``target`` (a reaction picker, a context menu) at its tap point."""

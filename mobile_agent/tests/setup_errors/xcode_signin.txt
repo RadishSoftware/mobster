@@ -1,0 +1,7 @@
+Build settings from command line:
+    DEVELOPMENT_TEAM = ABCDE12345
+    PRODUCT_BUNDLE_IDENTIFIER = app.mobster.wda.runner.3f9c2a1b
+
+/Users/test/Library/Application Support/app.mobster.desktop/WebDriverAgent/WebDriverAgent.xcodeproj: error: No Account for Team "ABCDE12345". Add a new account in Accounts settings or verify that your accounts have valid credentials. (in target 'WebDriverAgentRunner' from project 'WebDriverAgent')
+/Users/test/Library/Application Support/app.mobster.desktop/WebDriverAgent/WebDriverAgent.xcodeproj: error: No profiles for 'app.mobster.wda.runner.3f9c2a1b' were found: Xcode couldn't find any iOS App Development provisioning profiles matching 'app.mobster.wda.runner.3f9c2a1b'. (in target 'WebDriverAgentRunner' from project 'WebDriverAgent')
+** TEST BUILD FAILED **

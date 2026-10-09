@@ -1,0 +1,1239 @@
+{
+ "about": "Kate Bell, 5 Oct 2026 (ship2/film/footage C1): 'Text Kate Bell: Running 10 minutes late, save me a seat!' on an iOS 26.4 simulator. Rebuilt as synthetic snapshots from the filmed events: the thread header shows her number, Return in the composer adds a line instead of sending, and the sent bubble is a cell with a text view inside it, with 'Delivered' under it.",
+ "bundle": "com.apple.MobileSMS",
+ "request": "Text Kate Bell: Running 10 minutes late, save me a seat!",
+ "text": "Running 10 minutes late, save me a seat!",
+ "items": [
+  {
+   "kind": "WRITE",
+   "app": "Messages",
+   "what": "message to Kate Bell",
+   "payload": "Running 10 minutes late, save me a seat!",
+   "act": "none",
+   "count": "",
+   "condition": "",
+   "quote": "Running 10 minutes late, save me a seat!"
+  },
+  {
+   "kind": "COMMIT",
+   "app": "Messages",
+   "what": "Kate Bell",
+   "payload": "Running 10 minutes late, save me a seat!",
+   "act": "send_message",
+   "count": "1",
+   "condition": "",
+   "quote": "Text Kate Bell"
+  }
+ ],
+ "screens": {
+  "list": [
+   {
+    "id": "90",
+    "label": "Messages",
+    "role": "NavigationBar",
+    "rect": [
+     0,
+     0.05,
+     1,
+     0.06
+    ]
+   },
+   {
+    "id": "1",
+    "label": "+1 (555) 564-8583, 12/31/00 ",
+    "role": "Cell",
+    "rect": [
+     0,
+     0.2,
+     1,
+     0.08
+    ]
+   },
+   {
+    "id": "2",
+    "label": "John Appleseed, Yesterday",
+    "role": "Cell",
+    "rect": [
+     0,
+     0.28,
+     1,
+     0.08
+    ]
+   }
+  ],
+  "thread": [
+   {
+    "id": "90",
+    "label": "+1 (555) 564-8583",
+    "role": "NavigationBar",
+    "rect": [
+     0,
+     0.05,
+     1,
+     0.06
+    ]
+   },
+   {
+    "id": "3",
+    "label": "Hi Kate! See you tonight.",
+    "role": "Cell",
+    "rect": [
+     0.1,
+     0.3,
+     0.8,
+     0.05
+    ]
+   },
+   {
+    "id": "20",
+    "label": "Message",
+    "role": "TextField",
+    "rect": [
+     0.2189,
+     0.56,
+     0.597,
+     0.0503
+    ],
+    "editable": true,
+    "value": "",
+    "actions": [
+     "TAP",
+     "TYPE",
+     "TYPE_SUBMIT",
+     "SUBMIT"
+    ]
+   },
+   {
+    "id": "70",
+    "label": "q",
+    "role": "Key",
+    "rect": [
+     0.0,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "71",
+    "label": "w",
+    "role": "Key",
+    "rect": [
+     0.1,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "72",
+    "label": "e",
+    "role": "Key",
+    "rect": [
+     0.2,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "73",
+    "label": "r",
+    "role": "Key",
+    "rect": [
+     0.30000000000000004,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "74",
+    "label": "t",
+    "role": "Key",
+    "rect": [
+     0.4,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "75",
+    "label": "y",
+    "role": "Key",
+    "rect": [
+     0.5,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "76",
+    "label": "u",
+    "role": "Key",
+    "rect": [
+     0.6000000000000001,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "77",
+    "label": "i",
+    "role": "Key",
+    "rect": [
+     0.7000000000000001,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "78",
+    "label": "o",
+    "role": "Key",
+    "rect": [
+     0.8,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "79",
+    "label": "p",
+    "role": "Key",
+    "rect": [
+     0.9,
+     0.75,
+     0.1,
+     0.05
+    ]
+   }
+  ],
+  "typed": [
+   {
+    "id": "90",
+    "label": "+1 (555) 564-8583",
+    "role": "NavigationBar",
+    "rect": [
+     0,
+     0.05,
+     1,
+     0.06
+    ]
+   },
+   {
+    "id": "3",
+    "label": "Hi Kate! See you tonight.",
+    "role": "Cell",
+    "rect": [
+     0.1,
+     0.3,
+     0.8,
+     0.05
+    ]
+   },
+   {
+    "id": "20",
+    "label": "Message",
+    "role": "TextField",
+    "rect": [
+     0.2189,
+     0.56,
+     0.597,
+     0.0503
+    ],
+    "editable": true,
+    "value": "Running 10 minutes late, save me a seat!",
+    "actions": [
+     "TAP",
+     "TYPE",
+     "TYPE_SUBMIT",
+     "SUBMIT"
+    ]
+   },
+   {
+    "id": "21",
+    "label": "Send",
+    "role": "Button",
+    "rect": [
+     0.8458,
+     0.5904,
+     0.0995,
+     0.032
+    ]
+   },
+   {
+    "id": "70",
+    "label": "q",
+    "role": "Key",
+    "rect": [
+     0.0,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "71",
+    "label": "w",
+    "role": "Key",
+    "rect": [
+     0.1,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "72",
+    "label": "e",
+    "role": "Key",
+    "rect": [
+     0.2,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "73",
+    "label": "r",
+    "role": "Key",
+    "rect": [
+     0.30000000000000004,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "74",
+    "label": "t",
+    "role": "Key",
+    "rect": [
+     0.4,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "75",
+    "label": "y",
+    "role": "Key",
+    "rect": [
+     0.5,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "76",
+    "label": "u",
+    "role": "Key",
+    "rect": [
+     0.6000000000000001,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "77",
+    "label": "i",
+    "role": "Key",
+    "rect": [
+     0.7000000000000001,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "78",
+    "label": "o",
+    "role": "Key",
+    "rect": [
+     0.8,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "79",
+    "label": "p",
+    "role": "Key",
+    "rect": [
+     0.9,
+     0.75,
+     0.1,
+     0.05
+    ]
+   }
+  ],
+  "newline": [
+   {
+    "id": "90",
+    "label": "+1 (555) 564-8583",
+    "role": "NavigationBar",
+    "rect": [
+     0,
+     0.05,
+     1,
+     0.06
+    ]
+   },
+   {
+    "id": "3",
+    "label": "Hi Kate! See you tonight.",
+    "role": "Cell",
+    "rect": [
+     0.1,
+     0.3,
+     0.8,
+     0.05
+    ]
+   },
+   {
+    "id": "20",
+    "label": "Message",
+    "role": "TextField",
+    "rect": [
+     0.2189,
+     0.56,
+     0.597,
+     0.0503
+    ],
+    "editable": true,
+    "value": "Running 10 minutes late, save me a seat!\n",
+    "actions": [
+     "TAP",
+     "TYPE",
+     "TYPE_SUBMIT",
+     "SUBMIT"
+    ]
+   },
+   {
+    "id": "21",
+    "label": "Send",
+    "role": "Button",
+    "rect": [
+     0.8458,
+     0.5904,
+     0.0995,
+     0.032
+    ]
+   },
+   {
+    "id": "70",
+    "label": "q",
+    "role": "Key",
+    "rect": [
+     0.0,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "71",
+    "label": "w",
+    "role": "Key",
+    "rect": [
+     0.1,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "72",
+    "label": "e",
+    "role": "Key",
+    "rect": [
+     0.2,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "73",
+    "label": "r",
+    "role": "Key",
+    "rect": [
+     0.30000000000000004,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "74",
+    "label": "t",
+    "role": "Key",
+    "rect": [
+     0.4,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "75",
+    "label": "y",
+    "role": "Key",
+    "rect": [
+     0.5,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "76",
+    "label": "u",
+    "role": "Key",
+    "rect": [
+     0.6000000000000001,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "77",
+    "label": "i",
+    "role": "Key",
+    "rect": [
+     0.7000000000000001,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "78",
+    "label": "o",
+    "role": "Key",
+    "rect": [
+     0.8,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "79",
+    "label": "p",
+    "role": "Key",
+    "rect": [
+     0.9,
+     0.75,
+     0.1,
+     0.05
+    ]
+   }
+  ],
+  "sent": [
+   {
+    "id": "90",
+    "label": "+1 (555) 564-8583",
+    "role": "NavigationBar",
+    "rect": [
+     0,
+     0.05,
+     1,
+     0.06
+    ]
+   },
+   {
+    "id": "3",
+    "label": "Hi Kate! See you tonight.",
+    "role": "Cell",
+    "rect": [
+     0.1,
+     0.3,
+     0.8,
+     0.05
+    ]
+   },
+   {
+    "id": "4",
+    "label": "Running 10 minutes late, save me a seat!",
+    "role": "Cell",
+    "rect": [
+     0.3,
+     0.45,
+     0.65,
+     0.05
+    ]
+   },
+   {
+    "id": "5",
+    "label": "",
+    "role": "TextView",
+    "rect": [
+     0.32,
+     0.455,
+     0.6,
+     0.04
+    ],
+    "editable": true,
+    "value": "Running 10 minutes late, save me a seat!"
+   },
+   {
+    "id": "6",
+    "label": "Delivered",
+    "role": "StaticText",
+    "rect": [
+     0.8,
+     0.5,
+     0.15,
+     0.02
+    ]
+   },
+   {
+    "id": "20",
+    "label": "Message",
+    "role": "TextField",
+    "rect": [
+     0.2189,
+     0.56,
+     0.597,
+     0.0503
+    ],
+    "editable": true,
+    "value": "",
+    "actions": [
+     "TAP",
+     "TYPE",
+     "TYPE_SUBMIT",
+     "SUBMIT"
+    ]
+   },
+   {
+    "id": "70",
+    "label": "q",
+    "role": "Key",
+    "rect": [
+     0.0,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "71",
+    "label": "w",
+    "role": "Key",
+    "rect": [
+     0.1,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "72",
+    "label": "e",
+    "role": "Key",
+    "rect": [
+     0.2,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "73",
+    "label": "r",
+    "role": "Key",
+    "rect": [
+     0.30000000000000004,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "74",
+    "label": "t",
+    "role": "Key",
+    "rect": [
+     0.4,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "75",
+    "label": "y",
+    "role": "Key",
+    "rect": [
+     0.5,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "76",
+    "label": "u",
+    "role": "Key",
+    "rect": [
+     0.6000000000000001,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "77",
+    "label": "i",
+    "role": "Key",
+    "rect": [
+     0.7000000000000001,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "78",
+    "label": "o",
+    "role": "Key",
+    "rect": [
+     0.8,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "79",
+    "label": "p",
+    "role": "Key",
+    "rect": [
+     0.9,
+     0.75,
+     0.1,
+     0.05
+    ]
+   }
+  ],
+  "sent_text_view_only": [
+   {
+    "id": "90",
+    "label": "+1 (555) 564-8583",
+    "role": "NavigationBar",
+    "rect": [
+     0,
+     0.05,
+     1,
+     0.06
+    ]
+   },
+   {
+    "id": "3",
+    "label": "Hi Kate! See you tonight.",
+    "role": "Cell",
+    "rect": [
+     0.1,
+     0.3,
+     0.8,
+     0.05
+    ]
+   },
+   {
+    "id": "5",
+    "label": "",
+    "role": "TextView",
+    "rect": [
+     0.32,
+     0.455,
+     0.6,
+     0.04
+    ],
+    "editable": true,
+    "value": "Running 10 minutes late, save me a seat!"
+   },
+   {
+    "id": "6",
+    "label": "Delivered",
+    "role": "StaticText",
+    "rect": [
+     0.8,
+     0.5,
+     0.15,
+     0.02
+    ]
+   },
+   {
+    "id": "20",
+    "label": "Message",
+    "role": "TextField",
+    "rect": [
+     0.2189,
+     0.56,
+     0.597,
+     0.0503
+    ],
+    "editable": true,
+    "value": "",
+    "actions": [
+     "TAP",
+     "TYPE",
+     "TYPE_SUBMIT",
+     "SUBMIT"
+    ]
+   },
+   {
+    "id": "70",
+    "label": "q",
+    "role": "Key",
+    "rect": [
+     0.0,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "71",
+    "label": "w",
+    "role": "Key",
+    "rect": [
+     0.1,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "72",
+    "label": "e",
+    "role": "Key",
+    "rect": [
+     0.2,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "73",
+    "label": "r",
+    "role": "Key",
+    "rect": [
+     0.30000000000000004,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "74",
+    "label": "t",
+    "role": "Key",
+    "rect": [
+     0.4,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "75",
+    "label": "y",
+    "role": "Key",
+    "rect": [
+     0.5,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "76",
+    "label": "u",
+    "role": "Key",
+    "rect": [
+     0.6000000000000001,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "77",
+    "label": "i",
+    "role": "Key",
+    "rect": [
+     0.7000000000000001,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "78",
+    "label": "o",
+    "role": "Key",
+    "rect": [
+     0.8,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "79",
+    "label": "p",
+    "role": "Key",
+    "rect": [
+     0.9,
+     0.75,
+     0.1,
+     0.05
+    ]
+   }
+  ],
+  "sent_wrong_text": [
+   {
+    "id": "90",
+    "label": "+1 (555) 564-8583",
+    "role": "NavigationBar",
+    "rect": [
+     0,
+     0.05,
+     1,
+     0.06
+    ]
+   },
+   {
+    "id": "3",
+    "label": "Hi Kate! See you tonight.",
+    "role": "Cell",
+    "rect": [
+     0.1,
+     0.3,
+     0.8,
+     0.05
+    ]
+   },
+   {
+    "id": "4",
+    "label": "Running 15 minutes late, save me a seat!",
+    "role": "Cell",
+    "rect": [
+     0.3,
+     0.45,
+     0.65,
+     0.05
+    ]
+   },
+   {
+    "id": "6",
+    "label": "Delivered",
+    "role": "StaticText",
+    "rect": [
+     0.8,
+     0.5,
+     0.15,
+     0.02
+    ]
+   },
+   {
+    "id": "20",
+    "label": "Message",
+    "role": "TextField",
+    "rect": [
+     0.2189,
+     0.56,
+     0.597,
+     0.0503
+    ],
+    "editable": true,
+    "value": "",
+    "actions": [
+     "TAP",
+     "TYPE",
+     "TYPE_SUBMIT",
+     "SUBMIT"
+    ]
+   },
+   {
+    "id": "70",
+    "label": "q",
+    "role": "Key",
+    "rect": [
+     0.0,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "71",
+    "label": "w",
+    "role": "Key",
+    "rect": [
+     0.1,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "72",
+    "label": "e",
+    "role": "Key",
+    "rect": [
+     0.2,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "73",
+    "label": "r",
+    "role": "Key",
+    "rect": [
+     0.30000000000000004,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "74",
+    "label": "t",
+    "role": "Key",
+    "rect": [
+     0.4,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "75",
+    "label": "y",
+    "role": "Key",
+    "rect": [
+     0.5,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "76",
+    "label": "u",
+    "role": "Key",
+    "rect": [
+     0.6000000000000001,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "77",
+    "label": "i",
+    "role": "Key",
+    "rect": [
+     0.7000000000000001,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "78",
+    "label": "o",
+    "role": "Key",
+    "rect": [
+     0.8,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "79",
+    "label": "p",
+    "role": "Key",
+    "rect": [
+     0.9,
+     0.75,
+     0.1,
+     0.05
+    ]
+   }
+  ],
+  "other_thread_newline": [
+   {
+    "id": "90",
+    "label": "Sam Rivera",
+    "role": "NavigationBar",
+    "rect": [
+     0,
+     0.05,
+     1,
+     0.06
+    ]
+   },
+   {
+    "id": "20",
+    "label": "Message",
+    "role": "TextField",
+    "rect": [
+     0.2189,
+     0.56,
+     0.597,
+     0.0503
+    ],
+    "editable": true,
+    "value": "Running 10 minutes late, save me a seat!\n",
+    "actions": [
+     "TAP",
+     "TYPE",
+     "TYPE_SUBMIT",
+     "SUBMIT"
+    ]
+   },
+   {
+    "id": "21",
+    "label": "Send",
+    "role": "Button",
+    "rect": [
+     0.8458,
+     0.5904,
+     0.0995,
+     0.032
+    ]
+   },
+   {
+    "id": "70",
+    "label": "q",
+    "role": "Key",
+    "rect": [
+     0.0,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "71",
+    "label": "w",
+    "role": "Key",
+    "rect": [
+     0.1,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "72",
+    "label": "e",
+    "role": "Key",
+    "rect": [
+     0.2,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "73",
+    "label": "r",
+    "role": "Key",
+    "rect": [
+     0.30000000000000004,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "74",
+    "label": "t",
+    "role": "Key",
+    "rect": [
+     0.4,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "75",
+    "label": "y",
+    "role": "Key",
+    "rect": [
+     0.5,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "76",
+    "label": "u",
+    "role": "Key",
+    "rect": [
+     0.6000000000000001,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "77",
+    "label": "i",
+    "role": "Key",
+    "rect": [
+     0.7000000000000001,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "78",
+    "label": "o",
+    "role": "Key",
+    "rect": [
+     0.8,
+     0.75,
+     0.1,
+     0.05
+    ]
+   },
+   {
+    "id": "79",
+    "label": "p",
+    "role": "Key",
+    "rect": [
+     0.9,
+     0.75,
+     0.1,
+     0.05
+    ]
+   }
+  ]
+ }
+}

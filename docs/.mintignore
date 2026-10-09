@@ -1,0 +1,4 @@
+# Internal files that live beside the public docs but must never be published on the docs site.
+# Mintlify already ignores README.md (the GitHub index of these pages) on its own.
+BRAND.md
+STYLE.md

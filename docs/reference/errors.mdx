@@ -1,0 +1,100 @@
+---
+title: "Errors, statuses and exit codes"
+sidebarTitle: "Errors and exit codes"
+description: "Every exit code, task status, check verdict and HTTP error, and what to do about each."
+icon: "circle-alert"
+keywords: ["exit code", "exit codes", "status", "verdict", "couldnt_run", "needs_review", "app_only", "error"]
+---
+
+Mobster tells you why something ended in four places: the exit code of a command, the `status` of a task, the `verdict` of a check, and the error code of an HTTP answer. [Troubleshooting](/troubleshooting) starts from what you see instead.
+
+## Exit codes
+
+Every command uses the same small set. A script can branch on them without reading the output.
+
+| Code | `mobster run` | `mobster verify` | `mobster test` | Other commands |
+| --- | --- | --- | --- | --- |
+| 0 | The task finished, or a preview was shown | `passed` | Every check passed (flaky ones too, without `--strict`) | It worked |
+| 1 | The task didn't finish: its `status` says why | `failed` | A check failed, or was flaky with `--strict` | A check or an action failed |
+| 2 | A usage error | `needs_review` | None failed or couldn't run, and one needs review | A usage error |
+| 3 | No phone answered at the WebDriverAgent address, or `--device` names no device that's ready | `couldnt_run`, a usage error included | None failed and one couldn't run, or a usage error | No such device, or no Xcode tools |
+| 130 | Stopped with `ctrl+c` | Stopped: `couldnt_run`, class `stopped` | Stopped, with the reports still written | Stopped |
+
+SIGTERM exits 143 and SIGHUP 129, the same way as `ctrl+c`.
+
+<Note>`mobster verify` and `mobster test` exit 3 on a usage error, not 2, because 2 means a check needs review.</Note>
+
+`mobster test` decides from the checks that aren't quarantined, in this order: 1 when one failed (or was flaky, with `--strict`), else 3 when one couldn't run, else 2 when one needs review, else 0.
+
+`mobster chat` adds one: 2 when the task waits for you (an approval or a question), and 4 when it's still working when `--wait` runs out. [CLI reference](/cli) gives each command's codes.
+
+## Statuses
+
+A task's result has a `status`. `mobster run --json` prints it in its last line, and the HTTP API and the Mac app's History show it too.
+
+| `status` | What happened | Exit code |
+| --- | --- | --- |
+| `completed_unverified` | Mobster's agent judged the goal met. Nothing checked it independently | 0 |
+| `expected_text_visible` | The `--expected-text` appeared | 0 |
+| `preview` | A preview, without `--execute` | 0 |
+| `completion_not_confirmed`, `inconsistent_completion` | It looked done but couldn't be confirmed. `data_status` says why an answer is missing | 1 |
+| `blocked`, `no_progress`, `needs_clarification`, `needs_text_helper` | It couldn't go on | 1 |
+| `max_steps`, `timeout`, `spend_cap` | It hit a limit | 1 |
+| `stopped`, `error` | Stopped, or failed. The reason says whether an action may have run | 1 (130 with `ctrl+c`, 3 when no phone answered) |
+
+[Troubleshooting: tasks](/troubleshooting/tasks) has what to do for the ones people meet most.
+
+## Verdicts
+
+A check ends with one of four verdicts. The verdict comes from your assertions on the accessibility tree, never from a model.
+
+| Verdict | Exit code | What it means |
+| --- | --- | --- |
+| `passed` | 0 | Every assertion held on one settled read, with the app in front |
+| `failed` | 1 | An assertion didn't hold, or the app wasn't in front at the end |
+| `needs_review` | 2 | Nothing decided the run: the check has no assertions, or every one held before the steps ran |
+| `couldnt_run` | 3 | The check is invalid, or this Mac couldn't run it |
+
+### Reason classes
+
+`reason.class` in the result says why a check failed, couldn't run or needs review.
+
+| `reason.class` | Verdict | What it means |
+| --- | --- | --- |
+| `usage` | `couldnt_run` | The check or an assertion is invalid, or it has steps and no key to run them |
+| `model` | `couldnt_run` | No key for Mobster's agent, or the model failed or ran out of credit |
+| `environment` | `couldnt_run` | Xcode, the iOS runtime or the device type is missing |
+| `simulator` | `couldnt_run` | The simulator couldn't be created or booted |
+| `wda` | `couldnt_run` | WebDriverAgent couldn't be built, started or read |
+| `install` | `couldnt_run` | The `.app` is invalid, is a device build, or didn't install |
+| `launch` | `couldnt_run` | The app didn't launch |
+| `busy` | `couldnt_run` | Every one of Mobster's simulators is in use |
+| `budget` | `couldnt_run` | The steps hit the spend cap and an assertion fails |
+| `stopped` | `couldnt_run` | You stopped the run, or a key-less session sat idle for 15 minutes |
+| `internal` | `couldnt_run` | An unexpected error. The traceback is in `run.log` |
+| `app_not_running` | `failed` | The app in front at the end isn't the app under test: it crashed, or the flow left it |
+| `blocked` | `failed` | An assertion failed, and the steps ended blocked, out of time or out of steps |
+| `assertion` | `failed` | An assertion failed |
+| `no_assertions` | `needs_review` | `expect` is empty |
+| `held_before_flow` | `needs_review` | Every assertion already held right after launch |
+
+[Checks](/checks#verdicts-and-exit-codes) has the order these rules apply in, and [Troubleshooting: checks](/troubleshooting/checks) what to do about each.
+
+## HTTP codes
+
+The local API that `mobster serve` and the Mac app run answers errors with a status and a short `code`. The codes you're most likely to meet:
+
+| Code | Status | What it means |
+| --- | --- | --- |
+| `app_only` | 403 | The Mac app runs the server, and only the app may do this: approve, change safety settings, put a file on the phone or reset the Wi-Fi link |
+| `needs_cable` | 409 | The phone is on Wi-Fi, and this needs the cable. Plug the iPhone in and try again |
+| `no_file_sharing` | 409 | That app has no folder in Files on the iPhone |
+| `no_device` | 409 | No iPhone is connected |
+| `locked` | 409 | The iPhone is locked. Unlock it, then try again |
+| `device_busy` | 409 | A task is running on that device |
+| `approval_pending` | 409 | The task waits for an approval. Answer it first |
+| `not_found` | 404 | No such item |
+| `tools` | 503 | The iPhone tools are missing on this Mac |
+| `unavailable` | 503 | Mobster couldn't open its data |
+
+Each area lists its own codes beside its routes: [Scripts and the API](/scripting#the-http-api), [Conversations](/conversations), [Memory](/memory) and [Files](/files).

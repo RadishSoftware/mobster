@@ -1,0 +1,2943 @@
+{
+"note": "Recorded Smart (frontier, gpt-5.6-sol) runs with their list-price cost: iOSWorld sets sol-a/b, ab6-*, ab7-* (research/iosworld-runs/*/*/task.json, mobster.cost_usd) and the app's runs on simulator 4, 26 Sep (every attempt) and 27 Sep (tasks that ran to an end; Stop tests and failed screen reads left out) (apps: the simulator's named apps). split: by task, sha256(task) % 10 < 3 held out. engines.SMART_FIT was fitted on the 'fit' rows only, app runs weighted 3x.",
+"runs": [
+{
+"split": "heldout",
+"source": "iosworld",
+"run": "sol-a/cityride-001",
+"goal": "Request a CityRideX ride in CityRide from Home (410 Brannan St) to Oracle Park. What's the estimated fare and ETA?",
+"apps": [
+"cityride"
+],
+"costUsd": 0.06542,
+"modelCalls": 8,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "sol-a/clock-001",
+"goal": "Set a new alarm for 6:45 AM labeled 'Gym' in the Clock app and confirm it's set.",
+"apps": [
+"clock"
+],
+"costUsd": 0.03459,
+"modelCalls": 6,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "sol-a/lockedin-004",
+"goal": "I received an InMail from Rachel Torres at Netflix about a Platform Engineering Lead role. Open LockedIn and read the full InMail, then compose a professional reply expressing interest with at least 3 specific questions about the team, tech stack, or role scope. Navigate to Jobs, find the Platform Engineering Lead posting at Netflix, and save it. Finally, tap 'Follow' on Netflix from the job detail to follow the company. What are the role details (comp range, location, team size), what questions did you ask Rachel, and confirm the job was saved and Netflix was followed.",
+"apps": [
+"lockedin"
+],
+"costUsd": 0.31564,
+"modelCalls": 33,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "sol-a/scorezone-003",
+"goal": "Read a top headline article from the ScoreZone home feed, then check the Scores tab to see if the team mentioned in the article has a game scheduled today. What's the headline, the team name, and do they have a game today?",
+"apps": [
+"scorezone"
+],
+"costUsd": 0.06792,
+"modelCalls": 9,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "iosworld",
+"run": "sol-a/multi-046",
+"goal": "Search DineSpot for Marina Oyster Club in San Francisco and make a reservation for 6 at 11 AM Saturday. Check TasteRank to see if any friends have reviewed the restaurant or nearby spots. Check Weather in SF for Saturday. Send SplitPay requests to each attendee for $15 from last month's brunch. Message the 'Brunch Crew' group in QuickChat with the restaurant name, time, and address. What's the restaurant name, reservation confirmation, and weather forecast, and confirm all SplitPay requests were sent.",
+"apps": [
+"tasterank",
+"dinespot",
+"weather",
+"splitpay",
+"quickchat"
+],
+"costUsd": 0.45539,
+"modelCalls": 51,
+"status": "max_steps"
+},
+{
+"split": "heldout",
+"source": "iosworld",
+"run": "sol-a/multi-079",
+"goal": "Browse DineSpot for Embarcadero Grill in San Francisco and check its seating options. Look up the neighborhood on TasteRank to see if friends have reviewed nearby spots. Check Weather in San Francisco for this evening — if it's clear, book a table with outdoor seating; if rain is expected, book indoor. Message Leo Chen in QuickChat with the restaurant name, time, and whether I got outdoor or indoor seating. What's the restaurant name, seating type chosen, weather conditions, and any TasteRank reviews found, and confirm the reservation and message.",
+"apps": [
+"tasterank",
+"dinespot",
+"weather",
+"quickchat"
+],
+"costUsd": 0.43389,
+"modelCalls": 49,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "iosworld",
+"run": "sol-a/multi-086",
+"goal": "Check all MyBank account balances — checking, savings, and credit card. Review SplitPay balance and pay any pending requests under $50. Check MegaMart order history and tally recent spending. Review QuickBite past orders to total food delivery costs for the month. Browse FreshCart past orders for grocery spending. Categorize and total all discretionary spending across food delivery, groceries, online shopping, and peer payments. Update the Monthly Expense Log in CloudSheets with categorized monthly totals. Create a 'Budget Action Items' note in Notes with specific savings targets for next month. What are all account balances and categorized spending totals, and confirm both documents were created/updated.",
+"apps": [
+"mybank",
+"splitpay",
+"megamart",
+"quickbite",
+"freshcart",
+"clouddocs",
+"notes",
+"cloudsheets"
+],
+"costUsd": 0.48736,
+"modelCalls": 51,
+"status": "max_steps"
+},
+{
+"split": "heldout",
+"source": "iosworld",
+"run": "sol-a/multi-092",
+"goal": "Find Devi Anand's viral post on LockedIn about the RAG anti-pattern (2156 reactions, 347 comments, links to a deepmind.google article). React to the post with 'Insightful' and read the top comments for context. Then post a concise summary of the takeaway in TeamChat #product channel so the team benefits. Open Notes and create a new note titled 'Tech Reading Queue' with the article title, link, and your 2-3 key takeaways. What's the core anti-pattern Devi warns about, name at least 2 top commenters, and confirm the reaction + TeamChat post + note were all completed.",
+"apps": [
+"lockedin",
+"teamchat",
+"notes"
+],
+"costUsd": 0.21793,
+"modelCalls": 21,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "sol-a/mem-009",
+"goal": "Review my SkyTrip past trips to figure out which cities I travel to most. Check QuickChat to see if I have contacts in those cities, then search TasteRank for restaurants in my most-visited city. Let me know my most-visited cities, any contacts found there, and restaurant recommendations.",
+"apps": [
+"skytrip",
+"quickchat",
+"tasterank"
+],
+"costUsd": 0.12809,
+"modelCalls": 14,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "sol-a/mem-027",
+"goal": "Do a health and fitness deep dive. Check TrailBlaze for my running frequency, distances, and PRs (5K, 10K). Review CalTrack for nutrition patterns, weight trend (182.2 vs 176 goal), and calorie compliance. Read my 'Workout Plan' in Notes and project when I'll reach my goal weight at my current rate. Update my Notes workout plan with adjusted targets. Let me know my PRs, weight trend, calorie compliance rate, projected goal date, and confirm the note was updated.",
+"apps": [
+"trailblaze",
+"caltrack",
+"notes"
+],
+"costUsd": 0.32649,
+"modelCalls": 31,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "sol-a/mem-039",
+"goal": "Help me plan every detail of my Catalina trip (dates shown in StayFinder). Check StayFinder for the listing details (5 beds, 3 baths, $327/night) and SkyTrip past trips for my travel preferences. Browse TasteRank and DineSpot for restaurant recommendations near the coast, and check Weather for Los Angeles forecasts. Budget the full trip (lodging + food + activities) and update the Travel Budget in CloudSheets. Check the 'Device Testing Tasks' spreadsheet in CloudSheets to note any work deadlines during my trip. Create a detailed day-by-day itinerary in Notes and message Maya Patel in QuickChat about the trip plans. Let me know the full trip budget breakdown, restaurant picks, weather forecast, and confirm the itinerary note was created.",
+"apps": [
+"stayfinder",
+"skytrip",
+"tasterank",
+"dinespot",
+"weather",
+"cloudsheets",
+"notes",
+"quickchat",
+"clouddocs"
+],
+"costUsd": 0.57068,
+"modelCalls": 49,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "iosworld",
+"run": "sol-a/mem-047",
+"goal": "Map out my complete weekly spending footprint. Check MyBank for categorized transaction patterns, SplitPay for peer-to-peer payment frequency and amounts, QuickBite order history for food delivery habits (frequency, average order, favorite restaurants), MegaMart for online shopping categories, and FreshCart for grocery patterns. Compute weekly averages by category (food delivery, groceries, online shopping, peer payments) and create a 'Spending Habits' note in Notes with the weekly breakdown and categories where I could cut back. Let me know the weekly averages by category and confirm the note was created.",
+"apps": [
+"mybank",
+"splitpay",
+"quickbite",
+"megamart",
+"freshcart",
+"notes"
+],
+"costUsd": 0.3999,
+"modelCalls": 33,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "iosworld",
+"run": "sol-b/cityride-001",
+"goal": "Request a CityRideX ride in CityRide from Home (410 Brannan St) to Oracle Park. What's the estimated fare and ETA?",
+"apps": [
+"cityride"
+],
+"costUsd": 0.0467,
+"modelCalls": 6,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "sol-b/clock-001",
+"goal": "Set a new alarm for 6:45 AM labeled 'Gym' in the Clock app and confirm it's set.",
+"apps": [
+"clock"
+],
+"costUsd": 0.03688,
+"modelCalls": 5,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "sol-b/lockedin-004",
+"goal": "I received an InMail from Rachel Torres at Netflix about a Platform Engineering Lead role. Open LockedIn and read the full InMail, then compose a professional reply expressing interest with at least 3 specific questions about the team, tech stack, or role scope. Navigate to Jobs, find the Platform Engineering Lead posting at Netflix, and save it. Finally, tap 'Follow' on Netflix from the job detail to follow the company. What are the role details (comp range, location, team size), what questions did you ask Rachel, and confirm the job was saved and Netflix was followed.",
+"apps": [
+"lockedin"
+],
+"costUsd": 0.19379,
+"modelCalls": 19,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "sol-b/scorezone-003",
+"goal": "Read a top headline article from the ScoreZone home feed, then check the Scores tab to see if the team mentioned in the article has a game scheduled today. What's the headline, the team name, and do they have a game today?",
+"apps": [
+"scorezone"
+],
+"costUsd": 0.07459,
+"modelCalls": 9,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "iosworld",
+"run": "sol-b/multi-046",
+"goal": "Search DineSpot for Marina Oyster Club in San Francisco and make a reservation for 6 at 11 AM Saturday. Check TasteRank to see if any friends have reviewed the restaurant or nearby spots. Check Weather in SF for Saturday. Send SplitPay requests to each attendee for $15 from last month's brunch. Message the 'Brunch Crew' group in QuickChat with the restaurant name, time, and address. What's the restaurant name, reservation confirmation, and weather forecast, and confirm all SplitPay requests were sent.",
+"apps": [
+"tasterank",
+"dinespot",
+"weather",
+"splitpay",
+"quickchat"
+],
+"costUsd": 0.39527,
+"modelCalls": 44,
+"status": "blocked"
+},
+{
+"split": "heldout",
+"source": "iosworld",
+"run": "sol-b/multi-079",
+"goal": "Browse DineSpot for Embarcadero Grill in San Francisco and check its seating options. Look up the neighborhood on TasteRank to see if friends have reviewed nearby spots. Check Weather in San Francisco for this evening — if it's clear, book a table with outdoor seating; if rain is expected, book indoor. Message Leo Chen in QuickChat with the restaurant name, time, and whether I got outdoor or indoor seating. What's the restaurant name, seating type chosen, weather conditions, and any TasteRank reviews found, and confirm the reservation and message.",
+"apps": [
+"tasterank",
+"dinespot",
+"weather",
+"quickchat"
+],
+"costUsd": 0.31031,
+"modelCalls": 33,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "iosworld",
+"run": "sol-b/multi-086",
+"goal": "Check all MyBank account balances — checking, savings, and credit card. Review SplitPay balance and pay any pending requests under $50. Check MegaMart order history and tally recent spending. Review QuickBite past orders to total food delivery costs for the month. Browse FreshCart past orders for grocery spending. Categorize and total all discretionary spending across food delivery, groceries, online shopping, and peer payments. Update the Monthly Expense Log in CloudSheets with categorized monthly totals. Create a 'Budget Action Items' note in Notes with specific savings targets for next month. What are all account balances and categorized spending totals, and confirm both documents were created/updated.",
+"apps": [
+"mybank",
+"splitpay",
+"megamart",
+"quickbite",
+"freshcart",
+"clouddocs",
+"notes",
+"cloudsheets"
+],
+"costUsd": 0.47969,
+"modelCalls": 51,
+"status": "max_steps"
+},
+{
+"split": "heldout",
+"source": "iosworld",
+"run": "sol-b/multi-092",
+"goal": "Find Devi Anand's viral post on LockedIn about the RAG anti-pattern (2156 reactions, 347 comments, links to a deepmind.google article). React to the post with 'Insightful' and read the top comments for context. Then post a concise summary of the takeaway in TeamChat #product channel so the team benefits. Open Notes and create a new note titled 'Tech Reading Queue' with the article title, link, and your 2-3 key takeaways. What's the core anti-pattern Devi warns about, name at least 2 top commenters, and confirm the reaction + TeamChat post + note were all completed.",
+"apps": [
+"lockedin",
+"teamchat",
+"notes"
+],
+"costUsd": 0.22186,
+"modelCalls": 19,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "sol-b/mem-009",
+"goal": "Review my SkyTrip past trips to figure out which cities I travel to most. Check QuickChat to see if I have contacts in those cities, then search TasteRank for restaurants in my most-visited city. Let me know my most-visited cities, any contacts found there, and restaurant recommendations.",
+"apps": [
+"skytrip",
+"quickchat",
+"tasterank"
+],
+"costUsd": 0.15397,
+"modelCalls": 14,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "sol-b/mem-027",
+"goal": "Do a health and fitness deep dive. Check TrailBlaze for my running frequency, distances, and PRs (5K, 10K). Review CalTrack for nutrition patterns, weight trend (182.2 vs 176 goal), and calorie compliance. Read my 'Workout Plan' in Notes and project when I'll reach my goal weight at my current rate. Update my Notes workout plan with adjusted targets. Let me know my PRs, weight trend, calorie compliance rate, projected goal date, and confirm the note was updated.",
+"apps": [
+"trailblaze",
+"caltrack",
+"notes"
+],
+"costUsd": 0.26608,
+"modelCalls": 24,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "sol-b/mem-039",
+"goal": "Help me plan every detail of my Catalina trip (dates shown in StayFinder). Check StayFinder for the listing details (5 beds, 3 baths, $327/night) and SkyTrip past trips for my travel preferences. Browse TasteRank and DineSpot for restaurant recommendations near the coast, and check Weather for Los Angeles forecasts. Budget the full trip (lodging + food + activities) and update the Travel Budget in CloudSheets. Check the 'Device Testing Tasks' spreadsheet in CloudSheets to note any work deadlines during my trip. Create a detailed day-by-day itinerary in Notes and message Maya Patel in QuickChat about the trip plans. Let me know the full trip budget breakdown, restaurant picks, weather forecast, and confirm the itinerary note was created.",
+"apps": [
+"stayfinder",
+"skytrip",
+"tasterank",
+"dinespot",
+"weather",
+"cloudsheets",
+"notes",
+"quickchat",
+"clouddocs"
+],
+"costUsd": 0.57301,
+"modelCalls": 51,
+"status": "max_steps"
+},
+{
+"split": "heldout",
+"source": "iosworld",
+"run": "sol-b/mem-047",
+"goal": "Map out my complete weekly spending footprint. Check MyBank for categorized transaction patterns, SplitPay for peer-to-peer payment frequency and amounts, QuickBite order history for food delivery habits (frequency, average order, favorite restaurants), MegaMart for online shopping categories, and FreshCart for grocery patterns. Compute weekly averages by category (food delivery, groceries, online shopping, peer payments) and create a 'Spending Habits' note in Notes with the weekly breakdown and categories where I could cut back. Let me know the weekly averages by category and confirm the note was created.",
+"apps": [
+"mybank",
+"splitpay",
+"quickbite",
+"megamart",
+"freshcart",
+"notes"
+],
+"costUsd": 0.45327,
+"modelCalls": 42,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-a1/cinephile-001",
+"goal": "Search for 'The Godfather' in Cinephile and add it to my Wishlist. What's the year and rating?",
+"apps": [
+"cinephile"
+],
+"costUsd": 0.06324,
+"modelCalls": 8,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-a1/cloudslides-002",
+"goal": "Open the '[Draft] Autonomous Agents' presentation in CloudSlides and edit slide 2 to add a bullet about 'safety' to the agenda list. What's the updated agenda?",
+"apps": [
+"cloudslides"
+],
+"costUsd": 0.30526,
+"modelCalls": 35,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "iosworld",
+"run": "ab6-a1/ticketbox-004",
+"goal": "Find the Ali Wong show at Great American Music Hall on TicketBox and check ticket prices and venue details. What's the show date, venue name, and price range?",
+"apps": [
+"ticketbox"
+],
+"costUsd": 0.06589,
+"modelCalls": 9,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-a1/multi-001",
+"goal": "Find a restaurant in San Francisco with outdoor seating on DineSpot (something like Harborline Seafood) and make a reservation for 6 people at 7 PM this Friday. Then post the restaurant name, time, and address in the #general TeamChat channel. Give me the restaurant name, reservation confirmation, and confirm the TeamChat message was posted.",
+"apps": [
+"dinespot",
+"teamchat"
+],
+"costUsd": 0.43283,
+"modelCalls": 49,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "iosworld",
+"run": "ab6-a1/multi-008",
+"goal": "Log a post-run protein shake in CalTrack (search for 'protein') and check my dashboard to see how it affects my daily calorie and protein progress. Then message Elena Brooks in QuickChat to confirm the Saturday Long Run plans. What's my calorie and protein progress vs goals, and confirm the message was sent.",
+"apps": [
+"caltrack",
+"quickchat"
+],
+"costUsd": 0.12523,
+"modelCalls": 14,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-a1/multi-013",
+"goal": "Open CloudDocs and edit the 'Q2 Roadmap' to add a new section. Then open CloudSlides and add a new slide to the 'Conference Practice Deck' summarizing my changes. Finally, open the 'Bug Triage Log' spreadsheet in CloudSheets and update a cell to reflect the new plan. Confirm all three documents were updated.",
+"apps": [
+"clouddocs",
+"cloudslides",
+"cloudsheets"
+],
+"costUsd": 0.20374,
+"modelCalls": 23,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "iosworld",
+"run": "ab6-a1/multi-017",
+"goal": "Set a 6:30 AM alarm in Clock labeled 'Morning Run'. Check the Weather in San Francisco for tomorrow morning. Open TrailBlaze and find a running route in the Presidio area. Then check CalTrack for my calorie goal for tomorrow. What's the weather forecast, the route you found, and my daily calorie goal?",
+"apps": [
+"clock",
+"weather",
+"trailblaze",
+"caltrack"
+],
+"costUsd": 0.1819,
+"modelCalls": 19,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-a1/multi-075",
+"goal": "Check my TrailBlaze PRs — my current Half Marathon time is 1:35:12. Pull up my most recent long run distance and pace, and calculate the pace per mile I'd need to break 1:30:00. Check Weather in San Francisco for this Saturday's conditions. If rain is forecast, message the 'Running Club Announcements' group in QuickChat suggesting an indoor treadmill alternative; if it's clear, suggest the Presidio route. Update my 'Workout Plan' note in Notes with the adjusted target pace. What's the calculated target pace, Saturday weather, and the message sent, and confirm the note was updated.",
+"apps": [
+"trailblaze",
+"weather",
+"quickchat",
+"notes"
+],
+"costUsd": 0.47591,
+"modelCalls": 51,
+"status": "max_steps"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-a1/multi-083",
+"goal": "Check all my MyBank account balances — checking, savings, and credit card. Review my SplitPay balance and any pending incoming or outgoing requests. Look at my most recent MegaMart order to see what I spent. Calculate my net liquid cash (checking + savings + SplitPay balance - credit card balance). Open the 'Budget Tracker' document in CloudDocs and add a comment noting my financial summary for the month. What are all the balances, net liquid cash calculation, and MegaMart order amount, and confirm the comment was added.",
+"apps": [
+"mybank",
+"splitpay",
+"megamart",
+"clouddocs"
+],
+"costUsd": 0.42157,
+"modelCalls": 42,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-a1/multi-088",
+"goal": "Check TrailBlaze for this week's activities — total distance, number of runs, and weekly mileage pattern. Check CalTrack for daily calorie intake vs my 2,450 goal and protein intake vs my 170g target. Review my weight trend (182.2 lbs current vs 176 lbs goal) and determine my weekly calorie surplus or deficit. Check Weather in SF for conditions for my next outdoor run. Order a high-protein recovery meal from QuickBite (Sweetgreen salad or Sugarfish poke). Message the 'Running Club Announcements' group in QuickChat with my weekly stats and how I'm tracking. Update my 'Workout Plan' note in Notes with performance notes and adjustments. What's my weekly mileage, calorie surplus/deficit, weight trend, and weather forecast, and confirm the meal was ordered and note updated.",
+"apps": [
+"trailblaze",
+"caltrack",
+"weather",
+"quickbite",
+"quickchat",
+"notes"
+],
+"costUsd": 0.56196,
+"modelCalls": 51,
+"status": "max_steps"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-a1/mem-007",
+"goal": "Figure out which sports teams I follow by checking ScoreZone and TicketBox. See if any of my teams have upcoming games and check for headlines about them. Let me know the teams, upcoming game dates, and any relevant headlines.",
+"apps": [
+"scorezone",
+"ticketbox"
+],
+"costUsd": 0.15807,
+"modelCalls": 16,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "iosworld",
+"run": "ab6-a1/mem-018",
+"goal": "Figure out what neighborhood I spend the most time in by looking at my QuickBite delivery addresses, TasteRank restaurant visits, and Mail receipts for ride destinations. Then find things to do in that area — check DineSpot for nearby restaurants and TicketBox for nearby events. Let me know the neighborhood and what's going on there.",
+"apps": [
+"quickbite",
+"tasterank",
+"dinespot",
+"ticketbox",
+"mail"
+],
+"costUsd": 0.38094,
+"modelCalls": 34,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-a1/mem-024",
+"goal": "Pull together my entertainment preferences. Check Cinephile for my Wishlist and Seenlist, TicketBox past tickets for events I've attended, and ScoreZone favorites for sports I follow. Then search TicketBox for upcoming events matching my interests and message Dante Morales in QuickChat about going together. Let me know my top genres, favorite teams, event history, and upcoming recommended events.",
+"apps": [
+"cinephile",
+"ticketbox",
+"scorezone",
+"quickchat"
+],
+"costUsd": 0.38798,
+"modelCalls": 37,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-a1/mem-030",
+"goal": "Figure out my typical weekend routine. Check Clock for weekend vs weekday alarm differences, TrailBlaze for weekend activity patterns, QuickBite for weekend orders, Mail for weekend CityRide receipts, and QuickChat for weekend group chat activity (Saturday Long Run, Brunch Crew). Summarize it all in a new Notes note titled 'My Weekend Routine'. Let me know the typical weekend schedule and confirm the note was created.",
+"apps": [
+"clock",
+"trailblaze",
+"quickbite",
+"mail",
+"quickchat",
+"notes"
+],
+"costUsd": 0.37146,
+"modelCalls": 32,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "iosworld",
+"run": "ab6-a1/mem-043",
+"goal": "Build a travel-entertainment profile for me. Check StayFinder trip history and upcoming bookings to see what kinds of destinations I prefer, ScoreZone favorites for teams that play in cities I travel to, and TicketBox for events at my travel destinations. Figure out how to combine travel with entertainment interests. Let me know my destination preferences and matching entertainment opportunities.",
+"apps": [
+"stayfinder",
+"scorezone",
+"ticketbox"
+],
+"costUsd": 0.15044,
+"modelCalls": 15,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-a1/mem-046",
+"goal": "Reconstruct my commuting and transportation habits. Check CityRide saved routes and route templates for my most common routes, search Mail for CityRide ride receipts to find trip frequency, costs, and destinations, and cross-reference with MyBank credit card transactions for CityRide charges. Calculate total monthly transportation spending, average weekly commute cost, and annual projection. Create a 'Transportation Audit' document in CloudDocs with findings and recommendations for cost savings. Let me know the most common routes, monthly spending, weekly average, annual projection, and confirm the document was created.",
+"apps": [
+"cityride",
+"mail",
+"mybank",
+"clouddocs"
+],
+"costUsd": 0.07496,
+"modelCalls": 7,
+"status": "error"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-a2/cinephile-001",
+"goal": "Search for 'The Godfather' in Cinephile and add it to my Wishlist. What's the year and rating?",
+"apps": [
+"cinephile"
+],
+"costUsd": 0.04006,
+"modelCalls": 5,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-a2/cloudslides-002",
+"goal": "Open the '[Draft] Autonomous Agents' presentation in CloudSlides and edit slide 2 to add a bullet about 'safety' to the agenda list. What's the updated agenda?",
+"apps": [
+"cloudslides"
+],
+"costUsd": 0.25262,
+"modelCalls": 31,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "iosworld",
+"run": "ab6-a2/ticketbox-004",
+"goal": "Find the Ali Wong show at Great American Music Hall on TicketBox and check ticket prices and venue details. What's the show date, venue name, and price range?",
+"apps": [
+"ticketbox"
+],
+"costUsd": 0.13788,
+"modelCalls": 16,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-a2/multi-001",
+"goal": "Find a restaurant in San Francisco with outdoor seating on DineSpot (something like Harborline Seafood) and make a reservation for 6 people at 7 PM this Friday. Then post the restaurant name, time, and address in the #general TeamChat channel. Give me the restaurant name, reservation confirmation, and confirm the TeamChat message was posted.",
+"apps": [
+"dinespot",
+"teamchat"
+],
+"costUsd": 0.44387,
+"modelCalls": 51,
+"status": "max_steps"
+},
+{
+"split": "heldout",
+"source": "iosworld",
+"run": "ab6-a2/multi-008",
+"goal": "Log a post-run protein shake in CalTrack (search for 'protein') and check my dashboard to see how it affects my daily calorie and protein progress. Then message Elena Brooks in QuickChat to confirm the Saturday Long Run plans. What's my calorie and protein progress vs goals, and confirm the message was sent.",
+"apps": [
+"caltrack",
+"quickchat"
+],
+"costUsd": 0.12557,
+"modelCalls": 14,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-a2/multi-013",
+"goal": "Open CloudDocs and edit the 'Q2 Roadmap' to add a new section. Then open CloudSlides and add a new slide to the 'Conference Practice Deck' summarizing my changes. Finally, open the 'Bug Triage Log' spreadsheet in CloudSheets and update a cell to reflect the new plan. Confirm all three documents were updated.",
+"apps": [
+"clouddocs",
+"cloudslides",
+"cloudsheets"
+],
+"costUsd": 0.16361,
+"modelCalls": 18,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "iosworld",
+"run": "ab6-a2/multi-017",
+"goal": "Set a 6:30 AM alarm in Clock labeled 'Morning Run'. Check the Weather in San Francisco for tomorrow morning. Open TrailBlaze and find a running route in the Presidio area. Then check CalTrack for my calorie goal for tomorrow. What's the weather forecast, the route you found, and my daily calorie goal?",
+"apps": [
+"clock",
+"weather",
+"trailblaze",
+"caltrack"
+],
+"costUsd": 0.17516,
+"modelCalls": 19,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-a2/multi-075",
+"goal": "Check my TrailBlaze PRs — my current Half Marathon time is 1:35:12. Pull up my most recent long run distance and pace, and calculate the pace per mile I'd need to break 1:30:00. Check Weather in San Francisco for this Saturday's conditions. If rain is forecast, message the 'Running Club Announcements' group in QuickChat suggesting an indoor treadmill alternative; if it's clear, suggest the Presidio route. Update my 'Workout Plan' note in Notes with the adjusted target pace. What's the calculated target pace, Saturday weather, and the message sent, and confirm the note was updated.",
+"apps": [
+"trailblaze",
+"weather",
+"quickchat",
+"notes"
+],
+"costUsd": 0.288,
+"modelCalls": 31,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-a2/multi-083",
+"goal": "Check all my MyBank account balances — checking, savings, and credit card. Review my SplitPay balance and any pending incoming or outgoing requests. Look at my most recent MegaMart order to see what I spent. Calculate my net liquid cash (checking + savings + SplitPay balance - credit card balance). Open the 'Budget Tracker' document in CloudDocs and add a comment noting my financial summary for the month. What are all the balances, net liquid cash calculation, and MegaMart order amount, and confirm the comment was added.",
+"apps": [
+"mybank",
+"splitpay",
+"megamart",
+"clouddocs"
+],
+"costUsd": 0.33273,
+"modelCalls": 33,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-a2/multi-088",
+"goal": "Check TrailBlaze for this week's activities — total distance, number of runs, and weekly mileage pattern. Check CalTrack for daily calorie intake vs my 2,450 goal and protein intake vs my 170g target. Review my weight trend (182.2 lbs current vs 176 lbs goal) and determine my weekly calorie surplus or deficit. Check Weather in SF for conditions for my next outdoor run. Order a high-protein recovery meal from QuickBite (Sweetgreen salad or Sugarfish poke). Message the 'Running Club Announcements' group in QuickChat with my weekly stats and how I'm tracking. Update my 'Workout Plan' note in Notes with performance notes and adjustments. What's my weekly mileage, calorie surplus/deficit, weight trend, and weather forecast, and confirm the meal was ordered and note updated.",
+"apps": [
+"trailblaze",
+"caltrack",
+"weather",
+"quickbite",
+"quickchat",
+"notes"
+],
+"costUsd": 0.57497,
+"modelCalls": 51,
+"status": "max_steps"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-a2/mem-007",
+"goal": "Figure out which sports teams I follow by checking ScoreZone and TicketBox. See if any of my teams have upcoming games and check for headlines about them. Let me know the teams, upcoming game dates, and any relevant headlines.",
+"apps": [
+"scorezone",
+"ticketbox"
+],
+"costUsd": 0.13096,
+"modelCalls": 13,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "iosworld",
+"run": "ab6-a2/mem-018",
+"goal": "Figure out what neighborhood I spend the most time in by looking at my QuickBite delivery addresses, TasteRank restaurant visits, and Mail receipts for ride destinations. Then find things to do in that area — check DineSpot for nearby restaurants and TicketBox for nearby events. Let me know the neighborhood and what's going on there.",
+"apps": [
+"quickbite",
+"tasterank",
+"dinespot",
+"ticketbox",
+"mail"
+],
+"costUsd": 0.33695,
+"modelCalls": 30,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-a2/mem-024",
+"goal": "Pull together my entertainment preferences. Check Cinephile for my Wishlist and Seenlist, TicketBox past tickets for events I've attended, and ScoreZone favorites for sports I follow. Then search TicketBox for upcoming events matching my interests and message Dante Morales in QuickChat about going together. Let me know my top genres, favorite teams, event history, and upcoming recommended events.",
+"apps": [
+"cinephile",
+"ticketbox",
+"scorezone",
+"quickchat"
+],
+"costUsd": 0.27925,
+"modelCalls": 26,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-a2/mem-030",
+"goal": "Figure out my typical weekend routine. Check Clock for weekend vs weekday alarm differences, TrailBlaze for weekend activity patterns, QuickBite for weekend orders, Mail for weekend CityRide receipts, and QuickChat for weekend group chat activity (Saturday Long Run, Brunch Crew). Summarize it all in a new Notes note titled 'My Weekend Routine'. Let me know the typical weekend schedule and confirm the note was created.",
+"apps": [
+"clock",
+"trailblaze",
+"quickbite",
+"mail",
+"quickchat",
+"notes"
+],
+"costUsd": 0.25332,
+"modelCalls": 23,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "iosworld",
+"run": "ab6-a2/mem-043",
+"goal": "Build a travel-entertainment profile for me. Check StayFinder trip history and upcoming bookings to see what kinds of destinations I prefer, ScoreZone favorites for teams that play in cities I travel to, and TicketBox for events at my travel destinations. Figure out how to combine travel with entertainment interests. Let me know my destination preferences and matching entertainment opportunities.",
+"apps": [
+"stayfinder",
+"scorezone",
+"ticketbox"
+],
+"costUsd": 0.2433,
+"modelCalls": 26,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-a2/mem-046",
+"goal": "Reconstruct my commuting and transportation habits. Check CityRide saved routes and route templates for my most common routes, search Mail for CityRide ride receipts to find trip frequency, costs, and destinations, and cross-reference with MyBank credit card transactions for CityRide charges. Calculate total monthly transportation spending, average weekly commute cost, and annual projection. Create a 'Transportation Audit' document in CloudDocs with findings and recommendations for cost savings. Let me know the most common routes, monthly spending, weekly average, annual projection, and confirm the document was created.",
+"apps": [
+"cityride",
+"mail",
+"mybank",
+"clouddocs"
+],
+"costUsd": 0.44127,
+"modelCalls": 38,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-b1/cinephile-001",
+"goal": "Search for 'The Godfather' in Cinephile and add it to my Wishlist. What's the year and rating?",
+"apps": [
+"cinephile"
+],
+"costUsd": 0.04114,
+"modelCalls": 5,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-b1/cloudslides-002",
+"goal": "Open the '[Draft] Autonomous Agents' presentation in CloudSlides and edit slide 2 to add a bullet about 'safety' to the agenda list. What's the updated agenda?",
+"apps": [
+"cloudslides"
+],
+"costUsd": 0.17959,
+"modelCalls": 20,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "iosworld",
+"run": "ab6-b1/ticketbox-004",
+"goal": "Find the Ali Wong show at Great American Music Hall on TicketBox and check ticket prices and venue details. What's the show date, venue name, and price range?",
+"apps": [
+"ticketbox"
+],
+"costUsd": 0.08741,
+"modelCalls": 10,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-b1/multi-001",
+"goal": "Find a restaurant in San Francisco with outdoor seating on DineSpot (something like Harborline Seafood) and make a reservation for 6 people at 7 PM this Friday. Then post the restaurant name, time, and address in the #general TeamChat channel. Give me the restaurant name, reservation confirmation, and confirm the TeamChat message was posted.",
+"apps": [
+"dinespot",
+"teamchat"
+],
+"costUsd": 0.37293,
+"modelCalls": 42,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "iosworld",
+"run": "ab6-b1/multi-008",
+"goal": "Log a post-run protein shake in CalTrack (search for 'protein') and check my dashboard to see how it affects my daily calorie and protein progress. Then message Elena Brooks in QuickChat to confirm the Saturday Long Run plans. What's my calorie and protein progress vs goals, and confirm the message was sent.",
+"apps": [
+"caltrack",
+"quickchat"
+],
+"costUsd": 0.10531,
+"modelCalls": 12,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-b1/multi-013",
+"goal": "Open CloudDocs and edit the 'Q2 Roadmap' to add a new section. Then open CloudSlides and add a new slide to the 'Conference Practice Deck' summarizing my changes. Finally, open the 'Bug Triage Log' spreadsheet in CloudSheets and update a cell to reflect the new plan. Confirm all three documents were updated.",
+"apps": [
+"clouddocs",
+"cloudslides",
+"cloudsheets"
+],
+"costUsd": 0.17465,
+"modelCalls": 20,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "iosworld",
+"run": "ab6-b1/multi-017",
+"goal": "Set a 6:30 AM alarm in Clock labeled 'Morning Run'. Check the Weather in San Francisco for tomorrow morning. Open TrailBlaze and find a running route in the Presidio area. Then check CalTrack for my calorie goal for tomorrow. What's the weather forecast, the route you found, and my daily calorie goal?",
+"apps": [
+"clock",
+"weather",
+"trailblaze",
+"caltrack"
+],
+"costUsd": 0.18753,
+"modelCalls": 21,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-b1/multi-075",
+"goal": "Check my TrailBlaze PRs — my current Half Marathon time is 1:35:12. Pull up my most recent long run distance and pace, and calculate the pace per mile I'd need to break 1:30:00. Check Weather in San Francisco for this Saturday's conditions. If rain is forecast, message the 'Running Club Announcements' group in QuickChat suggesting an indoor treadmill alternative; if it's clear, suggest the Presidio route. Update my 'Workout Plan' note in Notes with the adjusted target pace. What's the calculated target pace, Saturday weather, and the message sent, and confirm the note was updated.",
+"apps": [
+"trailblaze",
+"weather",
+"quickchat",
+"notes"
+],
+"costUsd": 0.36738,
+"modelCalls": 41,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-b1/multi-083",
+"goal": "Check all my MyBank account balances — checking, savings, and credit card. Review my SplitPay balance and any pending incoming or outgoing requests. Look at my most recent MegaMart order to see what I spent. Calculate my net liquid cash (checking + savings + SplitPay balance - credit card balance). Open the 'Budget Tracker' document in CloudDocs and add a comment noting my financial summary for the month. What are all the balances, net liquid cash calculation, and MegaMart order amount, and confirm the comment was added.",
+"apps": [
+"mybank",
+"splitpay",
+"megamart",
+"clouddocs"
+],
+"costUsd": 0.25876,
+"modelCalls": 25,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-b1/multi-088",
+"goal": "Check TrailBlaze for this week's activities — total distance, number of runs, and weekly mileage pattern. Check CalTrack for daily calorie intake vs my 2,450 goal and protein intake vs my 170g target. Review my weight trend (182.2 lbs current vs 176 lbs goal) and determine my weekly calorie surplus or deficit. Check Weather in SF for conditions for my next outdoor run. Order a high-protein recovery meal from QuickBite (Sweetgreen salad or Sugarfish poke). Message the 'Running Club Announcements' group in QuickChat with my weekly stats and how I'm tracking. Update my 'Workout Plan' note in Notes with performance notes and adjustments. What's my weekly mileage, calorie surplus/deficit, weight trend, and weather forecast, and confirm the meal was ordered and note updated.",
+"apps": [
+"trailblaze",
+"caltrack",
+"weather",
+"quickbite",
+"quickchat",
+"notes"
+],
+"costUsd": 0.56477,
+"modelCalls": 51,
+"status": "max_steps"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-b1/mem-007",
+"goal": "Figure out which sports teams I follow by checking ScoreZone and TicketBox. See if any of my teams have upcoming games and check for headlines about them. Let me know the teams, upcoming game dates, and any relevant headlines.",
+"apps": [
+"scorezone",
+"ticketbox"
+],
+"costUsd": 0.21585,
+"modelCalls": 19,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "iosworld",
+"run": "ab6-b1/mem-018",
+"goal": "Figure out what neighborhood I spend the most time in by looking at my QuickBite delivery addresses, TasteRank restaurant visits, and Mail receipts for ride destinations. Then find things to do in that area — check DineSpot for nearby restaurants and TicketBox for nearby events. Let me know the neighborhood and what's going on there.",
+"apps": [
+"quickbite",
+"tasterank",
+"dinespot",
+"ticketbox",
+"mail"
+],
+"costUsd": 0.37227,
+"modelCalls": 36,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-b1/mem-024",
+"goal": "Pull together my entertainment preferences. Check Cinephile for my Wishlist and Seenlist, TicketBox past tickets for events I've attended, and ScoreZone favorites for sports I follow. Then search TicketBox for upcoming events matching my interests and message Dante Morales in QuickChat about going together. Let me know my top genres, favorite teams, event history, and upcoming recommended events.",
+"apps": [
+"cinephile",
+"ticketbox",
+"scorezone",
+"quickchat"
+],
+"costUsd": 0.38925,
+"modelCalls": 38,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-b1/mem-030",
+"goal": "Figure out my typical weekend routine. Check Clock for weekend vs weekday alarm differences, TrailBlaze for weekend activity patterns, QuickBite for weekend orders, Mail for weekend CityRide receipts, and QuickChat for weekend group chat activity (Saturday Long Run, Brunch Crew). Summarize it all in a new Notes note titled 'My Weekend Routine'. Let me know the typical weekend schedule and confirm the note was created.",
+"apps": [
+"clock",
+"trailblaze",
+"quickbite",
+"mail",
+"quickchat",
+"notes"
+],
+"costUsd": 0.52558,
+"modelCalls": 43,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "iosworld",
+"run": "ab6-b1/mem-043",
+"goal": "Build a travel-entertainment profile for me. Check StayFinder trip history and upcoming bookings to see what kinds of destinations I prefer, ScoreZone favorites for teams that play in cities I travel to, and TicketBox for events at my travel destinations. Figure out how to combine travel with entertainment interests. Let me know my destination preferences and matching entertainment opportunities.",
+"apps": [
+"stayfinder",
+"scorezone",
+"ticketbox"
+],
+"costUsd": 0.23514,
+"modelCalls": 24,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-b1/mem-046",
+"goal": "Reconstruct my commuting and transportation habits. Check CityRide saved routes and route templates for my most common routes, search Mail for CityRide ride receipts to find trip frequency, costs, and destinations, and cross-reference with MyBank credit card transactions for CityRide charges. Calculate total monthly transportation spending, average weekly commute cost, and annual projection. Create a 'Transportation Audit' document in CloudDocs with findings and recommendations for cost savings. Let me know the most common routes, monthly spending, weekly average, annual projection, and confirm the document was created.",
+"apps": [
+"cityride",
+"mail",
+"mybank",
+"clouddocs"
+],
+"costUsd": 0.08967,
+"modelCalls": 8,
+"status": "error"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-b2/cinephile-001",
+"goal": "Search for 'The Godfather' in Cinephile and add it to my Wishlist. What's the year and rating?",
+"apps": [
+"cinephile"
+],
+"costUsd": 0.0423,
+"modelCalls": 5,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-b2/cloudslides-002",
+"goal": "Open the '[Draft] Autonomous Agents' presentation in CloudSlides and edit slide 2 to add a bullet about 'safety' to the agenda list. What's the updated agenda?",
+"apps": [
+"cloudslides"
+],
+"costUsd": 0.27146,
+"modelCalls": 32,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "iosworld",
+"run": "ab6-b2/ticketbox-004",
+"goal": "Find the Ali Wong show at Great American Music Hall on TicketBox and check ticket prices and venue details. What's the show date, venue name, and price range?",
+"apps": [
+"ticketbox"
+],
+"costUsd": 0.10578,
+"modelCalls": 12,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-b2/multi-001",
+"goal": "Find a restaurant in San Francisco with outdoor seating on DineSpot (something like Harborline Seafood) and make a reservation for 6 people at 7 PM this Friday. Then post the restaurant name, time, and address in the #general TeamChat channel. Give me the restaurant name, reservation confirmation, and confirm the TeamChat message was posted.",
+"apps": [
+"dinespot",
+"teamchat"
+],
+"costUsd": 0.46767,
+"modelCalls": 51,
+"status": "max_steps"
+},
+{
+"split": "heldout",
+"source": "iosworld",
+"run": "ab6-b2/multi-008",
+"goal": "Log a post-run protein shake in CalTrack (search for 'protein') and check my dashboard to see how it affects my daily calorie and protein progress. Then message Elena Brooks in QuickChat to confirm the Saturday Long Run plans. What's my calorie and protein progress vs goals, and confirm the message was sent.",
+"apps": [
+"caltrack",
+"quickchat"
+],
+"costUsd": 0.11836,
+"modelCalls": 13,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-b2/multi-013",
+"goal": "Open CloudDocs and edit the 'Q2 Roadmap' to add a new section. Then open CloudSlides and add a new slide to the 'Conference Practice Deck' summarizing my changes. Finally, open the 'Bug Triage Log' spreadsheet in CloudSheets and update a cell to reflect the new plan. Confirm all three documents were updated.",
+"apps": [
+"clouddocs",
+"cloudslides",
+"cloudsheets"
+],
+"costUsd": 0.17484,
+"modelCalls": 19,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "iosworld",
+"run": "ab6-b2/multi-017",
+"goal": "Set a 6:30 AM alarm in Clock labeled 'Morning Run'. Check the Weather in San Francisco for tomorrow morning. Open TrailBlaze and find a running route in the Presidio area. Then check CalTrack for my calorie goal for tomorrow. What's the weather forecast, the route you found, and my daily calorie goal?",
+"apps": [
+"clock",
+"weather",
+"trailblaze",
+"caltrack"
+],
+"costUsd": 0.18337,
+"modelCalls": 20,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-b2/multi-075",
+"goal": "Check my TrailBlaze PRs — my current Half Marathon time is 1:35:12. Pull up my most recent long run distance and pace, and calculate the pace per mile I'd need to break 1:30:00. Check Weather in San Francisco for this Saturday's conditions. If rain is forecast, message the 'Running Club Announcements' group in QuickChat suggesting an indoor treadmill alternative; if it's clear, suggest the Presidio route. Update my 'Workout Plan' note in Notes with the adjusted target pace. What's the calculated target pace, Saturday weather, and the message sent, and confirm the note was updated.",
+"apps": [
+"trailblaze",
+"weather",
+"quickchat",
+"notes"
+],
+"costUsd": 0.24396,
+"modelCalls": 24,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-b2/multi-083",
+"goal": "Check all my MyBank account balances — checking, savings, and credit card. Review my SplitPay balance and any pending incoming or outgoing requests. Look at my most recent MegaMart order to see what I spent. Calculate my net liquid cash (checking + savings + SplitPay balance - credit card balance). Open the 'Budget Tracker' document in CloudDocs and add a comment noting my financial summary for the month. What are all the balances, net liquid cash calculation, and MegaMart order amount, and confirm the comment was added.",
+"apps": [
+"mybank",
+"splitpay",
+"megamart",
+"clouddocs"
+],
+"costUsd": 0.49449,
+"modelCalls": 51,
+"status": "max_steps"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-b2/multi-088",
+"goal": "Check TrailBlaze for this week's activities — total distance, number of runs, and weekly mileage pattern. Check CalTrack for daily calorie intake vs my 2,450 goal and protein intake vs my 170g target. Review my weight trend (182.2 lbs current vs 176 lbs goal) and determine my weekly calorie surplus or deficit. Check Weather in SF for conditions for my next outdoor run. Order a high-protein recovery meal from QuickBite (Sweetgreen salad or Sugarfish poke). Message the 'Running Club Announcements' group in QuickChat with my weekly stats and how I'm tracking. Update my 'Workout Plan' note in Notes with performance notes and adjustments. What's my weekly mileage, calorie surplus/deficit, weight trend, and weather forecast, and confirm the meal was ordered and note updated.",
+"apps": [
+"trailblaze",
+"caltrack",
+"weather",
+"quickbite",
+"quickchat",
+"notes"
+],
+"costUsd": 0.47889,
+"modelCalls": 41,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-b2/mem-007",
+"goal": "Figure out which sports teams I follow by checking ScoreZone and TicketBox. See if any of my teams have upcoming games and check for headlines about them. Let me know the teams, upcoming game dates, and any relevant headlines.",
+"apps": [
+"scorezone",
+"ticketbox"
+],
+"costUsd": 0.14584,
+"modelCalls": 15,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "iosworld",
+"run": "ab6-b2/mem-018",
+"goal": "Figure out what neighborhood I spend the most time in by looking at my QuickBite delivery addresses, TasteRank restaurant visits, and Mail receipts for ride destinations. Then find things to do in that area — check DineSpot for nearby restaurants and TicketBox for nearby events. Let me know the neighborhood and what's going on there.",
+"apps": [
+"quickbite",
+"tasterank",
+"dinespot",
+"ticketbox",
+"mail"
+],
+"costUsd": 0.32869,
+"modelCalls": 30,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-b2/mem-024",
+"goal": "Pull together my entertainment preferences. Check Cinephile for my Wishlist and Seenlist, TicketBox past tickets for events I've attended, and ScoreZone favorites for sports I follow. Then search TicketBox for upcoming events matching my interests and message Dante Morales in QuickChat about going together. Let me know my top genres, favorite teams, event history, and upcoming recommended events.",
+"apps": [
+"cinephile",
+"ticketbox",
+"scorezone",
+"quickchat"
+],
+"costUsd": 0.27727,
+"modelCalls": 28,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-b2/mem-030",
+"goal": "Figure out my typical weekend routine. Check Clock for weekend vs weekday alarm differences, TrailBlaze for weekend activity patterns, QuickBite for weekend orders, Mail for weekend CityRide receipts, and QuickChat for weekend group chat activity (Saturday Long Run, Brunch Crew). Summarize it all in a new Notes note titled 'My Weekend Routine'. Let me know the typical weekend schedule and confirm the note was created.",
+"apps": [
+"clock",
+"trailblaze",
+"quickbite",
+"mail",
+"quickchat",
+"notes"
+],
+"costUsd": 0.31032,
+"modelCalls": 26,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "iosworld",
+"run": "ab6-b2/mem-043",
+"goal": "Build a travel-entertainment profile for me. Check StayFinder trip history and upcoming bookings to see what kinds of destinations I prefer, ScoreZone favorites for teams that play in cities I travel to, and TicketBox for events at my travel destinations. Figure out how to combine travel with entertainment interests. Let me know my destination preferences and matching entertainment opportunities.",
+"apps": [
+"stayfinder",
+"scorezone",
+"ticketbox"
+],
+"costUsd": 0.23507,
+"modelCalls": 26,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab6-b2/mem-046",
+"goal": "Reconstruct my commuting and transportation habits. Check CityRide saved routes and route templates for my most common routes, search Mail for CityRide ride receipts to find trip frequency, costs, and destinations, and cross-reference with MyBank credit card transactions for CityRide charges. Calculate total monthly transportation spending, average weekly commute cost, and annual projection. Create a 'Transportation Audit' document in CloudDocs with findings and recommendations for cost savings. Let me know the most common routes, monthly spending, weekly average, annual projection, and confirm the document was created.",
+"apps": [
+"cityride",
+"mail",
+"mybank",
+"clouddocs"
+],
+"costUsd": 0.29654,
+"modelCalls": 24,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "iosworld",
+"run": "ab7-a1/notes-001",
+"goal": "Open the Work folder in Notes, find the 'Team Standup Notes' note, and add a new bullet point about a bug fix completed today. Confirm the note was updated.",
+"apps": [
+"notes"
+],
+"costUsd": 0.0519,
+"modelCalls": 7,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-a1/quickchat-003",
+"goal": "Search my QuickChat for 'Brooklyn Half' and find the conversation where someone asked about my registration. Reply to that thread confirming I'm registered and ask about the race day meetup plan. Who was the conversation with, and confirm the reply was sent.",
+"apps": [
+"quickchat"
+],
+"costUsd": 0.14092,
+"modelCalls": 16,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-a1/skytrip-002",
+"goal": "Search for flights from SFO to JFK for the next few days on SkyTrip and compare prices. What are the cheapest and most expensive options with their times and prices?",
+"apps": [
+"skytrip"
+],
+"costUsd": 0.23727,
+"modelCalls": 25,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "iosworld",
+"run": "ab7-a1/multi-005",
+"goal": "Request a CityRideX from Home (410 Brannan St) to Work (201 Mission St) in the CityRide app. Then post a status update in TeamChat #support-ops that I'm running late, and check my Mail for any morning meeting invites. What's the CityRide ETA and are there any meeting invites?",
+"apps": [
+"cityride",
+"teamchat",
+"mail"
+],
+"costUsd": 0.1274,
+"modelCalls": 13,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-a1/multi-009",
+"goal": "Open QuickBite and check my most recent Chipotle order details and total. Then check my MyBank credit card transactions for the corresponding charge and note the QuickBite total and the bank charge; report whether they roughly match. Also check my Mail inbox for a QuickBite receipt email, and add a note about the Chipotle expense to my Notes Shopping List. What are the order items, order total, bank charge amount, and email receipt amount?",
+"apps": [
+"mybank",
+"mail",
+"notes",
+"quickbite"
+],
+"costUsd": 0.23107,
+"modelCalls": 26,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-a1/multi-011",
+"goal": "Check my StayFinder trips for the upcoming Catalina Island booking. Look up the weather for the San Francisco area around those dates in the Weather app. Check my TasteRank 'Want to Try' list for any restaurants to visit before my trip. Save everything in a new Notes note titled 'Catalina Trip Plan'. What are the listing details, weather forecast, and restaurant picks?",
+"apps": [
+"stayfinder",
+"weather",
+"tasterank",
+"notes"
+],
+"costUsd": 0.24584,
+"modelCalls": 21,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-a1/multi-048",
+"goal": "Open the Product Strategy folder in CloudDrive and review files. Edit the 'Launch Retrospective' in CloudDocs to add a results section. Update the '2026 Open House Volunteers' spreadsheet in CloudSheets by editing a cell. Open 'Device Testing Tasks' in CloudSheets and update a cell with the current status. Add a new slide to the 'Q2 All-Hands' in CloudSlides summarizing the update. Star the updated files in CloudDrive. Post a summary in TeamChat #announcements about the documentation changes. Confirm all documents were updated and the TeamChat message was posted.",
+"apps": [
+"clouddrive",
+"clouddocs",
+"cloudsheets",
+"cloudslides",
+"teamchat"
+],
+"costUsd": 0.40341,
+"modelCalls": 45,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-a1/multi-055",
+"goal": "Set a 5:45 AM alarm in Clock labeled 'Training Day'. Check Weather in SF for running conditions. Log a post-run protein shake and oatmeal breakfast in CalTrack, then check my protein progress vs the 170g target. Order a healthy lunch from QuickBite (Sugarfish Trust Me set). After work, browse FreshCart at Natural Foods Market for dinner ingredients — salmon and spinach. Create a 'Training Day Log' note in Notes. What's the weather forecast, protein progress, lunch order total, and grocery total?",
+"apps": [
+"clock",
+"weather",
+"caltrack",
+"quickbite",
+"freshcart",
+"notes"
+],
+"costUsd": 0.46224,
+"modelCalls": 50,
+"status": "blocked"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-a1/multi-081",
+"goal": "Read the latest messages in TeamChat #design for any feedback on my presentation. Open the 'Mobile Launch Plan' document in CloudDocs and update the relevant section based on that feedback. Then open the 'Conference Practice Deck' in CloudSlides and edit a slide to reflect the changes. Set a 15-minute timer in Clock to rehearse my updated talk. What feedback was received, and confirm all documents were updated and the timer was set.",
+"apps": [
+"teamchat",
+"clouddocs",
+"cloudslides",
+"clock"
+],
+"costUsd": 0.49451,
+"modelCalls": 51,
+"status": "max_steps"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-a1/multi-091",
+"goal": "Open Notes and read the 'Gift Ideas - Mom's Birthday' note for the budget (~$200) and the birthday date shown in the note. Search MegaMart in the Beauty department for a primary gift and note the price. If there's budget left, search for a second smaller gift in the Home department. Check my MyBank credit card balance to confirm I can cover the total. Calculate the per-person cost if splitting with 2 siblings. Check Mail for any previous birthday-related emails or gift confirmations. Message the 'Avery Fam' group in QuickChat to coordinate who's buying what and share the budget split. Send a SplitPay request to one sibling for their share. What are the gift(s) chosen, total cost, per-person split, and credit card balance, and confirm the message and SplitPay request were sent.",
+"apps": [
+"notes",
+"megamart",
+"mybank",
+"mail",
+"quickchat",
+"splitpay"
+],
+"costUsd": 0.26589,
+"modelCalls": 23,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-a1/mem-003",
+"goal": "Check my QuickBite order history to find my most frequently ordered restaurant and item, then place a reorder of my usual. Let me know the restaurant name, what I usually get, and confirm the order went through.",
+"apps": [
+"quickbite"
+],
+"costUsd": 0.16364,
+"modelCalls": 19,
+"status": "blocked"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-a1/mem-016",
+"goal": "Look at my StayFinder trip history and TasteRank restaurant lists to understand my travel and dining preferences. Find my next upcoming trip and get restaurant recommendations for that destination. Save them to a TasteRank list and a note in Notes. Let me know my dining preferences, the upcoming trip destination, and the restaurant recommendations saved.",
+"apps": [
+"stayfinder",
+"tasterank",
+"notes"
+],
+"costUsd": 0.23422,
+"modelCalls": 26,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-a1/mem-025",
+"goal": "Build a comprehensive travel history from SkyTrip past trips, StayFinder trip history, CityRide rides to airports, and Mail booking confirmations. Figure out how often I travel and my most-visited destinations. Create a new CloudDocs document titled 'Travel Log' summarizing all my trips, destinations, and travel frequency. Let me know my most-visited destinations, travel frequency, and confirm the document was created.",
+"apps": [
+"skytrip",
+"stayfinder",
+"cityride",
+"mail",
+"clouddocs"
+],
+"costUsd": 0.43972,
+"modelCalls": 44,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-a1/mem-033",
+"goal": "Audit all my recurring costs. Check Mail for subscription confirmations and renewal notices, MyBank credit card transactions for recurring monthly charges, and MegaMart order history for Subscribe & Save items. Total all monthly recurring costs and add a 'Subscriptions' row to the Subscription Audit in CloudSheets. Create a 'Subscription Audit' note in Notes listing each subscription, its cost, and whether to keep or cancel. Let me know each subscription found with its monthly cost and the total recurring monthly cost.",
+"apps": [
+"mail",
+"mybank",
+"megamart",
+"notes",
+"clouddocs",
+"cloudsheets"
+],
+"costUsd": 0.50911,
+"modelCalls": 51,
+"status": "max_steps"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-a1/mem-045",
+"goal": "Audit my presentation portfolio by recency and cross-references. Browse all presentations in CloudSlides and note each one's last-modified date and slide count. Check CloudDrive for how they're organized into folders. Read TeamChat #eng-mobile and #launch-war-room for any mentions of specific presentations (requests, feedback, launch deadlines). Review related documents in CloudDocs. Group each presentation into one of three buckets: recently-worked (modified in the last 2 weeks), stale (older than 2 weeks with no recent chat/doc references), and actively-discussed (referenced in TeamChat or CloudDocs regardless of age). Report each presentation with its bucket and the evidence (last-modified date, slide count, any referencing channel/doc).",
+"apps": [
+"cloudslides",
+"clouddrive",
+"teamchat",
+"clouddocs"
+],
+"costUsd": 0.54575,
+"modelCalls": 51,
+"status": "max_steps"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-a1/mem-052",
+"goal": "Audit my professional brand and skill signal. Review my LockedIn profile (headline, skills, experience at Meridian Technologies), feed engagement patterns on technical topics, and my conversations with senior engineers (Petra Johansson at Luminos AI, Wyatt Lin at CloudScale) about platform/scaling topics. Check my notifications for profile-view and reaction signals. Cross-reference with my TeamChat activity (#eng-mobile / #product) and technical documents in my CloudDocs workspace to identify expertise themes. Identify my top 3 expertise signals and 2 growth opportunities. Create a 'Professional Brand Summary' note in Notes with current positioning and 2-3 specific improvement suggestions. Report the top 3 expertise areas, 2 growth gaps, and confirm the note was saved.",
+"apps": [
+"lockedin",
+"teamchat",
+"clouddocs",
+"notes"
+],
+"costUsd": 0.42215,
+"modelCalls": 35,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "iosworld",
+"run": "ab7-a2/notes-001",
+"goal": "Open the Work folder in Notes, find the 'Team Standup Notes' note, and add a new bullet point about a bug fix completed today. Confirm the note was updated.",
+"apps": [
+"notes"
+],
+"costUsd": 0.046,
+"modelCalls": 6,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-a2/quickchat-003",
+"goal": "Search my QuickChat for 'Brooklyn Half' and find the conversation where someone asked about my registration. Reply to that thread confirming I'm registered and ask about the race day meetup plan. Who was the conversation with, and confirm the reply was sent.",
+"apps": [
+"quickchat"
+],
+"costUsd": 0.05168,
+"modelCalls": 6,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-a2/skytrip-002",
+"goal": "Search for flights from SFO to JFK for the next few days on SkyTrip and compare prices. What are the cheapest and most expensive options with their times and prices?",
+"apps": [
+"skytrip"
+],
+"costUsd": 0.23703,
+"modelCalls": 25,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "iosworld",
+"run": "ab7-a2/multi-005",
+"goal": "Request a CityRideX from Home (410 Brannan St) to Work (201 Mission St) in the CityRide app. Then post a status update in TeamChat #support-ops that I'm running late, and check my Mail for any morning meeting invites. What's the CityRide ETA and are there any meeting invites?",
+"apps": [
+"cityride",
+"teamchat",
+"mail"
+],
+"costUsd": 0.12224,
+"modelCalls": 14,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-a2/multi-009",
+"goal": "Open QuickBite and check my most recent Chipotle order details and total. Then check my MyBank credit card transactions for the corresponding charge and note the QuickBite total and the bank charge; report whether they roughly match. Also check my Mail inbox for a QuickBite receipt email, and add a note about the Chipotle expense to my Notes Shopping List. What are the order items, order total, bank charge amount, and email receipt amount?",
+"apps": [
+"mybank",
+"mail",
+"notes",
+"quickbite"
+],
+"costUsd": 0.27483,
+"modelCalls": 30,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-a2/multi-011",
+"goal": "Check my StayFinder trips for the upcoming Catalina Island booking. Look up the weather for the San Francisco area around those dates in the Weather app. Check my TasteRank 'Want to Try' list for any restaurants to visit before my trip. Save everything in a new Notes note titled 'Catalina Trip Plan'. What are the listing details, weather forecast, and restaurant picks?",
+"apps": [
+"stayfinder",
+"weather",
+"tasterank",
+"notes"
+],
+"costUsd": 0.25014,
+"modelCalls": 21,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-a2/multi-048",
+"goal": "Open the Product Strategy folder in CloudDrive and review files. Edit the 'Launch Retrospective' in CloudDocs to add a results section. Update the '2026 Open House Volunteers' spreadsheet in CloudSheets by editing a cell. Open 'Device Testing Tasks' in CloudSheets and update a cell with the current status. Add a new slide to the 'Q2 All-Hands' in CloudSlides summarizing the update. Star the updated files in CloudDrive. Post a summary in TeamChat #announcements about the documentation changes. Confirm all documents were updated and the TeamChat message was posted.",
+"apps": [
+"clouddrive",
+"clouddocs",
+"cloudsheets",
+"cloudslides",
+"teamchat"
+],
+"costUsd": 0.47632,
+"modelCalls": 51,
+"status": "max_steps"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-a2/multi-055",
+"goal": "Set a 5:45 AM alarm in Clock labeled 'Training Day'. Check Weather in SF for running conditions. Log a post-run protein shake and oatmeal breakfast in CalTrack, then check my protein progress vs the 170g target. Order a healthy lunch from QuickBite (Sugarfish Trust Me set). After work, browse FreshCart at Natural Foods Market for dinner ingredients — salmon and spinach. Create a 'Training Day Log' note in Notes. What's the weather forecast, protein progress, lunch order total, and grocery total?",
+"apps": [
+"clock",
+"weather",
+"caltrack",
+"quickbite",
+"freshcart",
+"notes"
+],
+"costUsd": 0.47377,
+"modelCalls": 51,
+"status": "max_steps"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-a2/multi-081",
+"goal": "Read the latest messages in TeamChat #design for any feedback on my presentation. Open the 'Mobile Launch Plan' document in CloudDocs and update the relevant section based on that feedback. Then open the 'Conference Practice Deck' in CloudSlides and edit a slide to reflect the changes. Set a 15-minute timer in Clock to rehearse my updated talk. What feedback was received, and confirm all documents were updated and the timer was set.",
+"apps": [
+"teamchat",
+"clouddocs",
+"cloudslides",
+"clock"
+],
+"costUsd": 0.23256,
+"modelCalls": 25,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-a2/multi-091",
+"goal": "Open Notes and read the 'Gift Ideas - Mom's Birthday' note for the budget (~$200) and the birthday date shown in the note. Search MegaMart in the Beauty department for a primary gift and note the price. If there's budget left, search for a second smaller gift in the Home department. Check my MyBank credit card balance to confirm I can cover the total. Calculate the per-person cost if splitting with 2 siblings. Check Mail for any previous birthday-related emails or gift confirmations. Message the 'Avery Fam' group in QuickChat to coordinate who's buying what and share the budget split. Send a SplitPay request to one sibling for their share. What are the gift(s) chosen, total cost, per-person split, and credit card balance, and confirm the message and SplitPay request were sent.",
+"apps": [
+"notes",
+"megamart",
+"mybank",
+"mail",
+"quickchat",
+"splitpay"
+],
+"costUsd": 0.40678,
+"modelCalls": 39,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-a2/mem-003",
+"goal": "Check my QuickBite order history to find my most frequently ordered restaurant and item, then place a reorder of my usual. Let me know the restaurant name, what I usually get, and confirm the order went through.",
+"apps": [
+"quickbite"
+],
+"costUsd": 0.37523,
+"modelCalls": 39,
+"status": "budget"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-a2/mem-016",
+"goal": "Look at my StayFinder trip history and TasteRank restaurant lists to understand my travel and dining preferences. Find my next upcoming trip and get restaurant recommendations for that destination. Save them to a TasteRank list and a note in Notes. Let me know my dining preferences, the upcoming trip destination, and the restaurant recommendations saved.",
+"apps": [
+"stayfinder",
+"tasterank",
+"notes"
+],
+"costUsd": 0.25689,
+"modelCalls": 28,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-a2/mem-025",
+"goal": "Build a comprehensive travel history from SkyTrip past trips, StayFinder trip history, CityRide rides to airports, and Mail booking confirmations. Figure out how often I travel and my most-visited destinations. Create a new CloudDocs document titled 'Travel Log' summarizing all my trips, destinations, and travel frequency. Let me know my most-visited destinations, travel frequency, and confirm the document was created.",
+"apps": [
+"skytrip",
+"stayfinder",
+"cityride",
+"mail",
+"clouddocs"
+],
+"costUsd": 0.40686,
+"modelCalls": 38,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-a2/mem-033",
+"goal": "Audit all my recurring costs. Check Mail for subscription confirmations and renewal notices, MyBank credit card transactions for recurring monthly charges, and MegaMart order history for Subscribe & Save items. Total all monthly recurring costs and add a 'Subscriptions' row to the Subscription Audit in CloudSheets. Create a 'Subscription Audit' note in Notes listing each subscription, its cost, and whether to keep or cancel. Let me know each subscription found with its monthly cost and the total recurring monthly cost.",
+"apps": [
+"mail",
+"mybank",
+"megamart",
+"notes",
+"clouddocs",
+"cloudsheets"
+],
+"costUsd": 0.49594,
+"modelCalls": 51,
+"status": "max_steps"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-a2/mem-045",
+"goal": "Audit my presentation portfolio by recency and cross-references. Browse all presentations in CloudSlides and note each one's last-modified date and slide count. Check CloudDrive for how they're organized into folders. Read TeamChat #eng-mobile and #launch-war-room for any mentions of specific presentations (requests, feedback, launch deadlines). Review related documents in CloudDocs. Group each presentation into one of three buckets: recently-worked (modified in the last 2 weeks), stale (older than 2 weeks with no recent chat/doc references), and actively-discussed (referenced in TeamChat or CloudDocs regardless of age). Report each presentation with its bucket and the evidence (last-modified date, slide count, any referencing channel/doc).",
+"apps": [
+"cloudslides",
+"clouddrive",
+"teamchat",
+"clouddocs"
+],
+"costUsd": 0.55996,
+"modelCalls": 51,
+"status": "max_steps"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-a2/mem-052",
+"goal": "Audit my professional brand and skill signal. Review my LockedIn profile (headline, skills, experience at Meridian Technologies), feed engagement patterns on technical topics, and my conversations with senior engineers (Petra Johansson at Luminos AI, Wyatt Lin at CloudScale) about platform/scaling topics. Check my notifications for profile-view and reaction signals. Cross-reference with my TeamChat activity (#eng-mobile / #product) and technical documents in my CloudDocs workspace to identify expertise themes. Identify my top 3 expertise signals and 2 growth opportunities. Create a 'Professional Brand Summary' note in Notes with current positioning and 2-3 specific improvement suggestions. Report the top 3 expertise areas, 2 growth gaps, and confirm the note was saved.",
+"apps": [
+"lockedin",
+"teamchat",
+"clouddocs",
+"notes"
+],
+"costUsd": 0.37597,
+"modelCalls": 29,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "iosworld",
+"run": "ab7-b1/notes-001",
+"goal": "Open the Work folder in Notes, find the 'Team Standup Notes' note, and add a new bullet point about a bug fix completed today. Confirm the note was updated.",
+"apps": [
+"notes"
+],
+"costUsd": 0.04485,
+"modelCalls": 5,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-b1/quickchat-003",
+"goal": "Search my QuickChat for 'Brooklyn Half' and find the conversation where someone asked about my registration. Reply to that thread confirming I'm registered and ask about the race day meetup plan. Who was the conversation with, and confirm the reply was sent.",
+"apps": [
+"quickchat"
+],
+"costUsd": 0.07105,
+"modelCalls": 7,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-b1/skytrip-002",
+"goal": "Search for flights from SFO to JFK for the next few days on SkyTrip and compare prices. What are the cheapest and most expensive options with their times and prices?",
+"apps": [
+"skytrip"
+],
+"costUsd": 0.07404,
+"modelCalls": 8,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "iosworld",
+"run": "ab7-b1/multi-005",
+"goal": "Request a CityRideX from Home (410 Brannan St) to Work (201 Mission St) in the CityRide app. Then post a status update in TeamChat #support-ops that I'm running late, and check my Mail for any morning meeting invites. What's the CityRide ETA and are there any meeting invites?",
+"apps": [
+"cityride",
+"teamchat",
+"mail"
+],
+"costUsd": 0.16923,
+"modelCalls": 14,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-b1/multi-009",
+"goal": "Open QuickBite and check my most recent Chipotle order details and total. Then check my MyBank credit card transactions for the corresponding charge and note the QuickBite total and the bank charge; report whether they roughly match. Also check my Mail inbox for a QuickBite receipt email, and add a note about the Chipotle expense to my Notes Shopping List. What are the order items, order total, bank charge amount, and email receipt amount?",
+"apps": [
+"mybank",
+"mail",
+"notes",
+"quickbite"
+],
+"costUsd": 0.27,
+"modelCalls": 24,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-b1/multi-011",
+"goal": "Check my StayFinder trips for the upcoming Catalina Island booking. Look up the weather for the San Francisco area around those dates in the Weather app. Check my TasteRank 'Want to Try' list for any restaurants to visit before my trip. Save everything in a new Notes note titled 'Catalina Trip Plan'. What are the listing details, weather forecast, and restaurant picks?",
+"apps": [
+"stayfinder",
+"weather",
+"tasterank",
+"notes"
+],
+"costUsd": 0.22369,
+"modelCalls": 18,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-b1/multi-048",
+"goal": "Open the Product Strategy folder in CloudDrive and review files. Edit the 'Launch Retrospective' in CloudDocs to add a results section. Update the '2026 Open House Volunteers' spreadsheet in CloudSheets by editing a cell. Open 'Device Testing Tasks' in CloudSheets and update a cell with the current status. Add a new slide to the 'Q2 All-Hands' in CloudSlides summarizing the update. Star the updated files in CloudDrive. Post a summary in TeamChat #announcements about the documentation changes. Confirm all documents were updated and the TeamChat message was posted.",
+"apps": [
+"clouddrive",
+"clouddocs",
+"cloudsheets",
+"cloudslides",
+"teamchat"
+],
+"costUsd": 0.55337,
+"modelCalls": 51,
+"status": "max_steps"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-b1/multi-055",
+"goal": "Set a 5:45 AM alarm in Clock labeled 'Training Day'. Check Weather in SF for running conditions. Log a post-run protein shake and oatmeal breakfast in CalTrack, then check my protein progress vs the 170g target. Order a healthy lunch from QuickBite (Sugarfish Trust Me set). After work, browse FreshCart at Natural Foods Market for dinner ingredients — salmon and spinach. Create a 'Training Day Log' note in Notes. What's the weather forecast, protein progress, lunch order total, and grocery total?",
+"apps": [
+"clock",
+"weather",
+"caltrack",
+"quickbite",
+"freshcart",
+"notes"
+],
+"costUsd": 0.49056,
+"modelCalls": 43,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-b1/multi-081",
+"goal": "Read the latest messages in TeamChat #design for any feedback on my presentation. Open the 'Mobile Launch Plan' document in CloudDocs and update the relevant section based on that feedback. Then open the 'Conference Practice Deck' in CloudSlides and edit a slide to reflect the changes. Set a 15-minute timer in Clock to rehearse my updated talk. What feedback was received, and confirm all documents were updated and the timer was set.",
+"apps": [
+"teamchat",
+"clouddocs",
+"cloudslides",
+"clock"
+],
+"costUsd": 0.50935,
+"modelCalls": 49,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-b1/multi-091",
+"goal": "Open Notes and read the 'Gift Ideas - Mom's Birthday' note for the budget (~$200) and the birthday date shown in the note. Search MegaMart in the Beauty department for a primary gift and note the price. If there's budget left, search for a second smaller gift in the Home department. Check my MyBank credit card balance to confirm I can cover the total. Calculate the per-person cost if splitting with 2 siblings. Check Mail for any previous birthday-related emails or gift confirmations. Message the 'Avery Fam' group in QuickChat to coordinate who's buying what and share the budget split. Send a SplitPay request to one sibling for their share. What are the gift(s) chosen, total cost, per-person split, and credit card balance, and confirm the message and SplitPay request were sent.",
+"apps": [
+"notes",
+"megamart",
+"mybank",
+"mail",
+"quickchat",
+"splitpay"
+],
+"costUsd": 0.52804,
+"modelCalls": 39,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-b1/mem-003",
+"goal": "Check my QuickBite order history to find my most frequently ordered restaurant and item, then place a reorder of my usual. Let me know the restaurant name, what I usually get, and confirm the order went through.",
+"apps": [
+"quickbite"
+],
+"costUsd": 0.17478,
+"modelCalls": 19,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-b1/mem-016",
+"goal": "Look at my StayFinder trip history and TasteRank restaurant lists to understand my travel and dining preferences. Find my next upcoming trip and get restaurant recommendations for that destination. Save them to a TasteRank list and a note in Notes. Let me know my dining preferences, the upcoming trip destination, and the restaurant recommendations saved.",
+"apps": [
+"stayfinder",
+"tasterank",
+"notes"
+],
+"costUsd": 0.30121,
+"modelCalls": 28,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-b1/mem-025",
+"goal": "Build a comprehensive travel history from SkyTrip past trips, StayFinder trip history, CityRide rides to airports, and Mail booking confirmations. Figure out how often I travel and my most-visited destinations. Create a new CloudDocs document titled 'Travel Log' summarizing all my trips, destinations, and travel frequency. Let me know my most-visited destinations, travel frequency, and confirm the document was created.",
+"apps": [
+"skytrip",
+"stayfinder",
+"cityride",
+"mail",
+"clouddocs"
+],
+"costUsd": 0.5415,
+"modelCalls": 45,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-b1/mem-033",
+"goal": "Audit all my recurring costs. Check Mail for subscription confirmations and renewal notices, MyBank credit card transactions for recurring monthly charges, and MegaMart order history for Subscribe & Save items. Total all monthly recurring costs and add a 'Subscriptions' row to the Subscription Audit in CloudSheets. Create a 'Subscription Audit' note in Notes listing each subscription, its cost, and whether to keep or cancel. Let me know each subscription found with its monthly cost and the total recurring monthly cost.",
+"apps": [
+"mail",
+"mybank",
+"megamart",
+"notes",
+"clouddocs",
+"cloudsheets"
+],
+"costUsd": 0.55368,
+"modelCalls": 50,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-b1/mem-045",
+"goal": "Audit my presentation portfolio by recency and cross-references. Browse all presentations in CloudSlides and note each one's last-modified date and slide count. Check CloudDrive for how they're organized into folders. Read TeamChat #eng-mobile and #launch-war-room for any mentions of specific presentations (requests, feedback, launch deadlines). Review related documents in CloudDocs. Group each presentation into one of three buckets: recently-worked (modified in the last 2 weeks), stale (older than 2 weeks with no recent chat/doc references), and actively-discussed (referenced in TeamChat or CloudDocs regardless of age). Report each presentation with its bucket and the evidence (last-modified date, slide count, any referencing channel/doc).",
+"apps": [
+"cloudslides",
+"clouddrive",
+"teamchat",
+"clouddocs"
+],
+"costUsd": 0.57598,
+"modelCalls": 46,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-b1/mem-052",
+"goal": "Audit my professional brand and skill signal. Review my LockedIn profile (headline, skills, experience at Meridian Technologies), feed engagement patterns on technical topics, and my conversations with senior engineers (Petra Johansson at Luminos AI, Wyatt Lin at CloudScale) about platform/scaling topics. Check my notifications for profile-view and reaction signals. Cross-reference with my TeamChat activity (#eng-mobile / #product) and technical documents in my CloudDocs workspace to identify expertise themes. Identify my top 3 expertise signals and 2 growth opportunities. Create a 'Professional Brand Summary' note in Notes with current positioning and 2-3 specific improvement suggestions. Report the top 3 expertise areas, 2 growth gaps, and confirm the note was saved.",
+"apps": [
+"lockedin",
+"teamchat",
+"clouddocs",
+"notes"
+],
+"costUsd": 0.34834,
+"modelCalls": 28,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "iosworld",
+"run": "ab7-b2/notes-001",
+"goal": "Open the Work folder in Notes, find the 'Team Standup Notes' note, and add a new bullet point about a bug fix completed today. Confirm the note was updated.",
+"apps": [
+"notes"
+],
+"costUsd": 0.05072,
+"modelCalls": 6,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-b2/quickchat-003",
+"goal": "Search my QuickChat for 'Brooklyn Half' and find the conversation where someone asked about my registration. Reply to that thread confirming I'm registered and ask about the race day meetup plan. Who was the conversation with, and confirm the reply was sent.",
+"apps": [
+"quickchat"
+],
+"costUsd": 0.08574,
+"modelCalls": 8,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-b2/skytrip-002",
+"goal": "Search for flights from SFO to JFK for the next few days on SkyTrip and compare prices. What are the cheapest and most expensive options with their times and prices?",
+"apps": [
+"skytrip"
+],
+"costUsd": 0.07624,
+"modelCalls": 8,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "iosworld",
+"run": "ab7-b2/multi-005",
+"goal": "Request a CityRideX from Home (410 Brannan St) to Work (201 Mission St) in the CityRide app. Then post a status update in TeamChat #support-ops that I'm running late, and check my Mail for any morning meeting invites. What's the CityRide ETA and are there any meeting invites?",
+"apps": [
+"cityride",
+"teamchat",
+"mail"
+],
+"costUsd": 0.27475,
+"modelCalls": 24,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-b2/multi-009",
+"goal": "Open QuickBite and check my most recent Chipotle order details and total. Then check my MyBank credit card transactions for the corresponding charge and note the QuickBite total and the bank charge; report whether they roughly match. Also check my Mail inbox for a QuickBite receipt email, and add a note about the Chipotle expense to my Notes Shopping List. What are the order items, order total, bank charge amount, and email receipt amount?",
+"apps": [
+"mybank",
+"mail",
+"notes",
+"quickbite"
+],
+"costUsd": 0.26888,
+"modelCalls": 25,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-b2/multi-011",
+"goal": "Check my StayFinder trips for the upcoming Catalina Island booking. Look up the weather for the San Francisco area around those dates in the Weather app. Check my TasteRank 'Want to Try' list for any restaurants to visit before my trip. Save everything in a new Notes note titled 'Catalina Trip Plan'. What are the listing details, weather forecast, and restaurant picks?",
+"apps": [
+"stayfinder",
+"weather",
+"tasterank",
+"notes"
+],
+"costUsd": 0.43184,
+"modelCalls": 31,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-b2/multi-048",
+"goal": "Open the Product Strategy folder in CloudDrive and review files. Edit the 'Launch Retrospective' in CloudDocs to add a results section. Update the '2026 Open House Volunteers' spreadsheet in CloudSheets by editing a cell. Open 'Device Testing Tasks' in CloudSheets and update a cell with the current status. Add a new slide to the 'Q2 All-Hands' in CloudSlides summarizing the update. Star the updated files in CloudDrive. Post a summary in TeamChat #announcements about the documentation changes. Confirm all documents were updated and the TeamChat message was posted.",
+"apps": [
+"clouddrive",
+"clouddocs",
+"cloudsheets",
+"cloudslides",
+"teamchat"
+],
+"costUsd": 0.62151,
+"modelCalls": 51,
+"status": "max_steps"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-b2/multi-055",
+"goal": "Set a 5:45 AM alarm in Clock labeled 'Training Day'. Check Weather in SF for running conditions. Log a post-run protein shake and oatmeal breakfast in CalTrack, then check my protein progress vs the 170g target. Order a healthy lunch from QuickBite (Sugarfish Trust Me set). After work, browse FreshCart at Natural Foods Market for dinner ingredients — salmon and spinach. Create a 'Training Day Log' note in Notes. What's the weather forecast, protein progress, lunch order total, and grocery total?",
+"apps": [
+"clock",
+"weather",
+"caltrack",
+"quickbite",
+"freshcart",
+"notes"
+],
+"costUsd": 0.35937,
+"modelCalls": 34,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-b2/multi-081",
+"goal": "Read the latest messages in TeamChat #design for any feedback on my presentation. Open the 'Mobile Launch Plan' document in CloudDocs and update the relevant section based on that feedback. Then open the 'Conference Practice Deck' in CloudSlides and edit a slide to reflect the changes. Set a 15-minute timer in Clock to rehearse my updated talk. What feedback was received, and confirm all documents were updated and the timer was set.",
+"apps": [
+"teamchat",
+"clouddocs",
+"cloudslides",
+"clock"
+],
+"costUsd": 0.45595,
+"modelCalls": 45,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-b2/multi-091",
+"goal": "Open Notes and read the 'Gift Ideas - Mom's Birthday' note for the budget (~$200) and the birthday date shown in the note. Search MegaMart in the Beauty department for a primary gift and note the price. If there's budget left, search for a second smaller gift in the Home department. Check my MyBank credit card balance to confirm I can cover the total. Calculate the per-person cost if splitting with 2 siblings. Check Mail for any previous birthday-related emails or gift confirmations. Message the 'Avery Fam' group in QuickChat to coordinate who's buying what and share the budget split. Send a SplitPay request to one sibling for their share. What are the gift(s) chosen, total cost, per-person split, and credit card balance, and confirm the message and SplitPay request were sent.",
+"apps": [
+"notes",
+"megamart",
+"mybank",
+"mail",
+"quickchat",
+"splitpay"
+],
+"costUsd": 0.34692,
+"modelCalls": 27,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-b2/mem-003",
+"goal": "Check my QuickBite order history to find my most frequently ordered restaurant and item, then place a reorder of my usual. Let me know the restaurant name, what I usually get, and confirm the order went through.",
+"apps": [
+"quickbite"
+],
+"costUsd": 0.22102,
+"modelCalls": 24,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-b2/mem-016",
+"goal": "Look at my StayFinder trip history and TasteRank restaurant lists to understand my travel and dining preferences. Find my next upcoming trip and get restaurant recommendations for that destination. Save them to a TasteRank list and a note in Notes. Let me know my dining preferences, the upcoming trip destination, and the restaurant recommendations saved.",
+"apps": [
+"stayfinder",
+"tasterank",
+"notes"
+],
+"costUsd": 0.43066,
+"modelCalls": 41,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-b2/mem-025",
+"goal": "Build a comprehensive travel history from SkyTrip past trips, StayFinder trip history, CityRide rides to airports, and Mail booking confirmations. Figure out how often I travel and my most-visited destinations. Create a new CloudDocs document titled 'Travel Log' summarizing all my trips, destinations, and travel frequency. Let me know my most-visited destinations, travel frequency, and confirm the document was created.",
+"apps": [
+"skytrip",
+"stayfinder",
+"cityride",
+"mail",
+"clouddocs"
+],
+"costUsd": 0.345,
+"modelCalls": 26,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-b2/mem-033",
+"goal": "Audit all my recurring costs. Check Mail for subscription confirmations and renewal notices, MyBank credit card transactions for recurring monthly charges, and MegaMart order history for Subscribe & Save items. Total all monthly recurring costs and add a 'Subscriptions' row to the Subscription Audit in CloudSheets. Create a 'Subscription Audit' note in Notes listing each subscription, its cost, and whether to keep or cancel. Let me know each subscription found with its monthly cost and the total recurring monthly cost.",
+"apps": [
+"mail",
+"mybank",
+"megamart",
+"notes",
+"clouddocs",
+"cloudsheets"
+],
+"costUsd": 0.56659,
+"modelCalls": 51,
+"status": "max_steps"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-b2/mem-045",
+"goal": "Audit my presentation portfolio by recency and cross-references. Browse all presentations in CloudSlides and note each one's last-modified date and slide count. Check CloudDrive for how they're organized into folders. Read TeamChat #eng-mobile and #launch-war-room for any mentions of specific presentations (requests, feedback, launch deadlines). Review related documents in CloudDocs. Group each presentation into one of three buckets: recently-worked (modified in the last 2 weeks), stale (older than 2 weeks with no recent chat/doc references), and actively-discussed (referenced in TeamChat or CloudDocs regardless of age). Report each presentation with its bucket and the evidence (last-modified date, slide count, any referencing channel/doc).",
+"apps": [
+"cloudslides",
+"clouddrive",
+"teamchat",
+"clouddocs"
+],
+"costUsd": 0.54898,
+"modelCalls": 51,
+"status": "max_steps"
+},
+{
+"split": "fit",
+"source": "iosworld",
+"run": "ab7-b2/mem-052",
+"goal": "Audit my professional brand and skill signal. Review my LockedIn profile (headline, skills, experience at Meridian Technologies), feed engagement patterns on technical topics, and my conversations with senior engineers (Petra Johansson at Luminos AI, Wyatt Lin at CloudScale) about platform/scaling topics. Check my notifications for profile-view and reaction signals. Cross-reference with my TeamChat activity (#eng-mobile / #product) and technical documents in my CloudDocs workspace to identify expertise themes. Identify my top 3 expertise signals and 2 growth opportunities. Create a 'Professional Brand Summary' note in Notes with current positioning and 2-3 specific improvement suggestions. Report the top 3 expertise areas, 2 growth gaps, and confirm the note was saved.",
+"apps": [
+"lockedin",
+"teamchat",
+"clouddocs",
+"notes"
+],
+"costUsd": 0.38204,
+"modelCalls": 30,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "app",
+"run": "app-26sep/ios-version:ab85f4f76d4b",
+"goal": "What iOS version is this iPhone on?",
+"apps": [
+"Settings",
+"Safari",
+"Messages",
+"QuickChat",
+"Contacts",
+"Reminders",
+"Calendar",
+"Notes",
+"Photos",
+"Maps",
+"Weather",
+"Mail"
+],
+"costUsd": 0.01971,
+"modelCalls": 3,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "app",
+"run": "app-26sep/reminder:050dc3768391",
+"goal": "Add a reminder to buy oat milk",
+"apps": [
+"Settings",
+"Safari",
+"Messages",
+"QuickChat",
+"Contacts",
+"Reminders",
+"Calendar",
+"Notes",
+"Photos",
+"Maps",
+"Weather",
+"Mail"
+],
+"costUsd": 0.03852,
+"modelCalls": 5,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "app",
+"run": "app-26sep/safari-heading:29fffd2a1bf2",
+"goal": "Open example.com in Safari and tell me the page's main heading",
+"apps": [
+"Settings",
+"Safari",
+"Messages",
+"QuickChat",
+"Contacts",
+"Reminders",
+"Calendar",
+"Notes",
+"Photos",
+"Maps",
+"Weather",
+"Mail"
+],
+"costUsd": 0.02404,
+"modelCalls": 3,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "app",
+"run": "app-26sep/text-contact:16eaa99344e6",
+"goal": "Message Zara Okonkwo in QuickChat \"I'm running late\"",
+"apps": [
+"Settings",
+"Safari",
+"Messages",
+"QuickChat",
+"Contacts",
+"Reminders",
+"Calendar",
+"Notes",
+"Photos",
+"Maps",
+"Weather",
+"Mail"
+],
+"costUsd": 0.0685,
+"modelCalls": 9,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "app",
+"run": "app-26sep/copy-across:c24a37f06321",
+"goal": "Find Micah Chen's email address in Contacts and add a reminder whose title is that email address",
+"apps": [
+"Settings",
+"Safari",
+"Messages",
+"QuickChat",
+"Contacts",
+"Reminders",
+"Calendar",
+"Notes",
+"Photos",
+"Maps",
+"Weather",
+"Mail"
+],
+"costUsd": 0.0515,
+"modelCalls": 6,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "app",
+"run": "app-26sep/json-extract:6f772d590e54",
+"goal": "In Settings, open General > About and report the iOS version and the model name",
+"apps": [
+"Settings",
+"Safari",
+"Messages",
+"QuickChat",
+"Contacts",
+"Reminders",
+"Calendar",
+"Notes",
+"Photos",
+"Maps",
+"Weather",
+"Mail"
+],
+"costUsd": 0.03094,
+"modelCalls": 3,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "app",
+"run": "app-26sep/calendar-today:42c0c7852100",
+"goal": "What's on my calendar today?",
+"apps": [
+"Settings",
+"Safari",
+"Messages",
+"QuickChat",
+"Contacts",
+"Reminders",
+"Calendar",
+"Notes",
+"Photos",
+"Maps",
+"Weather",
+"Mail"
+],
+"costUsd": 0.09601,
+"modelCalls": 12,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "app",
+"run": "app-26sep/reminders-count:6f3c33bae3e0",
+"goal": "How many reminders are in my Reminders list, and what are they?",
+"apps": [
+"Settings",
+"Safari",
+"Messages",
+"QuickChat",
+"Contacts",
+"Reminders",
+"Calendar",
+"Notes",
+"Photos",
+"Maps",
+"Weather",
+"Mail"
+],
+"costUsd": 0.03646,
+"modelCalls": 4,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "app",
+"run": "app-26sep/ios-version:d81954366129",
+"goal": "What iOS version is this iPhone on?",
+"apps": [
+"Settings",
+"Safari",
+"Messages",
+"QuickChat",
+"Contacts",
+"Reminders",
+"Calendar",
+"Notes",
+"Photos",
+"Maps",
+"Weather",
+"Mail"
+],
+"costUsd": 0.02102,
+"modelCalls": 2,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "app",
+"run": "app-26sep/text-contact:364e0a04f1c5",
+"goal": "Text Kate Bell \"I'm running late\"",
+"apps": [
+"Settings",
+"Safari",
+"Messages",
+"QuickChat",
+"Contacts",
+"Reminders",
+"Calendar",
+"Notes",
+"Photos",
+"Maps",
+"Weather",
+"Mail"
+],
+"costUsd": 0.22513,
+"modelCalls": 27,
+"status": "blocked"
+},
+{
+"split": "heldout",
+"source": "app",
+"run": "app-26sep/copy-across:78c1f56e165a",
+"goal": "Find Kate Bell's email address in Contacts and add a reminder whose title is that email address",
+"apps": [
+"Settings",
+"Safari",
+"Messages",
+"QuickChat",
+"Contacts",
+"Reminders",
+"Calendar",
+"Notes",
+"Photos",
+"Maps",
+"Weather",
+"Mail"
+],
+"costUsd": 0.20376,
+"modelCalls": 22,
+"status": "error"
+},
+{
+"split": "fit",
+"source": "app",
+"run": "app-26sep/json-extract:518d866d3811",
+"goal": "In Settings, find whether Airplane Mode is on and what the Wi-Fi row shows",
+"apps": [
+"Settings",
+"Safari",
+"Messages",
+"QuickChat",
+"Contacts",
+"Reminders",
+"Calendar",
+"Notes",
+"Photos",
+"Maps",
+"Weather",
+"Mail"
+],
+"costUsd": 0.43704,
+"modelCalls": 51,
+"status": "max_steps"
+},
+{
+"split": "fit",
+"source": "app",
+"run": "app-26sep/text-contact:ca9c6b1383f5",
+"goal": "Text Micah Chen \"I'm running late\"",
+"apps": [
+"Settings",
+"Safari",
+"Messages",
+"QuickChat",
+"Contacts",
+"Reminders",
+"Calendar",
+"Notes",
+"Photos",
+"Maps",
+"Weather",
+"Mail"
+],
+"costUsd": 0.22576,
+"modelCalls": 33,
+"status": "approval_denied"
+},
+{
+"split": "heldout",
+"source": "app",
+"run": "app-26sep/redirect:6e15ee73787f",
+"goal": "Message Zara Okonkwo in QuickChat \"I'm running late\"",
+"apps": [
+"Settings",
+"Safari",
+"Messages",
+"QuickChat",
+"Contacts",
+"Reminders",
+"Calendar",
+"Notes",
+"Photos",
+"Maps",
+"Weather",
+"Mail"
+],
+"costUsd": 0.04345,
+"modelCalls": 5,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "app",
+"run": "app-27sep/ios-version:52c3847ff25c",
+"goal": "What iOS version is this iPhone on?",
+"apps": [
+"Settings",
+"Safari",
+"Messages",
+"QuickChat",
+"Contacts",
+"Reminders",
+"Calendar",
+"Notes",
+"Photos",
+"Maps",
+"Weather",
+"Mail"
+],
+"costUsd": 0.02216,
+"modelCalls": 2,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "app",
+"run": "app-27sep/safari-heading:bd3909c07872",
+"goal": "Open example.com in Safari and tell me the page's main heading",
+"apps": [
+"Settings",
+"Safari",
+"Messages",
+"QuickChat",
+"Contacts",
+"Reminders",
+"Calendar",
+"Notes",
+"Photos",
+"Maps",
+"Weather",
+"Mail"
+],
+"costUsd": 0.02616,
+"modelCalls": 3,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "app",
+"run": "app-27sep/text-contact:234886b3f970",
+"goal": "Message Zara Okonkwo in QuickChat \"I'm running late\"",
+"apps": [
+"Settings",
+"Safari",
+"Messages",
+"QuickChat",
+"Contacts",
+"Reminders",
+"Calendar",
+"Notes",
+"Photos",
+"Maps",
+"Weather",
+"Mail"
+],
+"costUsd": 0.14339,
+"modelCalls": 18,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "app",
+"run": "app-27sep/json-extract:6931d8ec45c7",
+"goal": "In Settings, open General > About and report the iOS version and the model name",
+"apps": [
+"Settings",
+"Safari",
+"Messages",
+"QuickChat",
+"Contacts",
+"Reminders",
+"Calendar",
+"Notes",
+"Photos",
+"Maps",
+"Weather",
+"Mail"
+],
+"costUsd": 0.03176,
+"modelCalls": 3,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "app",
+"run": "app-27sep/redirect:ad435624886a",
+"goal": "Message Zara Okonkwo in QuickChat \"I'm running late\"",
+"apps": [
+"Settings",
+"Safari",
+"Messages",
+"QuickChat",
+"Contacts",
+"Reminders",
+"Calendar",
+"Notes",
+"Photos",
+"Maps",
+"Weather",
+"Mail"
+],
+"costUsd": 0.04736,
+"modelCalls": 5,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "app",
+"run": "app-27sep/ios-version:b780825cf4f7",
+"goal": "What iOS version is this iPhone on?",
+"apps": [
+"Settings",
+"Safari",
+"Messages",
+"QuickChat",
+"Contacts",
+"Reminders",
+"Calendar",
+"Notes",
+"Photos",
+"Maps",
+"Weather",
+"Mail"
+],
+"costUsd": 0.0375,
+"modelCalls": 6,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "app",
+"run": "app-27sep/safari-heading:74838fdf072d",
+"goal": "Open example.com in Safari and tell me the page's main heading",
+"apps": [
+"Settings",
+"Safari",
+"Messages",
+"QuickChat",
+"Contacts",
+"Reminders",
+"Calendar",
+"Notes",
+"Photos",
+"Maps",
+"Weather",
+"Mail"
+],
+"costUsd": 0.01737,
+"modelCalls": 3,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "app",
+"run": "app-27sep/text-contact:e6d310c485a2",
+"goal": "Message Zara Okonkwo in QuickChat \"I'm running late\"",
+"apps": [
+"Settings",
+"Safari",
+"Messages",
+"QuickChat",
+"Contacts",
+"Reminders",
+"Calendar",
+"Notes",
+"Photos",
+"Maps",
+"Weather",
+"Mail"
+],
+"costUsd": 0.02615,
+"modelCalls": 4,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "app",
+"run": "app-27sep/json-extract:486af5b28e96",
+"goal": "In Settings, open General > About and report the iOS version and the model name",
+"apps": [
+"Settings",
+"Safari",
+"Messages",
+"QuickChat",
+"Contacts",
+"Reminders",
+"Calendar",
+"Notes",
+"Photos",
+"Maps",
+"Weather",
+"Mail"
+],
+"costUsd": 0.02256,
+"modelCalls": 3,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "app",
+"run": "app-27sep/redirect:a068cdc5a02a",
+"goal": "Message Zara Okonkwo in QuickChat \"I'm running late\"",
+"apps": [
+"Settings",
+"Safari",
+"Messages",
+"QuickChat",
+"Contacts",
+"Reminders",
+"Calendar",
+"Notes",
+"Photos",
+"Maps",
+"Weather",
+"Mail"
+],
+"costUsd": 0.03201,
+"modelCalls": 4,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "app",
+"run": "app-27sep/ios-version:0c94766b86cb",
+"goal": "What iOS version is this iPhone on?",
+"apps": [
+"Settings",
+"Safari",
+"Messages",
+"QuickChat",
+"Contacts",
+"Reminders",
+"Calendar",
+"Notes",
+"Photos",
+"Maps",
+"Weather",
+"Mail"
+],
+"costUsd": 0.02663,
+"modelCalls": 4,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "app",
+"run": "app-27sep/reminder:9857ba74f704",
+"goal": "Add a reminder to buy oat milk",
+"apps": [
+"Settings",
+"Safari",
+"Messages",
+"QuickChat",
+"Contacts",
+"Reminders",
+"Calendar",
+"Notes",
+"Photos",
+"Maps",
+"Weather",
+"Mail"
+],
+"costUsd": 0.0325,
+"modelCalls": 5,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "app",
+"run": "app-27sep/safari-heading:3e44a8f94b90",
+"goal": "Open example.com in Safari and tell me the page's main heading",
+"apps": [
+"Settings",
+"Safari",
+"Messages",
+"QuickChat",
+"Contacts",
+"Reminders",
+"Calendar",
+"Notes",
+"Photos",
+"Maps",
+"Weather",
+"Mail"
+],
+"costUsd": 0.02341,
+"modelCalls": 4,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "app",
+"run": "app-27sep/text-contact:66a24cde9ce4",
+"goal": "Message Zara Okonkwo in QuickChat \"I'm running late\"",
+"apps": [
+"Settings",
+"Safari",
+"Messages",
+"QuickChat",
+"Contacts",
+"Reminders",
+"Calendar",
+"Notes",
+"Photos",
+"Maps",
+"Weather",
+"Mail"
+],
+"costUsd": 0.03264,
+"modelCalls": 5,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "app",
+"run": "app-27sep/copy-across:a60f3d7681cd",
+"goal": "Find Micah Chen's email address in Contacts and add a reminder whose title is that email address",
+"apps": [
+"Settings",
+"Safari",
+"Messages",
+"QuickChat",
+"Contacts",
+"Reminders",
+"Calendar",
+"Notes",
+"Photos",
+"Maps",
+"Weather",
+"Mail"
+],
+"costUsd": 0.02682,
+"modelCalls": 4,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "app",
+"run": "app-27sep/json-extract:1ab57084c5fb",
+"goal": "In Settings, open General > About and report the iOS version and the model name",
+"apps": [
+"Settings",
+"Safari",
+"Messages",
+"QuickChat",
+"Contacts",
+"Reminders",
+"Calendar",
+"Notes",
+"Photos",
+"Maps",
+"Weather",
+"Mail"
+],
+"costUsd": 0.0218,
+"modelCalls": 3,
+"status": "completed"
+},
+{
+"split": "heldout",
+"source": "app",
+"run": "app-27sep/redirect:0dc05b5ac645",
+"goal": "Message Zara Okonkwo in QuickChat \"I'm running late\"",
+"apps": [
+"Settings",
+"Safari",
+"Messages",
+"QuickChat",
+"Contacts",
+"Reminders",
+"Calendar",
+"Notes",
+"Photos",
+"Maps",
+"Weather",
+"Mail"
+],
+"costUsd": 0.03709,
+"modelCalls": 5,
+"status": "completed"
+},
+{
+"split": "fit",
+"source": "app",
+"run": "app-27sep/copy-across:e21c43702feb",
+"goal": "Find Micah Chen's email address in Contacts and add a reminder whose title is that email address",
+"apps": [
+"Settings",
+"Safari",
+"Messages",
+"QuickChat",
+"Contacts",
+"Reminders",
+"Calendar",
+"Notes",
+"Photos",
+"Maps",
+"Weather",
+"Mail"
+],
+"costUsd": 0.0285,
+"modelCalls": 4,
+"status": "completion_not_confirmed"
+}
+]
+}

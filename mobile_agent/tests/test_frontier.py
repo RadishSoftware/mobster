@@ -84,6 +84,26 @@ class FrontierLoopTests(unittest.TestCase):
         self.assertEqual(result["status"], "completed")
         self.assertIn("frontier_refused", [e["event"] for e in events])
 
+    def test_a_sideways_swipe_strokes_through_its_target_row_and_names_it(self):
+        # B7 (5 Oct): the driver used to swipe across the middle of the screen whatever the model aimed at, and
+        # the owner's 5:55 AM alarm opened instead of the one targeted. The stroke now goes through the target
+        # row wherever it is, so the step names it (this test pinned the old, untargeted stroke).
+        from mobile_agent.engines import step_text
+        label = "Buy oat milk, Incomplete"
+        for rect in ((.05, .10, .9, .05), (.05, .47, .9, .06)):
+            with self.subTest(rect=rect):
+                row = screen(Element("1", label, "Cell", rect))
+                swiped = screen(Element("1", label, "Cell", rect),
+                                Element("2", "Delete", "Button", (.8, rect[1], .15, rect[3])))
+                driver, _, events = self.run_script("Show the delete button on Buy oat milk in Reminders.",
+                                                    [row, swiped, swiped, swiped],
+                                                    [("SWIPE_LEFT", label, None),
+                                                     ("DONE", None, None), ("DONE", None, None)])
+                self.assertEqual(driver.actions[0], ("SWIPE_LEFT", label, None))
+                action = next(e for e in events if e["event"] == "frontier_action")
+                self.assertEqual(action["target_label"], label)
+                self.assertEqual(step_text("SWIPE_LEFT", action["target_label"]), "Swiped left on Buy oat milk")
+
     def test_done_chained_after_an_edit_waits_for_one_look_at_the_result(self):
         row = screen(Element("1", "Archive", "Button", (.4, .1, .2, .05)))
         archived = screen(Element("1", "Archived", "StaticText", (.4, .1, .2, .05)))
@@ -555,7 +575,7 @@ class ChecklistAndMacroTests(unittest.TestCase):
         script.answers = {1: "Done.", 2: "Done.", 3: "Confirmation H7K2QX; the terminal was not shown."}
         events = []
         result = FrontierAgent(Driver([note] * 3), script, emit=events.append, screenshots=False,
-                               settle_seconds=0).run(self.FLIGHT)
+                               settle_seconds=0, contract=False).run(self.FLIGHT)  # the legacy checklist
         self.assertEqual(result["status"], "completed")
         self.assertEqual(script.usage["calls"], 3)
         prompts = [e["text"] for e in events if e["event"] == "frontier_prompt"]

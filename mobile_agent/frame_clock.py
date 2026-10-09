@@ -75,6 +75,9 @@ MAX_MASKED_FRACTION = .25 # more of the screen busy than this: the clock decline
 STALE_SECONDS = .3        # newest frame older than this: unhealthy
 MIN_FPS = 10              # frames in the last second (measured: ~28 fps, p99 gap 127 ms)
 GAP_SECONDS = 1.0         # a longer pause between frames is logged (the settle is blind meanwhile)
+# A pause this long is a stall: WDA could not take its screenshot ("Cannot take a screenshot within 20000 ms",
+# Maps and Spotify on the phone, B4). Counted once per stall in ``stalls``; WDA.next_step reads it.
+STALL_SECONDS = 3.0
 # MJPEG arrival lags the screen by at most ~55 ms (measured against /screenshot
 # captures during scroll momentum, iPhone 15 Pro over USB).
 CAPTURE_LAG = .06
@@ -288,7 +291,12 @@ class FrameClock:
         if video is None:
             if not wda_url:
                 raise ValueError("FrameClock needs a WdaVideo relay or a WDA URL")
+            from .pool import default_mjpeg_url
             from .wda_video import WdaVideo
+            mjpeg_url = mjpeg_url or default_mjpeg_url(wda_url)
+            if not mjpeg_url:
+                # A WDA port with no stream paired (8080): never another device's; the driver settles by time.
+                raise ValueError("No MJPEG stream is paired with this WDA port")
             if isinstance(session, str):
                 session = (lambda value: lambda: value)(session)
             video = WdaVideo(wda_url, mjpeg_url=mjpeg_url, session=session, screenshot_fallback=False)
@@ -313,6 +321,8 @@ class FrameClock:
         self.errors = 0
         self.last_seq = 0
         self.resets = 0
+        self.stalls = 0
+        self._stalled_after = None   # the seq of the last frame before a counted stall
         self._log_lock = threading.Lock()
         if start:
             self.start()
@@ -371,6 +381,7 @@ class FrameClock:
             if frame is None:
                 if getattr(self.video, "closed", False):
                     return
+                self.check_stall()
                 continue
             sequence = frame[0]
             source = frame[5] if len(frame) > 5 else "wda_mjpeg"
@@ -380,7 +391,20 @@ class FrameClock:
             last = self.latest
             if last is not None and arrival - last.t >= GAP_SECONDS:
                 self.record({"kind": "gap", "ms": round((arrival - last.t) * 1000)})
+                self.check_stall(arrival)
             self.ingest(frame[2], arrival, sequence)
+
+    def check_stall(self, now=None):
+        """Count a stall (no frame for STALL_SECONDS) once; True when this call counted one."""
+        with self.condition:
+            last = self.latest
+            now = self.clock() if now is None else now
+            if last is None or now - last.t < STALL_SECONDS or self._stalled_after == last.seq:
+                return False
+            self._stalled_after = last.seq
+            self.stalls += 1
+        self.record({"kind": "stall", "ms": round((now - last.t) * 1000)})
+        return True
 
     def ingest(self, data, arrival=None, seq=None):
         """Process one JPEG frame. Public so tests (and offline replays) can feed frames."""
@@ -484,7 +508,7 @@ class FrameClock:
             timings = sorted(self.decode_ms)
             now = self.clock()
             return {"healthy": self._healthy_locked(), "frames": self.frames, "skipped": self.skipped,
-                    "errors": self.errors, "resets": self.resets,
+                    "errors": self.errors, "resets": self.resets, "stalls": self.stalls,
                     "fps": self._recent_frames_locked(now),
                     "frame_age_ms": None if self.latest is None else round((now - self.latest.t) * 1000, 1),
                     "process_ms_p50": round(timings[len(timings) // 2], 3) if timings else None,

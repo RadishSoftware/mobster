@@ -1,0 +1,43 @@
+#!/bin/sh
+# Starts Mobster's MCP server for the Claude Code plugin and the Claude Desktop bundle: `mobster mcp` with
+# this script's arguments.
+#
+# Claude Code started from an IDE or the desktop app may not have your shell's PATH, so after PATH this
+# looks where Mobster's installers put the command: ~/.local/bin (curl install), /opt/homebrew/bin and
+# /usr/local/bin (Homebrew) and ~/.mobster/current. MOBSTER_SEARCH_PATHS (folders separated by colons)
+# replaces that list. Stdout belongs to the MCP protocol, so every message goes to stderr.
+#
+#   scripts/mobster-mcp --check    run `mobster mcp doctor` instead of the server
+set -u
+
+find_mobster() {
+  if command -v mobster >/dev/null 2>&1; then
+    command -v mobster
+    return 0
+  fi
+  search=${MOBSTER_SEARCH_PATHS:-$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:${MOBSTER_HOME:-$HOME/.mobster}/current}
+  old_ifs=$IFS
+  IFS=:
+  for folder in $search; do
+    if [ -x "$folder/mobster" ]; then
+      IFS=$old_ifs
+      echo "$folder/mobster"
+      return 0
+    fi
+  done
+  IFS=$old_ifs
+  return 1
+}
+
+if ! mobster=$(find_mobster); then
+  echo "Mobster's MCP server needs the mobster command, and it isn't installed (looked on PATH and in" \
+       "~/.local/bin, /opt/homebrew/bin and /usr/local/bin). Install it with" \
+       "\`curl -fsSL https://mobster.dev/install.sh | sh\` or \`brew install radishsoftware/tap/mobster\`," \
+       "then restart Claude Desktop, or run /mcp in Claude Code, to reconnect." >&2
+  exit 127
+fi
+
+if [ "${1:-}" = "--check" ]; then
+  exec "$mobster" mcp doctor
+fi
+exec "$mobster" mcp "$@"

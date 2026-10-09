@@ -1,0 +1,17 @@
+# Smart: Mobster runs the steps itself on your OpenAI key, then checks the expectations.
+# The verdict comes from the expectations, never from the model.
+#   mobster verify --check .mobster/checks/onboarding.yaml --env-file ~/.config/mobster/agent.env
+version: 1
+name: A new user finishes onboarding and reaches the paywall
+app:
+  bundle: dev.mobster.daybreak
+  path: .build/Build/Products/Debug-iphonesimulator/Daybreak.app
+tags: [onboarding, paywall]
+steps:
+  - Complete onboarding. Don't allow notifications.
+  - Reach the paywall.
+expect:
+  - text: Choose your plan
+  - count: { id: /^plan_/ }
+    equals: 3
+budget: { max_seconds: 180, max_usd: 0.15 }

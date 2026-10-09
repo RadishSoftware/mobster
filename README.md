@@ -1,110 +1,189 @@
-# Mobster CLI
+# Mobster
 
-Mobster CLI is the open-source agent and command line that [Mobster](https://mobster.dev), the Mac app, is built on. It is an iPhone agent that works from the accessibility tree instead of screenshots. Each step reads the tree through WebDriverAgent (WDA) over USB. [Jev](https://docs.typesafe.ai/introduction), a typed decision model, then picks the operation, the target, whether the goal is met and whether the task is blocked, all in one call. A small helper model runs only when text has to be written, an answer extracted, a recovery hint given or a multi-app request compiled into a short plan (`plans.py`). Routes, replays and the decision memo take some steps with no model call at all.
+Do anything on your iPhone with agents.
 
-The default step sends no screenshot. Images leave the Mac only when a task needs them: crops of on-screen pictures go to your helper model when a task asks about pictures (`vision_judge.py`, `visual_answer.py`), and the optional frontier-model policy (`frontier.py`, used by the iOSWorld harness) sends a small screenshot each turn.
+[Mobster for Mac](https://mobster.dev) puts an agent on your real iPhone. Type a task, watch every tap in a live view of the phone, and approve anything it would send, buy, post or delete. It does your own tasks in the apps you're already signed in to, and it tests the app you're building on your own phone and on simulators. It reads each screen's accessibility tree (the labelled controls VoiceOver reads), then taps, types, swipes and opens apps over USB from your Mac, with no cloud in between.
 
-Text answers must be grounded. Each non-null extracted value has to quote a literal that was actually seen on the screen. When no such literal exists, the value is `null` with the status `insufficient_evidence`, or the run ends as "Needs review". Answers about pictures are the vision model's judgment, not a citation, and the frontier policy's answer is its own final text.
+This repository is Mobster CLI, the engine inside Mobster for Mac. It's free and open source under MIT. Use it to try Mobster from Terminal, to give your coding agent a simulator or your iPhone, or to read exactly what touches your phone.
 
-## Requirements
+## Mobster for Mac
 
-- A Mac with full Xcode (not only the Command Line Tools), signed in to an Apple ID. A free personal team works, but iOS then asks you to rebuild the WDA runner every 7 days.
-- Python 3.12 or later. The `python3` that ships with macOS is 3.9 and cannot install the dependencies: `brew install python@3.12`, or `uv python install 3.12`.
-- `brew install libimobiledevice` (`idevice_id`, `ideviceinfo`, `iproxy`) and `git`.
-- An iPhone with Developer Mode on, connected by USB, with "Trust This Computer" accepted.
-- A Jev API key from [TypeSafe](https://docs.typesafe.ai/introduction) (`TYPESAFE_API_KEY`). A helper-model key is optional.
+- **Guided setup for each phone.** Developer Mode, Xcode and Mobster's helper on the iPhone, one step at a time, with no Terminal. It signs the helper and renews it before a free Apple ID's 7 days run out.
+- **Watch it work.** A live view of each iPhone, with approvals inline: Mobster shows the app and the exact text before it sends, buys, posts or deletes, and you can take over with a click.
+- **Conversations that remember.** A follow-up knows what the last task found, Mobster remembers what you tell it, reads the files you attach, and listens when you hold the mic (macOS 26 or later).
+- **Every phone you plug in.** Several iPhones and simulators in one window, each with its own live view, approvals and history, plus saved workflows and schedules.
 
-**Tested on:** one iPhone 15 Pro running iOS 26.0.1 over USB, plus iOS simulators for the iOSWorld harness only. Other iPhone models and iOS versions are untested, and nothing in the code gates on them.
+Mobster for Mac is \$67 once (\$34.99 in launch week, through 15 October 2026) or \$7.67 a month, for every phone you plug in. Download it from [mobster.dev](https://mobster.dev), then follow [Quickstart: Mobster for Mac](https://docs.mobster.dev/quickstart/mac). There's no trial: the free CLI below is the way to try Mobster.
 
-## Quick start
+## Mobster CLI
 
-From a checkout:
+The `mobster` command, its MCP server and the agent loop, from Terminal:
 
-```sh
-make venv                                   # python3.12 -m venv mobile_agent/.venv + pinned requirements
-mobile_agent/.venv/bin/python -m mobile_agent --version
-mobile_agent/.venv/bin/python -m mobile_agent demo       # offline fixture replay: no phone, no keys
-```
+- **Test your app.** `mobster test` runs every check in your project on simulators and on your iPhone, with retries, flaky checks named, and JUnit and HTML reports. The verdict comes from assertions on the tree, never from a model.
+- **Run your own tasks.** Mobster's agent works in a conversation that remembers what earlier tasks found and what you told it, reads files you attach, and asks before it sends, buys, posts or deletes.
+- **Use the agent you already have.** `mobster mcp` gives Claude Code, Codex, Cursor or your own agent the phone, or hands a whole task to Mobster's agent with `phone_task`. [Integrations](https://mobster.dev/integrations) has a page for each agent.
 
-If `python3.12` is not on your `PATH`, pass it: `make venv PYTHON_BOOTSTRAP=$(brew --prefix python@3.12)/bin/python3.12`, or with uv: `uv venv --python 3.12 mobile_agent/.venv && uv pip install --python mobile_agent/.venv/bin/python -r mobile_agent/requirements.txt`.
+Mobster drives iPhones over a USB cable and iOS simulators from an Apple silicon Mac. It doesn't drive Android, and it can't get past Face ID or a passcode.
 
-Make a private env file with `cp mobile_agent/.env.example mobile_agent/.env && chmod 600 mobile_agent/.env`, and fill in `TYPESAFE_API_KEY` with an editor (not on the command line, which keeps it in your shell history). `.env` files are gitignored; never commit one. Get WDA serving on `127.0.0.1:8100`, either with the managed setup API (`serve --manage-device`, [setup-api.md](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/docs/setup-api.md)) or by hand ([usb-wda.md](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/docs/usb-wda.md); `scripts/usb-wda.sh` keeps it running). Then preview one decision without acting:
+## Install Mobster CLI
 
-```sh
-mobile_agent/.venv/bin/python -m mobile_agent run 'Open Search' --wda-url http://127.0.0.1:8100 --env-file mobile_agent/.env
-#   --execute to act, --helper for the text model, --spend-cap-usd to bound model spend
-```
-
-The local API (loopback only, port 8765) is `python -m mobile_agent serve`; see [running.md](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/docs/running.md). The optional helper model is configured with `TEXT_MODEL`, `TEXT_MODEL_PROVIDER`, `TEXT_MODEL_API_KEY` and `TEXT_MODEL_BASE_URL`. To use Vertex AI through an existing `gcloud` login, set `TEXT_MODEL_PROVIDER=vertex` together with `GOOGLE_CLOUD_PROJECT=<your-project>` and `GOOGLE_CLOUD_LOCATION=global`.
-
-To run the tests (no phone, simulator or key needed):
+On an Apple silicon Mac with Xcode and an iOS Simulator runtime:
 
 ```sh
-make test-backend                           # mobile_agent/.venv/bin/python -m unittest discover -s mobile_agent -t .
+curl -fsSL https://mobster.dev/install.sh | sh
 ```
 
-### As a package
+or with Homebrew, which installs the same build and needs no Command Line Tools:
 
-The distribution is named `mobster-cli` (`mobster` on PyPI is an unrelated project). It is not published to PyPI yet; from a checkout, `pip install .` into a Python 3.12 environment installs the `mobile_agent` package and a `mobster` command (`mobster --version`, `mobster run ...`, `mobster serve ...`). An installed copy keeps its task journal and compiled helpers in `~/Library/Application Support/app.mobster.desktop/`, never in site-packages. `pyproject.toml` declares compatible dependency ranges; `mobile_agent/requirements.txt` holds the exact tested pins.
+```sh
+brew install radishsoftware/tap/mobster
+```
 
-## What is in the package
+Then prepare the simulator once. This creates it, boots it headless and builds WebDriverAgent:
 
-- the observe/decide/act loop (`agent.py`), with every mutation journaled before it is sent (`journal.py`);
-- the WDA driver (`drivers.py`) and the managed USB iPhone lifecycle (`device_manager.py`, `setup_service.py`);
-- the Jev decision path and helper models (`models.py`, `helper_models.py`);
-- compiled loops over feeds (`loops.py`, `vision_judge.py`) and a frontier-model step policy (`frontier.py`);
-- a loopback-only HTTP API (`server.py`);
-- the evaluation harness (`evals/`), the MobsterBench-iOS benchmark and the iOSWorld runner (`bench/`).
+```sh
+mobster sim doctor --fix
+```
 
-**[Mobster](https://mobster.dev)**, the Mac app built on Mobster CLI, is a separate, closed-source product. It runs on Apple Silicon Macs only.
+## Test your app
+
+### A first check with the sample app
+
+[Daybreak](https://github.com/RadishSoftware/mobster/tree/main/examples/ios/Daybreak) is a SwiftUI app for a morning routine, with a sunrise drawn in SwiftUI, onboarding, a three-plan paywall, a Today screen and Settings, in light and dark. Build it and check the paywall:
+
+```sh
+git clone https://github.com/RadishSoftware/mobster && cd mobster
+xcodebuild -project examples/ios/Daybreak/Daybreak.xcodeproj -scheme Daybreak \
+  -destination 'generic/platform=iOS Simulator' -derivedDataPath examples/ios/Daybreak/.build CODE_SIGNING_ALLOWED=NO build
+cd examples/ios/Daybreak
+mobster verify --check .mobster/checks/paywall.yaml
+```
+
+The check opens `daybreak://paywall` and expects three plans, Annual at "$39.99 / year", a Restore Purchases button and no loading text. It exits 0 and writes `.mobster/runs/<run_id>/report.html`. Now break the paywall with a one-line change and run it again:
+
+```sh
+scripts/plant-bug.sh missing-plan      # ForEach(Plan.all) becomes ForEach(Plan.all.prefix(2))
+xcodebuild -project Daybreak.xcodeproj -scheme Daybreak -destination 'generic/platform=iOS Simulator' \
+  -derivedDataPath .build CODE_SIGNING_ALLOWED=NO build
+mobster verify --check .mobster/checks/paywall.yaml
+```
+
+It exits 1 (output captured 28 Sep 2026):
+
+```text
+✗ failed  The paywall shows three plans with Annual at $39.99 a year  (18.2 s)
+  ✓ text "Choose your plan"
+  ✗ count id=/^plan_/ == 3: found 2: plan_weekly, plan_monthly
+  ✗ value id=plan_annual == "$39.99 / year": not found; closest: "plan_monthly"
+  ✓ visible label=Restore Purchases role=button
+  ✓ no_text "Loading"
+```
+
+The report shows the paywall with the two plan cards outlined in red. `scripts/plant-bug.sh missing-plan --undo` puts the line back.
+
+### Every check, on every device
+
+`mobster verify` runs one check. `mobster test` runs all of them:
+
+```sh
+mobster test                                          # every check in .mobster/checks, on a simulator
+mobster test --sim "iPhone 17 Pro" --sim "iPhone SE (3rd generation)" --parallel 2
+mobster test --device "Sam's iPhone"                  # your own build, on your own iPhone
+```
+
+It prints a line per check and device (`✓ passed`, `~ flaky`, `✗ failed`), then the totals and the paths of `junit.xml` and an HTML report with each run's frames, under `.mobster/test-results/<suite-id>/`. A failure is tried again from a fresh app, and a check that passes on a retry is marked flaky. On your iPhone, a check drives only a build you installed, stays in that app, and never clears its data. [Run every check](https://docs.mobster.dev/testing) covers quarantine, `--repeat`, tags, shards and recording a check from a task, and [Running checks in CI](https://docs.mobster.dev/ci) has GitHub Actions recipes.
+
+### Three ways to run a check
+
+| Mode | Who performs the steps | Model calls |
+|---|---|---|
+| Launch-only | Nobody. Mobster launches the app, opens a deep link if given, and checks | None |
+| Key-less | Your coding agent, through `mobster mcp` | None by Mobster |
+| Smart | Mobster, on your Claude or OpenAI key | One per agent turn, with the run's spend capped by `--max-usd` (default $0.25) |
+
+Launch-only and key-less runs send nothing anywhere. Smart sends each screen's image and accessibility text to Anthropic or OpenAI, whichever key it runs on.
+
+### Exit codes
+
+| Exit | Verdict | Means |
+|---|---|---|
+| 0 | passed | Every assertion held on one settled screen |
+| 1 | failed | An assertion didn't hold, or the app wasn't in front |
+| 2 | needs_review | Nothing decided the run: no assertions, or they already held before the flow ran |
+| 3 | couldnt_run | The check is invalid, or this Mac couldn't run it |
+
+`mobster test` uses the same codes across its checks: 1 if one failed, else 3 if one couldn't run, else 2 if one needs review, else 0. `mobster verify --json` prints the result as one JSON object. [Checks](https://docs.mobster.dev/checks) documents it, along with the check file and every assertion.
+
+## Use it from your coding agent
+
+```sh
+mobster mcp install --all                  # Claude Code, Codex, Cursor and every other agent on this Mac
+claude mcp add mobster -- mobster mcp      # Claude Code
+codex mcp add mobster -- mobster mcp       # Codex
+```
+
+For Cursor, add `mobster mcp` to `.cursor/mcp.json`. Your agent gets three kinds of tools:
+
+- **Check a screen.** `verify_start` with your app and what must be true, then `screen`, `tap`, `type_text` and `swipe`, then `verify_finish` for the verdict. This needs no model key: your agent does the driving, and Mobster judges. `run_tests` runs the project's saved checks on simulators and returns the summary and the report paths.
+- **Drive a phone.** With a `device` from `list_devices`, the same tools drive a simulator or your USB iPhone directly. `--allow-device` keeps the server to the phones you name.
+- **Hand over a task.** `phone_task` gives a whole task to Mobster's agent, in a conversation, through the running Mobster app or `mobster serve`. Mobster's agent asks you before it sends, buys, posts or deletes, and your agent can't answer for you.
+
+With `--env-file` pointing at your Claude or OpenAI key, the server also offers `verify`, which runs a check's steps itself. [MCP server](https://docs.mobster.dev/mcp-server) has each client's setup, the tools, and an instruction to paste into `CLAUDE.md` or `AGENTS.md`.
+
+## Run your own tasks on your iPhone
+
+The same agent drives a real iPhone over USB. Type a task such as "Turn on Dark Mode" in the terminal UI (`mobster`) and it carries it out one step at a time, asking before it sends, buys, posts or deletes anything. That needs your Claude or OpenAI key (`mobster run` uses Quick mode, which needs `TYPESAFE_API_KEY`) and a phone set up for WebDriverAgent. `mobster --demo` tries it with a scripted phone, no key needed.
+
+In `mobster chat`, tasks follow on from each other. With Mobster for Mac or `mobster serve` running, the conversation is the one the app shows; with neither, the task runs in this terminal:
+
+```sh
+mobster chat --new "Find my last message from Kate Bell"
+mobster chat "Reply that I'm running 10 minutes late"
+```
+
+The second task gets your earlier words and what the first one found, so it knows who "her" is. A message you send while a task works steers it at its next step, and never approves anything. `mobster memory add "My gym is the one on 5th Street"` tells Mobster's agent something to remember, on this Mac, and `mobster phone file put menu.pdf --app com.apple.Pages` puts a file in an app's folder on the phone.
+
+Beyond tapping and typing, it can enter a sign-in code sent by text or email without the model seeing it, read Notification Center, put text on the phone's clipboard, install your own signed builds (`mobster phone install`), and post to a webhook when a scheduled task fails or waits for you. It stops at once on a locked phone instead of trying to get past the lock screen. It won't enter a passcode, use Face ID, confirm App Store or Apple Pay purchases with the side button, or open apps you locked. [What Mobster can and can't do](https://docs.mobster.dev/capabilities) has the details.
+
+[Mobster for Mac](https://mobster.dev), the app built on this CLI, adds guided setup for each phone, several phones in one window, a live view, conversations with approvals inline, memory you can edit, attachments, push-to-talk, history and schedules.
+
+- [Quickstart: Mobster CLI](https://docs.mobster.dev/quickstart/cli): install, the demo, a first task
+- [Device setup](https://docs.mobster.dev/device-setup): WebDriverAgent on a USB iPhone
+- [Conversations](https://docs.mobster.dev/conversations), [Memory](https://docs.mobster.dev/memory) and [Files](https://docs.mobster.dev/files)
+- [Terminal UI](https://docs.mobster.dev/tui), [Scripts and the API](https://docs.mobster.dev/scripting) and [Configuration](https://docs.mobster.dev/configuration)
+
+## What it doesn't do yet
+
+- The iPhone stays on a USB cable. Wi-Fi after one cable pairing is a preview that's off unless you turn it on, while it's tested on real phones ([Without the cable](https://docs.mobster.dev/wifi)).
+- Checks don't heal themselves or replay cached steps: every run launches the app fresh, and a Smart step calls the model each time.
+- `mobster verify` installs apps on the iOS Simulator only; on a USB iPhone it checks an app already installed there. `mobster test --device` also installs an `.ipa` or a device build you give it. Neither clears an app's data on a phone.
+- `phone_task` needs the Mobster app or `mobster serve` running. Memory goes with tasks from the Mac app, `mobster chat` and workflows, not yet with the terminal UI's.
+- Voice is in Mobster for Mac only, on macOS 26 or later.
+- iOS only.
 
 ## Documentation
 
-| Topic | Where |
-| --- | --- |
-| Framework: loop, API, results, safety, limits | [mobile_agent/README.md](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/README.md) |
-| Design notes index | [mobile_agent/docs/](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/docs/README.md) |
-| Running `serve` and `run`, configuration, simulators | [mobile_agent/docs/running.md](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/docs/running.md) |
-| How a run works end to end | [mobile_agent/docs/architecture.md](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/docs/architecture.md) |
-| Benchmarks: MobsterBench-iOS and iOSWorld | [mobile_agent/docs/benchmarks.md](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/docs/benchmarks.md), [mobile_agent/bench/README.md](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/bench/README.md) |
-| Setup and device API | [mobile_agent/docs/setup-api.md](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/docs/setup-api.md) |
-| Manual USB and WDA setup | [mobile_agent/docs/usb-wda.md](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/docs/usb-wda.md), `scripts/usb-wda.sh` |
-| Compiled intent (routes and plans before the step model) | [mobile_agent/docs/compiled-intent.md](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/docs/compiled-intent.md) |
-| Saved tasks and schedules | [mobile_agent/docs/workflows.md](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/docs/workflows.md) |
+- [Run every check](https://docs.mobster.dev/testing) and [Running checks in CI](https://docs.mobster.dev/ci): `mobster test`, devices, retries and flaky checks, reports, recipes
+- [Quickstart: test your app](https://docs.mobster.dev/quickstart/test): install, the simulator, a first check and the report, then [steps and saved checks](https://docs.mobster.dev/test/steps)
+- [Checks](https://docs.mobster.dev/checks): the check file, assertions, verdicts and the result JSON
+- [MCP server](https://docs.mobster.dev/mcp-server): `mobster mcp` in Claude Code, Codex and Cursor, and its tools
+- [Conversations](https://docs.mobster.dev/conversations): follow-ups, steering, `mobster chat`, `phone_task` and the threads API
+- [Memory](https://docs.mobster.dev/memory) and [Files](https://docs.mobster.dev/files): what Mobster remembers, attachments and `mobster phone file`
+- [Simulators](https://docs.mobster.dev/simulators): what Mobster creates, ports, WebDriverAgent, reset levels, `mobster sim`
+- [CLI reference](https://docs.mobster.dev/cli): every command, flag and exit code
+- [What Mobster can and can't do](https://docs.mobster.dev/capabilities): stopping on a locked iPhone (Mobster never unlocks it or enters a passcode), sign-in codes, notifications, the clipboard, installs, alerts, and what it refuses
+- [Architecture](https://docs.mobster.dev/architecture) and [Troubleshooting](https://docs.mobster.dev/troubleshooting)
+- [All docs](https://docs.mobster.dev), and for AI tools, [llms.txt](https://docs.mobster.dev/llms.txt)
+- On mobster.dev: [Mobster for Mac](https://mobster.dev), [Integrations](https://mobster.dev/integrations), [Compare](https://mobster.dev/compare) and the [Blog](https://mobster.dev/blog)
 
-## Status and current results
+## Support
 
-All results below come from one physical iPhone 15 Pro running iOS 26 over USB, unless a line says otherwise. Every task is graded by an independent oracle, either its own WDA reads of the device or ground truth fixed before the run. The oracle never reads the agent's evidence. The run reports behind these numbers are internal; each line gives its conditions.
+Open an [issue](https://github.com/RadishSoftware/mobster/issues) with the output of `mobster sim doctor` and `mobster version`. Leave out screenshots of private screens. Report security problems privately, as [SECURITY.md](https://github.com/RadishSoftware/mobster/blob/main/SECURITY.md) describes.
 
-**Oracle-graded task suites, 22 Sep 2026:**
+## Contributing
 
-- The Settings suite (7 tasks, 5 repeats) passed 35/35.
-- The full suite (14 Settings and Safari tasks, 3 repeats) passed 39/42 and 38/42 across two runs.
-- Abstention tasks passed 9/9 in each of those runs: the agent declined to invent facts that are not on the device.
-- An accessibility read takes about 130–210 ms. A Settings retrieval takes about 8 s end to end.
-
-**MobsterBench-iOS, 24 Sep 2026: a development result, not a held-out score.** Six successive development passes ran the same 68 pre-registered tasks with the `mobster-next` configuration, one repeat per pass, and failures in one pass guided the fixes before the next ([benchmarks.md](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/docs/benchmarks.md#what-the-pass-runs-are)).
-
-- The last three passes scored 42/67 (63%), 48/68 (71%) and 54/66 (82%) of graded attempts. The rise is partly fitting to this suite; a fresh 3-repeat run on frozen code is the number to quote, and it has not been run yet.
-- The last pass took a median of 7.7 s per task (p90 17.1 s) and cost about $0.006 per task.
-- Navigation and scrolling scored 100%. Multi-app tasks were the weakest category at 2/6.
-- The last pass also blocked 1 risky tap and recorded 2 unintended actions. The benchmark requires 0 of each.
-- **No baseline agent ran in these passes**, so the pre-registered state-of-the-art comparison has not been made.
-
-**iOSWorld** (133 tasks over 26 apps on an iPhone 17 Pro simulator, published best 51.9%). The runner `python -m mobile_agent.bench.iosworld run` uses iOSWorld's own reset and LLM judge. In an 11-task smoke run on 24 Sep 2026, the Jev step policy passed none of the tasks, mostly because it kept waiting (recorded in `frontier.py`). The frontier-model policy (`--policy frontier`) was added in response. No full iOSWorld result has been published yet.
-
-**Known gaps:**
-
-- Apps that draw their state instead of exposing it (calculators, maps, canvases, games), and text inside images, are invisible to the tree.
-- Chrome's hidden tab switcher leaks into the tree, so web tasks target Safari.
-- Thresholds for accepting answers and detecting completion still need calibration data that includes wrong answers.
-- "Ask before acting" pauses before actions Mobster recognizes as sending, buying, posting, deleting or submitting. It is a heuristic, not a guarantee: the side-effect thresholds are uncalibrated.
-- The service is a single-operator runtime that listens only on loopback. It is not a hosted multi-user service.
-
-## Data that leaves your Mac
-
-Mobster has no server and sends nothing to Radish Retail, LLC. A run sends the task text and the screen's accessibility text to Jev (TypeSafe), and, when configured, text and image crops to the helper model provider you choose. Keys stay in your env file. Task journals stay on your Mac and contain task goals and observed screen text: do not publish them. Automating an app is subject to that app's own terms.
+Bug fixes and docs changes are welcome. [CONTRIBUTING.md](https://github.com/RadishSoftware/mobster/blob/main/CONTRIBUTING.md) covers the development setup, tests and pull requests. The test suite needs no simulator, phone or key.
 
 ## License
 
-MIT, copyright Radish Retail, LLC. See [LICENSE](https://github.com/uninstantiated/mobster-cli/blob/main/LICENSE). Third-party components and their licences are listed in [THIRD_PARTY_NOTICES.md](https://github.com/uninstantiated/mobster-cli/blob/main/THIRD_PARTY_NOTICES.md).
+MIT, copyright Radish Retail, LLC. See [LICENSE](https://github.com/RadishSoftware/mobster/blob/main/LICENSE). Third-party components and their licences are listed in [THIRD_PARTY_NOTICES.md](https://github.com/RadishSoftware/mobster/blob/main/THIRD_PARTY_NOTICES.md).

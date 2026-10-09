@@ -4,6 +4,8 @@ jsonschema==4.25.1
 croniter==6.2.4
 # FrameClock (frame_clock.py): JPEG draft decode and tile diffs of the MJPEG stream.
 Pillow==12.3.0
+# Check files for `mobster verify --check` (verify/checks.py).
+PyYAML==6.0.3
 attrs==26.1.0
 jsonschema-specifications==2025.9.1
 python-dateutil==2.9.0.post0
@@ -11,3 +13,13 @@ referencing==0.37.0
 rpds-py==2026.6.3
 six==1.17.0
 typing_extensions==4.16.0
+# The terminal UI (tui/): Textual and what it pulls in.
+textual==8.2.8
+rich==15.0.0
+markdown-it-py==4.2.0
+mdit-py-plugins==0.6.1
+mdurl==0.1.2
+platformdirs==4.12.0
+Pygments==2.21.0
+# The phone's screenshot inside the UI, in terminals with the kitty graphics protocol or sixel.
+textual-image==0.14.1

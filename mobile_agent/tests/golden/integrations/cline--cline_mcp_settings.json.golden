@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "mobster": {
+      "command": "/opt/mobster/bin/mobster",
+      "args": ["mcp"],
+      "disabled": false,
+      "autoApprove": []
+    }
+  }
+}

@@ -1,0 +1,72 @@
+---
+title: "Troubleshooting: Mobster for Mac"
+sidebarTitle: "Mac app issues"
+description: "Fix your license, Setup, voice or AI account in Mobster for Mac."
+icon: "laptop"
+keywords: ["license key", "activate", "setup failed", "refresh helper", "voice not working", "key rejected", "out of credit"]
+---
+
+**Help** in the sidebar answers questions about setup, your AI account, approvals and the license, offline. For anything else, write to [support@radish.software](mailto:support@radish.software).
+
+## License
+
+| You see | What to do |
+|---|---|
+| That isn't a Mobster license key. | Keys look like `MOB-XXXX-XXXX-XXXX-XXXX`. Copy it again from the page that opened after checkout |
+| We couldn't find that license. | Check the key, or get it again at [mobster.dev/recover](https://mobster.dev/recover) with the email you paid with and the receipt number from Stripe |
+| This license is on 3 Macs. That's its limit. | Deactivate one in Settings › License on that Mac, then activate here |
+| This Mac was deactivated | Another Mac freed this one's seat. **Activate this Mac** to use Mobster here again |
+| Mobster couldn't reach mobster.dev to activate your license. | Check your connection and try again |
+| Your last payment didn't go through. | Update your card at [mobster.dev/manage](https://mobster.dev/manage), or in Settings › License › **Manage subscription** |
+
+## Setup
+
+| You see | What to do |
+|---|---|
+| Xcode is installed but Setup waits | Open Xcode once so it can finish installing. Mobster checks by itself |
+| Waiting for your iPhone | Plug it in with a cable that carries data, and unlock it. Try another cable or port: some cables only charge |
+| Waiting for Trust | Unlock your iPhone and tap **Trust**, then enter your passcode |
+| Developer Mode isn't in Settings | Continue: it appears after Mobster installs its helper, and Setup asks again then |
+| Sign in to Xcode first | In Xcode › Settings › Accounts, choose **+** and sign in with your Apple Account |
+| The install didn't finish. | Read the fix shown above it, then **Try again**. **Show details** has the log |
+| Mobster's helper didn't start | On your iPhone, open Settings › General › VPN & Device Management, tap your Apple Account under Developer App, then tap **Trust** |
+
+<span id="helper-refresh"></span>
+
+## The weekly refresh
+
+A free Apple Account signs Mobster's helper for 7 days at a time. Mobster refreshes it by itself while your iPhone is plugged in and unlocked, and notifies you a day before it needs you.
+
+| You see | What to do |
+|---|---|
+| [Name] needs a quick refresh | Choose **Refresh now**. It's quicker than the first install |
+| Plug in your iPhone to refresh | Plug it in and unlock it |
+| Mobster couldn't refresh its helper | Read the fix under it, then **Refresh now** in Settings › Phones |
+
+<span id="voice-unavailable"></span>
+
+## Voice
+
+| You see | What to do |
+|---|---|
+| Voice needs macOS 26 or later | Update macOS, or type the task |
+| Mobster can't hear you | Allow Mobster in System Settings › Privacy & Security › Microphone |
+| Speech recognition is off | Allow Mobster in System Settings › Privacy & Security › Speech Recognition |
+| Voice stopped working | Restart Mobster |
+
+<span id="ai-account"></span>
+
+## Your AI account
+
+| You see | What to do |
+|---|---|
+| Claude didn't accept this key. | Copy it again from the Claude Console. It starts with `sk-ant-` |
+| Your Claude account has no credit yet. | Add credit in the console, then **I've added it** |
+| This key can't use the model Mobster's agent runs on yet. | The line under it says where to fix it, then **Test again** |
+| Mobster couldn't reach Claude. | Check your internet connection, then try again |
+
+The same messages name OpenAI when that's your account.
+
+## Still stuck
+
+Quit Mobster (⌘Q) and open it again. Setup's logs are in `~/Library/Application Support/app.mobster.desktop/logs`. Read them before you send them: they can hold what was on your screen.

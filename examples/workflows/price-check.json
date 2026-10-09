@@ -1,0 +1,10 @@
+{
+ "name": "Price check",
+ "appId": "safari",
+ "engine": "smart",
+ "goal": "Open Safari, search for \"Sony WH-1000XM6 price\", and report the lowest price shown on the first page of results with the store's name. Don't sign in, add to a cart or buy anything.",
+ "outputFormat": "auto",
+ "cron": "0 8 * * *",
+ "timezone": "America/Los_Angeles",
+ "enabled": false
+}

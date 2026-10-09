@@ -1,0 +1,108 @@
+---
+title: "Memory: what Mobster remembers"
+sidebarTitle: "Memory"
+keywords: ["memory", "remember something", "forget", "mobster memory", "pinned", "suggestions"]
+description: "Tell Mobster what to remember. It keeps it on your Mac and uses it only in the tasks it fits."
+icon: "bookmark"
+---
+
+Mobster's agent can remember what you tell it: where your gym is, how you sign your texts, that Kate Bell is your sister. You write it in your own words, or accept a suggestion Mobster makes from something you typed. It stays on this Mac, and a task sends only the few things it needs to your AI account.
+
+<Note>Nothing is remembered without you. Mobster saves what you add yourself and the suggestions you choose **Remember** on, never anything on its own. It never remembers passwords, codes or card numbers.</Note>
+
+## In the Mac app
+
+**Settings › Memory** has everything:
+
+- **Use memory in tasks.** On by default. Off, no task gets anything Mobster remembers.
+- **Suggest things to remember.** On by default. When you write something like "my gym is the one on 5th Street", Mobster offers to remember it.
+- **Suggestions** waiting for an answer: **Remember** or **Not now**.
+- **What Mobster remembers**: add something (for every app, or for one app), pin it, edit it, or delete it (a toast offers **Undo**).
+- **Export as Markdown** saves everything to a file you can read or keep.
+- **Delete everything Mobster remembers** asks first, then deletes every fact and suggestion. Your settings stay.
+
+<Frame caption="Settings › Memory: what Mobster remembers, in your words, and a suggestion waiting for an answer.">
+  <img src="/images/mac/settings-memory-light.webp" alt="Settings › Memory: the two switches, what Mobster remembers, export and delete everything." className="block dark:hidden" />
+  <img src="/images/mac/settings-memory-dark.webp" alt="Settings › Memory: the two switches, what Mobster remembers, export and delete everything." className="hidden dark:block" />
+</Frame>
+
+In a conversation, a suggestion shows as a card under your message: **Remember this?** with **Remember**, **Edit** and **Not now**. A preference or a name ("I always…", "Call me…") is suggested pinned, and the card says it will go with every task. A card whose suggestion has expired or was deleted says so instead of offering the buttons.
+
+<Frame caption="A Remember this? card under a message, with Remember, Edit and Not now.">
+  <img src="/images/mac/memory-proposal-light.webp" alt="A Remember this? card under a message, with Remember, Edit and Not now." className="block dark:hidden" />
+  <img src="/images/mac/memory-proposal-dark.webp" alt="A Remember this? card under a message, with Remember, Edit and Not now." className="hidden dark:block" />
+</Frame>
+
+## Which things go with a task
+
+A task gets at most 12 things, and at most 1,200 characters of them, as one short section of what Mobster's agent reads before it starts:
+
+- **Pinned** things go with every task. Pin the ones that always matter, such as "Call me Sam" or "I prefer short replies". You can pin up to 10, of up to 1,000 characters together.
+- **The rest** go with tasks that share words with them: "When does my gym close?" gets "My gym is the one on 5th Street".
+- **Things for one app** go only when that app is in the task: it's the app you started in, the app the conversation was last in, or the task names it ("Open Messages and…").
+
+Memory goes with tasks you start in the Mac app or `mobster chat`, and with your workflows. It never goes with tasks another agent starts over MCP or the HTTP API. Tasks in the terminal UI (`mobster`) don't get it yet, and don't make suggestions. It applies to Mobster's agent; Quick mode doesn't use it.
+
+A task's events say which things it used, by ID only (`memory_used`), never their words. What the agent reads says these are your words and that the screen wins when they disagree, so an old fact never overrides what's in front of it.
+
+## Suggestions
+
+Mobster suggests something to remember when what you write says it plainly, sentence by sentence. It never calls a model to do it, so suggestions cost nothing and change nothing about the task:
+
+| You write | Mobster suggests |
+| --- | --- |
+| Remember that my gym is the one on 5th Street | My gym is the one on 5th Street |
+| my sister's name is Kate Bell | My sister's name is Kate Bell |
+| I always take the window seat | I always take the window seat (pinned) |
+| Call me Sam | Call me Sam (pinned) |
+
+It never suggests a passing state ("my battery is low"), a question ("what time does my gym close?"), something inside a task ("text Sam that my train is late"), a reminder ("remember to buy milk") or anything that looks like a password, code or card number. It reads only what you type in a task or send while one works, never what's on the screen or what another agent sends.
+
+A suggestion waits 14 days. **Not now** means Mobster won't suggest the same words again for 90 days, and it keeps only a fingerprint of them, not the words.
+
+## `mobster memory`
+
+The CLI reads and writes the same file as the Mac app.
+
+```sh
+mobster memory                       # the same as: mobster memory list
+mobster memory add "My gym is the one on 5th Street"
+mobster memory add "Sign my texts with – Sam" --app com.apple.MobileSMS --pin
+mobster memory list --json
+mobster memory pin 3f9c2a1b7d0e
+mobster memory unpin 3f9c2a1b7d0e
+mobster memory rm 3f9c2a1b7d0e
+mobster memory export --output memory.md
+mobster memory clear                 # asks you to type "delete everything"; --yes skips it
+```
+
+Exit codes: 0 done, 1 refused or not found, 2 usage, 3 memory can't be opened here (saved by a newer Mobster, or no home folder). `mobster memory routines` says routines aren't in this build yet.
+
+## Where it's kept
+
+One SQLite file, `~/Library/Application Support/app.mobster.desktop/memory/memory.sqlite3`. Its folder is readable only by you (0700), and the file too (0600). The Mac app, `mobster serve` and `mobster memory` all use it. `MOBSTER_MEMORY_DIR` moves it, which is meant for tests.
+
+Deleting everything removes the words from the file, not only from the list.
+
+## HTTP API
+
+Under `/api/memory`, with the same token as the rest of the API ([the HTTP API](/scripting#the-http-api)). Each body is JSON, and each error is a sentence with a code.
+
+| Route | Body or query | Answer |
+| --- | --- | --- |
+| `GET /api/memory/facts` | `?scope=global\|app:<bundle>&q=<words>` | `{facts, count, limits}` |
+| `POST /api/memory/facts` | `{text, scope?, pinned?}` | 201 `{fact}` · 400 `secret`, `too_long`, `invalid_text`, `invalid_scope` · 409 `duplicate` (with the `fact`), `memory_full`, `too_many_pinned`, `pinned_too_long` |
+| `POST /api/memory/facts/{id}` | `{text?, scope?, pinned?}` | `{fact}` · 404 `not_found` |
+| `DELETE /api/memory/facts/{id}` | | `{deleted: true}` · 404 |
+| `GET /api/memory/proposals` | `?thread=<id>&status=pending\|accepted\|dismissed\|expired\|all` | `{proposals}` |
+| `POST /api/memory/proposals/{id}` | `{accept, text?, pinned?}` | `{proposal, fact}` · 409 `not_pending` |
+| `GET /api/memory/settings` | | `{settings: {useInTasks, suggest}, count, limits}` |
+| `POST /api/memory/settings` | `{useInTasks?, suggest?}` | `{settings}` |
+| `POST /api/memory/clear` | `{confirm: "delete everything"}` | `{deleted: {facts, proposals}}` |
+| `GET /api/memory/export` | | Markdown (`text/markdown`) |
+
+A fact is `{id, text, scope, app: {bundleId, name} | null, source: "user" | "proposal", pinned, createdAt, updatedAt, lastUsedAt, uses}` (times in milliseconds). A file saved by a newer Mobster answers 503 `newer_data`.
+
+**Events.** The bus topic `memory` (`GET /api/events?topics=memory`) carries `fact_changed {op: added|updated|deleted|cleared, fact|id}`, `proposal_created {proposal}`, `proposal_resolved {id, accepted, factId?}` and `settings_changed {settings}`. A run's own events carry `memory_used {ids}`.
+
+**Conversations.** A suggestion from a task in a conversation is posted to it as a thread item of kind `memory_proposal`: `{proposalId, text, scope, app, pin, status, runId, expiresAt}`. Answering it updates the item's `status` (and `text` and `factId` once remembered).

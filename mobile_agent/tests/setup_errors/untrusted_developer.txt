@@ -1,0 +1,3 @@
+Testing failed:
+	WebDriverAgentRunner-Runner encountered an error (Failed to install or launch the test runner. If you believe this error represents a bug, please attach the result bundle at /Users/test/Library/Developer/Xcode/DerivedData/x.xcresult. (Underlying Error: The request to open "app.mobster.wda.runner.xctrunner" failed. (Underlying Error: The operation couldn't be completed. Unable to launch app.mobster.wda.runner.xctrunner because it has an invalid code signature, inadequate entitlements or its profile has not been explicitly trusted by the user.)))
+** TEST EXECUTE FAILED **

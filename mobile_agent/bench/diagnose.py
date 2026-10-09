@@ -23,6 +23,8 @@ import json
 import os
 import re
 
+from .iosworld_stats import official_pass
+
 
 def _kind(error):
     text = error or ""
@@ -110,7 +112,7 @@ def report(runs, top=12):
         mobster = record["mobster"]
         status[mobster.get("status")] += 1
         evaluation = record.get("evaluation") or {}
-        succeeded += bool(evaluation.get("success"))
+        succeeded += official_pass(evaluation) if evaluation else False
         for criterion in evaluation.get("rubric_results") or ():
             if not criterion.get("satisfied"):
                 words = re.findall(r"[a-z]+", criterion.get("criterion", "").casefold())
@@ -126,7 +128,7 @@ def report(runs, top=12):
                     no_change_targets[(detail or "").split(" ")[0]] += 1
     all_turns = sum(turns_total.values())
     wasted = sum(cause_turns.values())
-    print(f"{len(runs)} runs, {succeeded} judged successful; statuses {dict(status)}")
+    print(f"{len(runs)} runs, {succeeded} passed (iOSWorld's rule: every rubric criterion); statuses {dict(status)}")
     print(f"{all_turns} model turns; {wasted} ({100 * wasted / max(1, all_turns):.0f}%) bought no progress\n")
     print("turns by outcome:", ", ".join(f"{k} {v}" for k, v in turns_total.most_common()))
     print("\nwasted turns by cause (turns, tasks, examples):")
@@ -154,8 +156,9 @@ def task_trails(runs, least=3):
                 what = detail if category == "no_change" else f"{decision.get('operation')} {decision.get('target_label')!r}"
                 trail.append(f"{step}:{category.split(':')[-1]} {str(what)[:40]}")
         if len(trail) >= least:
-            success = (record.get("evaluation") or {}).get("success")
-            print(f"{record.get('task', '?'):16} {name:12} success={success}  " + "; ".join(trail))
+            evaluation = record.get("evaluation")
+            passed = official_pass(evaluation) if evaluation else None
+            print(f"{record.get('task', '?'):16} {name:12} passed={passed}  " + "; ".join(trail))
 
 
 def main(argv=None):

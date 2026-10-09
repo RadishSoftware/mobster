@@ -1,0 +1,20 @@
+{
+ "note": "A shop's search field.",
+ "bundle": "com.example.shop",
+ "width": 402,
+ "height": 874,
+ "keyboard": "",
+ "elements": [
+  {
+   "label": "Search",
+   "role": "SearchField",
+   "rect": [
+    0.05,
+    0.1,
+    0.9,
+    0.05
+   ],
+   "editable": true
+  }
+ ]
+}

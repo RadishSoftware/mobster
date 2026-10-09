@@ -1,0 +1,86 @@
+---
+title: "Quickstart: Mobster for Mac"
+sidebarTitle: "Mobster for Mac"
+description: "Install Mobster for Mac, connect your iPhone and run your first task."
+icon: "laptop"
+keywords: ["mac app", "setup", "first task", "download", "install"]
+---
+
+import Requirements from '/snippets/requirements.mdx';
+
+Mobster for Mac does tasks on the iPhone plugged into your Mac. You type what you want, watch each tap on the phone's live screen, and approve anything that would send, buy, post or delete. It runs the same agent as [Mobster CLI](/quickstart/cli).
+
+<Info>
+  Building an iOS app? [Quickstart: test your app](/quickstart/test) runs your first check on a simulator, with no phone. Using a coding agent? Go to [Add Mobster to your agent](/agents).
+</Info>
+
+## Before you begin
+
+<Accordion title="What you need">
+  <Requirements />
+</Accordion>
+
+## Set up
+
+Setup walks you through your Mac, your AI account and your iPhone, and checks each one as you go. **Do this later** leaves Setup at any point.
+
+<Frame caption="Setup's overview: the three parts, and which one is next.">
+  <img src="/images/mac/setup-light.webp" alt="Setup's overview: Let's get your iPhone ready, with three parts: Get your Mac ready, Connect your AI account and Connect your iPhone." className="block dark:hidden" />
+  <img src="/images/mac/setup-dark.webp" alt="Setup's overview: Let's get your iPhone ready, with three parts: Get your Mac ready, Connect your AI account and Connect your iPhone." className="hidden dark:block" />
+</Frame>
+
+<Steps>
+  <Step title="Download and activate Mobster">
+    Download Mobster from [mobster.dev](https://mobster.dev), open `Mobster.dmg` and drag Mobster to Applications. On first launch, buy a license, or choose **I have a license key** and paste the key that starts with `MOB-`.
+  </Step>
+  <Step title="Get your Mac ready">
+    Mobster needs Xcode. The other iPhone tools come with the app. If Xcode is missing, **Get Xcode** opens the App Store.
+
+    <Tip>Xcode can take an hour to download. Choose **Continue while Xcode downloads** and set up the rest: Mobster notices when it's done.</Tip>
+  </Step>
+  <Step title="Connect your AI account">
+    Choose **Claude** or **OpenAI**. Setup shows where to add credit and create a key in that company's console. Paste the key and choose **Connect**. You should see **Claude is connected. Your key stays on this Mac.**
+  </Step>
+  <Step title="Connect your iPhone">
+    1. Plug in the iPhone with a cable that carries data, unlock it and tap **Trust**.
+    2. Turn on Developer Mode in Settings › Privacy & Security. Setup shows where.
+    3. Choose **Install**. Mobster puts its helper on the phone, signed with the Apple Account in Xcode. The first install can take 10 minutes or more.
+    4. Choose **Allow** so Mobster can tap and type.
+
+    You should see your iPhone's screen, live.
+
+    <Note>A free Apple Account signs Mobster's helper for 7 days at a time. Mobster refreshes it by itself while your iPhone is plugged in and unlocked, and the sidebar shows **Refresh helper** when it needs you.</Note>
+  </Step>
+</Steps>
+
+## Give it a first task
+
+Start with a task that only reads, such as "What iOS version is this iPhone on?", and press Enter. Mobster works one step at a time. Each step shows what it tapped or typed, and the answer comes with the screen it was read from.
+
+<Frame caption="The task page before a task, with starters to try.">
+  <img src="/images/mac/task-empty-light.webp" alt="The empty task page: Give your iPhone a task, the task box, and four starters: Text Sam I'm 10 minutes late, What's on my calendar tomorrow morning?, Turn on Dark Mode, and a weekday schedule." className="block dark:hidden" />
+  <img src="/images/mac/task-empty-dark.webp" alt="The empty task page: Give your iPhone a task, the task box, and four starters: Text Sam I'm 10 minutes late, What's on my calendar tomorrow morning?, Turn on Dark Mode, and a weekday schedule." className="hidden dark:block" />
+</Frame>
+
+## Approve a send
+
+Now try one that sends: "Text Sam I'm 10 minutes late". Before it taps Send, Mobster stops and shows you the app and the exact text. Nothing is sent until you choose **Send**. **Don't send** stops it, and **Something else** tells Mobster what to do instead. If you don't answer within 10 minutes, the task ends without sending.
+
+<Frame caption="An approval: the exact text, and Send or Don't send.">
+  <img src="/images/mac/approval-light.webp" alt="An approval card in a conversation: Send this message, the text in a message bubble, and the buttons Send and Don't send." className="block dark:hidden" />
+  <img src="/images/mac/approval-dark.webp" alt="An approval card in a conversation: Send this message, the text in a message bubble, and the buttons Send and Don't send." className="hidden dark:block" />
+</Frame>
+
+## Next
+
+<CardGroup cols={3}>
+  <Card title="Conversations" icon="messages-square" href="/conversations">
+    Follow up on a task, steer one while it runs, and pick up one that was cut off.
+  </Card>
+  <Card title="A tour of the app" icon="map" href="/mac/tour">
+    The task page, Recent, the phone pane, History and Workflows.
+  </Card>
+  <Card title="Approvals and safety" icon="shield-check" href="/safety">
+    What Mobster asks before, what it never does, and what you stay in charge of.
+  </Card>
+</CardGroup>

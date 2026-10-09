@@ -1,0 +1,117 @@
+# Mobster
+
+> Mobster puts agents on your iPhone. It tests the app you're building and does tasks in your apps, signed in as you, over USB from your Mac.
+
+Mobster for Mac is the app: guided setup for each iPhone, a live view, conversations with approvals, memory, files, voice, history and schedules. Mobster CLI is its free, open-source engine: the `mobster` command, its MCP server and the agent loop. Every page below is Markdown at its link. The whole site in one file is https://docs.mobster.dev/llms-full.txt.
+
+## Get started
+
+- [Do anything on your iPhone with agents](https://docs.mobster.dev/index.md): Mobster for Mac puts an agent on your iPhone. It does tasks in your apps, signed in as you, and tests the app you're building, over USB from your Mac. Mobster CLI is the free, open-source way in.
+- [Quickstart: Mobster for Mac](https://docs.mobster.dev/quickstart/mac.md): Install Mobster for Mac, connect your iPhone and run your first task.
+- [Quickstart: Mobster CLI](https://docs.mobster.dev/quickstart/cli.md): Install the free CLI, watch the demo, then run a task on your iPhone from the terminal.
+- [Quickstart: test your app](https://docs.mobster.dev/quickstart/test.md): Run your first check on a simulator. No iPhone, and no API key for a launch-only check.
+
+## Get started: Concepts
+
+- [How Mobster works](https://docs.mobster.dev/how-it-works.md): How Mobster reads your iPhone's screen and acts on it, one step at a time.
+- [Approvals and safety](https://docs.mobster.dev/safety.md): When Mobster stops to ask you, and what it never does.
+- [Models, keys and costs](https://docs.mobster.dev/models-and-keys.md): Mobster runs on your own Claude or OpenAI key. Which key each command needs, spend caps, and what a task costs.
+- [Privacy and your data](https://docs.mobster.dev/privacy.md): What leaves your Mac when Mobster works, and where it goes.
+- [Requirements](https://docs.mobster.dev/requirements.md): What you need to run Mobster for Mac and Mobster CLI.
+
+## Get started: Your iPhone
+
+- [Set up an iPhone or simulator for Mobster (WebDriverAgent)](https://docs.mobster.dev/device-setup.md): Put Mobster's helper on your iPhone or a simulator, guided or by hand.
+- [Several phones](https://docs.mobster.dev/devices.md): Run tasks and checks on several iPhones and simulators at once.
+- [What Mobster can and can't do on your iPhone](https://docs.mobster.dev/capabilities.md): What Mobster can do on your iPhone besides tap and type, and what it won't do.
+- [Without the cable](https://docs.mobster.dev/wifi.md): Preview: reach an iPhone over Wi-Fi after one cable pairing, through the encrypted link between this Mac and the phone. Off unless you turn it on.
+
+## Get started: Plans
+
+- [Pricing and license](https://docs.mobster.dev/pricing.md): Mobster CLI is free and open source. Mobster for Mac is a one-time payment ($34.99 in launch week, then $67) or $7.67 a month, on up to 3 Macs.
+- [Questions and answers](https://docs.mobster.dev/faq.md): Short answers about what Mobster does, your iPhone, costs, safety and the license.
+
+## Test your app: Run checks
+
+- [Run every check with mobster test](https://docs.mobster.dev/testing.md): Run every check in your project on simulators and your iPhone, with reports for CI.
+- [Add steps, save checks and script them](https://docs.mobster.dev/test/steps.md): Add steps to a check, save it to your project, and use its exit code in scripts.
+
+## Test your app: Automate
+
+- [Running checks in CI](https://docs.mobster.dev/ci.md): Run mobster test on every pull request, on a simulator or on a Mac with your iPhone plugged in.
+
+## Test your app: Reference
+
+- [Checks, assertions and verdicts](https://docs.mobster.dev/checks.md): The check file, every assertion, and how Mobster decides a verdict.
+- [Simulators](https://docs.mobster.dev/simulators.md): The simulators Mobster creates for your checks, and the mobster sim commands.
+
+## Test your app: Help
+
+- [Troubleshooting: checks](https://docs.mobster.dev/troubleshooting/checks.md): Fix a check that couldn't run, by the reason it gives.
+
+## Your tasks: Mobster for Mac
+
+- [A tour of Mobster for Mac](https://docs.mobster.dev/mac/tour.md): Where everything is in Mobster for Mac.
+- [Conversations: follow-ups, steering and picking up](https://docs.mobster.dev/conversations.md): Follow up on a task, change course while it runs, and pick up where one left off.
+- [Voice: talk to Mobster](https://docs.mobster.dev/voice.md): Hold ⌥ Space in Mobster for Mac and say the task. Nothing is recorded.
+- [Memory: what Mobster remembers](https://docs.mobster.dev/memory.md): Tell Mobster what to remember. It keeps it on your Mac and uses it only in the tasks it fits.
+- [Files: attach them, and put them on your iPhone](https://docs.mobster.dev/files.md): Attach a file to a task, and move files between your Mac and your iPhone.
+- [Schedules, workflows and alerts](https://docs.mobster.dev/schedules.md): Save a task as a workflow, then run it again with one click or on a schedule.
+- [Start tasks from Siri, Shortcuts, Raycast or Alfred](https://docs.mobster.dev/launchers.md): Say a task to Siri on your Mac or iPhone, or type it into Raycast or Alfred, and Mobster on your Mac runs it.
+- [Settings in Mobster for Mac](https://docs.mobster.dev/mac/settings.md): What each section of Settings in Mobster for Mac does.
+- [Keyboard shortcuts in Mobster for Mac](https://docs.mobster.dev/mac/shortcuts.md): Every keyboard shortcut in Mobster for Mac.
+
+## Your tasks: In the terminal
+
+- [The terminal UI](https://docs.mobster.dev/tui.md): Run tasks, answer approvals and look back at history in the terminal UI.
+- [Scripts and the API](https://docs.mobster.dev/scripting.md): Run tasks from shell scripts with mobster run, or from your own code with the local HTTP API.
+
+## Your tasks: Help
+
+- [Troubleshooting](https://docs.mobster.dev/troubleshooting.md): Find the fix for what you see. Start with mobster doctor.
+- [Troubleshooting: install](https://docs.mobster.dev/troubleshooting/install.md): Fix command not found, an old version, or a terminal UI that won't open.
+- [Troubleshooting: your iPhone](https://docs.mobster.dev/troubleshooting/iphone.md): Fix an iPhone Mobster can't reach, or one that's locked, unplugged or asking for Face ID.
+- [Troubleshooting: tasks](https://docs.mobster.dev/troubleshooting/tasks.md): Fix a task that won't start or stops before it's done.
+- [Troubleshooting: Mobster for Mac](https://docs.mobster.dev/troubleshooting/mac.md): Fix your license, Setup, voice or AI account in Mobster for Mac.
+
+## Agents & MCP: Set up
+
+- [Add Mobster to your agent](https://docs.mobster.dev/agents.md): One command adds Mobster to Claude Code and the other MCP clients on your Mac, so your agent can use a simulator or your iPhone.
+- [The Claude Code plugin and the mobster skill](https://docs.mobster.dev/agents/plugin-and-skill.md): Install Mobster as a Claude Code plugin, or add the mobster skill to any agent that reads Agent Skills.
+
+## Agents & MCP: Use
+
+- [Mobster's MCP server: tools, devices and sessions](https://docs.mobster.dev/mcp-server.md): How your coding agent drives a simulator or your iPhone through mobster mcp, tool by tool.
+- [Instructions for your coding agent](https://docs.mobster.dev/agents/instructions.md): A block for CLAUDE.md, AGENTS.md or .cursor/rules that makes your coding agent check each UI change with Mobster.
+- [Set up Mobster: instructions for a coding agent](https://docs.mobster.dev/agents/setup.md): Numbered steps for a coding agent that sets Mobster up for its user: install, prepare the simulator, connect over MCP, and run a first launch-only check, with the output to expect and when to stop.
+
+## Reference: CLI
+
+- [CLI reference](https://docs.mobster.dev/cli.md): Every mobster command and flag, with examples.
+- [Every command and option](https://docs.mobster.dev/reference/cli.md): Every mobster command, subcommand, argument and option with its default, generated from the command's own parser.
+
+## Reference: MCP
+
+- [MCP tools](https://docs.mobster.dev/reference/mcp-tools.md): Every tool mobster mcp offers, with its arguments, input schema and whether it only reads or acts on a device, generated from the server's tool list.
+
+## Reference: Settings and errors
+
+- [Configure Mobster: keys, env files and settings](https://docs.mobster.dev/configuration.md): Where Mobster reads your keys and settings, and where it keeps its files.
+- [Errors, statuses and exit codes](https://docs.mobster.dev/reference/errors.md): Every exit code, task status, check verdict and HTTP error, and what to do about each.
+
+## Reference: Inside Mobster
+
+- [Architecture](https://docs.mobster.dev/architecture.md): How a task turns into taps on the phone, and where each part lives in the code.
+- [Benchmarks](https://docs.mobster.dev/benchmarks.md): How Mobster is measured, the latest results, and how to run the same suites yourself.
+
+## Changelog
+
+- [Changelog](https://docs.mobster.dev/changelog.md): What's new in Mobster for Mac and Mobster CLI.
+
+## Optional
+
+- [Mobster for Mac](https://mobster.dev): Download the Mac app, see pricing and buy a license.
+- [Integrations](https://mobster.dev/integrations): Setting Mobster up in Claude Code, Codex, Cursor, Claude Desktop, VS Code, Gemini CLI and other agents.
+- [Compare](https://mobster.dev/compare): Mobster beside TapKit, Maestro, Appium and XCUITest.
+- [Blog](https://mobster.dev/blog): Guides and notes from the people who make Mobster.
+- [Mobster CLI on GitHub](https://github.com/RadishSoftware/mobster): The open-source CLI, MCP server and agent loop, under MIT.

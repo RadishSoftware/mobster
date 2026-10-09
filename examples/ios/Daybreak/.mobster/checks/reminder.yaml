@@ -1,0 +1,19 @@
+# Key-less: your coding agent drives through `mobster mcp`, and Mobster judges.
+# The agent passes these fields to verify_start, then taps daily_reminder, calls relaunch,
+# opens daybreak://settings again and calls verify_finish. docs/mcp.md walks through it.
+# Launch Daybreak with -DaybreakBug reminder-not-saved to watch this check fail.
+version: 1
+name: The daily reminder stays on after a relaunch
+app:
+  bundle: dev.mobster.daybreak
+  path: .build/Build/Products/Debug-iphonesimulator/Daybreak.app
+tags: [settings]
+launch:
+  args: ["-DaybreakSkipOnboarding", "YES"]
+  url: daybreak://settings
+steps:
+  - Turn on Daily reminder.
+  - Relaunch the app and open Settings again.
+expect:
+  - value: { id: daily_reminder }
+    equals: true

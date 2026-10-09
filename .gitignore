@@ -26,6 +26,8 @@ mobile_agent/.state/
 *.pem
 *.key
 *.mobileprovision
+# The one exception: the license server's PUBLIC key, which the Mac app is built with.
+!desktop/src-tauri/license-public.pem
 
 # Per-user OS, editor and tool state. These are listed here rather than left to a
 # personal global gitignore, which other clones do not have. Xcode user data and
@@ -46,3 +48,6 @@ xcuserdata/
 research/bench-runs/*/
 research/bench-runs/*.log
 research/iosworld-runs/
+
+# Local CI cache outside a worktree run
+.ci-cache/

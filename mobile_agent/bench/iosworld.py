@@ -28,11 +28,17 @@ Mobster's reported latency. The simulator runs headless: nothing here opens a wi
         --out research/iosworld-runs/NAME [--only ...] [--limit N] [--policy frontier ...] --env-file <agent.env>
     python -m mobile_agent.bench.iosworld judge --repo ../iOSWorld --run research/iosworld-runs/NAME
     python -m mobile_agent.bench.iosworld report --run research/iosworld-runs/NAME
+    python -m mobile_agent.bench.iosworld compare --a research/iosworld-runs/OLD-* --b research/iosworld-runs/NEW-*
+    python -m mobile_agent.bench.iosworld estimate research/iosworld-runs/* --model gpt-5.6-sol
+
+A task passes by iOSWorld's own rule: every rubric criterion satisfied (judge_trajectories.py
+``_aggregate``), not the judge's ``success`` flag; see bench/iosworld_stats.py.
 """
 
 import argparse
 import base64
 import dataclasses
+import glob
 import json
 import os
 import pathlib
@@ -42,16 +48,25 @@ import sys
 import time
 import urllib.request
 
+from ..engines import SMART_CONFIG, apply_switches, frontier_kwargs
+
 MAX_STEPS = 50  # iOSWorld's runner default (--max-steps 50, no task timeout)
 MAX_SECONDS = 900
-DEFAULT_FRONTIER_MODEL = "gpt-5.6-luna"
+# The frontier policy is the app's Smart engine: its model, reasoning, limits and switches come from
+# engines.SMART_CONFIG (tests/test_engines.py proves both build the same agent).
+DEFAULT_FRONTIER_MODEL = SMART_CONFIG.model
 MAX_TASK_COST_USD = 0.60  # a runaway task stops here (24 Sep: 50-step loops cost ~$0.80 each on gpt-5.5)
 
 
-def task_cost_cap(bundles):
+def task_cost_cap(bundles, model=None):
     """A spend cap that grows with the apps a task spans: a flat $0.25 cut five-app tasks off
-    mid-way (multi-006, mem-005, 24 Sep) while one-app tasks finish for $0.03-0.13."""
-    return min(MAX_TASK_COST_USD, 0.10 + 0.08 * max(1, len(bundles)))
+    mid-way (multi-006, mem-005, 24 Sep) while one-app tasks finish for $0.03-0.13. It is set in
+    gpt-5.6-terra dollars and scaled up by a model's input price, so a pricier model gets as many
+    turns: iOSWorld limits turns, not spend (the cap stopped 9 of 21 gpt-5.6-sol runs, 28 Sep)."""
+    from ..frontier import PRICES
+    base, rate = PRICES.get("gpt-5.6-terra"), PRICES.get(model or "")
+    scale = rate[0] / base[0] if base and rate and base[0] else 1.0
+    return min(MAX_TASK_COST_USD, 0.10 + 0.08 * max(1, len(bundles))) * max(1.0, scale)
 TASK_DIR_WIDTH = 3
 _APP_ALIASES = {"letterboxd": "cinephile", "whatsapp": "quickchat", "linkedin": "lockedin"}
 
@@ -99,6 +114,40 @@ def iosworld_module(repo):
 
 def app_entry(manifest, name):
     return manifest.get(_APP_ALIASES.get(name, name)) or manifest.get(name) or {}
+
+
+SIM_DEVICES = pathlib.Path.home() / "Library/Developer/CoreSimulator/Devices"
+
+
+def foreign_containers(udid, manifest):
+    """Apps whose data containers on ``udid`` resolve outside that simulator's own folder, as
+    [(bundle, path)]. A ``simctl clone`` of a simulator with the apps installed copies its
+    LaunchServices store, which keeps the source's absolute paths: every clone then runs the
+    apps out of the source's containers, and one worker's reset wipes another's task mid-run
+    (26 Sep: three clones on the first simulator's data). Use fresh simulators, each
+    bootstrapped on its own."""
+    own = os.path.realpath(SIM_DEVICES / udid) + os.sep  # both sides resolved: a home under /var is /private/var
+    foreign = []
+    for entry in manifest.values():
+        bundle = entry.get("bundle_id")
+        if not bundle:
+            continue
+        proc = subprocess.run(["xcrun", "simctl", "get_app_container", udid, bundle, "data"],
+                              capture_output=True, text=True)
+        path = proc.stdout.strip()
+        if proc.returncode == 0 and path and not os.path.realpath(path).startswith(own):
+            foreign.append((bundle, path))
+    return foreign
+
+
+def check_isolation(udid, manifest):
+    """Refuse a simulator whose apps live in another simulator's containers (see foreign_containers)."""
+    foreign = foreign_containers(udid, manifest)
+    if foreign:
+        bundle, path = foreign[0]
+        raise SystemExit(f"simulator {udid} is not isolated: {len(foreign)} apps resolve to another device's "
+                         f"containers (e.g. {bundle} -> {path}). It was likely made with `simctl clone`: "
+                         f"create a fresh simulator and run iOSWorld's bootstrap on it.")
 
 
 RESET_ATTEMPTS = 2
@@ -203,8 +252,8 @@ class RecordingDriver:
         self._record({"type": "long_press", "element": {"label": (target.label or "")[:120], "role": target.role}})
         return self._driver.long_press(target, snapshot, timeout=timeout)
 
-    def tap_point(self, x, y, snapshot, timeout=10):
-        self._record({"type": "tap_xy", "x": round(x, 3), "y": round(y, 3), "purpose": "dismiss"})
+    def tap_point(self, x, y, snapshot, timeout=10, purpose="dismiss"):
+        self._record({"type": "tap_xy", "x": round(x, 3), "y": round(y, 3), "purpose": purpose})
         return self._driver.tap_point(x, y, snapshot, timeout=timeout)
 
     def set_value(self, target, value, timeout=10):
@@ -215,6 +264,14 @@ class RecordingDriver:
     def clear_text(self, target, timeout=10):
         self._record({"type": "clear_text", "element": {"label": (target.label or "")[:120], "role": target.role}})
         return self._driver.clear_text(target, timeout=timeout)
+
+    def write_text(self, target, snapshot, text, append=False, submit=False, timeout=30):
+        # One step, as the typed text: its paste, read-back and repair are how the typing is done.
+        action = describe("TYPE_SUBMIT" if submit else "TYPE", target, text)
+        if not append:
+            action["replace"] = True
+        self._record(action if text else {"type": "clear_text", "element": action.get("element")})
+        return self._driver.write_text(target, snapshot, text, append=append, submit=submit, timeout=timeout)
 
     def replace_text(self, target, text, timeout=10):
         self._record({**describe("TYPE", target, text), "replace": True})
@@ -282,8 +339,27 @@ def wda_session(wda_url):
     return json.load(urllib.request.urlopen(request, timeout=30))["sessionId"]
 
 
+def sim_restarter(udid, wda_url, mjpeg_url, xctestrun, log_path=None):
+    """The simulator's WDA restarter (bench/sim_wda.py), or None without its xctestrun."""
+    if not xctestrun or not mjpeg_url:
+        return None
+    from urllib.parse import urlsplit
+    from .sim_wda import SimulatorWDA
+    return SimulatorWDA(udid, urlsplit(wda_url).port, urlsplit(mjpeg_url).port, xctestrun, log_path=log_path)
+
+
+def frontier_agent(driver, names, emit, bundles, model=None, reasoning=None):
+    """(FrontierAgent, client) for ``--policy frontier``: engines.SMART_CONFIG, the app's Smart engine,
+    with this harness's per-task cost cap. Switches already set in the environment win (ablations)."""
+    from ..frontier import FrontierAgent, chat_client
+    apply_switches(pin=False)
+    client = chat_client(model or DEFAULT_FRONTIER_MODEL, reasoning=reasoning or SMART_CONFIG.reasoning)
+    return FrontierAgent(driver, client, apps=names, emit=emit,
+                         **frontier_kwargs(max_cost_usd=task_cost_cap(bundles, client.model))), client
+
+
 def run_task(task, *, repo, udid, manifest, wda_url, mjpeg_url, folder, policy="mobster", frontier_model=None,
-             reasoning="low"):
+             reasoning="low", wda_xctestrun=None):
     from ..agent import Agent
     from ..compose import build_models, build_target_driver, build_vision_judge, close_all
     from ..frame_clock import attach_frame_clock
@@ -317,7 +393,9 @@ def run_task(task, *, repo, udid, manifest, wda_url, mjpeg_url, folder, policy="
         if kind == "inference_finished" and isinstance(event.get("cost_nanodollars"), int):
             costs.append(event["cost_nanodollars"] / 1e9)
         if kind in ("frontier_decision", "frontier_error", "frontier_refused", "frontier_action", "frontier_failed",
-                    "frontier_chunk_stop", "frontier_checklist", "frontier_checklist_update", "frontier_verify"):
+                    "frontier_chunk_stop", "frontier_checklist", "frontier_checklist_update", "frontier_verify",
+                    "frontier_text", "frontier_tuned", "frontier_wda_recovery",
+                    "frontier_contract", "frontier_contract_update"):
             event = {k: v for k, v in event.items() if k != "usage"}
             trace = getattr(driver, "call_trace", None)
             if trace and kind in ("frontier_decision", "frontier_action", "frontier_failed"):
@@ -348,6 +426,11 @@ def run_task(task, *, repo, udid, manifest, wda_url, mjpeg_url, folder, policy="
         session = wda_session(wda_url)
         driver = build_target_driver(wda_url=wda_url, session=session)
         driver.call_trace = shots.trace = []
+        # A runner that dies mid-task is restarted as it was started, and its session taken the way this
+        # harness takes one (frontier.FrontierAgent._recover).
+        driver.restarter = sim_restarter(udid, wda_url, mjpeg_url, wda_xctestrun or os.environ.get(
+            "MOBSTER_SIM_WDA_XCTESTRUN"), log_path=str(folder / "wda-restart.log"))
+        driver.new_session = lambda: wda_session(wda_url)
         attach_frame_clock(driver, wda_url=wda_url, session=session, mode="on", mjpeg_url=mjpeg_url,
                            log_path=str(folder / "frameclock.jsonl"))
         clear_alerts(driver)
@@ -357,12 +440,11 @@ def run_task(task, *, repo, udid, manifest, wda_url, mjpeg_url, folder, policy="
             recording.call("POST", "/wda/apps/activate", {"bundleId": bundles[0]}, timeout=20)
         if policy == "frontier":
             from ..catalog import app_label
-            from ..frontier import FrontierAgent, chat_client, cost_usd
-            client = chat_client(model_name, reasoning=reasoning)
+            from ..frontier import cost_usd
             names = {b: app_label(b).split(" (")[0] for b in bundles}
             started, shot_seconds = time.monotonic(), shots.seconds
-            outcome = FrontierAgent(recording, client, apps=names, emit=emit, max_steps=MAX_STEPS,
-                                    max_seconds=MAX_SECONDS, max_cost_usd=task_cost_cap(bundles)).run(task["goal"])
+            agent, client = frontier_agent(recording, names, emit, bundles, model_name, reasoning)
+            outcome = agent.run(task["goal"])
             costs.append(cost_usd(client.model, outcome["usage"]) or 0.0)
             calls = outcome["usage"].get("calls")  # FrontierAgent emits no inference_finished: one cost, many calls
             result = {"status": outcome["status"], "data": outcome.get("answer"),
@@ -432,6 +514,7 @@ def cmd_run(args):
         tasks = tasks[:args.limit]
     manifest = load_manifest(args.repo)
     register_names(manifest)
+    check_isolation(args.udid, manifest)
     out = pathlib.Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     for task in tasks:
@@ -442,7 +525,7 @@ def cmd_run(args):
         try:
             record = run_task(task, repo=args.repo, udid=args.udid, manifest=manifest, wda_url=args.wda_url,
                               mjpeg_url=args.mjpeg_url, folder=folder, policy=args.policy, frontier_model=args.model,
-                              reasoning=args.reasoning)
+                              reasoning=args.reasoning, wda_xctestrun=args.wda_xctestrun)
         except RuntimeError as error:
             # A failed reset is the harness's, not the agent's: no task.json, so a rerun retries it,
             # and the rest of this simulator's queue still runs.
@@ -462,6 +545,11 @@ def cmd_pool(args):
     if args.limit:
         tasks = tasks[:args.limit]
     workers = [spec.split(":") for spec in args.sims.split(",")]
+    if len({udid for udid, _, _ in workers}) < len(workers):
+        raise SystemExit("--sims lists a simulator twice")
+    manifest = load_manifest(args.repo)
+    for udid, _, _ in workers:  # before any worker starts: one shared simulator taints every worker's results
+        check_isolation(udid, manifest)
     procs = []
     for index, (udid, port, mjpeg) in enumerate(workers):
         share = tasks[index::len(workers)]
@@ -473,6 +561,8 @@ def cmd_pool(args):
         for env_file in args.env_file or ():
             command += ["--env-file", env_file]
         command += ["--policy", args.policy, "--reasoning", args.reasoning] + (["--model", args.model] if args.model else [])
+        if args.wda_xctestrun:
+            command += ["--wda-xctestrun", args.wda_xctestrun]
         if args.force:
             command.append("--force")
         log = open(pathlib.Path(args.out).with_suffix(f".worker{index}.log"), "w")
@@ -490,32 +580,87 @@ def cmd_judge(args):
     command = [str(python if python.exists() else sys.executable), "scripts/judge_trajectories.py",
                "--run-dir", str(pathlib.Path(args.run).resolve())]
     if args.force:
-        command.append("--force")
-    return subprocess.call(command, cwd=args.repo, env=dict(os.environ))
+        command.append("--re-judge")  # judge_trajectories.py has no --force
+    code = subprocess.call(command, cwd=args.repo, env=dict(os.environ))
+    # The judge's own summary counts passes by the official rule; this adds where its success flag differs.
+    from .iosworld_stats import load_runs, report_lines
+    for line in report_lines(load_runs([args.run])):
+        print(line)
+    return code
 
 
 def cmd_report(args):
-    rows = []
-    for task_json in sorted(pathlib.Path(args.run).glob("*/task.json")):
-        rows.append(json.loads(task_json.read_text(encoding="utf-8")))
-    judged = [r for r in rows if r.get("evaluation")]
-    ok = [r for r in judged if r["evaluation"].get("success")]
-    print(f"tasks run {len(rows)}, judged {len(judged)}, success {len(ok)}"
-          + (f" ({100 * len(ok) / len(judged):.1f}%)" if judged else ""))
-    if judged:
-        print(f"mean rubric score {statistics.mean(r['evaluation'].get('score', 0) for r in judged):.3f}")
+    """One run folder: official passes (iOSWorld's every-criterion rule), the judge's own flag where
+    it disagrees, by category and difficulty, then time and cost."""
+    from .iosworld_stats import load_runs, report_lines
+    runs = load_runs([args.run])
+    for line in report_lines(runs):
+        print(line)
+    judged = [r for r in runs if r.judged]
     for key in ("category", "difficulty"):
         groups = {}
         for r in judged:
-            groups.setdefault(r.get(key), []).append(bool(r["evaluation"].get("success")))
+            groups.setdefault(getattr(r, key), []).append(r.official)
         print(key + ": " + ", ".join(f"{k} {sum(v)}/{len(v)}" for k, v in sorted(groups.items(), key=str)))
     from ..frontier import cost_usd
+    rows = [json.loads(p.read_text(encoding="utf-8")) for p in sorted(pathlib.Path(args.run).glob("*/task.json"))]
     seconds = [r["mobster"]["agent_seconds"] for r in rows]
     costs = [r["mobster"]["cost_usd"] or cost_usd(r["mobster"].get("model"), r["mobster"].get("usage")) or 0.0
              for r in rows]
     if seconds:
         print(f"agent seconds p50 {statistics.median(seconds):.1f}, mean {statistics.mean(seconds):.1f}; "
               f"$/task mean {statistics.mean(costs):.4f}, total ${sum(costs):.2f}")
+
+
+def _run_dirs(patterns):
+    """Run folders from arguments that may be globs (a folder holds NNN-task/task.json)."""
+    dirs = []
+    for pattern in patterns:
+        for path in sorted(glob.glob(pattern)) or [pattern]:
+            if pathlib.Path(path).is_dir() and path not in dirs:
+                dirs.append(path)
+    return dirs
+
+
+def cmd_compare(args):
+    """A paired A/B: arm A's run folders against arm B's, on the tasks both judged."""
+    from .iosworld_stats import compare, format_compare, load_overrides, load_runs, read_worker_logs
+    overrides = load_overrides(args.commit_labels)
+    arms = {arm: _run_dirs(getattr(args, arm)) for arm in ("a", "b")}
+    runs = {arm: load_runs(dirs, model=args.model, overrides=overrides) for arm, dirs in arms.items()}
+    logs = {}
+    for arm, dirs in arms.items():
+        merged = {"not_run": [], "tracebacks": 0}
+        for folder in dirs:
+            info = read_worker_logs(folder)
+            merged["not_run"] += info["not_run"]
+            merged["tracebacks"] += info["tracebacks"]
+        logs[arm] = merged
+    result = compare(runs["a"], runs["b"], n_boot=args.bootstrap, seed=args.seed)
+    if args.json:
+        print(json.dumps({**result, "logs": logs, "arms": arms}, indent=1, default=str))
+        return 0
+    print(f"A: {', '.join(arms['a'])}\nB: {', '.join(arms['b'])}\n")
+    print(format_compare(result, args.a_name, args.b_name, logs=logs))
+    return 0
+
+
+def cmd_estimate(args):
+    """The official pass rate over any set of run folders, reweighted to iOSWorld's 133-task mix."""
+    from .iosworld_stats import FULL_MIX, estimate, format_estimate, load_runs
+    mix = dict(FULL_MIX)
+    if args.repo:
+        mix = {c: 0 for c in FULL_MIX}
+        for task in load_tasks(args.repo):
+            mix[task.get("category")] = mix.get(task.get("category"), 0) + 1
+    runs = load_runs(_run_dirs(args.runs), model=args.model)
+    for weighting in ("task", "run") if args.weighting == "both" else (args.weighting,):
+        result = estimate(runs, mix=mix, weighting=weighting, n_boot=args.bootstrap, seed=args.seed)
+        if args.json:
+            print(json.dumps(result, indent=1, default=str))
+        else:
+            print(format_estimate(result))
+    return 0
 
 
 def main(argv=None):
@@ -533,7 +678,9 @@ def main(argv=None):
     run.add_argument("--env-file", action="append")
     run.add_argument("--policy", choices=("mobster", "frontier"), default="mobster")
     run.add_argument("--model")
-    run.add_argument("--reasoning", default="low")
+    run.add_argument("--reasoning", default=SMART_CONFIG.reasoning)
+    run.add_argument("--wda-xctestrun", help="the simulator runner's .xctestrun: a runner that dies is restarted "
+                     "(also MOBSTER_SIM_WDA_XCTESTRUN)")
     pool = sub.add_parser("pool")
     pool.add_argument("--repo", required=True)
     pool.add_argument("--sims", required=True, help="UDID:WDA_PORT:MJPEG_PORT,...")
@@ -544,7 +691,8 @@ def main(argv=None):
     pool.add_argument("--env-file", action="append")
     pool.add_argument("--policy", choices=("mobster", "frontier"), default="mobster")
     pool.add_argument("--model")
-    pool.add_argument("--reasoning", default="low")
+    pool.add_argument("--reasoning", default=SMART_CONFIG.reasoning)
+    pool.add_argument("--wda-xctestrun")
     judge = sub.add_parser("judge")
     judge.add_argument("--repo", required=True)
     judge.add_argument("--run", required=True)
@@ -552,8 +700,27 @@ def main(argv=None):
     judge.add_argument("--env-file", action="append")
     report = sub.add_parser("report")
     report.add_argument("--run", required=True)
+    ab = sub.add_parser("compare", help="paired A/B over two sets of run folders (offline)")
+    ab.add_argument("--a", nargs="+", required=True, help="arm A's run folders (globs allowed)")
+    ab.add_argument("--b", nargs="+", required=True, help="arm B's run folders (globs allowed)")
+    ab.add_argument("--a-name", default="A")
+    ab.add_argument("--b-name", default="B")
+    ab.add_argument("--model", help="only runs of this model")
+    ab.add_argument("--commit-labels", help='JSON {task: {control label: true|false}}: hand labels for "requested"')
+    ab.add_argument("--bootstrap", type=int, default=10000)
+    ab.add_argument("--seed", type=int, default=20260926)
+    ab.add_argument("--json", action="store_true")
+    pooled = sub.add_parser("estimate", help="official pass rate reweighted to the 133-task mix (offline)")
+    pooled.add_argument("runs", nargs="+", help="run folders (globs allowed)")
+    pooled.add_argument("--model", help="only runs of this model, e.g. gpt-5.6-sol")
+    pooled.add_argument("--repo", help="iOSWorld checkout: take the category mix from its tasks.json")
+    pooled.add_argument("--weighting", choices=("task", "run", "both"), default="both")
+    pooled.add_argument("--bootstrap", type=int, default=10000)
+    pooled.add_argument("--seed", type=int, default=20260926)
+    pooled.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
-    return {"run": cmd_run, "pool": cmd_pool, "judge": cmd_judge, "report": cmd_report}[args.command](args) or 0
+    return {"run": cmd_run, "pool": cmd_pool, "judge": cmd_judge, "report": cmd_report, "compare": cmd_compare,
+            "estimate": cmd_estimate}[args.command](args) or 0
 
 
 if __name__ == "__main__":

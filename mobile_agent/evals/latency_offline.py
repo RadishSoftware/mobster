@@ -200,7 +200,7 @@ SIM = {"read": .23, "tap": .48, "settle_ax": 1.0, "settle_frame": .45, "decide":
 
 
 def simulate(items=8, scale=.05, frame_clock=False):
-    """Seconds per item for a swipe-deck loop: compiled LoopRunner vs the step agent.
+    """Seconds per item for a photo-review deck loop: compiled LoopRunner vs the step agent.
 
     Both run the real code against a fake deck whose every call sleeps its
     measured p50 (times ``scale``); only the latencies are synthetic. The step
@@ -222,19 +222,20 @@ def simulate(items=8, scale=.05, frame_clock=False):
 
         def __init__(self, distinct=False):
             self.index, self.reads, self.taps = 0, 0, 0
-            # On a real deck every card's Like button has the same accessibility path,
+            # On a real deck every card's Favorite button has the same accessibility path,
             # and the step agent's effect ledger refuses the second tap as a duplicate.
             self.distinct = int(distinct)
 
         def screen(self):
             if self.index >= items:
-                return Snapshot([Element("0", "You've seen everyone", "StaticText", (.1, .4, .8, .05))],
-                                "You've seen everyone", 400, 800, "wda")
-            return Snapshot([Element("0", f"Person {self.index}", "StaticText", (.05, .08, .5, .05), locator="/n"),
-                             Element("1", "Photo", "Image", (0, .15, 1, .55), locator="/p"),
+                return Snapshot([Element("0", "No more photos", "StaticText", (.1, .4, .8, .05))],
+                                "No more photos", 400, 800, "wda")
+            return Snapshot([Element("0", f"Photo {self.index}", "StaticText", (.05, .08, .5, .05), locator="/n"),
+                             Element("1", "Image", "Image", (0, .15, 1, .55), locator="/p"),
                              Element("2", "Skip", "Button", (.05, .8, .2, .08), locator=f"/s{self.distinct * self.index}"),
-                             Element("3", "Like", "Button", (.75, .8, .2, .08), locator=f"/l{self.distinct * self.index}")],
-                            f"Person {self.index}", 400, 800, "wda")
+                             Element("3", "Favorite", "Button", (.75, .8, .2, .08),
+                                     locator=f"/l{self.distinct * self.index}")],
+                            f"Photo {self.index}", 400, 800, "wda")
 
         def observe(self, timeout=10):
             self.reads += 1
@@ -260,18 +261,18 @@ def simulate(items=8, scale=.05, frame_clock=False):
             return Judgment("no", .9)
 
     program = validate_program({
-        "summary": "Like profiles", "feed": {"kind": "deck", "item": {"roles": ["StaticText"],
-                                                                     "label_prefix": "Person"}},
-        "predicate": {"question": "Does this person have blue eyes?", "true_choices": ["no"],
+        "summary": "Favorite the photos that aren't blurry", "feed": {"kind": "deck", "item": {
+            "roles": ["StaticText"], "label_prefix": "Photo"}},
+        "predicate": {"question": "Is this photo blurry?", "true_choices": ["no"],
                       "false_choices": ["yes"]},
-        "targets": {"like": {"label": "Like", "role": "Button"}, "skip": {"label": "Skip", "role": "Button"}},
-        "branches": {"true": [{"op": "TAP", "target": "like"}], "false": [{"op": "TAP", "target": "skip"}],
+        "targets": {"favorite": {"label": "Favorite", "role": "Button"}, "skip": {"label": "Skip", "role": "Button"}},
+        "branches": {"true": [{"op": "TAP", "target": "favorite"}], "false": [{"op": "TAP", "target": "skip"}],
                      "unsure": "skip"},
         "stop": {"count_items": items}, "policy": {"unsure_stated": True, "stop_stated": True}},
-        request="like everyone without blue eyes; skip if unsure; stop after 8")
+        request="favorite every photo that isn't blurry; skip if unsure; stop after 8")
     deck = Deck()
     started = clock.monotonic()
-    LoopRunner(program, driver=deck, request="like", judge=Judge(), crop=lambda image, rect: image,
+    LoopRunner(program, driver=deck, request="favorite", judge=Judge(), crop=lambda image, rect: image,
                shadow=lambda screen, hint: (nap("decide"), ("TAP", "3"))[1]).run(deck.observe())
     loop_s = (clock.monotonic() - started) / scale / items
     loop_reads = deck.reads / items
@@ -279,7 +280,7 @@ def simulate(items=8, scale=.05, frame_clock=False):
     same = Deck()
     blocked = Agent(same, Mock(spec=["decide", "verify_action"], decide=Mock(side_effect=lambda *a, **k: Decision(
         "TAP", "3", .97, .05, .02, "sim", 0, {}, StopGate.CONTINUE, risk_tier="side_effect", side_effect_risk=.9)),
-        verify_action=Mock(return_value=ActionSupport.ALLOWED)), settle_seconds=0).run("Like everyone", execute=True)
+        verify_action=Mock(return_value=ActionSupport.ALLOWED)), settle_seconds=0).run("Favorite every photo", execute=True)
     deck = Deck(distinct=True)
     model = Mock(spec=["decide", "verify_action", "stable_completion"], stable_completion=True)
 
@@ -295,7 +296,7 @@ def simulate(items=8, scale=.05, frame_clock=False):
         return ActionSupport.ALLOWED
     model.decide.side_effect, model.verify_action.side_effect = decide, verify
     started = clock.monotonic()
-    Agent(deck, model, max_steps=items + 3, max_seconds=600).run("Like everyone", execute=True)
+    Agent(deck, model, max_steps=items + 3, max_seconds=600).run("Favorite every photo", execute=True)
     step_s = (clock.monotonic() - started) / scale / items
     return {"items": items, "frame_clock": frame_clock, "loop_s_per_item": round(loop_s, 2),
             "loop_reads_per_item": round(loop_reads, 2), "step_agent_s_per_item": round(step_s, 2),

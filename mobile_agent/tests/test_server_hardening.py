@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import tempfile
+import threading
 import time
 from email.message import Message
 from types import SimpleNamespace
@@ -18,11 +19,18 @@ from mobile_agent.server import APIError, Run, Runtime, make_handler
 
 
 APP = {"id": "settings", "name": "Settings", "bundleId": "com.apple.Preferences", "installed": True}
+REAL_THREAD = threading.Thread
 
 
 class ParkedWorker:
     """Records scheduling without running a worker or touching a phone."""
     starts = 0
+
+    def __new__(cls, *args, **kwargs):
+        # The run listeners' dispatcher (seam S6.4) is a real thread, not a task worker: a track's listener runs.
+        if kwargs.get("name") == "mobster-listeners":
+            return REAL_THREAD(*args, **kwargs)
+        return super().__new__(cls)
 
     def __init__(self, *args, **kwargs):
         pass

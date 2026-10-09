@@ -1,0 +1,9 @@
+{
+  "mcp": {
+    "mobster": {
+      "type": "local",
+      "command": ["/opt/mobster/bin/mobster", "mcp"],
+      "enabled": true
+    }
+  }
+}

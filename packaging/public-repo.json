@@ -1,0 +1,27 @@
+{
+  "_comment": "The public repository's About box. The owner applies it with: gh repo edit RadishSoftware/mobster --description \"$(jq -r .description packaging/public-repo.json)\" --homepage \"$(jq -r .homepage packaging/public-repo.json)\" $(jq -r '.topics[] | \"--add-topic \" + .' packaging/public-repo.json). The description names testing on your own iPhone: until that has been checked end to end on a real phone, drop \"your phone and\". Every topic is something Mobster does today; never a tool it doesn't run. When Codex and Cursor are tested, codex and cursor replace model-context-protocol and mobile-agent.",
+  "description": "Agents on a real iPhone: test your iOS app on your phone and simulators, and run tasks in your apps. CLI, MCP server and agent loop, over USB. MIT.",
+  "homepage": "https://mobster.dev",
+  "topics": [
+    "iphone",
+    "ios",
+    "ios-simulator",
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "ai-agents",
+    "claude-code",
+    "ios-testing",
+    "ios-automation",
+    "iphone-automation",
+    "accessibility-tree",
+    "webdriveragent",
+    "xcuitest",
+    "e2e-testing",
+    "mobile-testing",
+    "mobile-automation",
+    "real-device-testing",
+    "phone-use-agent",
+    "mobile-agent"
+  ]
+}

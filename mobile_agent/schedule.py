@@ -20,6 +20,31 @@ def timezone(value):
         raise ValueError("Choose a recognized IANA timezone, such as America/Los_Angeles") from None
 
 
+def local_timezone(environ=None, localtime="/etc/localtime"):
+    """The Mac's IANA zone ("America/Los_Angeles"), so a new schedule reads in the user's own time.
+
+    TZ wins when it names a real zone; otherwise /etc/localtime, which macOS keeps as a symlink into
+    a zoneinfo tree (/var/db/timezone/zoneinfo/America/Los_Angeles). Anything unreadable is UTC."""
+    import os
+    environ = os.environ if environ is None else environ
+    candidates = [environ.get("TZ", "").lstrip(":")]
+    for resolve in (os.readlink, os.path.realpath):
+        try:
+            target = resolve(localtime)
+        except OSError:
+            continue
+        if "/zoneinfo/" in target:
+            candidates.append(target.split("/zoneinfo/", 1)[1])
+    for candidate in candidates:
+        if candidate and ("/" in candidate or candidate == "UTC"):
+            try:
+                timezone(candidate)
+                return candidate
+            except ValueError:
+                continue
+    return "UTC"
+
+
 def validate_cron(expression, zone, daily_limit=DAILY_LIMIT):
     timezone(zone)
     if not isinstance(expression, str) or len(expression) > 128 or len(expression.split()) != 5:
@@ -47,13 +72,36 @@ def validate_cron(expression, zone, daily_limit=DAILY_LIMIT):
     return expression
 
 
+# Bounds the skipping below: clocks going back repeat an hour or two, at most 12 five-minute slots an hour.
+MAX_REPEATS_SKIPPED = 288
+
+
+def runs_through_repeated_hours(expression):
+    """Whether a schedule runs again when a wall-clock time repeats as clocks go back. Only when its hour field
+    is '*' or a step: each repeat is then a real later hour ("every 30 minutes" keeps going). A schedule at
+    fixed hours ("30 1 * * *") runs once, at the first of the two, as cron runs a fixed-time job."""
+    hour = expression.split()[1]
+    return hour.startswith("*") or "/" in hour
+
+
 def next_occurrences(expression, zone, after_ms, count=1):
     if not 1 <= count <= 3:
         raise ValueError("Preview supports one to three occurrences")
     try:
-        iterator = croniter(expression, datetime.fromtimestamp(after_ms / 1000, timezone(zone)),
+        zone_info = timezone(zone)
+        iterator = croniter(expression, datetime.fromtimestamp(after_ms / 1000, zone_info),
                             max_years_between_matches=8)
-        values = [round(iterator.get_next(datetime).timestamp() * 1000) for _ in range(count)]
+        repeats = runs_through_repeated_hours(expression)
+        values, skipped = [], 0
+        while len(values) < count:
+            moment = iterator.get_next(datetime).timestamp()
+            # fold=1 is the second of two identical wall-clock times; the first one matched the same fields.
+            if not repeats and datetime.fromtimestamp(moment, zone_info).fold:
+                skipped += 1
+                if skipped > MAX_REPEATS_SKIPPED:
+                    raise ValueError("too many repeated wall-clock times")
+                continue
+            values.append(round(moment * 1000))
     except (CroniterBadCronError, CroniterBadDateError, ValueError, OverflowError):
         raise ValueError("The schedule has no valid occurrence within eight years") from None
     if any(b <= a for a, b in zip([after_ms] + values, values)):

@@ -1,0 +1,49 @@
+---
+title: "Schedules, workflows and alerts"
+sidebarTitle: "Schedules and workflows"
+description: "Save a task as a workflow, then run it again with one click or on a schedule."
+icon: "calendar-clock"
+keywords: ["schedule", "workflow", "every morning", "recurring", "alerts", "webhook", "slack", "keep awake"]
+---
+
+A workflow is a task you saved. Run it again with one click, or put it on a schedule, such as every weekday at 8.
+
+## Save a workflow
+
+- From a finished task, choose **Save as workflow**.
+- On the **Workflows** page, choose **New workflow**, or **Pick one from History**.
+
+Each row shows its name, its app and task, the schedule in words and when it runs next ("Weekdays at 8 AM · next tomorrow 8:00 AM"), a switch that pauses it, and **Run now**.
+
+<Frame caption="Workflows before you save one: New workflow, or Pick one from History.">
+  <img src="/images/mac/workflows-light.webp" alt="Workflows: saved tasks with their schedules." className="block dark:hidden" />
+  <img src="/images/mac/workflows-dark.webp" alt="Workflows: saved tasks with their schedules." className="hidden dark:block" />
+</Frame>
+
+## When a schedule runs
+
+<Warning>Workflows run while your Mac is awake and your iPhone is plugged in and unlocked. A time that's missed is skipped, not run late.</Warning>
+
+- A step that needs your approval waits for you, as in any task. If nobody answers within 10 minutes, the task ends without that step.
+- A workflow runs on the phone saved with it. With none, it runs on the only phone, or the first iPhone, never on whichever phone you used last.
+- **Open at login**, in Settings › General, starts Mobster when you log in, so schedules run even if you haven't opened it. Closing the window keeps Mobster running; ⌘Q quits it.
+- **Task notifications**, in the same place, tell you when a task finishes or needs your OK while Mobster is in the background.
+
+## Staying awake
+
+From 10 minutes before a scheduled task is due until its run ends, Mobster keeps your Mac from going to sleep on its own. A closed laptop on battery still sleeps. `MOBSTER_KEEP_AWAKE=0` in the env file turns this off.
+
+## Alerts
+
+Mobster can post to a webhook when a scheduled task fails, stops before it finishes, or waits a minute for your approval. Put an https address in the env file:
+
+```sh agent.env
+MOBSTER_ALERT_WEBHOOK_URL=https://hooks.slack.com/services/…
+```
+
+- Slack, Discord and ntfy addresses get their own format. Any other address gets JSON: `workflow`, `status`, `reason`, `runId`, `at` and `text`.
+- A post says which task and why. It never holds the task's answer, a screenshot or anything it typed.
+- Tasks you start yourself never alert.
+- Addresses on this Mac or its local network are refused.
+
+`mobster alerts test` sends a test post and says whether it arrived.

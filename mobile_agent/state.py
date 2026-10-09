@@ -85,6 +85,14 @@ class Element:
     # Where a tap lands (screen fractions) when not the centre: a wide row whose centre hits none
     # of its own content (see from_wda_root). () = the centre.
     hit: tuple = ()
+    # Read only from a rich source (from_wda_root(rich=True)): a disabled control is listed as disabled
+    # instead of left out, and a selected one (its "Selected" trait) says so. Plain sources never set
+    # them, so Jev's rows and fingerprints do not change.
+    enabled: bool = True
+    selected: bool = False
+    # A field's placeholder (rich sources): XCUITest reports an empty field's value as its placeholder,
+    # so a field whose value equals it is empty.
+    placeholder: str = ""
 
     def __post_init__(self):
         if (not isinstance(self.id, str) or not self.id or len(self.id) > 256
@@ -92,7 +100,9 @@ class Element:
                 or not isinstance(self.role, str) or not self.role or len(self.role) > 500
                 or not isinstance(self.value, str) or len(self.value) > 500
                 or not isinstance(self.locator, str) or len(self.locator) > 16000
-                or type(self.editable) is not bool):
+                or type(self.editable) is not bool or type(self.enabled) is not bool
+                or type(self.selected) is not bool or not isinstance(self.placeholder, str)
+                or len(self.placeholder) > 500):
             raise ValueError("Invalid element identity or metadata")
         try:
             for value in (self.id, self.label, self.role, self.value, self.locator):
@@ -121,6 +131,11 @@ class Element:
     def center(self):
         x, y, w, h = self.rect
         return x + w / 2, y + h / 2
+
+    @property
+    def text(self):
+        """A field's text as read: "" when it shows its placeholder (rich sources know it)."""
+        return "" if self.placeholder and self.value == self.placeholder else self.value
 
     @property
     def tap_point(self):
@@ -332,10 +347,10 @@ def pane_key(role, label, x, y, w, h):
     return (role, label or "", round(x), round(y), round(w), round(h))
 
 
-def from_wda(xml: str, hidden_panes=frozenset(), hidden_paths=frozenset()) -> Snapshot:
+def from_wda(xml: str, hidden_panes=frozenset(), hidden_paths=frozenset(), rich=False) -> Snapshot:
     """``hidden_panes``: pane keys WDA reports not visible; ``hidden_paths``: source paths of
-    window layers it reports not visible. Their subtrees are skipped."""
-    return from_wda_root(_parse_wda(xml), hidden_panes, hidden_paths)
+    window layers it reports not visible. Their subtrees are skipped. ``rich``: see from_wda_root."""
+    return from_wda_root(_parse_wda(xml), hidden_panes, hidden_paths, rich=rich)
 
 
 def _parse_wda(xml):
@@ -346,6 +361,16 @@ def _parse_wda(xml):
             "<!DOCTYPE" in xml.upper() or "<!ENTITY" in xml.upper())):
         raise ValueError("Unsafe or oversized UI source")
     return ET.fromstring(xml)
+
+
+# A long field value is read as its head, " … ", and its tail (see _wda_text).
+FIELD_HEAD, FIELD_TAIL, FIELD_CUT = 200, 295, " … "
+
+
+def truncated_field_value(value):
+    """True when a field's ``value`` is _wda_text's head-and-tail cut, not the whole text."""
+    return (isinstance(value, str) and len(value) == FIELD_HEAD + len(FIELD_CUT) + FIELD_TAIL
+            and value[FIELD_HEAD:FIELD_HEAD + len(FIELD_CUT)] == FIELD_CUT)
 
 
 def _wda_text(a, role):
@@ -360,12 +385,27 @@ def _wda_text(a, role):
     if len(value) > 500 and role in ("TextView", "TextField", "SearchField"):
         # Typed text lands at the end of a long field: keep its end (iOSWorld clouddocs-004
         # typed one note 45 times because only the first 500 characters were read).
-        value = value[:200] + " … " + value[-295:]
+        value = value[:FIELD_HEAD] + FIELD_CUT + value[-FIELD_TAIL:]
     return label, value[:500]
 
 
-def from_wda_root(root, hidden_panes=frozenset(), hidden_paths=frozenset()) -> Snapshot:
-    """``from_wda`` on an already parsed tree; it only reads the tree."""
+def _extent(value):
+    """A frame coordinate from WDA, with a non-finite one (Reminders' spacer reports CGFLOAT_MAX, which parses
+    as inf, 27 Sep) as 0: such a view has no size on screen, and one of them used to fail every read."""
+    number = float(value)
+    return number if math.isfinite(number) else 0.0
+
+
+def from_wda_root(root, hidden_panes=frozenset(), hidden_paths=frozenset(), rich=False) -> Snapshot:
+    """``from_wda`` on an already parsed tree; it only reads the tree.
+
+    ``rich`` (the frontier policy; Jev and the plain driver leave it off, so their rows are as before):
+    - a labelled or identified ``Other`` leaf of touch size is a target. QuickBite's cart bar is an
+      accessible view with the id ``view_cart_button`` and no label: never listed, multi-088 spent eight
+      turns looking for it (iOSWorld, 25 Sep);
+    - a disabled control is listed (``enabled=False``) instead of dropped, and a control whose traits
+      say "Selected" (a source read with traits) is marked ``selected``.
+    """
     app = next((n for n in root.iter() if n.tag == "XCUIElementTypeApplication"), None)
     if app is None:
         raise ValueError("WDA source has no application frame")
@@ -382,6 +422,7 @@ def from_wda_root(root, hidden_panes=frozenset(), hidden_paths=frozenset()) -> S
         raise ValueError("Invalid WDA application dimensions")
     nodes, offscreen, visited, panes, layers, pages = [], [], 0, [], [], []
     parked = []
+    other_leaves, selected_paths, placeholders = set(), set(), {}
     editable_roles = {"TextField", "SearchField", "TextView"}
     structural = {"Application", "Window", "Other", "ScrollView", "Table", "CollectionView", "WebView"}
 
@@ -400,10 +441,10 @@ def from_wda_root(root, hidden_panes=frozenset(), hidden_paths=frozenset()) -> S
             same = {}
             for position, child in enumerate(node):
                 c = child.attrib
-                cw, ch = float(c.get("width", 0)), float(c.get("height", 0))
+                cw, ch = _extent(c.get("width", 0)), _extent(c.get("height", 0))
                 if (child.tag == "XCUIElementTypeOther" and math.isfinite(cw * ch)
                         and cw * ch >= WDA_PAGE_MIN_SCREEN_FRACTION * width * height):
-                    frame = tuple(round(float(c.get(k, 0)) / 2) for k in ("x", "y", "width", "height"))
+                    frame = tuple(round(_extent(c.get(k, 0)) / 2) for k in ("x", "y", "width", "height"))
                     same.setdefault(frame, []).append(position)
             group = max(same.values(), key=len, default=[])
             if len(group) >= WDA_PAGE_MIN_COUNT:
@@ -413,14 +454,12 @@ def from_wda_root(root, hidden_panes=frozenset(), hidden_paths=frozenset()) -> S
             # A presented sheet or cover is a later screen-sized sibling of the screen it covers
             # (iOSWorld CalTrack, 24 Sep: "Search Food" over "Today", both in one read).
             full = [f"{path}/{child.tag}[{index}]" for index, child in _indexed(node)
-                    if float(child.attrib.get("width", 0)) * float(child.attrib.get("height", 0))
+                    if _extent(child.attrib.get("width", 0)) * _extent(child.attrib.get("height", 0))
                     >= WDA_LAYER_MIN_SCREEN_FRACTION * width * height]
             if len(full) > 1:
                 layers.extend(full[:-1])
-        x, y = float(a.get("x", 0)), float(a.get("y", 0))
-        w, h = float(a.get("width", 0)), float(a.get("height", 0))
-        if not (math.isfinite(x) and math.isfinite(y) and math.isfinite(w) and math.isfinite(h)):
-            raise ValueError("Nonfinite WDA element bounds")
+        x, y = _extent(a.get("x", 0)), _extent(a.get("y", 0))
+        w, h = _extent(a.get("width", 0)), _extent(a.get("height", 0))
         if cell is not None and not (cell[0] - 1 <= x + w / 2 <= cell[0] + cell[2] + 1
                                      and cell[1] - 1 <= y + h / 2 <= cell[1] + cell[3] + 1):
             # Content of a cell UIKit has not rendered reports a collapsed frame (at its table's
@@ -467,6 +506,15 @@ def from_wda_root(root, hidden_panes=frozenset(), hidden_paths=frozenset()) -> S
                 right, bottom = min(width, s_right), min(height, s_bottom)
             nodes.append((path, role, label, value, (left, top, right, bottom),
                           a.get("enabled", "true") != "false"))
+            if rich:
+                if (role == "Other" and len(node) == 0 and label and a.get("accessible", "true") != "false"
+                        and w >= OTHER_TARGET_MIN_PT and h >= OTHER_TARGET_MIN_PT
+                        and w * h < OTHER_TARGET_MAX_SCREEN_FRACTION * width * height):
+                    other_leaves.add(path)
+                if "Selected" in (a.get("traits") or "").split(", "):
+                    selected_paths.add(path)
+                if role in editable_roles and a.get("placeholderValue"):
+                    placeholders[path] = invisible_marks(a.get("placeholderValue"))[:500]
         elif keep_offscreen and (label or value.strip()):
             # Entirely outside the viewport: evidence only (WebKit keeps the whole page).
             offscreen.append((path, role, label, value, (x, y, w, h)))
@@ -505,8 +553,9 @@ def from_wda_root(root, hidden_panes=frozenset(), hidden_paths=frozenset()) -> S
         # the create flow was unreachable (iOSWorld multi-068, 24 Sep); position identifies it.
         unlabelled_button = (role == "Button" and right - left >= UNLABELLED_BUTTON_MIN_PT
                              and bottom - top >= UNLABELLED_BUTTON_MIN_PT)
-        if enabled and (label or role in editable_roles or role in ADJUSTABLE_ROLES and value.strip()
-                        or unlabelled_button) and role not in structural:
+        other_leaf = path in other_leaves
+        if (enabled or rich) and (label or role in editable_roles or role in ADJUSTABLE_ROLES and value.strip()
+                                  or unlabelled_button) and (role not in structural or other_leaf):
             if len(elements) >= 240:
                 # A dense page (Wikipedia's Mount Everest infobox) ended runs here. Past the
                 # target budget the rest stays readable evidence, never an action target.
@@ -524,7 +573,8 @@ def from_wda_root(root, hidden_panes=frozenset(), hidden_paths=frozenset()) -> S
                 (left / width, top / height, (right-left) / width, (bottom-top) / height),
                 role in editable_roles, path, value,
                 field_actions if role in editable_roles else ("TAP",),
-                _hit_inside(hit, left, top, right, bottom, width, height)))
+                _hit_inside(hit, left, top, right, bottom, width, height), enabled, path in selected_paths,
+                placeholders.get(path, "")))
     evidence, seen = [], set()
     for path, role, label, value, (x, y, w, h) in offscreen:
         # WebKit nests the same text (a link and its static text): keep one.
@@ -720,6 +770,10 @@ WDA_PAGE_MIN_COUNT = 3
 # Controls chosen by value rather than typed or tapped (WDA sets them: WDA.set_value).
 ADJUSTABLE_ROLES = frozenset({"PickerWheel"})
 UNLABELLED_BUTTON_MIN_PT = 20
+# An ``Other`` leaf (rich sources) is a target from touch size (Apple's 44 pt) up to this share of the
+# screen: a leaf that fills the screen is a backdrop, not a control.
+OTHER_TARGET_MIN_PT = 44
+OTHER_TARGET_MAX_SCREEN_FRACTION = .5
 
 
 def wda_occlusion(nodes, width=None, height=None):

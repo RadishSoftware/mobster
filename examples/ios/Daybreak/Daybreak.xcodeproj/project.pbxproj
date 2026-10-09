@@ -1,0 +1,343 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		1060B34DD62A1DC945ED3026 /* Sky.swift in Sources */ = {isa = PBXBuildFile; fileRef = 854B726BCA523A7475CDDF0D /* Sky.swift */; };
+		1176A4795137D87E6B9B8BDE /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3056C97F9DDDDEAB5FC152C /* Theme.swift */; };
+		1B7C3D96F5A44798A9DB3F26 /* LegalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4C6EB64EDE361CEAF057CA4 /* LegalView.swift */; };
+		1E48ABF4399610E48A264218 /* TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 808F97A82F5BDAD236168796 /* TodayView.swift */; };
+		1FD14323E16DD8E82C6D21A6 /* DaybreakApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F648AE743FC0C4390E725B29 /* DaybreakApp.swift */; };
+		2BD5EC6DF846C58781CFCB0F /* Plan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AABE8C03BE993F9C1BF7392 /* Plan.swift */; };
+		2E76A44BA5D2A4A7CD0CF28A /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9608AE8BD32B3924D2ED6978 /* SettingsView.swift */; };
+		5A80168B9D5133AEA87A670A /* AppRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E484A478D2F0EB6EF32078A5 /* AppRouter.swift */; };
+		7698CC469B8C8B7AD190C731 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E49B363E442BF7DD562BFB66 /* Assets.xcassets */; };
+		C9A512E99626DCD46118513C /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E04867FFCD167E01721A5C14 /* OnboardingView.swift */; };
+		F0BBA51059181A8E6242F5FB /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A7A4A5AD7991F89A02CD607 /* PaywallView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		3AABE8C03BE993F9C1BF7392 /* Plan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Plan.swift; sourceTree = "<group>"; };
+		808F97A82F5BDAD236168796 /* TodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayView.swift; sourceTree = "<group>"; };
+		854B726BCA523A7475CDDF0D /* Sky.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sky.swift; sourceTree = "<group>"; };
+		9608AE8BD32B3924D2ED6978 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		9A7A4A5AD7991F89A02CD607 /* PaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallView.swift; sourceTree = "<group>"; };
+		B1F2E47856BF5EAC34A95B63 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		D4C6EB64EDE361CEAF057CA4 /* LegalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegalView.swift; sourceTree = "<group>"; };
+		E04867FFCD167E01721A5C14 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		E484A478D2F0EB6EF32078A5 /* AppRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRouter.swift; sourceTree = "<group>"; };
+		E49B363E442BF7DD562BFB66 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		F3056C97F9DDDDEAB5FC152C /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		F5A017B066624F43A65BC682 /* Daybreak.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Daybreak.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F648AE743FC0C4390E725B29 /* DaybreakApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DaybreakApp.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		51A7182A6515A45AC4D55A32 /* Daybreak */ = {
+			isa = PBXGroup;
+			children = (
+				E484A478D2F0EB6EF32078A5 /* AppRouter.swift */,
+				E49B363E442BF7DD562BFB66 /* Assets.xcassets */,
+				F648AE743FC0C4390E725B29 /* DaybreakApp.swift */,
+				B1F2E47856BF5EAC34A95B63 /* Info.plist */,
+				D4C6EB64EDE361CEAF057CA4 /* LegalView.swift */,
+				E04867FFCD167E01721A5C14 /* OnboardingView.swift */,
+				9A7A4A5AD7991F89A02CD607 /* PaywallView.swift */,
+				3AABE8C03BE993F9C1BF7392 /* Plan.swift */,
+				9608AE8BD32B3924D2ED6978 /* SettingsView.swift */,
+				854B726BCA523A7475CDDF0D /* Sky.swift */,
+				F3056C97F9DDDDEAB5FC152C /* Theme.swift */,
+				808F97A82F5BDAD236168796 /* TodayView.swift */,
+			);
+			path = Daybreak;
+			sourceTree = "<group>";
+		};
+		8548C02D3DAB04A2533720CA = {
+			isa = PBXGroup;
+			children = (
+				51A7182A6515A45AC4D55A32 /* Daybreak */,
+				9FB5F5ACE58EA1DACBE9AD91 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		9FB5F5ACE58EA1DACBE9AD91 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				F5A017B066624F43A65BC682 /* Daybreak.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		C261E455EA7AFEDC88D157A0 /* Daybreak */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = DBD3117098F429C7764FD36A /* Build configuration list for PBXNativeTarget "Daybreak" */;
+			buildPhases = (
+				0862A18EA28155C099F5B854 /* Sources */,
+				73A14E2D358EDDFEF985F5A2 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Daybreak;
+			packageProductDependencies = (
+			);
+			productName = Daybreak;
+			productReference = F5A017B066624F43A65BC682 /* Daybreak.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		11E6449B4CE4665FF45A0413 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
+			};
+			buildConfigurationList = D3B71D026BA46FA8D9F9D301 /* Build configuration list for PBXProject "Daybreak" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 8548C02D3DAB04A2533720CA;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 9FB5F5ACE58EA1DACBE9AD91 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				C261E455EA7AFEDC88D157A0 /* Daybreak */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		73A14E2D358EDDFEF985F5A2 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7698CC469B8C8B7AD190C731 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		0862A18EA28155C099F5B854 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5A80168B9D5133AEA87A670A /* AppRouter.swift in Sources */,
+				1FD14323E16DD8E82C6D21A6 /* DaybreakApp.swift in Sources */,
+				1B7C3D96F5A44798A9DB3F26 /* LegalView.swift in Sources */,
+				C9A512E99626DCD46118513C /* OnboardingView.swift in Sources */,
+				F0BBA51059181A8E6242F5FB /* PaywallView.swift in Sources */,
+				2BD5EC6DF846C58781CFCB0F /* Plan.swift in Sources */,
+				2E76A44BA5D2A4A7CD0CF28A /* SettingsView.swift in Sources */,
+				1060B34DD62A1DC945ED3026 /* Sky.swift in Sources */,
+				1176A4795137D87E6B9B8BDE /* Theme.swift in Sources */,
+				1E48ABF4399610E48A264218 /* TodayView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		08EB77417FF82BDE07C1F95F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				ENABLE_PREVIEWS = YES;
+				INFOPLIST_FILE = Daybreak/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.mobster.daybreak;
+				PRODUCT_NAME = Daybreak;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		46CDD09EFA68C79A24D2F963 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		92376695636701F4BFD33F96 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		B466CF48319FEDDE0197E4E8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				ENABLE_PREVIEWS = YES;
+				INFOPLIST_FILE = Daybreak/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.mobster.daybreak;
+				PRODUCT_NAME = Daybreak;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		D3B71D026BA46FA8D9F9D301 /* Build configuration list for PBXProject "Daybreak" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				46CDD09EFA68C79A24D2F963 /* Debug */,
+				92376695636701F4BFD33F96 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		DBD3117098F429C7764FD36A /* Build configuration list for PBXNativeTarget "Daybreak" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B466CF48319FEDDE0197E4E8 /* Debug */,
+				08EB77417FF82BDE07C1F95F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 11E6449B4CE4665FF45A0413 /* Project object */;
+}

@@ -1,0 +1,52 @@
+{
+ "about": "Clock \u203a Alarms (first20 alarm-delete, 5 Oct): the owner's 5:55 AM alarm sits in the middle of the screen, where an untargeted sideways swipe strokes; the alarm to delete is lower.",
+ "bundle": "com.apple.mobiletimer",
+ "screens": {
+  "alarms": [
+   {
+    "id": "90",
+    "label": "Alarms",
+    "role": "NavigationBar",
+    "rect": [
+     0,
+     0.05,
+     1,
+     0.06
+    ]
+   },
+   {
+    "id": "1",
+    "label": "5:55 AM, Alarm",
+    "role": "Cell",
+    "rect": [
+     0,
+     0.44,
+     1,
+     0.09
+    ]
+   },
+   {
+    "id": "2",
+    "label": "6:15 AM, Mobster test",
+    "role": "Cell",
+    "rect": [
+     0,
+     0.62,
+     1,
+     0.09
+    ]
+   },
+   {
+    "id": "3",
+    "label": "7:00 AM, Gym",
+    "role": "Cell",
+    "rect": [
+     0,
+     0.71,
+     1,
+     0.09
+    ]
+   }
+  ]
+ }
+}

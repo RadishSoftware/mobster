@@ -29,7 +29,7 @@ An earlier 96-request evaluation used ambiguous citation instructions. Six addit
 
 The old missing-data fixture also incorrectly expected nullable success from a non-nullable schema. Now only a parsed, exact `{"data":null,"citations":[]}` response is explicit abstention. Other schema/evidence failures still fail. Runtime abstention becomes `data_status:insufficient_evidence`, with `schema_validated:false`; it is never counted as extracted data. Generic validation failures were not retroactively relabeled as passes.
 
-Known evaluation/probe calls total 170: four initial availability probes, 96 original fixtures, six diagnostic requests, and 64 corrected fixtures. The corrected 64 samples are preserved in [the JSONL record](https://github.com/uninstantiated/mobster-cli/blob/main/mobile_agent/evals/gemini-2026-09-19.jsonl). Their values were transcribed from tool-returned records and retain execution order, model, case, repeat, latency, and pass/error outcome. No further evaluation calls were made after selecting the winner.
+Known evaluation/probe calls total 170: four initial availability probes, 96 original fixtures, six diagnostic requests, and 64 corrected fixtures. The corrected 64 samples are preserved in [the JSONL record](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/evals/gemini-2026-09-19.jsonl). Their values were transcribed from tool-returned records and retain execution order, model, case, repeat, latency, and pass/error outcome. No further evaluation calls were made after selecting the winner.
 
 ## Operational safeguards and next evaluation
 

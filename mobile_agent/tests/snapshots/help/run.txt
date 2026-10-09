@@ -1,0 +1,53 @@
+usage: mobster run [-h] [--wda-url URL | --device NAME] [--env-file PATH] [--execute]
+                   [--engine {auto,smart,fast}] [--demo] [--helper] [--json] [--max-steps N]
+                   [--max-seconds S] [--spend-cap-usd USD] [--expected-text TEXT]
+                   [--allow-app BUNDLE_ID]
+                   TASK
+
+Run one task on your iPhone and print each step. On a terminal each step prints as
+a line; piped, or with --json, every event prints as one JSON object per line, and
+the last is the result.
+
+Which agent runs it (--engine auto): Mobster's agent (Smart) on your Claude or OpenAI
+key, or Quick mode (Fast) when TYPESAFE_API_KEY is set. Smart asks before it sends,
+buys, posts or deletes: on a terminal you answer y or n; with --json or a pipe the
+answer is no, and the run ends as declined. Fast never asks: with --execute it can
+send, buy, post or delete without a prompt, so preview without --execute first.
+
+ctrl+c stops at the next safe point (twice to force).
+
+positional arguments:
+  TASK                        what to do, in plain words
+
+options:
+  -h, --help                  show this help and exit
+  --wda-url URL               the phone's address, for a phone you set up by hand (default:
+                              http://127.0.0.1:8100) [env: MOBSTER_WDA_URL]
+  --device NAME               the iPhone or simulator to use: an id, UDID or name from `mobster
+                              devices` (default: your iPhone)
+  --env-file PATH             load KEY=VALUE lines (ANTHROPIC_API_KEY, OPENAI_API_KEY,
+                              TYPESAFE_API_KEY, ...); variables already set win [env:
+                              MOBSTER_ENV_FILE]
+  --execute                   act on the phone (Fast without it: preview one decision)
+  --engine {auto,smart,fast}  smart (Mobster's agent), fast (Quick mode), or auto: fast when
+                              TYPESAFE_API_KEY is set, else smart (default: auto) [env:
+                              MOBSTER_DEFAULT_ENGINE]
+  --demo                      a scripted phone and policy: no iPhone, no keys, no model calls
+  --helper                    Fast: use the helper model for typed text, answers and recovery
+                              (TEXT_MODEL)
+  --json                      print raw JSON events, even on a terminal
+  --max-steps N               stop after N steps (default: 30)
+  --max-seconds S             stop after S seconds (default: 120; Smart: 300)
+  --spend-cap-usd USD         stop before further model calls once this task has cost USD
+  --expected-text TEXT        Fast: finish as soon as TEXT is visible on the screen
+  --allow-app BUNDLE_ID       Fast: let the agent switch to this app; repeat for several. Without
+                              any --allow-app, app switching is never offered
+
+exit codes: 0 done (or previewed), 1 the task didn't finish, 2 usage error,
+            3 couldn't run (no phone answered, no key), 130 stopped with ctrl+c
+
+examples:
+  mobster run "Turn on Dark Mode" --execute
+  mobster run "What's my battery level?" --execute --json
+  mobster run "Turn on Dark Mode" --demo          a scripted phone: no iPhone, no keys
+  mobster run "Open Search" --engine fast          preview Quick mode's first decision

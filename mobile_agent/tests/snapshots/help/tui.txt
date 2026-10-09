@@ -1,0 +1,18 @@
+usage: mobster tui [-h] [--wda-url URL] [--device NAME] [--env-file PATH] [--demo] [--resume [ID]]
+                   [-c] [--app NAME] [--no-bell]
+
+Open the terminal UI. The same as running `mobster` with no command.
+
+options:
+  -h, --help       show this help and exit
+  --wda-url URL    the phone's address, for a phone you set up by hand (default:
+                   http://127.0.0.1:8100) [env: MOBSTER_WDA_URL]
+  --device NAME    the iPhone or simulator to use: an id, UDID or name from `mobster devices`
+                   (default: your iPhone)
+  --env-file PATH  load KEY=VALUE lines (ANTHROPIC_API_KEY, OPENAI_API_KEY, TYPESAFE_API_KEY, ...);
+                   variables already set win [env: MOBSTER_ENV_FILE]
+  --demo           use a scripted phone and policy: no iPhone, no keys, no model calls
+  --resume [ID]    open a past task and put it back in the prompt (the latest without an ID)
+  -c, --continue   continue your last conversation
+  --app NAME       start with this app chosen (a name or bundle ID)
+  --no-bell        don't ring the terminal bell when Mobster needs you

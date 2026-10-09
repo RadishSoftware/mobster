@@ -1,0 +1,29 @@
+usage: mobster serve [-h] [--port PORT] [--wda-url URL] [--device NAME] [--manage-device]
+                     [--data-dir PATH] [--exit-with-parent] [--keep-runner] [--env-file PATH]
+                     [--session ID] [--enable-live] [--spend-cap-usd USD] [--state-db PATH]
+
+Start the loopback HTTP API (127.0.0.1 only) that Mobster for Mac launches as its
+sidecar. Every request needs the launch's API token. Scripting with it:
+https://docs.mobster.dev/scripting
+
+options:
+  -h, --help           show this help and exit
+  --port PORT          port on 127.0.0.1 (default: 8765; 0 picks a free one)
+  --wda-url URL        the WebDriverAgent to drive (default: none, or http://127.0.0.1:8100 with
+                       --manage-device); a simulator's runner listens on its own port
+  --device NAME        the device a task that names none runs on: an id, UDID or name from `mobster
+                       devices` (default: the only device, else the one last used)
+  --manage-device      own the USB iPhone setup: build, run and supervise Mobster's helper (the Mac
+                       app does this)
+  --data-dir PATH      where the managed device keeps its files
+  --exit-with-parent   shut down when the launching process exits (the Mac app's safety net)
+  --keep-runner        leave the iPhone runner running on exit, for development reloads; the next
+                       server adopts it
+  --env-file PATH      load KEY=VALUE lines (ANTHROPIC_API_KEY, OPENAI_API_KEY, TYPESAFE_API_KEY,
+                       ...); variables already set win
+  --session ID         preferred WDA session; the one WDA is serving always wins
+  --enable-live        allow tasks to act on the phone
+  --spend-cap-usd USD  stop a run before further model calls once its observed inference spend
+                       reaches USD
+  --state-db PATH      the private task journal (never automatically replays interrupted tasks);
+                       default: .state/ beside the source in a checkout, else <data dir>/state/

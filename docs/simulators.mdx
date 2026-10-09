@@ -1,0 +1,97 @@
+---
+title: "Simulators"
+description: "The simulators Mobster creates for your checks, and the mobster sim commands."
+icon: "tablet-smartphone"
+---
+
+`mobster verify`, `mobster test` and `mobster mcp` run your app on iOS simulators that Mobster creates and manages. You rarely need to touch them: `mobster sim doctor --fix` sets one up, and the rest happens on its own.
+
+Mobster's simulators are headless. It boots them with `xcrun simctl` and never opens Simulator.app or any other window. It only ever boots, resets, shuts down or deletes the simulators it created, and it leaves your own simulators alone.
+
+## Where things live
+
+Mobster keeps its simulator state in its data folder: `$MOBSTER_DATA_DIR` when it's set, else `~/Library/Application Support/app.mobster.desktop/dev`.
+
+| Path | Holds |
+|---|---|
+| `simulators.json` | The registry: every simulator Mobster created, the only ones it may delete |
+| `simulators.lock` | The lock around registry changes |
+| `wda/src-<commit>/` | The pinned WebDriverAgent source (appium/WebDriverAgent v16.12.10) |
+| `wda/build-<xcode build>-<commit>-<patches>/` | The WebDriverAgent build for your Xcode |
+| `logs/wda-build.log` | The WebDriverAgent build's output |
+| `logs/wda-<udid>.log` | Each WebDriverAgent runner's output |
+| `logs/sim.log` | What the simulator manager did |
+
+The simulators themselves live in Xcode's default device set, like the ones you create, because `xcodebuild` can't see a private set. They show up in `xcrun simctl list devices`.
+
+## Names and devices
+
+A simulator is named `Mobster · <device type> · <runtime>`, such as `Mobster · iPhone 17 Pro · iOS 26.4`. A second one for the same pair gets ` · 2`.
+
+The device type is `iPhone 17 Pro` when your Xcode has it, else the first of `iPhone 16 Pro` and `iPhone 15 Pro`, else the newest iPhone. The runtime is the newest iOS runtime installed. `--device` and `--runtime` on `verify`, `mcp` and `sim prepare` choose others.
+
+Mobster runs up to 2 simulators for one device and runtime at a time, so two runs can go at once. Set `MOBSTER_MAX_SIMS` for more. A run that finds them all busy waits for one, and then ends `couldnt_run` with class `busy`.
+
+After the first boot, Mobster sets the status bar to 9:41 with full signal and battery, and turns off autocorrection, predictive text, smart quotes and smart dashes, so typed text arrives exactly as written.
+
+## Memory
+
+A booted iPhone 17 Pro simulator on iOS 26.4, with Daybreak and WebDriverAgent running, used 0.7 GB of resident memory across its 300 processes (the sum of their resident sizes, measured on 28 Sep 2026 on an M5 Max with macOS 26.5.1). A bigger app adds its own. Simulators stay booted between runs so the next run starts warm; `mobster sim shutdown` frees the memory.
+
+## Ports and loopback
+
+Each simulator gets its own WebDriverAgent port and a screen-stream port 1000 above it.
+
+| Setting | Value |
+|---|---|
+| WebDriverAgent port | `MOBSTER_SIM_PORT_BASE` (default 8310) plus the simulator's slot, 0 to 39 |
+| Screen stream (MJPEG) port | The WebDriverAgent port plus 1000 |
+| Never used | 8100, 8200–8299, 8765, 9100 and 9200–9299 |
+
+A port that something else is using moves the simulator to the next free slot. WebDriverAgent listens on 127.0.0.1 only. After starting it, Mobster checks both ports with `lsof`, and stops the runner if either one listens beyond this Mac.
+
+## WebDriverAgent
+
+Mobster drives and reads the app through WebDriverAgent, the open-source XCTest server Appium maintains. The first run on a new Xcode:
+
+1. clones the pinned release and checks its commit;
+2. applies Mobster's patches: the screen stream listens on 127.0.0.1 like the server, and both refuse requests from browsers and from hosts other than this Mac;
+3. builds it once for the iOS Simulator with `xcodebuild build-for-testing … CODE_SIGNING_ALLOWED=NO`. No Apple ID or team is needed.
+
+The build is cached per Xcode build version, so later runs start the runner in seconds. `mobster sim prune` removes builds for Xcode versions you no longer have.
+
+## Deep links
+
+Mobster opens a check's deep link, such as `daybreak://paywall`, through WebDriverAgent, which hands it straight to the app. Opening it with `xcrun simctl openurl` instead stops at iOS's "Open in …?" prompt the first time on each simulator; when Mobster has to fall back to that, it presses Open. Your app must declare the URL scheme in its `Info.plist`.
+
+## Reset levels
+
+Before a run, Mobster resets the app under test. Apple's own apps (`com.apple.*`) are never reset.
+
+| Level | Does | Default when |
+|---|---|---|
+| `none` | Nothing: the app keeps its data | never by default |
+| `data` | Quits the app, deletes its preferences, empties its `Documents`, `Library` and `tmp` folders and its app group folders, and resets its privacy permissions and the simulator's keychain | the app is named by bundle ID only |
+| `reinstall` | Uninstalls the app, installs your `.app` again, and resets privacy permissions and the keychain | a `.app` is given |
+
+Every folder Mobster empties must resolve inside that simulator's own folder, `~/Library/Developer/CoreSimulator/Devices/<udid>`, or the reset stops.
+
+## `mobster sim`
+
+| Command | Does |
+|---|---|
+| `mobster sim list [--json]` | Lists Mobster's simulators with their state and WebDriverAgent address |
+| `mobster sim prepare [--device NAME] [--runtime NAME] [--json]` | Creates the simulator if needed, boots it, builds WebDriverAgent the first time and starts it, and prints how long each phase took |
+| `mobster sim doctor [--fix] [--json]` | Checks what `verify` needs and prints the fix for each problem. `--fix` also prepares the simulator |
+| `mobster sim shutdown [UDID]` | Stops WebDriverAgent and shuts down every Mobster simulator that isn't in use, or one |
+| `mobster sim erase UDID` | Erases one Mobster simulator: its apps and data go |
+| `mobster sim delete (UDID \| --all)` | Deletes Mobster simulators. Only UDIDs in the registry whose names start with `Mobster · ` |
+| `mobster sim prune [--json]` | Deletes simulators unused for 14 days, stale WebDriverAgent builds, and registry entries for simulators that are gone |
+
+Exit codes: `0` ok, `1` a check or an action failed, `2` a usage error. The [CLI reference](/cli) lists every flag.
+
+`mobster sim doctor` checks, in order: Apple silicon; Xcode selected, the full app rather than the Command Line Tools; Xcode's first launch done; an iOS runtime; the device type; `git`; 5 GB free for the data folder; the WebDriverAgent build; Mobster's simulators and their WebDriverAgent; free ports; and Smart's key, `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`, as set or not set (never shown), with the model Smart will run on. It never runs `sudo` and never downloads a runtime. When the runtime is missing, it prints the command that downloads it:
+
+```sh
+xcodebuild -downloadPlatform iOS
+```

@@ -1,0 +1,117 @@
+---
+title: "Questions and answers"
+sidebarTitle: "FAQ"
+description: "Short answers about what Mobster does, your iPhone, costs, safety and the license."
+icon: "circle-question-mark"
+keywords: ["faq", "questions", "android", "wifi", "trial", "refund", "ios version", "is it safe"]
+---
+
+## Getting started
+
+<AccordionGroup>
+  <Accordion title="What can it do?">
+    Two things. It tests the app you're building, on simulators and on your own iPhone. And it does your own tasks in the apps on your iPhone, signed in as you: it opens apps, reads the screen, taps, types and swipes, and a follow-up knows what the last task found. It can't get past Face ID, your passcode or a CAPTCHA, and games and apps that draw their own screens give it little to read.
+  </Accordion>
+  <Accordion title="What do I need?">
+    An Apple silicon Mac with Xcode signed in to an Apple Account (a free one works), an iPhone with Developer Mode on, and a USB cable that carries data. Mobster's agent needs your Claude or OpenAI key. The first install of Mobster's helper on a phone can take 10 minutes or more. [Requirements](/requirements) has the table.
+  </Accordion>
+  <Accordion title="Can Claude control my iPhone?">
+    Yes, two ways. Add Mobster to Claude Code with `claude mcp add mobster -- mobster mcp`, and Claude can read your iPhone's screen, tap and type, over USB from your Mac. Or give the task to Mobster's agent, which runs on your Claude key and asks you before it sends, buys, posts or deletes. [Add Mobster to your agent](/agents) has the setup.
+  </Accordion>
+  <Accordion title="Which agents work with it?">
+    Claude Code and any agent you write, through `mobster mcp`, `mobster run --json` or the local HTTP API. [Add Mobster to your agent](/agents) has the setup for Codex, Cursor, VS Code and nine more clients. Your agent can drive the phone itself, or hand a whole task to Mobster's agent with `phone_task`.
+  </Accordion>
+  <Accordion title="How is it different from TapKit, Maestro or Appium?">
+    Mobster reads each screen's accessibility tree instead of guessing from screenshots, keeps every command on your Mac, asks before it sends, and checks your app on your own iPhone as well as on simulators. [mobster.dev/compare](https://mobster.dev/compare) puts it beside TapKit, Maestro, Appium and XCUITest, with each tool's facts taken from its own pages.
+  </Accordion>
+  <Accordion title="Does it work on Android?">
+    No. iPhones and iOS simulators.
+  </Accordion>
+  <Accordion title="Which iOS versions?">
+    Tested on an iPhone 15 Pro running iOS 26, and on iOS 26 simulators.
+  </Accordion>
+</AccordionGroup>
+
+## Your iPhone
+
+<AccordionGroup>
+  <Accordion title="Why does it need Developer Mode and Xcode?">
+    Mobster drives the iPhone through WebDriverAgent, a runner built on Apple's XCTest testing framework, which runs only with Developer Mode on and an Apple signature. That's what lets it read every control by name and drive simulators too. Mobster for Mac builds and signs the runner and, with a free Apple Account, refreshes it before its 7 days run out.
+  </Accordion>
+  <Accordion title="Does it work over Wi-Fi?">
+    The iPhone stays on a USB cable. Wi-Fi after one cable pairing is a preview that's off unless you turn it on, while it's tested on real phones: [Wi-Fi](/wifi).
+  </Accordion>
+  <Accordion title="Can I control a phone that isn't connected to this Mac?">
+    No. Mobster is local by design: the phone is connected to the Mac that the agent's commands run on.
+  </Accordion>
+  <Accordion title="Can it run on a schedule?">
+    Yes. Mobster for Mac runs saved workflows on a schedule while the Mac is awake and the phone is connected and unlocked. A step that needs your approval waits for you. [Schedules](/schedules)
+  </Accordion>
+</AccordionGroup>
+
+## AI account and costs
+
+<AccordionGroup>
+  <Accordion title="What does a task cost?">
+    Mobster's agent spends on your own key, billed by your provider, with a spend cap per task. An agent you connect over MCP spends on its own model. Launch-only checks call no model at all. [Models and keys](/models-and-keys)
+  </Accordion>
+  <Accordion title="Does it remember things about me?">
+    Only what you tell it to. When you write something like "my gym is the one on 5th Street", Mobster offers to remember it, and saves nothing until you choose **Remember**. It stays on your Mac, you can edit or delete it in Settings › Memory, and it never remembers passwords, codes or card numbers. A task sends only the few things it needs to your AI account.
+  </Accordion>
+  <Accordion title="Where do my screens go?">
+    They stay on your Mac unless a model needs them. Mobster's agent sends what each step needs, the screen's text and a small screenshot, to the provider whose key you gave. An agent you connect over MCP sees what Mobster's tools return to it. There's no Mobster server between your agent and your phone, and no analytics. [Privacy and your data](/privacy)
+  </Accordion>
+  <Accordion title="Can I attach files or talk to it?">
+    Yes. Attach images, PDFs, text and CSV files, up to 25 MB each: Mobster reads them on your Mac and sends only what a task reads. In Mobster for Mac on macOS 26 or later, hold the mic or ⌥ Space and say the task. What you say becomes text on your Mac, and nothing is recorded.
+  </Accordion>
+</AccordionGroup>
+
+## Approvals and safety
+
+<AccordionGroup>
+  <Accordion title="Is it safe?">
+    Mobster's agent stops before a tap that would send, buy, post or delete, shows you what it's about to do, and acts only when you approve. A message you type while it works, a file's text or your voice never approves anything. It can still do anything you approve, so use accounts you're comfortable handing to an agent. [Approvals and safety](/safety)
+  </Accordion>
+  <Accordion title="Can I use it to run many social or dating accounts?">
+    No. Mobster is for your own tasks and for testing your own app, not for running accounts in bulk or automating likes, follows and messages. A task another agent starts never opens Instagram, TikTok, X, Facebook, Snapchat, Threads, Tinder, Hinge or Bumble.
+  </Accordion>
+  <Accordion title="Can it unlock my iPhone?">
+    No. Mobster never enters your passcode or uses Face ID. A task you start on a locked iPhone waits up to 2 minutes for you to unlock it, and costs nothing while it waits.
+  </Accordion>
+</AccordionGroup>
+
+## License and refunds
+
+<AccordionGroup>
+  <Accordion title="Is there a free trial?">
+    No. Mobster CLI is free and has the whole harness, so it's the way to try Mobster. Mobster for Mac adds setup without Terminal, a live view, conversations with approvals, voice, history and schedules.
+  </Accordion>
+  <Accordion title="How many Macs does a license cover?">
+    Up to 3 Macs. Deactivate a Mac in Settings › License to move the license to another one.
+  </Accordion>
+  <Accordion title="Does Mobster for Mac contact your servers?">
+    Only to check for updates and for your license. The license check runs when you activate or deactivate a Mac, and at most once a day on a monthly plan. It sends your key and a hashed id for the Mac, never a screen, a task or anything from the phone. A lifetime license works offline after activation.
+  </Accordion>
+  <Accordion title="Can I cancel the monthly plan or get a refund?">
+    Cancel anytime at [mobster.dev/manage](https://mobster.dev/manage), or in Settings › License › Manage subscription, which opens the same page. The license keeps working to the end of the period you paid for. A lifetime purchase can be refunded within 14 days. [Pricing and license](/pricing)
+  </Accordion>
+  <Accordion title="I lost my license key.">
+    Get it again at [mobster.dev/recover](https://mobster.dev/recover) with the email you paid with and the receipt number from your Stripe receipt.
+  </Accordion>
+</AccordionGroup>
+
+## For developers
+
+<AccordionGroup>
+  <Accordion title="I build iOS apps. What's in it for me?">
+    `mobster test` runs your project's checks on simulators Mobster manages and on your own iPhone, with retries, flaky checks named, and JUnit and HTML reports for CI. Each verdict comes from assertions on the app's accessibility tree, never from a model, and your coding agent runs the same checks with `run_tests`. There's no per-device fee. [Run every check](/testing)
+  </Accordion>
+  <Accordion title="Do the checks heal themselves?">
+    Not yet. Every step runs live, and a failed assertion fails.
+  </Accordion>
+  <Accordion title="Will it touch my own simulators?">
+    No. Mobster creates its own, named `Mobster · …`, and deletes only those.
+  </Accordion>
+</AccordionGroup>
+
+Can't find it? Write to [support@radish.software](mailto:support@radish.software). A person reads every message.

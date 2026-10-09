@@ -546,7 +546,7 @@ class ServerWiringTests(unittest.TestCase):
             runtime.apps = Mock(return_value=[dict(APP)])
             runtime.status = Mock(return_value={"live_enabled": True, "helper_configured": False})
             runtime.wda_session = Mock(return_value="s")
-            run, _ = runtime.create("settings", "Open About", "live", "wiring")
+            run, _ = runtime.create("settings", "Open About", "live", "wiring", engine="fast")
             driver = Mock(spec=WDA)
             driver.last_image = None
             with patch("mobile_agent.server.build_models", side_effect=lambda **k: order.append("models") or (Mock(), None)), \
@@ -601,8 +601,10 @@ class SnapshotCacheTests(unittest.TestCase):
         from dataclasses import asdict
         from mobile_agent.state import from_wda
         snapshot = screen("Settings", ("General",))
-        legacy = [{**{k: v for k, v in asdict(e).items() if k not in ("locator", "hit")}, "rect": list(e.rect),
-                   "actions": list(e.actions)} for e in snapshot.elements]
+        # enabled / selected / placeholder come only from rich sources (the frontier) and stay out of public().
+        legacy = [{**{k: v for k, v in asdict(e).items()
+                      if k not in ("locator", "hit", "enabled", "selected", "placeholder")},
+                   "rect": list(e.rect), "actions": list(e.actions)} for e in snapshot.elements]
         self.assertEqual(json.dumps(snapshot.public()["elements"]), json.dumps(legacy))
         for bad in ('<!DOCTYPE x><XCUIElementTypeApplication/>', '<!doctype x><a/>', '<!EnTiTy x>'):
             with self.assertRaises(ValueError):

@@ -1,0 +1,240 @@
+{
+ "about": "iOS 26 Calculator (bench text.calc_add, 5 Oct): its keypad keys are XCUIElementTypeKey, which the frontier left out of the rows as keyboard keys, and TAP_XY on them was refused as listed.",
+ "bundle": "com.apple.calculator",
+ "screens": {
+  "keypad": [
+   {
+    "id": "1",
+    "label": "Result",
+    "role": "StaticText",
+    "rect": [
+     0.05,
+     0.3,
+     0.9,
+     0.1
+    ],
+    "value": "0"
+   },
+   {
+    "id": "10",
+    "label": "All Clear",
+    "role": "Key",
+    "rect": [
+     0.04,
+     0.45,
+     0.21,
+     0.09
+    ]
+   },
+   {
+    "id": "11",
+    "label": "Change Sign",
+    "role": "Key",
+    "rect": [
+     0.27499999999999997,
+     0.45,
+     0.21,
+     0.09
+    ]
+   },
+   {
+    "id": "12",
+    "label": "Percent",
+    "role": "Key",
+    "rect": [
+     0.51,
+     0.45,
+     0.21,
+     0.09
+    ]
+   },
+   {
+    "id": "13",
+    "label": "Divide",
+    "role": "Key",
+    "rect": [
+     0.745,
+     0.45,
+     0.21,
+     0.09
+    ]
+   },
+   {
+    "id": "14",
+    "label": "7",
+    "role": "Key",
+    "rect": [
+     0.04,
+     0.55,
+     0.21,
+     0.09
+    ]
+   },
+   {
+    "id": "15",
+    "label": "8",
+    "role": "Key",
+    "rect": [
+     0.27499999999999997,
+     0.55,
+     0.21,
+     0.09
+    ]
+   },
+   {
+    "id": "16",
+    "label": "9",
+    "role": "Key",
+    "rect": [
+     0.51,
+     0.55,
+     0.21,
+     0.09
+    ]
+   },
+   {
+    "id": "17",
+    "label": "Multiply",
+    "role": "Key",
+    "rect": [
+     0.745,
+     0.55,
+     0.21,
+     0.09
+    ]
+   },
+   {
+    "id": "18",
+    "label": "4",
+    "role": "Key",
+    "rect": [
+     0.04,
+     0.65,
+     0.21,
+     0.09
+    ]
+   },
+   {
+    "id": "19",
+    "label": "5",
+    "role": "Key",
+    "rect": [
+     0.27499999999999997,
+     0.65,
+     0.21,
+     0.09
+    ]
+   },
+   {
+    "id": "20",
+    "label": "6",
+    "role": "Key",
+    "rect": [
+     0.51,
+     0.65,
+     0.21,
+     0.09
+    ]
+   },
+   {
+    "id": "21",
+    "label": "Subtract",
+    "role": "Key",
+    "rect": [
+     0.745,
+     0.65,
+     0.21,
+     0.09
+    ]
+   },
+   {
+    "id": "22",
+    "label": "1",
+    "role": "Key",
+    "rect": [
+     0.04,
+     0.75,
+     0.21,
+     0.09
+    ]
+   },
+   {
+    "id": "23",
+    "label": "2",
+    "role": "Key",
+    "rect": [
+     0.27499999999999997,
+     0.75,
+     0.21,
+     0.09
+    ]
+   },
+   {
+    "id": "24",
+    "label": "3",
+    "role": "Key",
+    "rect": [
+     0.51,
+     0.75,
+     0.21,
+     0.09
+    ]
+   },
+   {
+    "id": "25",
+    "label": "Add",
+    "role": "Key",
+    "rect": [
+     0.745,
+     0.75,
+     0.21,
+     0.09
+    ]
+   },
+   {
+    "id": "26",
+    "label": "Calculator",
+    "role": "Key",
+    "rect": [
+     0.04,
+     0.8500000000000001,
+     0.21,
+     0.09
+    ]
+   },
+   {
+    "id": "27",
+    "label": "0",
+    "role": "Key",
+    "rect": [
+     0.27499999999999997,
+     0.8500000000000001,
+     0.21,
+     0.09
+    ]
+   },
+   {
+    "id": "28",
+    "label": "Point",
+    "role": "Key",
+    "rect": [
+     0.51,
+     0.8500000000000001,
+     0.21,
+     0.09
+    ]
+   },
+   {
+    "id": "29",
+    "label": "Equals",
+    "role": "Key",
+    "rect": [
+     0.745,
+     0.8500000000000001,
+     0.21,
+     0.09
+    ]
+   }
+  ]
+ }
+}

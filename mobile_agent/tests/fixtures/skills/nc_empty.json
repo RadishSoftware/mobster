@@ -1,0 +1,19 @@
+{
+ "note": "No code in Notification Center.",
+ "bundle": "com.apple.springboard",
+ "width": 402,
+ "height": 874,
+ "keyboard": "",
+ "elements": [
+  {
+   "label": "Weather, Rain expected, Rain starting around 4 PM., 12m ago",
+   "role": "Cell",
+   "rect": [
+    0.04,
+    0.65,
+    0.92,
+    0.08
+   ]
+  }
+ ]
+}

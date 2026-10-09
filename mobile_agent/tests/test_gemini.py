@@ -199,8 +199,9 @@ class VertexTests(unittest.TestCase):
         adapter = self.adapter()
         adapter._inflight.acquire()
         try:
+            # It waits for the request in flight until its own deadline: a short one, not the default 20 s.
             with patch.object(GCloudToken, 'get') as get, self.assertRaises(TransportError):
-                adapter.request('POST', '/chat/completions', body())
+                adapter.request('POST', '/chat/completions', body(), timeout=.1)
             get.assert_not_called()
         finally:
             adapter._inflight.release()

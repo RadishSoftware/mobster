@@ -6,6 +6,7 @@ the profile embedded in the built runner.
 """
 
 from datetime import timezone
+import hashlib
 from pathlib import Path
 import plistlib
 import re
@@ -120,3 +121,60 @@ def profile_expiry(derived):
             # plistlib returns naive datetimes in UTC.
             return (expires if expires.tzinfo else expires.replace(tzinfo=timezone.utc)).timestamp()
     return None
+
+
+# Where Xcode keeps downloaded provisioning profiles: Xcode 16 and later, then older versions.
+PROFILE_DIRS = (Path.home() / "Library" / "Developer" / "Xcode" / "UserData" / "Provisioning Profiles",
+                Path.home() / "Library" / "MobileDevice" / "Provisioning Profiles")
+RUNNER_BUNDLE = "app.mobster.wda.runner"
+
+
+def runner_bundle_id(team):
+    """The runner's bundle id for one team. App IDs are unique across all of Apple's teams, so a
+    free account can't register an id another team registered first; a suffix derived from the team
+    makes it its own. It is a digest, so the id on the phone doesn't spell out the team id."""
+    if not team or not TEAM_ID.fullmatch(team):
+        return RUNNER_BUNDLE
+    return f"{RUNNER_BUNDLE}.{hashlib.sha256(team.encode()).hexdigest()[:10]}"
+
+
+def team_label(team):
+    """ "Jane Appleseed (Personal Team)", "Example, LLC", or the bare id when Xcode gave no name."""
+    name = team.get("name")
+    if not name:
+        return team["id"]
+    return f"{name} (Personal Team)" if team.get("personal") else name
+
+
+def stale_runner_profiles(team, before, directories=PROFILE_DIRS):
+    """Xcode's cached profiles for Mobster's runner under this team that expire before ``before``.
+
+    Xcode keeps signing with a cached profile until it expires, so a renewal would build a runner
+    that expires on the same day. Only explicit profiles for the runner's own bundle ids qualify;
+    a wildcard profile (a paid team's "*") and every other app's profile are never touched.
+    """
+    if not team or not TEAM_ID.fullmatch(team):
+        return []
+    prefix = f"{team}.{RUNNER_BUNDLE}"
+    stale = []
+    for directory in directories:
+        try:
+            files = sorted(Path(directory).glob("*.mobileprovision")) + sorted(Path(directory).glob("*.provisionprofile"))
+        except OSError:
+            continue
+        for path in files:
+            text = _read(["security", "cms", "-D", "-i", str(path)])
+            try:
+                profile = plistlib.loads(text.encode()) if text else {}
+            except Exception:
+                continue
+            identifier = (profile.get("Entitlements") or {}).get("application-identifier")
+            expires = profile.get("ExpirationDate")
+            if not isinstance(identifier, str) or not (identifier == prefix or identifier.startswith(prefix + ".")):
+                continue
+            if not hasattr(expires, "timestamp"):
+                continue
+            expires = (expires if expires.tzinfo else expires.replace(tzinfo=timezone.utc)).timestamp()
+            if expires < before:
+                stale.append(path)
+    return stale

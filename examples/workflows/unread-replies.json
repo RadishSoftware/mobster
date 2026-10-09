@@ -1,0 +1,10 @@
+{
+ "name": "Who is waiting on me",
+ "appId": "messages",
+ "engine": "smart",
+ "goal": "Open Messages and read my unread conversations. List each person who is waiting on a reply from me and what they asked, one line each. Don't send, react to or mark anything.",
+ "outputFormat": "auto",
+ "cron": "0 12 * * MON-FRI",
+ "timezone": "America/Los_Angeles",
+ "enabled": false
+}

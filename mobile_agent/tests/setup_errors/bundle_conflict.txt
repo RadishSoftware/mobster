@@ -1,0 +1,3 @@
+/Users/test/Library/Application Support/app.mobster.desktop/WebDriverAgent/WebDriverAgent.xcodeproj: error: Failed Registering Bundle Identifier: The app identifier "app.mobster.wda.runner" cannot be registered to your development team because it is not available. Change your bundle identifier to a unique string to try again. (in target 'WebDriverAgentRunner' from project 'WebDriverAgent')
+/Users/test/Library/Application Support/app.mobster.desktop/WebDriverAgent/WebDriverAgent.xcodeproj: error: No profiles for 'app.mobster.wda.runner' were found: Xcode couldn't find any iOS App Development provisioning profiles matching 'app.mobster.wda.runner'. (in target 'WebDriverAgentRunner' from project 'WebDriverAgent')
+** TEST BUILD FAILED **
