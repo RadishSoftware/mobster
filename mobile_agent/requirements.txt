@@ -1,0 +1,9 @@
+# The lock: exact, tested pins for `make venv`. pyproject.toml declares the compatible ranges.
+jsonschema==4.26.0
+attrs==26.1.0
+jsonschema-specifications==2025.9.1
+referencing==0.37.0
+rpds-py==2026.9.1
+typing_extensions==4.16.0
+# FrameClock (frame_clock.py): JPEG draft decode and tile diffs of the MJPEG stream.
+Pillow==12.3.0

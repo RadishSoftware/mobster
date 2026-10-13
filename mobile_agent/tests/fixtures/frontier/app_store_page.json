@@ -1,0 +1,102 @@
+{
+ "about": "App Store: an app's page (its name beside Get), a sponsored row with its own Get, a paid app with its price as the button (C3).",
+ "bundle": "com.apple.AppStore",
+ "screens": {
+  "page": [
+   {
+    "id": "1",
+    "label": "Duolingo - Language Lessons",
+    "role": "StaticText",
+    "rect": [
+     0.3,
+     0.14,
+     0.6,
+     0.04
+    ]
+   },
+   {
+    "id": "2",
+    "label": "Get",
+    "role": "Button",
+    "rect": [
+     0.3,
+     0.2,
+     0.2,
+     0.04
+    ]
+   },
+   {
+    "id": "3",
+    "label": "Ad, Babbel - Language Learning",
+    "role": "StaticText",
+    "rect": [
+     0.05,
+     0.6,
+     0.6,
+     0.04
+    ]
+   },
+   {
+    "id": "4",
+    "label": "Get",
+    "role": "Button",
+    "rect": [
+     0.75,
+     0.6,
+     0.2,
+     0.04
+    ]
+   }
+  ],
+  "paid": [
+   {
+    "id": "1",
+    "label": "Things 3",
+    "role": "StaticText",
+    "rect": [
+     0.3,
+     0.14,
+     0.6,
+     0.04
+    ]
+   },
+   {
+    "id": "2",
+    "label": "$9.99",
+    "role": "Button",
+    "rect": [
+     0.3,
+     0.2,
+     0.2,
+     0.04
+    ]
+   }
+  ],
+  "confirm": [
+   {
+    "id": "5",
+    "label": "Double Click to Install",
+    "role": "StaticText",
+    "rect": [
+     0.2,
+     0.8,
+     0.6,
+     0.04
+    ]
+   }
+  ],
+  "maps": [
+   {
+    "id": "6",
+    "label": "Get Directions",
+    "role": "Button",
+    "rect": [
+     0.1,
+     0.8,
+     0.8,
+     0.05
+    ]
+   }
+  ]
+ }
+}

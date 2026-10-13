@@ -1,0 +1,48 @@
+[project]
+# "mobster" on PyPI is an unrelated SBOM tool. The import package is mobile_agent. It installs no command: this is
+# the engine's reference loop and its research. The product is Mobster for Mac (https://mobster.dev).
+name = "mobster-engine"
+dynamic = ["version"]
+description = "Mobster's engine and research: the reference agent loop behind Mobster for Mac, with its benchmarks"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Radish Retail, LLC" }]
+requires-python = ">=3.12"
+# Compatible ranges. The tested pins are in mobile_agent/requirements.txt.
+dependencies = [
+    "jsonschema>=4.23,<5",
+    "referencing>=0.35",  # imported directly (extraction.py); also a jsonschema dependency
+    "Pillow>=11,<13",     # FrameClock: JPEG decode of the MJPEG stream
+]
+keywords = ["ios", "iphone", "agent", "accessibility", "webdriveragent", "benchmark", "iosworld"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+[project.urls]
+Homepage = "https://mobster.dev"
+Repository = "https://github.com/RadishSoftware/mobster"
+Issues = "https://github.com/RadishSoftware/mobster/issues"
+
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.dynamic]
+version = { attr = "mobile_agent.__version__" }
+
+[tool.setuptools.packages.find]
+include = ["mobile_agent*"]
+exclude = ["mobile_agent.tests*", "mobile_agent.bench.tests*"]
+
+[tool.setuptools.package-data]
+mobile_agent = ["*.swift"]
+"mobile_agent.bench" = ["README.md", "manifest.json", "*-manifest.json", "truth/*.json"]
+"mobile_agent.evals.vision" = ["manifest.json", "images/*.jpg"]

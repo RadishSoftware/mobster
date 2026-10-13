@@ -1,0 +1,52 @@
+{
+ "about": "Calendar, the day asked about with nothing on it (first20 cal-tomorrow, 5 Oct).",
+ "bundle": "com.apple.mobilecal",
+ "screens": {
+  "day": [
+   {
+    "id": "90",
+    "label": "Tuesday, October 6",
+    "role": "NavigationBar",
+    "rect": [
+     0,
+     0.05,
+     1,
+     0.06
+    ]
+   },
+   {
+    "id": "1",
+    "label": "Tuesday, October 6",
+    "role": "StaticText",
+    "rect": [
+     0.05,
+     0.12,
+     0.9,
+     0.04
+    ]
+   },
+   {
+    "id": "2",
+    "label": "No Events",
+    "role": "StaticText",
+    "rect": [
+     0.3,
+     0.5,
+     0.4,
+     0.04
+    ]
+   },
+   {
+    "id": "3",
+    "label": "chevron.forward",
+    "role": "Image",
+    "rect": [
+     0.9,
+     0.12,
+     0.05,
+     0.03
+    ]
+   }
+  ]
+ }
+}

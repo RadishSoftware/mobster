@@ -1,0 +1,47 @@
+# Gitleaks' default rules, with exact synthetic fixtures and public constants allowed below.
+title = "Mobster"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Exact synthetic fixture values; tests, examples and QA files are still scanned"
+regexTarget = "secret"
+regexes = [
+  # Invalid JWTs and sequential fixture keys, never credentials issued by a service.
+  '^eyJhbGciOiJFUzI1NiJ9\.test\.signature$',
+  '^eyJhbGciOiJFUzI1NiJ9\.e30\.$',
+  '^sk-or-v1-abcdefghijklmnop$',
+  '^sk-test-0123456789abcdefghijklmnop$',
+  '^AIzaSyA-1234567890abcdefghijklmnopqrstu$',
+  '^relay_test_key_0123456789abcdefghijklmnop$',
+  '^sk_live_0123456789abc$',
+  '^0123456789abcdef$',
+  # Outlets' tests: a sequential destination id and a made-up signing secret.
+  '^0123456789ab$',
+  '^whsec-test-0123456789abcdef$',
+  # A made-up key in a test that has since been deleted.
+  '^MOB-7K2Q-9WXH-M4TR-ZP3D$',
+  # Base64 of explicitly fake test secrets, "not a key", and RFC 6455's example nonce.
+  '^dGVzdC1yZWxheS1zZWNyZXQtdGhhdC1pcy1sb25nLWVub3VnaC0xMjM0NTY3ODkw$',
+  '^test-relay-secret-that-is-long-enough-1234567890$',
+  '^dGVzdC1yb3V0ZS1zZWNyZXQtMzItYnl0ZXMtbG9uZyE=$',
+  '^bm90IGEga2V5$',
+  '^dGhlIHNhbXBsZSBub25jZQ==$'
+]
+
+[[allowlists]]
+description = "Exact notification preference names and the published throwaway token's key hash"
+regexes = [
+  '^mobster\.notifications\.v1$',
+  '^mobster\.notifications\.denied\.v1$',
+  '^a8ee3deab4f66679c050565345062ce38a0031b5591bee69f92fe2e76c85d46f$'
+]
+
+[[allowlists]]
+description = "Publishable keys, public by design: they ship in web pages and the Mac app (Stripe pk_, Supabase sb_publishable_)"
+regexTarget = "secret"
+regexes = [
+  '^pk_(?:live|test)_[0-9A-Za-z]{16,}$',
+  '^sb_publishable_[0-9A-Za-z_-]{16,}$'
+]

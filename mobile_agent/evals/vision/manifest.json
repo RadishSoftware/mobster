@@ -1,0 +1,2355 @@
+{
+ "version": 1,
+ "created": "2026-09-23",
+ "note": "Labels by visual inspection (single rater). Images are 512-px re-encodes of Wikimedia Commons thumbnails; licences are as reported by the Commons extmetadata API (CC0 / public domain only).",
+ "predicates": {
+  "dog": {
+   "question": "Is there a real dog (the animal, not a toy, statue, costume, robot, sign or drawing of one) in this photo?",
+   "choices": [
+    "yes",
+    "no",
+    "unsure"
+   ]
+  },
+  "receipt": {
+   "question": "Is this image a receipt, i.e. a printed, handwritten or on-screen record of a purchase or payment?",
+   "choices": [
+    "yes",
+    "no",
+    "unsure"
+   ]
+  },
+  "sunglasses": {
+   "question": "Is a person in this photo wearing sunglasses (dark or tinted glasses) on their face?",
+   "choices": [
+    "yes",
+    "no",
+    "unsure"
+   ]
+  },
+  "eye_colour": {
+   "question": "What colour are this person's eyes?",
+   "choices": [
+    "blue",
+    "green",
+    "grey",
+    "hazel",
+    "brown",
+    "unsure"
+   ]
+  }
+ },
+ "items": [
+  {
+   "id": "dog-002",
+   "predicate": "dog",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/dog_002.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Bully-dog-2314909-1920.jpg",
+   "source_title": "File:Bully-dog-2314909-1920.jpg",
+   "licence": "CC0",
+   "author": "Tonypang",
+   "source_width": 1200,
+   "source_height": 1412
+  },
+  {
+   "id": "dog-003",
+   "predicate": "dog",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/dog_003.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Defense.gov_News_Photo_111122-M-MM918-004_-_U.S._Marine_Corps_Lance_Cpl._Isaiah_Schult_an_improvised_explosive_device_dog_handler_jokes_with_Afghan_children_and_an_Afghan_National_Police.jpg",
+   "source_title": "File:Defense.gov News Photo 111122-M-MM918-004 - U.S. Marine Corps Lance Cpl. Isaiah Schult an improvised explosive device dog handler jokes with Afghan children and an Afghan National Police.jpg",
+   "licence": "Public domain",
+   "author": "Cpl. Reece Lodder, U.S. Marine Corps",
+   "source_width": 1625,
+   "source_height": 1083
+  },
+  {
+   "id": "dog-004",
+   "predicate": "dog",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/dog_004.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Dog_attack_(USAF).jpg",
+   "source_title": "File:Dog attack (USAF).jpg",
+   "licence": "Public domain",
+   "author": "U.S. Air Force photo/Robbin Cresswell",
+   "source_width": 1592,
+   "source_height": 1500
+  },
+  {
+   "id": "dog-006",
+   "predicate": "dog",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/dog_006.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:10_Week_Old_German_Shorthaired_Pointer_Puppy_Sleeping_On_Sofa.jpg",
+   "source_title": "File:10 Week Old German Shorthaired Pointer Puppy Sleeping On Sofa.jpg",
+   "licence": "CC0",
+   "author": "<a href=\"//commons.wikimedia.org/w/index.php?title=User:TruckMatt&action=edit&redlink=1\" class=\"new\" title=\"User",
+   "source_width": 3220,
+   "source_height": 2415
+  },
+  {
+   "id": "dog-007",
+   "predicate": "dog",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/dog_007.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:10_Week_Old_German_Shorthaired_Pointer_Puppy_Walking_Around_In_Backyard_Of_A_Tract_Home.jpg",
+   "source_title": "File:10 Week Old German Shorthaired Pointer Puppy Walking Around In Backyard Of A Tract Home.jpg",
+   "licence": "CC0",
+   "author": "<a href=\"//commons.wikimedia.org/w/index.php?title=User:TruckMatt&action=edit&redlink=1\" class=\"new\" title=\"User",
+   "source_width": 3220,
+   "source_height": 2415
+  },
+  {
+   "id": "dog-013",
+   "predicate": "dog",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/dog_013.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:%27DOG-WALKING_.Dog-Walker_Mr_Suresh.Gore_in_Mumbai..JPG",
+   "source_title": "File:'DOG-WALKING .Dog-Walker Mr Suresh.Gore in Mumbai..JPG",
+   "licence": "CC0",
+   "author": "<a href=\"//commons.wikimedia.org/w/index.php?title=User:Rudolph.A.furtado&action=edit&redlink=1\" class=\"new\" tit",
+   "source_width": 3264,
+   "source_height": 2448
+  },
+  {
+   "id": "dog-014",
+   "predicate": "dog",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/dog_014.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:6169Baliuag_Bulacan_Landmarks_during_the_2020_coronavirus_pandemic_24.jpg",
+   "source_title": "File:6169Baliuag Bulacan Landmarks during the 2020 coronavirus pandemic 24.jpg",
+   "licence": "CC0",
+   "author": "Judgefloro",
+   "source_width": 4608,
+   "source_height": 3456
+  },
+  {
+   "id": "dog-015",
+   "predicate": "dog",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/dog_015.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Aanleg_oversteekplaatsen_in_Rotterdam,_Bestanddeelnr_912-8815.jpg",
+   "source_title": "File:Aanleg oversteekplaatsen in Rotterdam, Bestanddeelnr 912-8815.jpg",
+   "licence": "CC0",
+   "author": "Eric Koch for <a href=\"//common",
+   "source_width": 4362,
+   "source_height": 3304
+  },
+  {
+   "id": "dog-016",
+   "predicate": "dog",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/dog_016.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Cherry_Blossoms_University_of_Washington_(33846957675).jpg",
+   "source_title": "File:Cherry Blossoms University of Washington (33846957675).jpg",
+   "licence": "CC0",
+   "author": "Steve Ginn from Western W",
+   "source_width": 1638,
+   "source_height": 2048
+  },
+  {
+   "id": "dog-017",
+   "predicate": "dog",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/dog_017.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Dog_Dread_walking_(rbm-QP301M8-1887-704a~02).jpg",
+   "source_title": "File:Dog Dread walking (rbm-QP301M8-1887-704a~02).jpg",
+   "licence": "Public domain",
+   "author": "Muybridge, Eadweard, 1830-1904",
+   "source_width": 766,
+   "source_height": 761
+  },
+  {
+   "id": "dog-020",
+   "predicate": "dog",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/dog_020.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Dog_on_Sandy_Beach_by_Lake_in_Atlanta.jpg",
+   "source_title": "File:Dog on Sandy Beach by Lake in Atlanta.jpg",
+   "licence": "CC0",
+   "author": "<a href=\"//commons.wikimedia.org/w/index.php?title=User:Komavo789&action=edit&redlink=1\" class=\"new\" title=\"User",
+   "source_width": 3320,
+   "source_height": 4980
+  },
+  {
+   "id": "dog-021",
+   "predicate": "dog",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/dog_021.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Dog_owner_walking_his_dogs_on_the_beach..JPG",
+   "source_title": "File:Dog owner walking his dogs on the beach..JPG",
+   "licence": "CC0",
+   "author": "<a href=\"//commons.wikimedia.org/w/index.php?title=User:Rudolph.A.furtado&action=edit&redlink=1\" class=\"new\" tit",
+   "source_width": 1600,
+   "source_height": 1200
+  },
+  {
+   "id": "dog-022",
+   "predicate": "dog",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/dog_022.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Happy_dog_at_Anjuna_Beach_(Unsplash).jpg",
+   "source_title": "File:Happy dog at Anjuna Beach (Unsplash).jpg",
+   "licence": "CC0",
+   "author": "Samantha Scholl sauriel",
+   "source_width": 5760,
+   "source_height": 3840
+  },
+  {
+   "id": "dog-023",
+   "predicate": "dog",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/dog_023.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Josie_swims_in_Valois_Bay.jpg",
+   "source_title": "File:Josie swims in Valois Bay.jpg",
+   "licence": "CC0",
+   "author": "<a href=\"//commons.wikimedia.org/w/index.php?title=User:Carocaropilates&action=edit&redlink=1\" class=\"new\" title",
+   "source_width": 3024,
+   "source_height": 4032
+  },
+  {
+   "id": "dog-001",
+   "predicate": "dog",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/dog_001.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Big_dog_military_robots.jpg",
+   "source_title": "File:Big dog military robots.jpg",
+   "licence": "Public domain",
+   "author": "U.S. Marine Corps photo by Lance Cpl. M. L. Meier.",
+   "source_width": 2000,
+   "source_height": 1473
+  },
+  {
+   "id": "dog-005",
+   "predicate": "dog",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/dog_005.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Dog_mascot_(13705234885).jpg",
+   "source_title": "File:Dog mascot (13705234885).jpg",
+   "licence": "Public domain",
+   "author": "HonoluluDistrict",
+   "source_width": 3888,
+   "source_height": 2592
+  },
+  {
+   "id": "dog-010",
+   "predicate": "dog",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/dog_010.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Bilbao_-_%27Puppy%27,_de_Koons_(04).jpg",
+   "source_title": "File:Bilbao - 'Puppy', de Koons (04).jpg",
+   "licence": "CC0",
+   "author": "Zarateman",
+   "source_width": 1920,
+   "source_height": 2560
+  },
+  {
+   "id": "dog-011",
+   "predicate": "dog",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/dog_011.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Bilbao_-_%27Puppy%27,_de_Koons_(05).jpg",
+   "source_title": "File:Bilbao - 'Puppy', de Koons (05).jpg",
+   "licence": "CC0",
+   "author": "Zarateman",
+   "source_width": 1920,
+   "source_height": 2560
+  },
+  {
+   "id": "dog-019",
+   "predicate": "dog",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/dog_019.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Dog_beach_in_Helsingborg_2024.jpg",
+   "source_title": "File:Dog beach in Helsingborg 2024.jpg",
+   "licence": "CC0",
+   "author": "Thuresson",
+   "source_width": 3024,
+   "source_height": 4032
+  },
+  {
+   "id": "dog-024",
+   "predicate": "dog",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/dog_024.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:065-Barcelona-Cat-1_(2016_photo;_cropped_2020).jpg",
+   "source_title": "File:065-Barcelona-Cat-1 (2016 photo; cropped 2020).jpg",
+   "licence": "CC0",
+   "author": "MartinThoma",
+   "source_width": 1109,
+   "source_height": 1109
+  },
+  {
+   "id": "dog-026",
+   "predicate": "dog",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/dog_026.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:A_photo_of_a_cat_sitting_down.jpg",
+   "source_title": "File:A photo of a cat sitting down.jpg",
+   "licence": "CC0",
+   "author": "<a href=\"//commons.wikimedia.org/w/index.php?title=User:Asabae2752&action=edit&redlink=1\" class=\"new\" title=\"Use",
+   "source_width": 3264,
+   "source_height": 2448
+  },
+  {
+   "id": "dog-027",
+   "predicate": "dog",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/dog_027.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:An_Afghan_elder_and_his_cat_sit_outside_his_store_at_the_Anaba_bazaar_in_Panjshir_province,_Afghanistan.jpg",
+   "source_title": "File:An Afghan elder and his cat sit outside his store at the Anaba bazaar in Panjshir province, Afghanistan.jpg",
+   "licence": "Public domain",
+   "author": "Sgt. Teddy Wade",
+   "source_width": 2500,
+   "source_height": 3286
+  },
+  {
+   "id": "dog-034",
+   "predicate": "dog",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/dog_034.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:RED_FOX_(Vulpes_vulpes)_(5-2-07)_atascadero_waste_tx_plant,_slo_co,_ca_(2365777430).jpg",
+   "source_title": "File:RED FOX (Vulpes vulpes) (5-2-07) atascadero waste tx plant, slo co, ca (2365777430).jpg",
+   "licence": "CC0",
+   "author": "ALAN SCHMIERER",
+   "source_width": 1422,
+   "source_height": 1152
+  },
+  {
+   "id": "dog-035",
+   "predicate": "dog",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/dog_035.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Red_Fox_(Vulpes_vulpes)_(48490221346).jpg",
+   "source_title": "File:Red Fox (Vulpes vulpes) (48490221346).jpg",
+   "licence": "Public domain",
+   "author": "GlacierNPS",
+   "source_width": 6720,
+   "source_height": 4480
+  },
+  {
+   "id": "dog-038",
+   "predicate": "dog",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/dog_038.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Front_view_of_a_resting_Canis_lupus_ssp.jpg",
+   "source_title": "File:Front view of a resting Canis lupus ssp.jpg",
+   "licence": "Public domain",
+   "author": "Gary Kramer",
+   "source_width": 3914,
+   "source_height": 4886
+  },
+  {
+   "id": "dog-042",
+   "predicate": "dog",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/dog_042.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Anton_Mauve_-_Sheep_Grazing_in_an_Open_Field_-_17.3238_-_Museum_of_Fine_Arts.jpg",
+   "source_title": "File:Anton Mauve - Sheep Grazing in an Open Field - 17.3238 - Museum of Fine Arts.jpg",
+   "licence": "Public domain",
+   "author": "<span title=\"Dutch pa",
+   "source_width": 1600,
+   "source_height": 1333
+  },
+  {
+   "id": "dog-047",
+   "predicate": "dog",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/dog_047.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:G%C3%A5seberg_Sheep_Farm.jpg",
+   "source_title": "File:Gåseberg Sheep Farm.jpg",
+   "licence": "CC0",
+   "author": "W.carter",
+   "source_width": 4806,
+   "source_height": 3149
+  },
+  {
+   "id": "dog-052",
+   "predicate": "dog",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/dog_052.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Frans_Hals_-_Portrait_of_a_Woman_-_23.27_-_Detroit_Institute_of_Arts.jpg",
+   "source_title": "File:Frans Hals - Portrait of a Woman - 23.27 - Detroit Institute of Arts.jpg",
+   "licence": "Public domain",
+   "author": "<span title=\"Dutch pain",
+   "source_width": 1513,
+   "source_height": 2000
+  },
+  {
+   "id": "dog-058",
+   "predicate": "dog",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/dog_058.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Bike_on_a_snowy_street_in_Quebec_City_at_night.jpg",
+   "source_title": "File:Bike on a snowy street in Quebec City at night.jpg",
+   "licence": "CC0",
+   "author": "Wilfredor",
+   "source_width": 7728,
+   "source_height": 5162
+  },
+  {
+   "id": "dog-062",
+   "predicate": "dog",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/dog_062.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Mr_Whoppit_Ruskin_Museum.jpg",
+   "source_title": "File:Mr Whoppit Ruskin Museum.jpg",
+   "licence": "CC0",
+   "author": "さえぼー",
+   "source_width": 3024,
+   "source_height": 4032
+  },
+  {
+   "id": "receipt-003",
+   "predicate": "receipt",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/receipt_003.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Arco_9714_receipt_(2003-10-20).jpg",
+   "source_title": "File:Arco 9714 receipt (2003-10-20).jpg",
+   "licence": "Public domain",
+   "author": "Amin Eshaiker",
+   "source_width": 669,
+   "source_height": 1860
+  },
+  {
+   "id": "receipt-007",
+   "predicate": "receipt",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/receipt_007.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Psan%C3%BD_%C3%BA%C4%8Det_v_restauraci_Kharchewnya_Svayaki_(%D0%A5%D0%B0%D1%80%D1%87%D1%8D%D1%9E%D0%BD%D1%8F_%D0%A1%D0%B2%D0%B0%D1%8F%D0%BA%D1%96).jpg",
+   "source_title": "File:Psaný účet v restauraci Kharchewnya Svayaki (Харчэўня Сваякі).jpg",
+   "licence": "CC0",
+   "author": "<a href=\"//commons.wikimedia.org/w/index.php?title=User:Ladabohac&action=edit&redlink=1\" class=\"new\" title=\"User",
+   "source_width": 2109,
+   "source_height": 3014
+  },
+  {
+   "id": "receipt-010",
+   "predicate": "receipt",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/receipt_010.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Wikipedia_Receipt_For_Food.jpg",
+   "source_title": "File:Wikipedia Receipt For Food.jpg",
+   "licence": "CC0",
+   "author": "<a href=\"//commons.wikimedia.org/w/index.php?title=User:Wilhelmmarvel&action=edit&redlink=1\" class=\"new\" title=\"",
+   "source_width": 656,
+   "source_height": 1007
+  },
+  {
+   "id": "receipt-014",
+   "predicate": "receipt",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/receipt_014.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:HK_NP_%E5%8C%97%E8%A7%92_North_Point_%E5%81%A5%E5%BA%B7%E4%B8%AD%E8%A1%97_Healthy_Street_Central_n_%E4%B8%83%E5%A7%8A%E5%A6%B9%E9%81%93_Tsat_Tsz_Mui_Road_shop_%E7%B4%85%E6%98%9F%E9%A4%90%E5%BB%B3_Red_Star_Restaurant_bill_January_2026_N13P.jpg",
+   "source_title": "File:HK NP 北角 North Point 健康中街 Healthy Street Central n 七姊妹道 Tsat Tsz Mui Road shop 紅星餐廳 Red Star Restaurant bill January 2026 N13P.jpg",
+   "licence": "CC0",
+   "author": "LAMANDYOAU POOAI",
+   "source_width": 3060,
+   "source_height": 4080
+  },
+  {
+   "id": "receipt-016",
+   "predicate": "receipt",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/receipt_016.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:HK_SKD_TKO_%E5%B0%87%E8%BB%8D%E6%BE%B3_Tseung_Kwan_O_night_%E6%97%A5%E5%87%BA%E5%BA%B7%E5%9F%8E_LOHAS_Park_%E5%95%86%E5%A0%B4_shopping_mall_shop_%E4%B8%80%E7%B2%A5%E9%BA%B5_Super_Super_Restaurant_bill_October_2025_N13P_01.jpg",
+   "source_title": "File:HK SKD TKO 將軍澳 Tseung Kwan O night 日出康城 LOHAS Park 商場 shopping mall shop 一粥麵 Super Super Restaurant bill October 2025 N13P 01.jpg",
+   "licence": "CC0",
+   "author": "RENSOMM 500 5",
+   "source_width": 3060,
+   "source_height": 4080
+  },
+  {
+   "id": "receipt-059",
+   "predicate": "receipt",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/receipt_059.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Cosmed_Baifu_Store_paying_receipt_20170117.jpg",
+   "source_title": "File:Cosmed Baifu Store paying receipt 20170117.jpg",
+   "licence": "Public domain",
+   "author": "Solomon203",
+   "source_width": 600,
+   "source_height": 600
+  },
+  {
+   "id": "receipt-060",
+   "predicate": "receipt",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/receipt_060.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Cox%27s_McKeesport_Store_Receipt_1950s.jpg",
+   "source_title": "File:Cox's McKeesport Store Receipt 1950s.jpg",
+   "licence": "CC0",
+   "author": "<a href=\"//commons.wikimedia.org/w/index.php?title=User:TREEsaContributes&action=edit&redlink=1\" class=\"new\" tit",
+   "source_width": 1632,
+   "source_height": 3326
+  },
+  {
+   "id": "receipt-061",
+   "predicate": "receipt",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/receipt_061.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Grocery_Store_Receipt_in_Vienna.jpg",
+   "source_title": "File:Grocery Store Receipt in Vienna.jpg",
+   "licence": "Public domain",
+   "author": "Grandmaster Huon",
+   "source_width": 3120,
+   "source_height": 4160
+  },
+  {
+   "id": "receipt-062",
+   "predicate": "receipt",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/receipt_062.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:MaxValu_Matsuyama_Store_receipt_JPY254_20191109.jpg",
+   "source_title": "File:MaxValu Matsuyama Store receipt JPY254 20191109.jpg",
+   "licence": "Public domain",
+   "author": "Solomon203",
+   "source_width": 720,
+   "source_height": 1280
+  },
+  {
+   "id": "receipt-063",
+   "predicate": "receipt",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/receipt_063.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Taiwan_Uniqlo_Miramar_Store_receipt_2012-05-07.jpg",
+   "source_title": "File:Taiwan Uniqlo Miramar Store receipt 2012-05-07.jpg",
+   "licence": "Public domain",
+   "author": "Solomon203",
+   "source_width": 629,
+   "source_height": 1600
+  },
+  {
+   "id": "receipt-064",
+   "predicate": "receipt",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/receipt_064.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Ticket_de_caisse_d%27un_magasin_de_v%C3%AAtements_C%26A.jpg",
+   "source_title": "File:Ticket de caisse d'un magasin de vêtements C&A.jpg",
+   "licence": "Public domain",
+   "author": "C&A",
+   "source_width": 1623,
+   "source_height": 2099
+  },
+  {
+   "id": "receipt-065",
+   "predicate": "receipt",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/receipt_065.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Tickets_de_caisse_de_la_cr%C3%AAperie_Tante_Lucie.jpg",
+   "source_title": "File:Tickets de caisse de la crêperie Tante Lucie.jpg",
+   "licence": "Public domain",
+   "author": "Crêperie Tante Lucie",
+   "source_width": 3835,
+   "source_height": 3103
+  },
+  {
+   "id": "receipt-066",
+   "predicate": "receipt",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/receipt_066.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Tesco_grocery_receipt_Finchley_1994.jpg",
+   "source_title": "File:Tesco grocery receipt Finchley 1994.jpg",
+   "licence": "Public domain",
+   "author": "Tesco",
+   "source_width": 769,
+   "source_height": 2060
+  },
+  {
+   "id": "receipt-067",
+   "predicate": "receipt",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/receipt_067.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Arco_3076_receipt_(2003-09-16).jpg",
+   "source_title": "File:Arco 3076 receipt (2003-09-16).jpg",
+   "licence": "Public domain",
+   "author": "Amin Eshaiker",
+   "source_width": 676,
+   "source_height": 1812
+  },
+  {
+   "id": "receipt-068",
+   "predicate": "receipt",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/receipt_068.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Circle_K_5705_receipt_(2005-07-22).jpg",
+   "source_title": "File:Circle K 5705 receipt (2005-07-22).jpg",
+   "licence": "Public domain",
+   "author": "Amin Eshaiker",
+   "source_width": 699,
+   "source_height": 1659
+  },
+  {
+   "id": "receipt-069",
+   "predicate": "receipt",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/receipt_069.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Fanzz,_Westminster_Mall_receipt_(2002-12-26).jpg",
+   "source_title": "File:Fanzz, Westminster Mall receipt (2002-12-26).jpg",
+   "licence": "Public domain",
+   "author": "Amin Eshaiker",
+   "source_width": 947,
+   "source_height": 1734
+  },
+  {
+   "id": "receipt-070",
+   "predicate": "receipt",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/receipt_070.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Shell-Gas-Station-Receipt-MasterCard.jpg",
+   "source_title": "File:Shell-Gas-Station-Receipt-MasterCard.jpg",
+   "licence": "Public domain",
+   "author": "<a href=\"https://en.wikipedia.org/wiki/User:Mrmiscellanious~enwiki\" class=\"extiw\" title=\"wikipedia:User:Mrmiscellanious~",
+   "source_width": 915,
+   "source_height": 1415
+  },
+  {
+   "id": "receipt-071",
+   "predicate": "receipt",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/receipt_071.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Chinese_Swedish_rounding.jpg",
+   "source_title": "File:Chinese Swedish rounding.jpg",
+   "licence": "Public domain",
+   "author": "User:Smyth",
+   "source_width": 1550,
+   "source_height": 1178
+  },
+  {
+   "id": "receipt-002",
+   "predicate": "receipt",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/receipt_002.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Abbott_and_Holder_receipt_-_21_August_1969.jpg",
+   "source_title": "File:Abbott and Holder receipt - 21 August 1969.jpg",
+   "licence": "Public domain",
+   "author": "Eric Holder",
+   "source_width": 2448,
+   "source_height": 3264
+  },
+  {
+   "id": "receipt-004",
+   "predicate": "receipt",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/receipt_004.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Receipt_for_Wine_and_Kegs_Purchased_by_Meriwether_Lewis_for_the_Expedition_to_the_West_-_NARA_-_300351.jpg",
+   "source_title": "File:Receipt for Wine and Kegs Purchased by Meriwether Lewis for the Expedition to the West - NARA - 300351.jpg",
+   "licence": "Public domain",
+   "author": "Unknown authorUnknown author or not provided",
+   "source_width": 2400,
+   "source_height": 1496
+  },
+  {
+   "id": "receipt-009",
+   "predicate": "receipt",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/receipt_009.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Wegmans_Octopus_Salad,_Net_Wt._8_oz._2nd_label_(23418970383).jpg",
+   "source_title": "File:Wegmans Octopus Salad, Net Wt. 8 oz. 2nd label (23418970383).jpg",
+   "licence": "Public domain",
+   "author": "The U.S. Food and Drug Adminis",
+   "source_width": 701,
+   "source_height": 1097
+  },
+  {
+   "id": "receipt-011",
+   "predicate": "receipt",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/receipt_011.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:1959_-_Alpine_Villa_Restaurant_-_Allentown_PA.jpg",
+   "source_title": "File:1959 - Alpine Villa Restaurant - Allentown PA.jpg",
+   "licence": "Public domain",
+   "author": "Self Scanned",
+   "source_width": 1600,
+   "source_height": 1027
+  },
+  {
+   "id": "receipt-012",
+   "predicate": "receipt",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/receipt_012.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:BILL_OF_FARE_AT_ANDRE%27S_RESTAURANT_-_NARA_-_554266.jpg",
+   "source_title": "File:BILL OF FARE AT ANDRE'S RESTAURANT - NARA - 554266.jpg",
+   "licence": "Public domain",
+   "author": "Hoffman, Ron, Photographer (<a rel=\"nofollow\" class=\"external text\" data-mw-original-href=\"//rese",
+   "source_width": 3000,
+   "source_height": 2013
+  },
+  {
+   "id": "receipt-013",
+   "predicate": "receipt",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/receipt_013.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Festessen_Kaiser_Wilhelm_1898_(front_page).jpg",
+   "source_title": "File:Festessen Kaiser Wilhelm 1898 (front page).jpg",
+   "licence": "Public domain",
+   "author": "A. Ludorff. Restored and uploaded by Pala",
+   "source_width": 4589,
+   "source_height": 6288
+  },
+  {
+   "id": "receipt-017",
+   "predicate": "receipt",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/receipt_017.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:-Manuscript_Letter_from_W._H._Fox_Talbot_to_Antonio_Bertoloni-_MET_DP202183.jpg",
+   "source_title": "File:-Manuscript Letter from W. H. Fox Talbot to Antonio Bertoloni- MET DP202183.jpg",
+   "licence": "CC0",
+   "author": "<span tit",
+   "source_width": 2813,
+   "source_height": 3472
+  },
+  {
+   "id": "receipt-023",
+   "predicate": "receipt",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/receipt_023.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Antoine%27s_Centennial_Menu_2.jpg",
+   "source_title": "File:Antoine's Centennial Menu 2.jpg",
+   "licence": "Public domain",
+   "author": "Uncredited for Antoine's restaurant",
+   "source_width": 1600,
+   "source_height": 1066
+  },
+  {
+   "id": "receipt-027",
+   "predicate": "receipt",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/receipt_027.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Breakfast_menu_of_Tivoli_Cafe_2025-09-17.jpg",
+   "source_title": "File:Breakfast menu of Tivoli Cafe 2025-09-17.jpg",
+   "licence": "CC0",
+   "author": "Andy Li",
+   "source_width": 6144,
+   "source_height": 8160
+  },
+  {
+   "id": "receipt-029",
+   "predicate": "receipt",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/receipt_029.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Al-Qibla_Newspaper_page_from_25_August_1921.jpg",
+   "source_title": "File:Al-Qibla Newspaper page from 25 August 1921.jpg",
+   "licence": "Public domain",
+   "author": "Al-Qibla Newspaper",
+   "source_width": 1080,
+   "source_height": 2400
+  },
+  {
+   "id": "receipt-032",
+   "predicate": "receipt",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/receipt_032.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Cover_of_Frank_Leslie%27s_Illustrated_Newspaper,_17_May_1856.jpg",
+   "source_title": "File:Cover of Frank Leslie's Illustrated Newspaper, 17 May 1856.jpg",
+   "licence": "Public domain",
+   "author": "Unknown authorUnknown author",
+   "source_width": 673,
+   "source_height": 1024
+  },
+  {
+   "id": "receipt-033",
+   "predicate": "receipt",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/receipt_033.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:El-saguaro-newspaper-features-narconon.jpg",
+   "source_title": "File:El-saguaro-newspaper-features-narconon.jpg",
+   "licence": "CC0",
+   "author": "Florence State Prison",
+   "source_width": 500,
+   "source_height": 773
+  },
+  {
+   "id": "receipt-036",
+   "predicate": "receipt",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/receipt_036.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Dish_MET_CL10.jpg",
+   "source_title": "File:Dish MET CL10.jpg",
+   "licence": "CC0",
+   "author": "",
+   "source_width": 1908,
+   "source_height": 1520
+  },
+  {
+   "id": "receipt-041",
+   "predicate": "receipt",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/receipt_041.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:A_lovely_old_shop_front_in_Fieldgate_Street,_Whitechapel.jpg",
+   "source_title": "File:A lovely old shop front in Fieldgate Street, Whitechapel.jpg",
+   "licence": "Public domain",
+   "author": "Maggie Jones from London,",
+   "source_width": 2552,
+   "source_height": 2060
+  },
+  {
+   "id": "receipt-043",
+   "predicate": "receipt",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/receipt_043.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Another_lovely_old_shop_front._(5986589623).jpg",
+   "source_title": "File:Another lovely old shop front. (5986589623).jpg",
+   "licence": "Public domain",
+   "author": "Maggie Jones from London,",
+   "source_width": 3648,
+   "source_height": 2736
+  },
+  {
+   "id": "receipt-047",
+   "predicate": "receipt",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/receipt_047.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:A_text-book_of_agricultural_entomology_(Page_192)_BHL9798403.jpg",
+   "source_title": "File:A text-book of agricultural entomology (Page 192) BHL9798403.jpg",
+   "licence": "Public domain",
+   "author": "Ormerod, Eleanor A.",
+   "source_width": 1721,
+   "source_height": 2760
+  },
+  {
+   "id": "receipt-049",
+   "predicate": "receipt",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/receipt_049.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:A_text-book_of_agricultural_entomology_BHL9798241.jpg",
+   "source_title": "File:A text-book of agricultural entomology BHL9798241.jpg",
+   "licence": "Public domain",
+   "author": "Ormerod, Eleanor A.",
+   "source_width": 1685,
+   "source_height": 2745
+  },
+  {
+   "id": "receipt-051",
+   "predicate": "receipt",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/receipt_051.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Fundamentals_of_Chemistry_-_A_Text-Book_for_Nurses_and_Other_Students_of_Applied_Chemistry_-_DPLA_-_97a2887dc30174bea09ac4f730c634c4_(page_172).jpg",
+   "source_title": "File:Fundamentals of Chemistry - A Text-Book for Nurses and Other Students of Applied Chemistry - DPLA - 97a2887dc30174bea09ac4f730c634c4 (page 172).jpg",
+   "licence": "Public domain",
+   "author": "Bogert, L. Jean (Lotta Jean), 1888-1970",
+   "source_width": 2505,
+   "source_height": 3609
+  },
+  {
+   "id": "receipt-053",
+   "predicate": "receipt",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/receipt_053.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:22-09-07_Formulario_Scienzestate_2022_Salvini_firma_oscurata.jpg",
+   "source_title": "File:22-09-07 Formulario Scienzestate 2022 Salvini firma oscurata.jpg",
+   "licence": "CC0",
+   "author": "Alexmar983, the researcher described in the form and the volunteer. in any case, this document is uploaded under CC-0 as",
+   "source_width": 2153,
+   "source_height": 3047
+  },
+  {
+   "id": "receipt-057",
+   "predicate": "receipt",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/receipt_057.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Anketa_turista_Soviet_document_form.jpg",
+   "source_title": "File:Anketa turista Soviet document form.jpg",
+   "licence": "Public domain",
+   "author": "Rakoon",
+   "source_width": 845,
+   "source_height": 1159
+  },
+  {
+   "id": "receipt-058",
+   "predicate": "receipt",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/receipt_058.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Aruncuta,Cluj-DSCF3805.JPG",
+   "source_title": "File:Aruncuta,Cluj-DSCF3805.JPG",
+   "licence": "CC0",
+   "author": "Tare Gheorghe",
+   "source_width": 2472,
+   "source_height": 3296
+  },
+  {
+   "id": "receipt-056",
+   "predicate": "receipt",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/receipt_056.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:A_woman_fills_out_a_Bear_Information_Management_form_after_having_an_encounter_with_a_sow_and_her_two_yearling_cubs_at_the_Igloo_(10d56c6e-a0f4-426b-ab8f-d89f863dc19b).JPG",
+   "source_title": "File:A woman fills out a Bear Information Management form after having an encounter with a sow and her two yearling cubs at the Igloo (10d56c6e-a0f4-426b-ab8f-d89f863dc19b).JPG",
+   "licence": "Public domain",
+   "author": "NPS Photo / Emily Mesner",
+   "source_width": 4646,
+   "source_height": 3116
+  },
+  {
+   "id": "sunglasses-000",
+   "predicate": "sunglasses",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/sunglasses_000.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:A_man_in_Afghan_clothes_Photographer_Mostafa_Meraji_01.jpg",
+   "source_title": "File:A man in Afghan clothes Photographer Mostafa Meraji 01.jpg",
+   "licence": "CC0",
+   "author": "Mostafameraji",
+   "source_width": 6960,
+   "source_height": 4640
+  },
+  {
+   "id": "sunglasses-001",
+   "predicate": "sunglasses",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/sunglasses_001.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:A_man_in_Afghan_clothes_Photographer_Mostafa_Meraji_02.jpg",
+   "source_title": "File:A man in Afghan clothes Photographer Mostafa Meraji 02.jpg",
+   "licence": "CC0",
+   "author": "Mostafameraji",
+   "source_width": 6960,
+   "source_height": 4640
+  },
+  {
+   "id": "sunglasses-002",
+   "predicate": "sunglasses",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "normal",
+   "entity": "fedora_man",
+   "file": "images/sunglasses_002.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:A_young_Iranian_man_with_Fedora_hat_Iran_Mashhad_City_Photo_By_Mostafa_Meraji_01.jpg",
+   "source_title": "File:A young Iranian man with Fedora hat Iran Mashhad City Photo By Mostafa Meraji 01.jpg",
+   "licence": "CC0",
+   "author": "Mostafameraji",
+   "source_width": 3333,
+   "source_height": 5000
+  },
+  {
+   "id": "sunglasses-004",
+   "predicate": "sunglasses",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "normal",
+   "entity": "fedora_man",
+   "file": "images/sunglasses_004.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:A_young_Iranian_man_with_Fedora_hat_Iran_Mashhad_City_Photo_By_Mostafa_Meraji_03.jpg",
+   "source_title": "File:A young Iranian man with Fedora hat Iran Mashhad City Photo By Mostafa Meraji 03.jpg",
+   "licence": "CC0",
+   "author": "Mostafameraji",
+   "source_width": 4000,
+   "source_height": 6000
+  },
+  {
+   "id": "sunglasses-005",
+   "predicate": "sunglasses",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/sunglasses_005.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:A_young_Iranian_man_with_Fedora_hat_Iran_Mashhad_City_Photo_By_Mostafa_Meraji_04.jpg",
+   "source_title": "File:A young Iranian man with Fedora hat Iran Mashhad City Photo By Mostafa Meraji 04.jpg",
+   "licence": "CC0",
+   "author": "Mostafameraji",
+   "source_width": 3333,
+   "source_height": 5000
+  },
+  {
+   "id": "sunglasses-008",
+   "predicate": "sunglasses",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/sunglasses_008.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Close_portrait_of_a_young_woman_wearing_black_sunglasses_in_Maracaibo,_Venezuela.jpg",
+   "source_title": "File:Close portrait of a young woman wearing black sunglasses in Maracaibo, Venezuela.jpg",
+   "licence": "CC0",
+   "author": "Wilfredor",
+   "source_width": 3413,
+   "source_height": 2411
+  },
+  {
+   "id": "sunglasses-009",
+   "predicate": "sunglasses",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/sunglasses_009.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Flickr_-_The_U.S._Army_-_Helping_family.jpg",
+   "source_title": "File:Flickr - The U.S. Army - Helping family.jpg",
+   "licence": "Public domain",
+   "author": "The U.S. Army",
+   "source_width": 3260,
+   "source_height": 2008
+  },
+  {
+   "id": "sunglasses-010",
+   "predicate": "sunglasses",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/sunglasses_010.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Joyful_woman_in_heart_sunglasses_(Unsplash).jpg",
+   "source_title": "File:Joyful woman in heart sunglasses (Unsplash).jpg",
+   "licence": "CC0",
+   "author": "James Garcia james8152",
+   "source_width": 5184,
+   "source_height": 3456
+  },
+  {
+   "id": "sunglasses-013",
+   "predicate": "sunglasses",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/sunglasses_013.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Audrey_Hepburn_Tiffany%27s_2.jpg",
+   "source_title": "File:Audrey Hepburn Tiffany's 2.jpg",
+   "licence": "Public domain",
+   "author": "Trailer screenshot",
+   "source_width": 1920,
+   "source_height": 1080
+  },
+  {
+   "id": "sunglasses-015",
+   "predicate": "sunglasses",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/sunglasses_015.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Basorun_Seinde_Arogbofa.jpg",
+   "source_title": "File:Basorun Seinde Arogbofa.jpg",
+   "licence": "CC0",
+   "author": "<a href=\"//commons.wikimedia.org/w/index.php?title=User:9aija&action=edit&redlink=1\" class=\"new\" title=\"User:9ai",
+   "source_width": 1028,
+   "source_height": 890
+  },
+  {
+   "id": "sunglasses-016",
+   "predicate": "sunglasses",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/sunglasses_016.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Close_up_portrait_of_happy_and_beautiful_young_woman_relaxing_enjoying_the_fresh_beauty_of_gorgeous_orange_marigold_flowers_field_in_travel_and_holidays._Bali_island._(45529107431).jpg",
+   "source_title": "File:Close up portrait of happy and beautiful young woman relaxing enjoying the fresh beauty of gorgeous orange marigold flowers field in travel and holidays. Bali island. (45529107431).jpg",
+   "licence": "CC0",
+   "author": "Artem Beliaikin from Mosc",
+   "source_width": 6000,
+   "source_height": 4000
+  },
+  {
+   "id": "sunglasses-017",
+   "predicate": "sunglasses",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/sunglasses_017.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:DouglasMacArthur.jpg",
+   "source_title": "File:DouglasMacArthur.jpg",
+   "licence": "Public domain",
+   "author": "",
+   "source_width": 2167,
+   "source_height": 2641
+  },
+  {
+   "id": "sunglasses-030",
+   "predicate": "sunglasses",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/sunglasses_030.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Defense.gov_photo_essay_080704-A-9046B-002.jpg",
+   "source_title": "File:Defense.gov photo essay 080704-A-9046B-002.jpg",
+   "licence": "Public domain",
+   "author": "Tim Hipps",
+   "source_width": 1083,
+   "source_height": 1671
+  },
+  {
+   "id": "sunglasses-034",
+   "predicate": "sunglasses",
+   "label": "yes",
+   "accept": [
+    "yes"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/sunglasses_034.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Herbert_von_Karajan_wearing_sunglasses_-_closeup.jpg",
+   "source_title": "File:Herbert von Karajan wearing sunglasses - closeup.jpg",
+   "licence": "CC0",
+   "author": "Joop van Bilsen for",
+   "source_width": 719,
+   "source_height": 904
+  },
+  {
+   "id": "sunglasses-012",
+   "predicate": "sunglasses",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/sunglasses_012.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:1976_campaign_sunglasses.JPG",
+   "source_title": "File:1976 campaign sunglasses.JPG",
+   "licence": "Public domain",
+   "author": "Unknown authorUnknown author",
+   "source_width": 4000,
+   "source_height": 3200
+  },
+  {
+   "id": "sunglasses-018",
+   "predicate": "sunglasses",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/sunglasses_018.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:John_Dingell,_official_photo_portrait,_111th_Congress.jpg",
+   "source_title": "File:John Dingell, official photo portrait, 111th Congress.jpg",
+   "licence": "Public domain",
+   "author": "United States Congress",
+   "source_width": 450,
+   "source_height": 550
+  },
+  {
+   "id": "sunglasses-021",
+   "predicate": "sunglasses",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/sunglasses_021.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Lezende_man_(het_Gezicht),_RP-P-1906-3596.jpg",
+   "source_title": "File:Lezende man (het Gezicht), RP-P-1906-3596.jpg",
+   "licence": "CC0",
+   "author": "Rijksmuseum",
+   "source_width": 4708,
+   "source_height": 6800
+  },
+  {
+   "id": "sunglasses-022",
+   "predicate": "sunglasses",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/sunglasses_022.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Man_working.jpg",
+   "source_title": "File:Man working.jpg",
+   "licence": "Public domain",
+   "author": "Bill Branson (Photographer)",
+   "source_width": 1800,
+   "source_height": 2281
+  },
+  {
+   "id": "sunglasses-023",
+   "predicate": "sunglasses",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/sunglasses_023.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Portret_jonge_man,_RP-F-F23937.jpg",
+   "source_title": "File:Portret jonge man, RP-F-F23937.jpg",
+   "licence": "CC0",
+   "author": "Rijksmuseum",
+   "source_width": 1879,
+   "source_height": 2200
+  },
+  {
+   "id": "sunglasses-024",
+   "predicate": "sunglasses",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/sunglasses_024.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Correggio_-_Portrait_of_a_Gentlewoman_-_WGA05354.jpg",
+   "source_title": "File:Correggio - Portrait of a Gentlewoman - WGA05354.jpg",
+   "licence": "Public domain",
+   "author": "<sp",
+   "source_width": 1057,
+   "source_height": 1256
+  },
+  {
+   "id": "sunglasses-031",
+   "predicate": "sunglasses",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/sunglasses_031.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Fashion-sunglasses-summer-eyewear_(24326655305).jpg",
+   "source_title": "File:Fashion-sunglasses-summer-eyewear (24326655305).jpg",
+   "licence": "CC0",
+   "author": "www.Pixel.la Free Stock Photo",
+   "source_width": 4003,
+   "source_height": 2659
+  },
+  {
+   "id": "sunglasses-032",
+   "predicate": "sunglasses",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/sunglasses_032.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Forgotten_sunglasses_(30826567496).jpg",
+   "source_title": "File:Forgotten sunglasses (30826567496).jpg",
+   "licence": "CC0",
+   "author": "dankeck",
+   "source_width": 4032,
+   "source_height": 3024
+  },
+  {
+   "id": "sunglasses-033",
+   "predicate": "sunglasses",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/sunglasses_033.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Heart_sunglasses,_front_view.jpg",
+   "source_title": "File:Heart sunglasses, front view.jpg",
+   "licence": "CC0",
+   "author": "ShyAndroid",
+   "source_width": 3645,
+   "source_height": 1460
+  },
+  {
+   "id": "sunglasses-036",
+   "predicate": "sunglasses",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/sunglasses_036.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:A._Beridze._A_Smiling_Old_Man._Oil_on_canvas.jpg",
+   "source_title": "File:A. Beridze. A Smiling Old Man. Oil on canvas.jpg",
+   "licence": "Public domain",
+   "author": "<span title=\"painter (1858-1917)\"",
+   "source_width": 440,
+   "source_height": 640
+  },
+  {
+   "id": "sunglasses-038",
+   "predicate": "sunglasses",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/sunglasses_038.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Always_smile_(Unsplash).jpg",
+   "source_title": "File:Always smile (Unsplash).jpg",
+   "licence": "CC0",
+   "author": "michael m_minimal",
+   "source_width": 3746,
+   "source_height": 3746
+  },
+  {
+   "id": "sunglasses-039",
+   "predicate": "sunglasses",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/sunglasses_039.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Black_bearded_man_smiling,_2442565.jpg",
+   "source_title": "File:Black bearded man smiling, 2442565.jpg",
+   "licence": "CC0",
+   "author": "Leroy Skalstad",
+   "source_width": 5000,
+   "source_height": 6249
+  },
+  {
+   "id": "sunglasses-040",
+   "predicate": "sunglasses",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/sunglasses_040.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Double_portrait,_kid,_man,_moustache,_outdoor_chair,_garden,_grandparent,_summer,_smile_Fortepan_14874.jpg",
+   "source_title": "File:Double portrait, kid, man, moustache, outdoor chair, garden, grandparent, summer, smile Fortepan 14874.jpg",
+   "licence": "Public domain",
+   "author": "FOTO:Fortepan — ID 14874: <img alt=\"Home pag",
+   "source_width": 2363,
+   "source_height": 3185
+  },
+  {
+   "id": "sunglasses-041",
+   "predicate": "sunglasses",
+   "label": "no",
+   "accept": [
+    "no"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/sunglasses_041.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Double_portrait,_man,_woman,_garden,_bench,_smile_Fortepan_2437.jpg",
+   "source_title": "File:Double portrait, man, woman, garden, bench, smile Fortepan 2437.jpg",
+   "licence": "Public domain",
+   "author": "FOTO:Fortepan — ID 2437: <img alt=\"Home page",
+   "source_width": 1888,
+   "source_height": 1771
+  },
+  {
+   "id": "eye_colour-000",
+   "predicate": "eye_colour",
+   "label": "blue",
+   "accept": [
+    "blue",
+    "grey"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/eyes_000.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Baby_face_with_blue_eyes_(Unsplash).jpg",
+   "source_title": "File:Baby face with blue eyes (Unsplash).jpg",
+   "licence": "CC0",
+   "author": "Brandon Day daybrandon",
+   "source_width": 5616,
+   "source_height": 2355
+  },
+  {
+   "id": "eye_colour-011",
+   "predicate": "eye_colour",
+   "label": "brown",
+   "accept": [
+    "brown"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/eyes_011.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:A_human_male_brown_eye.jpg",
+   "source_title": "File:A human male brown eye.jpg",
+   "licence": "CC0",
+   "author": "<a href=\"//commons.wikimedia.org/w/index.php?title=User:Bobbyphotographer&action=edit&redlink=1\" class=\"new\" tit",
+   "source_width": 4080,
+   "source_height": 3060
+  },
+  {
+   "id": "eye_colour-015",
+   "predicate": "eye_colour",
+   "label": "green",
+   "accept": [
+    "green",
+    "hazel"
+   ],
+   "difficulty": "normal",
+   "entity": "veil_woman",
+   "file": "images/eyes_015.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Brown_Eyes_Arabic_Gene_Red_Coloring.jpg",
+   "source_title": "File:Brown Eyes Arabic Gene Red Coloring.jpg",
+   "licence": "CC0",
+   "author": "Adina Voicu",
+   "source_width": 3888,
+   "source_height": 2592
+  },
+  {
+   "id": "eye_colour-016",
+   "predicate": "eye_colour",
+   "label": "green",
+   "accept": [
+    "green",
+    "hazel"
+   ],
+   "difficulty": "normal",
+   "entity": "veil_woman",
+   "file": "images/eyes_016.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Brown_Eyes_Gene_Green_Arabic_Red_Coloring.jpg",
+   "source_title": "File:Brown Eyes Gene Green Arabic Red Coloring.jpg",
+   "licence": "CC0",
+   "author": "Adina Voicu",
+   "source_width": 3888,
+   "source_height": 2592
+  },
+  {
+   "id": "eye_colour-017",
+   "predicate": "eye_colour",
+   "label": "brown",
+   "accept": [
+    "brown"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/eyes_017.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Brown_eye.jpg",
+   "source_title": "File:Brown eye.jpg",
+   "licence": "CC0",
+   "author": "<a href=\"//commons.wikimedia.org/w/index.php?title=User:Entertheninja&action=edit&redlink=1\" class=\"new\" title=\"",
+   "source_width": 803,
+   "source_height": 512
+  },
+  {
+   "id": "eye_colour-019",
+   "predicate": "eye_colour",
+   "label": "hazel",
+   "accept": [
+    "hazel",
+    "green"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/eyes_019.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Chartreuse_eye_color_(human).jpg",
+   "source_title": "File:Chartreuse eye color (human).jpg",
+   "licence": "CC0",
+   "author": "Squeaks 41",
+   "source_width": 1519,
+   "source_height": 1152
+  },
+  {
+   "id": "eye_colour-025",
+   "predicate": "eye_colour",
+   "label": "green",
+   "accept": [
+    "green",
+    "hazel"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/eyes_025.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Green_(24632378303).jpg",
+   "source_title": "File:Green (24632378303).jpg",
+   "licence": "Public domain",
+   "author": "Abel Maestro Garcia from A",
+   "source_width": 5814,
+   "source_height": 4320
+  },
+  {
+   "id": "eye_colour-026",
+   "predicate": "eye_colour",
+   "label": "green",
+   "accept": [
+    "green",
+    "hazel"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/eyes_026.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Green_(51630371173).jpg",
+   "source_title": "File:Green (51630371173).jpg",
+   "licence": "Public domain",
+   "author": "Abel Maestro Garcia from A",
+   "source_width": 2428,
+   "source_height": 2257
+  },
+  {
+   "id": "eye_colour-027",
+   "predicate": "eye_colour",
+   "label": "brown",
+   "accept": [
+    "brown"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/eyes_027.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Green_Eyes.jpg",
+   "source_title": "File:Green Eyes.jpg",
+   "licence": "CC0",
+   "author": "Wilfredor",
+   "source_width": 655,
+   "source_height": 325
+  },
+  {
+   "id": "eye_colour-030",
+   "predicate": "eye_colour",
+   "label": "brown",
+   "accept": [
+    "brown",
+    "hazel"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/eyes_030.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Ambereye.jpg",
+   "source_title": "File:Ambereye.jpg",
+   "licence": "CC0",
+   "author": "Brazilianboy94",
+   "source_width": 1574,
+   "source_height": 1067
+  },
+  {
+   "id": "eye_colour-032",
+   "predicate": "eye_colour",
+   "label": "blue",
+   "accept": [
+    "blue"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/eyes_032.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Blefarocalasi2.0.jpg",
+   "source_title": "File:Blefarocalasi2.0.jpg",
+   "licence": "CC0",
+   "author": "<a href=\"//commons.wikimedia.org/w/index.php?title=User:FuocoLiquido&action=edit&redlink=1\" class=\"new\" title=\"U",
+   "source_width": 526,
+   "source_height": 383
+  },
+  {
+   "id": "eye_colour-033",
+   "predicate": "eye_colour",
+   "label": "hazel",
+   "accept": [
+    "hazel",
+    "green"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/eyes_033.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Close_up_eye_(Unsplash).jpg",
+   "source_title": "File:Close up eye (Unsplash).jpg",
+   "licence": "CC0",
+   "author": "Liam Welch lwxlch",
+   "source_width": 5184,
+   "source_height": 2916
+  },
+  {
+   "id": "eye_colour-034",
+   "predicate": "eye_colour",
+   "label": "blue",
+   "accept": [
+    "blue",
+    "grey"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/eyes_034.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Close_up_shot_of_the_human_eye,_9_August_2024.jpg",
+   "source_title": "File:Close up shot of the human eye, 9 August 2024.jpg",
+   "licence": "CC0",
+   "author": "<a href=\"//commons.wikimedia.org/w/index.php?title=User:Kookaaa&action=edit&redlink=1\" class=\"new\" title=\"User:K",
+   "source_width": 1463,
+   "source_height": 1269
+  },
+  {
+   "id": "eye_colour-035",
+   "predicate": "eye_colour",
+   "label": "brown",
+   "accept": [
+    "brown"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/eyes_035.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Extreme_close-up_shot_of_the_eye_of_Cuban_news_anchor_Armando_Ramirez_Diaz.jpg",
+   "source_title": "File:Extreme close-up shot of the eye of Cuban news anchor Armando Ramirez Diaz.jpg",
+   "licence": "CC0",
+   "author": "<a href=\"//commons.wikimedia.org/w/index.php?title=User:Tomas_Fernando_Camargo&action=edit&redlink=1\" class=\"new",
+   "source_width": 1600,
+   "source_height": 900
+  },
+  {
+   "id": "eye_colour-036",
+   "predicate": "eye_colour",
+   "label": "blue",
+   "accept": [
+    "blue",
+    "grey",
+    "green"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/eyes_036.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Eye_Contact_(Unsplash).jpg",
+   "source_title": "File:Eye Contact (Unsplash).jpg",
+   "licence": "CC0",
+   "author": "Jordan Whitfield whitfieldjordan</a",
+   "source_width": 4794,
+   "source_height": 2697
+  },
+  {
+   "id": "eye_colour-037",
+   "predicate": "eye_colour",
+   "label": "green",
+   "accept": [
+    "green",
+    "hazel"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/eyes_037.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:GreenEye3.jpg",
+   "source_title": "File:GreenEye3.jpg",
+   "licence": "CC0",
+   "author": "Skitterphoto",
+   "source_width": 1920,
+   "source_height": 1149
+  },
+  {
+   "id": "eye_colour-039",
+   "predicate": "eye_colour",
+   "label": "hazel",
+   "accept": [
+    "hazel",
+    "green"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/eyes_039.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Greeneye.jpg",
+   "source_title": "File:Greeneye.jpg",
+   "licence": "CC0",
+   "author": "Rick",
+   "source_width": 450,
+   "source_height": 301
+  },
+  {
+   "id": "eye_colour-040",
+   "predicate": "eye_colour",
+   "label": "brown",
+   "accept": [
+    "brown"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/eyes_040.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:1968_%E2%80%9CGrazie_zia%E2%80%9D_-_Lisa_Gastoni,_close-up.jpg",
+   "source_title": "File:1968 “Grazie zia” - Lisa Gastoni, close-up.jpg",
+   "licence": "Public domain",
+   "author": "Carla Menegol",
+   "source_width": 922,
+   "source_height": 1277
+  },
+  {
+   "id": "eye_colour-041",
+   "predicate": "eye_colour",
+   "label": "unsure",
+   "accept": [
+    "unsure"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/eyes_041.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Actress_in_the_New_York_Follies,_Hilda_Ferguson_(SAYRE_8).jpg",
+   "source_title": "File:Actress in the New York Follies, Hilda Ferguson (SAYRE 8).jpg",
+   "licence": "Public domain",
+   "author": "Unknown authorUnknown author",
+   "source_width": 1396,
+   "source_height": 1989
+  },
+  {
+   "id": "eye_colour-043",
+   "predicate": "eye_colour",
+   "label": "unsure",
+   "accept": [
+    "unsure"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/eyes_043.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Beryl_Cunningham_like_a_1968_olympian_(1).jpg",
+   "source_title": "File:Beryl Cunningham like a 1968 olympian (1).jpg",
+   "licence": "Public domain",
+   "author": "Fabrizio Zampa",
+   "source_width": 655,
+   "source_height": 655
+  },
+  {
+   "id": "eye_colour-044",
+   "predicate": "eye_colour",
+   "label": "unsure",
+   "accept": [
+    "unsure"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/eyes_044.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Beryl_Cunningham_like_a_1968_olympian_(3).jpg",
+   "source_title": "File:Beryl Cunningham like a 1968 olympian (3).jpg",
+   "licence": "Public domain",
+   "author": "Fabrizio Zampa",
+   "source_width": 613,
+   "source_height": 1145
+  },
+  {
+   "id": "eye_colour-046",
+   "predicate": "eye_colour",
+   "label": "brown",
+   "accept": [
+    "brown"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/eyes_046.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Close_up_of_an_Indian_child_girl.jpg",
+   "source_title": "File:Close up of an Indian child girl.jpg",
+   "licence": "CC0",
+   "author": "Thacreations",
+   "source_width": 5184,
+   "source_height": 3456
+  },
+  {
+   "id": "eye_colour-047",
+   "predicate": "eye_colour",
+   "label": "blue",
+   "accept": [
+    "blue"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/eyes_047.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Cranach,_Lucas_(I)_-_Lucretia_-_Detail_face.jpg",
+   "source_title": "File:Cranach, Lucas (I) - Lucretia - Detail face.jpg",
+   "licence": "Public domain",
+   "author": "Mattes\n\nTaken on 21 November 2009",
+   "source_width": 3072,
+   "source_height": 2304
+  },
+  {
+   "id": "eye_colour-048",
+   "predicate": "eye_colour",
+   "label": "unsure",
+   "accept": [
+    "unsure"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/eyes_048.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Erik_van_Muiswinkel,_1991_-_11.jpg",
+   "source_title": "File:Erik van Muiswinkel, 1991 - 11.jpg",
+   "licence": "CC0",
+   "author": "Fotopersbureau De Boer",
+   "source_width": 3486,
+   "source_height": 2324
+  },
+  {
+   "id": "eye_colour-049",
+   "predicate": "eye_colour",
+   "label": "unsure",
+   "accept": [
+    "unsure"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/eyes_049.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Face_detail,_%22A_Civilized_Visayan.%22_(Philippine_Reservation_in_the_Department_of_Anthropology_exhibit_at_the_1904_World%27s_Fair)_(cropped).jpg",
+   "source_title": "File:Face detail, \"A Civilized Visayan.\" (Philippine Reservation in the Department of Anthropology exhibit at the 1904 World's Fair) (cropped).jpg",
+   "licence": "Public domain",
+   "author": "Unknown authorUnknown author",
+   "source_width": 459,
+   "source_height": 574
+  },
+  {
+   "id": "eye_colour-051",
+   "predicate": "eye_colour",
+   "label": "brown",
+   "accept": [
+    "brown",
+    "hazel"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/eyes_051.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:A_Hazel.jpg",
+   "source_title": "File:A Hazel.jpg",
+   "licence": "CC0",
+   "author": "Computer0001",
+   "source_width": 1920,
+   "source_height": 712
+  },
+  {
+   "id": "eye_colour-053",
+   "predicate": "eye_colour",
+   "label": "unsure",
+   "accept": [
+    "unsure"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/eyes_053.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Hazel_Abel.jpg",
+   "source_title": "File:Hazel Abel.jpg",
+   "licence": "Public domain",
+   "author": "unknown; Image courtesy of Library of Congress",
+   "source_width": 6923,
+   "source_height": 8253
+  },
+  {
+   "id": "eye_colour-054",
+   "predicate": "eye_colour",
+   "label": "unsure",
+   "accept": [
+    "unsure"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/eyes_054.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Hazel_Brooks.jpg",
+   "source_title": "File:Hazel Brooks.jpg",
+   "licence": "Public domain",
+   "author": "U.S. Army",
+   "source_width": 336,
+   "source_height": 448
+  },
+  {
+   "id": "eye_colour-055",
+   "predicate": "eye_colour",
+   "label": "brown",
+   "accept": [
+    "brown",
+    "unsure"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/eyes_055.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Hazel_Clark_2014.jpg",
+   "source_title": "File:Hazel Clark 2014.jpg",
+   "licence": "Public domain",
+   "author": "US Embassy Suva",
+   "source_width": 397,
+   "source_height": 597
+  },
+  {
+   "id": "eye_colour-058",
+   "predicate": "eye_colour",
+   "label": "brown",
+   "accept": [
+    "brown"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/eyes_058.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Hazel_Poa.jpg",
+   "source_title": "File:Hazel Poa.jpg",
+   "licence": "CC0",
+   "author": "Hazel Poa",
+   "source_width": 800,
+   "source_height": 1028
+  },
+  {
+   "id": "eye_colour-059",
+   "predicate": "eye_colour",
+   "label": "unsure",
+   "accept": [
+    "unsure"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/eyes_059.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Hazel_Scott.jpg",
+   "source_title": "File:Hazel Scott.jpg",
+   "licence": "Public domain",
+   "author": "Unknown authorUnknown author",
+   "source_width": 449,
+   "source_height": 615
+  },
+  {
+   "id": "eye_colour-042",
+   "predicate": "eye_colour",
+   "label": "brown",
+   "accept": [
+    "brown",
+    "unsure"
+   ],
+   "difficulty": "hard",
+   "entity": null,
+   "file": "images/eyes_042.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Alok_Chandrakar_close_up_face_portrait.jpg",
+   "source_title": "File:Alok Chandrakar close up face portrait.jpg",
+   "licence": "CC0",
+   "author": "<a href=\"//commons.wikimedia.org/w/index.php?title=User:Pranjalckar&action=edit&redlink=1\" class=\"new\" title=\"Us",
+   "source_width": 705,
+   "source_height": 960
+  },
+  {
+   "id": "eye_colour-021",
+   "predicate": "eye_colour",
+   "label": "unsure",
+   "accept": [
+    "unsure"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/eyes_021.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Cat_with_green_eyes.jpg",
+   "source_title": "File:Cat with green eyes.jpg",
+   "licence": "CC0",
+   "author": "Vera Kratochvil",
+   "source_width": 1280,
+   "source_height": 853
+  },
+  {
+   "id": "eye_colour-010",
+   "predicate": "eye_colour",
+   "label": "unsure",
+   "accept": [
+    "unsure"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/eyes_010.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:2016-366-120_Mr_Blue_and_Brown_Eyes_(26449823010).jpg",
+   "source_title": "File:2016-366-120 Mr Blue and Brown Eyes (26449823010).jpg",
+   "licence": "CC0",
+   "author": "cogdogblog",
+   "source_width": 4764,
+   "source_height": 3176
+  },
+  {
+   "id": "eye_colour-sg002",
+   "predicate": "eye_colour",
+   "label": "unsure",
+   "accept": [
+    "unsure"
+   ],
+   "difficulty": "normal",
+   "entity": "fedora_man",
+   "file": "images/sunglasses_002.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:A_young_Iranian_man_with_Fedora_hat_Iran_Mashhad_City_Photo_By_Mostafa_Meraji_01.jpg",
+   "source_title": "File:A young Iranian man with Fedora hat Iran Mashhad City Photo By Mostafa Meraji 01.jpg",
+   "licence": "CC0",
+   "author": "Mostafameraji",
+   "source_width": 3333,
+   "source_height": 5000
+  },
+  {
+   "id": "eye_colour-sg008",
+   "predicate": "eye_colour",
+   "label": "unsure",
+   "accept": [
+    "unsure"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/sunglasses_008.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Close_portrait_of_a_young_woman_wearing_black_sunglasses_in_Maracaibo,_Venezuela.jpg",
+   "source_title": "File:Close portrait of a young woman wearing black sunglasses in Maracaibo, Venezuela.jpg",
+   "licence": "CC0",
+   "author": "Wilfredor",
+   "source_width": 3413,
+   "source_height": 2411
+  },
+  {
+   "id": "eye_colour-sg030",
+   "predicate": "eye_colour",
+   "label": "unsure",
+   "accept": [
+    "unsure"
+   ],
+   "difficulty": "normal",
+   "entity": null,
+   "file": "images/sunglasses_030.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Defense.gov_photo_essay_080704-A-9046B-002.jpg",
+   "source_title": "File:Defense.gov photo essay 080704-A-9046B-002.jpg",
+   "licence": "Public domain",
+   "author": "Tim Hipps",
+   "source_width": 1083,
+   "source_height": 1671
+  }
+ ]
+}

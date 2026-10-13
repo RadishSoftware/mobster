@@ -1,0 +1,354 @@
+{
+ "chunk_missing_target": {
+  "actions": [
+   [
+    "TYPE",
+    "Title",
+    "Q2 plan"
+   ],
+   [
+    "TAP",
+    "Save",
+    null
+   ]
+  ],
+  "events": [
+   "frontier_checklist",
+   "frontier_decision",
+   "frontier_action",
+   "frontier_action",
+   "frontier_chunk_stop",
+   "frontier_decision",
+   "frontier_chunk_stop",
+   "frontier_decision",
+   "result"
+  ],
+  "refused": [],
+  "result": {
+   "actions": 2,
+   "answer": "done",
+   "status": "completed",
+   "steps": 3
+  }
+ },
+ "contract_send": {
+  "actions": [
+   [
+    "TYPE",
+    "Message",
+    "Dinner is at 7"
+   ],
+   [
+    "TAP",
+    "Send",
+    null
+   ]
+  ],
+  "events": [
+   "frontier_contract",
+   "frontier_decision",
+   "frontier_refused",
+   "frontier_decision",
+   "frontier_chunk_stop",
+   "frontier_decision",
+   "frontier_action",
+   "frontier_action",
+   "frontier_decision",
+   "result"
+  ],
+  "refused": [
+   "Send"
+  ],
+  "result": {
+   "actions": 2,
+   "answer": "Sent.",
+   "status": "completed",
+   "steps": 4
+  }
+ },
+ "dismiss_points": {
+  "actions": [
+   [
+    "TAP_POINT",
+    0.04,
+    0.5
+   ],
+   [
+    "TAP_POINT",
+    0.5,
+    0.7
+   ],
+   [
+    "TAP_POINT",
+    0.96,
+    0.5
+   ]
+  ],
+  "events": [
+   "frontier_checklist",
+   "frontier_decision",
+   "frontier_action",
+   "frontier_decision",
+   "frontier_action",
+   "frontier_decision",
+   "frontier_action",
+   "frontier_decision",
+   "frontier_chunk_stop",
+   "frontier_error",
+   "result"
+  ],
+  "refused": [],
+  "result": {
+   "actions": 3,
+   "answer": null,
+   "status": "error",
+   "steps": 4
+  }
+ },
+ "done_after_edit": {
+  "actions": [
+   [
+    "TAP",
+    "Archive",
+    null
+   ]
+  ],
+  "events": [
+   "frontier_checklist",
+   "frontier_decision",
+   "frontier_action",
+   "frontier_chunk_stop",
+   "frontier_decision",
+   "result"
+  ],
+  "refused": [],
+  "result": {
+   "actions": 1,
+   "answer": "done",
+   "status": "completed",
+   "steps": 2
+  }
+ },
+ "keypad_chain": {
+  "actions": [
+   [
+    "TAP",
+    "3",
+    null
+   ],
+   [
+    "TAP",
+    "2",
+    null
+   ],
+   [
+    "TAP",
+    ".",
+    null
+   ],
+   [
+    "TAP",
+    "5",
+    null
+   ],
+   [
+    "TAP",
+    "0",
+    null
+   ]
+  ],
+  "events": [
+   "frontier_checklist",
+   "frontier_decision",
+   "frontier_action",
+   "frontier_action",
+   "frontier_action",
+   "frontier_action",
+   "frontier_action",
+   "frontier_decision",
+   "frontier_chunk_stop",
+   "frontier_error",
+   "result"
+  ],
+  "refused": [],
+  "result": {
+   "actions": 5,
+   "answer": null,
+   "status": "error",
+   "steps": 2
+  }
+ },
+ "loop": {
+  "actions": [
+   [
+    "TAP",
+    "Recent",
+    null
+   ],
+   [
+    "TAP",
+    "Recent",
+    null
+   ]
+  ],
+  "events": [
+   "frontier_checklist",
+   "frontier_decision",
+   "frontier_action",
+   "frontier_chunk_stop",
+   "frontier_decision",
+   "frontier_action",
+   "frontier_chunk_stop",
+   "frontier_decision",
+   "frontier_refused",
+   "frontier_decision",
+   "frontier_refused",
+   "frontier_decision",
+   "frontier_chunk_stop",
+   "frontier_error",
+   "result"
+  ],
+  "refused": [
+   "loop",
+   "loop"
+  ],
+  "result": {
+   "actions": 2,
+   "answer": null,
+   "status": "error",
+   "steps": 5
+  }
+ },
+ "read_list": {
+  "actions": [
+   [
+    "SWIPE_UP",
+    null,
+    null
+   ],
+   [
+    "SWIPE_UP",
+    null,
+    null
+   ],
+   [
+    "SWIPE_UP",
+    null,
+    null
+   ]
+  ],
+  "events": [
+   "frontier_checklist",
+   "frontier_decision",
+   "frontier_action",
+   "frontier_decision",
+   "frontier_chunk_stop",
+   "frontier_decision",
+   "result"
+  ],
+  "refused": [],
+  "result": {
+   "actions": 1,
+   "answer": "done",
+   "status": "completed",
+   "steps": 3
+  }
+ },
+ "scroll_to": {
+  "actions": [
+   [
+    "SWIPE_UP",
+    null,
+    null
+   ],
+   [
+    "TAP",
+    "Omega Trattoria",
+    null
+   ]
+  ],
+  "events": [
+   "frontier_checklist",
+   "frontier_decision",
+   "frontier_action",
+   "frontier_action",
+   "frontier_decision",
+   "frontier_chunk_stop",
+   "frontier_decision",
+   "result"
+  ],
+  "refused": [],
+  "result": {
+   "actions": 2,
+   "answer": "done",
+   "status": "completed",
+   "steps": 3
+  }
+ },
+ "set_text": {
+  "actions": [
+   [
+    "CLEAR",
+    "Label",
+    null
+   ],
+   [
+    "TYPE",
+    "Label",
+    "Saturday Run"
+   ],
+   [
+    "TAP_POINT",
+    0.04,
+    0.5
+   ]
+  ],
+  "events": [
+   "frontier_checklist",
+   "frontier_decision",
+   "frontier_action",
+   "frontier_decision",
+   "frontier_action",
+   "frontier_decision",
+   "frontier_chunk_stop",
+   "frontier_error",
+   "result"
+  ],
+  "refused": [],
+  "result": {
+   "actions": 2,
+   "answer": null,
+   "status": "error",
+   "steps": 3
+  }
+ },
+ "unrequested_act": {
+  "actions": [
+   [
+    "TAP",
+    "Archive",
+    null
+   ]
+  ],
+  "events": [
+   "frontier_checklist",
+   "frontier_decision",
+   "frontier_refused",
+   "frontier_decision",
+   "frontier_action",
+   "frontier_decision",
+   "frontier_chunk_stop",
+   "frontier_decision",
+   "result"
+  ],
+  "refused": [
+   "Delete"
+  ],
+  "result": {
+   "actions": 1,
+   "answer": "done",
+   "status": "completed",
+   "steps": 4
+  }
+ }
+}

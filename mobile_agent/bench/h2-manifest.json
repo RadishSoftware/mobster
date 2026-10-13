@@ -1,0 +1,20 @@
+{
+ "suite": "MobsterBench-iOS H2",
+ "version": "1.0",
+ "sha256": "a5d20b227eab62cfdbf39c4a80adbebcf19490311669e3a6f5e0f2edaa2ddf44",
+ "frozen_on": "2026-10-10",
+ "task_count": 10,
+ "tasks": [
+  "h2.calendar_three",
+  "h2.contact_two",
+  "h2.about_two",
+  "h2.receipts_count",
+  "h2.room_plus_phone",
+  "h2.code_digit_sum",
+  "h2.maps_alcatraz",
+  "h2.bridge_opened",
+  "h2.turing_phd_university",
+  "h2.reminder_last_alpha"
+ ],
+ "note": "Written before any engine ran it; never tuned on."
+}

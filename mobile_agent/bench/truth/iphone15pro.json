@@ -1,0 +1,138 @@
+{
+ "device": "iphone15pro",
+ "values": {
+  "device.capacity": {
+   "recorded_at": "2026-09-24T10:50:19+00:00",
+   "source": "capture: read on device 2026-09-24",
+   "value": "128 GB"
+  },
+  "device.ios_major_release_date": {
+   "source": "seed: public fact (iOS 26 released 15 September 2025); regex",
+   "value": "(september 15,? 2025|15 september 2025|2025-09-15)"
+  },
+  "device.ios_version": {
+   "recorded_at": "2026-09-24T10:50:19+00:00",
+   "source": "capture: read on device 2026-09-24",
+   "value": "26.0.1"
+  },
+  "device.model_name": {
+   "recorded_at": "2026-09-24T10:50:19+00:00",
+   "source": "capture: read on device 2026-09-24",
+   "value": "iPhone 15 Pro"
+  },
+  "device.model_number": {
+   "recorded_at": "2026-09-24T10:50:19+00:00",
+   "source": "capture: read on device 2026-09-24",
+   "value": "MTQM3LL/A"
+  },
+  "device.model_release_year": {
+   "source": "seed: public fact (iPhone 15 Pro released September 2023)",
+   "value": "2023"
+  },
+  "device.modem_firmware": {
+   "recorded_at": "2026-09-24T10:50:21+00:00",
+   "source": "capture: read on device 2026-09-24",
+   "value": "3.02.03"
+  },
+  "settings.auto_correction": {
+   "recorded_at": "2026-09-24T10:49:19+00:00",
+   "source": "capture: read on device 2026-09-24",
+   "value": "off"
+  },
+  "settings.auto_lock": {
+   "recorded_at": "2026-09-24T07:24:15+00:00",
+   "source": "capture: read on device 2026-09-24",
+   "value": "Never"
+  },
+  "settings.bold_text": {
+   "recorded_at": "2026-09-24T10:52:22+00:00",
+   "source": "capture: read on device 2026-09-24",
+   "value": "on"
+  },
+  "settings.low_power": {
+   "recorded_at": "2026-09-24T10:52:02+00:00",
+   "source": "capture: read on device 2026-09-24",
+   "value": "off"
+  },
+  "settings.region": {
+   "recorded_at": "2026-09-24T10:52:13+00:00",
+   "source": "capture: read on device 2026-09-24",
+   "value": "United States"
+  },
+  "settings.time_auto": {
+   "recorded_at": "2026-09-24T10:50:10+00:00",
+   "source": "capture: read on device 2026-09-24",
+   "value": "on"
+  },
+  "title.about": {
+   "recorded_at": "2026-09-24T10:50:19+00:00",
+   "source": "capture: read on device 2026-09-24",
+   "value": "About"
+  },
+  "title.accessibility": {
+   "recorded_at": "2026-09-24T10:49:08+00:00",
+   "source": "capture: read on device 2026-09-24",
+   "value": "Accessibility"
+  },
+  "title.apps": {
+   "recorded_at": "2026-09-24T10:50:52+00:00",
+   "source": "capture: read on device 2026-09-24",
+   "value": "Apps"
+  },
+  "title.auto_lock": {
+   "recorded_at": "2026-09-24T07:26:12+00:00",
+   "source": "capture: read on device 2026-09-24",
+   "value": "Auto-Lock"
+  },
+  "title.date_time": {
+   "recorded_at": "2026-09-24T10:50:10+00:00",
+   "source": "capture: read on device 2026-09-24",
+   "value": "Date & Time"
+  },
+  "title.display": {
+   "recorded_at": "2026-09-24T10:49:42+00:00",
+   "source": "capture: read on device 2026-09-24",
+   "value": "Display & Brightness"
+  },
+  "title.files_on_my_iphone": {
+   "recorded_at": "2026-09-24T10:51:53+00:00",
+   "source": "capture: read on device 2026-09-24",
+   "value": "On My iPhone"
+  },
+  "title.formats": {
+   "recorded_at": "2026-09-24T10:50:30+00:00",
+   "source": "capture: read on device 2026-09-24",
+   "value": "Formats"
+  },
+  "title.keyboards": {
+   "recorded_at": "2026-09-24T10:49:19+00:00",
+   "source": "capture: read on device 2026-09-24",
+   "value": "Keyboards"
+  },
+  "title.legal": {
+   "recorded_at": "2026-09-24T10:51:05+00:00",
+   "source": "capture: read on device 2026-09-24",
+   "value": "Legal & Regulatory"
+  },
+  "title.location_services": {
+   "recorded_at": "2026-09-24T10:49:33+00:00",
+   "source": "capture: read on device 2026-09-24",
+   "value": "Location Services"
+  },
+  "title.notifications": {
+   "recorded_at": "2026-09-24T10:50:00+00:00",
+   "source": "capture: read on device 2026-09-24",
+   "value": "Notifications"
+  },
+  "title.per_app": {
+   "recorded_at": "2026-09-24T10:51:21+00:00",
+   "source": "capture: read on device 2026-09-24",
+   "value": "Per-App Settings"
+  },
+  "title.privacy": {
+   "recorded_at": "2026-09-24T10:50:41+00:00",
+   "source": "capture: read on device 2026-09-24",
+   "value": "Privacy & Security"
+  }
+ }
+}

@@ -1,0 +1,32 @@
+{
+ "suite": "MobsterBench-iOS H1",
+ "version": "1.0",
+ "sha256": "2e83875ffbf3c0a3d342320d07ff7632c3e4ecf761926ac7d29e8c2b53cefc76",
+ "frozen_on": "2026-10-09",
+ "task_count": 16,
+ "tranches": {
+  "short": 6,
+  "retrieval": 4,
+  "multi_app": 4,
+  "text_entry": 2
+ },
+ "tasks": [
+  "h.short.battery",
+  "h.short.storage",
+  "h.short.screen_time",
+  "h.short.camera",
+  "h.short.note_link",
+  "h.short.contact_city",
+  "h.ret.calendar_start",
+  "h.ret.reminder_books",
+  "h.ret.turing_birthplace",
+  "h.ret.titanic_year",
+  "h.multi.note_plus",
+  "h.multi.contact_county",
+  "h.multi.room_times",
+  "h.multi.phone_minus",
+  "h.text.maps_bridge",
+  "h.text.settings_wallpaper"
+ ],
+ "note": "Written before any engine idea was built. Never tuned on: anything that learns uses heldout.build_training() and the v1 suite."
+}

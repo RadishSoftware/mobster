@@ -1,0 +1,20 @@
+{
+ "suite": "MobsterBench-iOS H3",
+ "version": "1.0",
+ "sha256": "559d23a39a5887523fcfc8ba63d816c2935e71f2ffda8e871d8777a93204a1c3",
+ "frozen_on": "2026-10-10",
+ "task_count": 10,
+ "tasks": [
+  "h3.hopper_retired",
+  "h3.lovelace_father",
+  "h3.eiffel_height",
+  "h3.apollo_cmp",
+  "h3.python_designer",
+  "h3.coit_city",
+  "h3.space_needle_two",
+  "h3.sunglasses_count",
+  "h3.locker_and_room",
+  "h3.phone_minus_room"
+ ],
+ "note": "Written before any engine ran it; never tuned on."
+}
