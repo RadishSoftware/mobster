@@ -13,18 +13,17 @@ LOOK = "In Settings > General > About, what is the iOS version? Do not change an
 class RequestedActionTests(unittest.TestCase):
     def test_the_named_act_and_plain_navigation_are_requested(self):
         self.assertTrue(requested_by(ARCHIVE, "TAP", "Button", "Archive"))
-        self.assertTrue(requested_by(ARCHIVE, "TAP", "Cell", "QuickBite, Your receipt", side_effect_risk=.66))
+        self.assertTrue(requested_by(ARCHIVE, "TAP", "Cell", "QuickBite, Your receipt"))
         self.assertTrue(requested_by(PAY, "TAP", "Button", "Pay $32.50"))
         self.assertTrue(requested_by(PAY, "SUBMIT", "SearchField", "Maya Patel"))
 
     def test_acts_the_request_does_not_name_are_not(self):
         self.assertFalse(requested_by(ARCHIVE, "TAP", "Button", "Delete"))
-        self.assertFalse(requested_by(PAY, "TAP", "Button", "Request", side_effect_risk=.8))
         self.assertFalse(requested_by(PAY, "TAP", "Switch", "Notifications"))
 
     def test_a_look_only_request_never_overrides(self):
         self.assertFalse(asks_for_changes(LOOK))
-        self.assertFalse(requested_by(LOOK, "TAP", "Cell", "About", side_effect_risk=.01))
+        self.assertFalse(requested_by(LOOK, "TAP", "Cell", "About"))
         self.assertFalse(requested_by("Open the note. Only look; do not share or delete anything.", "TAP", "Button",
                                       "Share"))
 

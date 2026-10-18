@@ -8,7 +8,6 @@ AX frame's centre when it taps), so the model never writes a coordinate. Surface
 deciders get identical options.
 """
 
-import base64
 import io
 from dataclasses import dataclass
 
@@ -102,7 +101,3 @@ def draw(jpeg, marks, side=None):
     out = io.BytesIO()
     image.save(out, "JPEG", quality=70)
     return out.getvalue()
-
-
-def data_url(jpeg):
-    return "data:image/jpeg;base64," + base64.b64encode(jpeg).decode()

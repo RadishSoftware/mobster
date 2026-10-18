@@ -10,6 +10,7 @@ Dated write-ups from building Mobster's engine: what we tried, how we measured i
 | [usb-speed-precision-2026-09-22](usb-speed-precision-2026-09-22.md) | A USB iPhone speed and precision pass; Settings suite 21/21 to 35/35 with per-task times |
 | [web-suite-2026-09-22](web-suite-2026-09-22.md) | What real Safari pages broke and the general fixes; 15/21 web tasks, failures included |
 | [latency-breakdown-2026-09-23](latency-breakdown-2026-09-23.md) | Where wall-clock time goes over 346 runs, and the top 10 speedups ranked |
+| [live-view-2026-10-13](live-view-2026-10-13.md) | The live view's frame rate: the iPhone's own screen capture (faster, and it stops WebDriverAgent), the idle pace, out-of-view pausing and a slow link |
 | [frameclock-2026-09-23](frameclock-2026-09-23.md) | The MJPEG stream as a settle clock, the exact-distance glide scroll, SCROLL_TO, launch readiness |
 | [vision-judge-2026-09-23](vision-judge-2026-09-23.md) | Calibrated visual yes/no answers on crops (Apple Vision, then a small model, then a second look) on 135 labelled images |
 | [bench-2026-09-24](bench-2026-09-24.md) | MobsterBench-iOS pass 6: 68 tasks on an iPhone 15 Pro |

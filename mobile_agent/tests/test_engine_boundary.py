@@ -25,13 +25,15 @@ PACKAGE = Path(__file__).resolve().parents[1]
 ENGINE = (
     "__init__",
     # the loop and what it needs to run
-    "frontier", "engines", "agent_hooks", "contract", "harness_api", "harness", "harness.checkpoints",
-    "harness.control", "output_contract", "usage", "costs",
+    "frontier", "model_clients", "engines", "smart_events", "smart_result", "agent_hooks", "contract", "contract_screen", "contract_asks", "harness_api", "harness", "harness.checkpoints",
+    "harness.control", "output_contract", "result_blocks", "answer_shapes", "offers", "usage", "costs",
     # the driver and the model transport
-    "drivers", "state", "extensions", "transport", "gemini",
+    "drivers", "driver_guards", "wda_observe", "wda_text", "wda_gestures", "state", "extensions", "transport", "gemini",
+    "wda_timeouts", "wda_watchdog", "point_gestures",
     # the safety core
     "journal", "task_policy", "effect_ledger", "secret_filter", "system_dialogs", "permissions",
-    "permissions.gate", "permissions.policy", "permissions.rules", "permissions.exceptions", "errors", "api_errors",
+    "permissions.gate", "permissions.policy", "permissions.rules", "permissions.exceptions",
+    "permissions.consequence", "errors", "api_errors",
     "paths",
 )
 
@@ -108,15 +110,15 @@ CHILD = textwrap.dedent('''
     for name in sorted(ENGINE):
         importlib.import_module("mobile_agent" if name == "__init__" else "mobile_agent." + name)
 
-    from mobile_agent import engines, frontier, harness_api, journal
+    from mobile_agent import engines, frontier, harness_api, journal, model_clients
     assert all(harness_api.hook(name) is None for name in harness_api.HOOKS), "a hook is set without the harness"
     assert engines.smart_model() == engines.ANTHROPIC_SMART_MODEL
     assert engines.smart_key() == "sk-ant-test-not-real"
     assert engines.model_provider("kimi:k2") == "openai" and not engines.on_plan("kimi:k2")
-    assert frontier.cost_usd("claude-sonnet-5-5", {"prompt_tokens": 1000, "completion_tokens": 10}) > 0
-    assert frontier.default_skills() == () and frontier._hedge() is None
-    assert frontier.transient_model_error(RuntimeError("HTTP 529 overloaded"))
-    assert not frontier.transient_model_error(RuntimeError("HTTP 400 invalid_request_error"))
+    assert model_clients.cost_usd("claude-sonnet-5-5", {"prompt_tokens": 1000, "completion_tokens": 10}) > 0
+    assert frontier.default_skills() == () and model_clients._hedge() is None
+    assert model_clients.transient_model_error(RuntimeError("HTTP 529 overloaded"))
+    assert not model_clients.transient_model_error(RuntimeError("HTTP 400 invalid_request_error"))
     journal.disable_track("absent", "error: migration")
 
     # A task through the reference example, on a scripted phone and model.

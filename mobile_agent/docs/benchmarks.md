@@ -7,9 +7,10 @@ Mobster is measured on two benchmarks. They answer different questions.
   web pages, and is graded by oracles that never read the agent's own claims. It
   asks: is Mobster more accurate and faster than strong screenshot baselines on
   the same phone?
-- **iOSWorld** (`mobile_agent/bench/iosworld.py`) is a published third-party
+- **iOSWorld** is a published third-party
   benchmark: 133 tasks over 26 synthetic SwiftUI apps on a simulator, scored by
-  its own LLM judge. It asks: how does Mobster compare with published agents on
+  its own LLM judge. Its runner drives Xcode simulators through Mobster for Mac's simulator manager, so it is not in
+  the open-source tree; the method and results are here. It asks: how does Mobster compare with published agents on
   unfamiliar apps and multi-step tasks?
 
 Run output is local. `research/bench-runs/*/` and `research/iosworld-runs/` are
@@ -199,8 +200,8 @@ the 24 Sep pipeline alone (the Jev decision model, the arm then named
 `mobster-next`), one repeat each, run on 2026-09-24 on one iPhone 15 Pro
 over USB. Code changed between passes (commit `d1c8418` plus uncommitted
 changes), and failures from one pass guided the fixes before the next. "Pass N"
-is an iteration number, not a pass count. Full reports exist for passes 4 to 6
-(internal).
+is an iteration number, not a pass count. The final pass is written up in
+`research/bench-2026-09-24.md`.
 
 ### Measured results (2026-09-24)
 
@@ -504,6 +505,31 @@ image the model saw). Trajectory screenshots are named `step-NNN-turn-MM.png`: a
 turn can dispatch several actions and a refused turn none, so step numbers alone
 do not line up with turns.
 
+Each run also writes its tape, `tape.jsonl.gz` (mobile_agent/bench/tape.py): every call
+the agent made to the phone and to its model, in order, with what came back (screens
+as data, pictures by size only). `MOBSTER_TAPE=off` turns it off. A tape replays the
+whole run on today's code with the recorded phone and model answering, for $0:
+
+```bash
+# Every action the same and every prompt byte for byte, or the first action that
+# differs and its turn. Exit status 1 when any run diverges.
+$PY -m mobile_agent.bench.tape_replay research/iosworld-runs/NAME
+```
+
+Measured 14 Oct 2026 on 5 dev tasks (caltrack-001, lockedin-004, splitpay-001,
+multi-010, scorezone-003; iPhone 17 Pro simulator, iOS 26.4, claude-sonnet-5-5):
+5 of 5 runs replay identically, 49 of 49 actions and 49 of 49 prompts, in 0.02 to
+0.17 s a run; tapes are 18 to 86 KB gzipped. A change that refuses, retargets or
+re-reads differently stops at the action it changes. A prompt change is counted
+(prompts same) but doesn't stop the replay: the recorded replies answer, so a
+prompt change still needs a paired A/B.
+
+Three of those tapes (caltrack-001, scorezone-003, splitpay-001; session ids and
+ports scrubbed) live in `mobile_agent/tests/fixtures/tapes/` and replay in
+`test_tape` with the rest of the suite: every change to the engine runs through
+them, in under a second. When a change is meant to act differently on one, measure
+it with a paired A/B, record the task again and replace the file.
+
 Then rerun only the tasks a fix targets (`pool --only a,b,c`); the judge and
 report work on any subset.
 
@@ -638,7 +664,5 @@ progress when this page was written. Its results are not included here.
 
 - `evals/app_survey.py` measures how much of each app's screen the accessibility
   tree exposes.
-- `evals/launch_probe.py` measures which way into an app is fastest on the USB
-  iPhone, and what the first read costs. It opens read-only apps only.
 - `evals/latency_report.py` reports per-phase latency (p50/p90/p99 and the
   critical path) from run journals and eval records.

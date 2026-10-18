@@ -20,7 +20,7 @@ import statistics
 import time
 from pathlib import Path
 
-from .. import frontier
+from .. import frontier, model_clients
 
 
 def cases(roots, n, seed=20261009):
@@ -49,7 +49,7 @@ def messages(folder, turn):
 
 def price(model, usage):
     model = model.split(":", 1)[-1]
-    return frontier.cost_usd(model, usage)
+    return model_clients.cost_usd(model, usage)
 
 
 def run_model(model, picked, reasoning="low"):

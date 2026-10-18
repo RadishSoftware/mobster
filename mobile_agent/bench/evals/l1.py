@@ -135,7 +135,7 @@ def run_done(item, system, ctx):
         accept, feedback, parts, usage = cc.check(M.client(model, ctx["reasoning"]), item["request"], item["contract"],
                                                   item["notes"], item["answer"], seen, timeout=90,
                                                   reports=[tuple(r) for r in item["reports"]])
-        usd = M.frontier.cost_usd(model, usage) or 0.0 if usage else 0.0
+        usd = M.model_clients.cost_usd(model, usage) or 0.0 if usage else 0.0
         ctx["spend"].add(usd)
         return {"accept": accept if parts is not None else None, "reason": (feedback or "")[:300], "usd": usd,
                 "seconds": time.monotonic() - started, "error": None if parts is not None else "check failed"}
@@ -363,7 +363,7 @@ def predicted_action(item, out):
 
 
 def run_golden(item, system, ctx):
-    from ... import frontier
+    from ... import frontier, model_clients
     if system.startswith("decide:"):
         return run_golden_decider(item, system, ctx)
     if not system.startswith("llm:"):
@@ -382,7 +382,7 @@ def run_golden(item, system, ctx):
     except Exception as exc:
         return {"error": f"{type(exc).__name__}: {str(exc)[:200]}", "seconds": time.monotonic() - started}
     seconds = time.monotonic() - started
-    usd = frontier.cost_usd(model, usage) or 0.0
+    usd = model_clients.cost_usd(model, usage) or 0.0
     ctx["spend"].add(usd)
     return {"pred": predicted_action(item, out), "usd": usd, "seconds": seconds,
             "out_tokens": usage.get("completion_tokens"), "in_tokens": usage.get("prompt_tokens")}
@@ -516,7 +516,7 @@ def compile_variant(item, model, flags, ctx):
     ctx["spend"].check()
     out, usage = client.complete([{"role": "system", "content": system},
                                   {"role": "user", "content": [{"type": "text", "text": user}]}], K.SCHEMA, timeout=90)
-    usd += M.frontier.cost_usd(model, usage) or 0.0
+    usd += M.model_clients.cost_usd(model, usage) or 0.0
     contract = K.Contract.from_items((out or {}).get("items") or (), item["request"])
     if "selfcheck" in flags and contract.items:
         listed = "\n".join(f"{i + 1}. {it.label()} | quote={it.quote!r}" for i, it in enumerate(contract.items))
@@ -524,7 +524,7 @@ def compile_variant(item, model, flags, ctx):
                                         {"role": "user", "content": [{"type": "text", "text": user +
                                                                       "\n\nThe contract compiled so far:\n" + listed}]}],
                                        K.SCHEMA, timeout=90)
-        usd += M.frontier.cost_usd(model, usage2) or 0.0
+        usd += M.model_clients.cost_usd(model, usage2) or 0.0
         fixed = K.Contract.from_items((out2 or {}).get("items") or (), item["request"])
         if fixed.items:
             contract = fixed
@@ -700,15 +700,16 @@ def run_commit(item, system, ctx):
     """``family:current`` (this checkout's contract.Item.family) or ``family:old`` (guard_replay's rule before the
     request's own word counted): would the guard let this control through, under each compiled contract?"""
     from ... import contract as K
+    from ... import contract_screen as KS
     from ..guard_replay import declared, forbidden, old_family
     rule = system.split(":", 1)[1] if system.startswith("family:") else None
     if rule not in ("current", "old"):
         raise ValueError(f"unknown commit system {system!r}")
     family = (lambda i: i.family()) if rule == "current" else old_family
-    verbs = frozenset(K.label_verbs(item["label"], item["role"]))
+    verbs = frozenset(KS.label_verbs(item["label"], item["role"]))
     allows = []
     for raw in item["contracts"]:
-        items = [K.Item(id=n + 1, kind=c["kind"], app=c["app"], what=c["what"], act=c["act"], quote=c["quote"])
+        items = [KS.Item(id=n + 1, kind=c["kind"], app=c["app"], what=c["what"], act=c["act"], quote=c["quote"])
                  for n, c in enumerate(raw)]
         contract = K.Contract(items, item["goal"])
         allows.append(bool(verbs) and declared(contract, verbs, item["app"], family)

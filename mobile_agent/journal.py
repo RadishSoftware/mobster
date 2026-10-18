@@ -10,6 +10,8 @@ from pathlib import Path
 import re
 import sqlite3
 import stat
+import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -23,7 +25,12 @@ class JournalError(MobsterError):
 
 
 class LeaseHeld(JournalError):
-    """Another process holds this lease: the phone or the journal is in use, nothing is damaged."""
+    """Another process holds this lease: the phone or the journal is in use, nothing is damaged. ``owner`` names
+    which Mobster holds a phone's lease when its record could be read and still matches that live process."""
+
+    def __init__(self, message, owner=None):
+        super().__init__(message)
+        self.owner = owner
 
 
 def append_jsonl(path, event):
@@ -90,7 +97,7 @@ class Lease:
             raise JournalError("Cannot acquire the private Mobster lease") from None
 
     @classmethod
-    def device(cls, identity, wait=DEVICE_LEASE_WAIT):
+    def device(cls, identity, wait=DEVICE_LEASE_WAIT, udid=None):
         """The one lease per phone, whoever asks: the Mac app, `mobster serve`, `run` or the terminal UI.
 
         Its folder is fixed per user (the data folder), not the temporary folder: $TMPDIR differs between a
@@ -99,26 +106,64 @@ class Lease:
         A lease held is tried again for up to ``wait`` seconds: listing devices (devices.lease_free, wait=0)
         takes each phone's lease for an instant to see whether it is free, and a task starting at that instant
         must not be refused as if the phone were in use.
+
+        ``udid`` adds the phone's own lease, keyed by its UDID however it is reached (``phone``): two Mobsters that
+        reach one phone by different addresses (a leftover dev relay and the direct link) meet there.
         """
         deadline = time.monotonic() + max(0.0, wait)
         while True:
             try:
-                return cls._device(identity)
+                return cls._device(identity, udid)
             except LeaseHeld:
                 if time.monotonic() >= deadline:
                     raise
                 time.sleep(DEVICE_LEASE_RETRY)
 
     @classmethod
-    def _device(cls, identity):
-        from .paths import user_data_dir
-        directory = (user_data_dir() if _LEASE_ROOT is None else Path(_LEASE_ROOT)) / "device-leases"
+    def _lease_directory(cls):
+        from .paths import machine_data_dir
+        directory = (machine_data_dir() if _LEASE_ROOT is None else Path(_LEASE_ROOT)) / "device-leases"
         directory.parent.mkdir(parents=True, exist_ok=True)
         directory.mkdir(mode=0o700, exist_ok=True)
         info = directory.lstat()
         if not stat.S_ISDIR(info.st_mode) or info.st_uid != os.getuid() or info.st_mode & 0o077:
             raise JournalError("Device lease directory must be private and owned by this user")
-        lease = cls(directory / (hashlib.sha256(device_identity(identity).encode()).hexdigest() + ".lock"))
+        return directory
+
+    @classmethod
+    def phone(cls, udid):
+        """The one lease per phone UDID on this Mac, whatever address reaches it. The holder writes its pid and exact
+        command line into the file, so a refused Mobster can say which one has the phone. The lock is the flock, which
+        the system drops when the holder dies: a dead holder's lease is simply free to take, and its record is
+        replaced. A record whose pid is gone or whose command line differs (a reused pid) is never named."""
+        path = cls._lease_directory() / ("phone-" + hashlib.sha256(str(udid).encode()).hexdigest() + ".lock")
+        try:
+            lease = cls(path)
+        except LeaseHeld:
+            owner = holder_of(path)
+            raise LeaseHeld(f"{owner} is driving this iPhone." if owner else
+                            "Another Mobster process is driving this iPhone.", owner) from None
+        try:
+            os.ftruncate(lease.fd, 0)
+            os.pwrite(lease.fd, encode(own_record()).encode(), 0)
+        except OSError:
+            lease.close()
+            raise JournalError("Cannot record the phone's owner") from None
+        return lease
+
+    @classmethod
+    def _device(cls, identity, udid=None):
+        directory = cls._lease_directory()
+        # The phone's own lease first: a refusal then names who has the phone, whichever address they reached it by.
+        phone = cls.phone(udid) if udid else None
+        try:
+            lease = cls(directory / (hashlib.sha256(device_identity(identity).encode()).hexdigest() + ".lock"))
+        except BaseException:
+            if phone is not None:
+                phone.close()
+            raise
+        if phone is not None:
+            lease.legacy.append(phone)
         # Builds up to 0.1.0 lock the address as spelled, in the temporary folder. The Mac app's bundled agent
         # and the CLI update apart, so an older one may be driving this phone under that lock alone: hold it
         # too, and treat it held as the phone in use.
@@ -156,6 +201,46 @@ class Lease:
         if self.fd is not None:
             os.close(self.fd)
             self.fd = None
+
+
+def _command_of(pid):
+    """The exact command line of a live process, or None."""
+    try:
+        done = subprocess.run(["/bin/ps", "-p", str(int(pid)), "-o", "command="], capture_output=True, text=True,
+                              timeout=2)
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return None
+    text = done.stdout.strip()
+    return text if done.returncode == 0 and text else None
+
+
+def own_record():
+    """What a phone's lease says about this process."""
+    return {"pid": os.getpid(), "command": _command_of(os.getpid()) or " ".join(sys.argv)}
+
+
+def describe(command):
+    """A process's command line in words a person knows: the Mac app, a dev window, `mobster serve`, `mobster run`."""
+    text = str(command)
+    if "Mobster.app" in text or "mobster-agent" in text:
+        return "The Mobster app"
+    for word in ("serve", "run", "mcp", "verify"):
+        if re.search(rf"\bmobile_agent\b.*\b{word}\b|\bmobster\b.*\b{word}\b", text):
+            return f"`mobster {word}`"
+    return "Another Mobster (" + text[:60] + ")"
+
+
+def holder_of(path):
+    """Who holds the lease at ``path``, in words, or None when the record is unreadable, its pid is gone, or the pid's
+    command line is no longer the recorded one (the pid was reused): a record that no longer matches is not named."""
+    try:
+        record = json.loads(Path(path).read_text())
+        pid, command = int(record["pid"]), str(record["command"])
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+    if _command_of(pid) != command:
+        return None
+    return f"{describe(command)} (pid {pid})"
 
 
 def legacy_device_spellings(identity):
@@ -347,10 +432,10 @@ class Journal:
                 self.connection.execute("BEGIN IMMEDIATE")
                 yield self.connection
                 self.connection.execute("COMMIT")
-            except Exception as exc:
+            except BaseException as exc:
                 if self.connection and self.connection.in_transaction:
                     self.connection.execute("ROLLBACK")
-                if isinstance(exc, JournalError):
+                if isinstance(exc, JournalError) or not isinstance(exc, Exception):
                     raise
                 raise JournalError("Run journal could not be saved; no further device action authorized") from None
 
@@ -440,10 +525,15 @@ class Journal:
         with self.lock:
             return usage.summary(self.connection, run_id)
 
-    def month_usd(self, now=None):
-        """This calendar month's published-rate spend across the workspace (see usage.month_usd)."""
+    def spend_since(self, since_ms):
+        """Published-rate spend across the workspace since ``since_ms`` (see usage.spend_since)."""
         with self.lock:
-            return usage.month_usd(self.connection, now)
+            return usage.spend_since(self.connection, since_ms)
+
+    def plan_since(self, since_ms):
+        """Tokens run on the person's plans since ``since_ms`` and their API-equivalent cost (see usage.plan_since)."""
+        with self.lock:
+            return usage.plan_since(self.connection, since_ms)
 
     def delete(self, run_id):
         """Remove a run and its events. Usage rows and request tombstones stay: spend already happened,
@@ -465,9 +555,10 @@ class Journal:
             connection.execute("UPDATE runs SET data=? WHERE id=?", (encode(data), run_id))
 
     def close(self):
-        if self.connection is not None:
-            self.connection.close()
-            self.connection = None
-        if self.lease:
-            self.lease.close()
-            self.lease = None
+        with self.lock:
+            if self.connection is not None:
+                self.connection.close()
+                self.connection = None
+            if self.lease:
+                self.lease.close()
+                self.lease = None

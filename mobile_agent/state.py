@@ -29,6 +29,16 @@ HOST_KEY_OPERATIONS = frozenset({"HOME", "VOLUME_UP", "VOLUME_DOWN"})
 WDA_HOST_KEY_NAMES = {"HOME": "home", "VOLUME_UP": "volumeUp", "VOLUME_DOWN": "volumeDown"}
 
 
+# Slowest measured typing rate (characters per second) a typing timeout allows for.
+TYPING_CHARS_PER_SECOND = 10
+
+
+def typing_timeout(text):
+    """Seconds to allow an action that may type ``text``: a 1,300-character note body timed out at a
+    flat 15 s part-typed, and was typed again (iOSWorld mem-048, 24 Sep)."""
+    return 15 + len(text or "") / TYPING_CHARS_PER_SECOND
+
+
 # -- a screen's structure, kept without its text ----------------------------------------------------------------------
 # What a screen is, structurally: its elements' role/label pairs (replay.py matched a recorded screen by them), and
 # those pairs as short hashes (replay_core paths keep only these). frontier's StepRecord.screen and .shape use both.
@@ -48,22 +58,27 @@ def screen_shape(pairs):
     return sorted(out)[:SHAPE_LIMIT]
 
 
-# What a snapshot source guarantees, by ``Snapshot.source``:
-#   exact_actions  every element lists exactly the actions it accepts (an in-app accessibility
-#                  bridge); nothing is offered beyond them. WDA's actions are inferred from roles.
-#   stable_ids     element ids stay the same across observations of one screen.
-#   host_keys      hardware keys (Home, volume) may be offered on this source's screens.
-#   app_scoped     host keys also need the observation's bundle id.
-# The core knows WDA and the offline fixtures; an extension adds its own sources here.
-SOURCE_TRAITS = {
-    "wda": frozenset({"host_keys"}),
-    "synthetic_fixture": frozenset({"stable_ids"}),
-}
+# Sources that read the screen from pixels only, with no accessibility tree: iPhone Mirroring, and every driver that
+# builds its screen with perception.snapshot_from (which adds its source here), such as a video plus Bluetooth link.
+PIXEL_SOURCES = {"mirroring"}
+# Locators perception gives what it read from pixels: a line of text, a named icon.
+PIXEL_LOCATORS = ("ocr:", "icon:")
 
 
-def has_trait(snapshot_or_source, trait):
-    source = getattr(snapshot_or_source, "source", snapshot_or_source)
-    return trait in SOURCE_TRAITS.get(source, ())
+def icon_glyph(locator):
+    """What a named icon's glyph looks like ("paper plane"), from perception's locator ("icon:3:paper-plane"), or ""."""
+    parts = str(locator or "").split(":")
+    return parts[2].replace("-", " ") if len(parts) >= 3 and parts[0] == "icon" else ""
+
+
+def pixel_read(snapshot):
+    """Whether ``snapshot`` was read from pixels, where a button can't be told from a line of text: its source is an
+    image-only driver's, or any element came from perception (an ``ocr:`` line or an ``icon:``). Fails closed: one
+    such element is enough, so a screen with named icons among its lines still counts."""
+    if getattr(snapshot, "source", None) in PIXEL_SOURCES:
+        return True
+    return any(str(getattr(e, "locator", "") or "").startswith(PIXEL_LOCATORS)
+               for e in getattr(snapshot, "elements", ()) or ())
 
 
 def validate_bundle_id(value):
@@ -73,7 +88,6 @@ def validate_bundle_id(value):
             or not re.fullmatch(r"[A-Za-z0-9_][A-Za-z0-9_.-]*[A-Za-z0-9_]", value)):
         raise ValueError("Invalid app bundle identifier")
     return value
-NATIVE_BLOCK_REASONS = frozenset({"not_hittable", "covered_or_not_hittable", "covered_by_window"})
 
 
 def validate_input_text(value, multiline=False):
@@ -161,63 +175,6 @@ class Element:
         return self.hit or self.center
 
 
-@dataclass(frozen=True)
-class ExcludedElement:
-    """Known-ineligible AX identity; excluded text never reaches model/evidence inputs."""
-    id: str
-    reason: str
-
-    def __post_init__(self):
-        if (not isinstance(self.id, str) or not self.id or len(self.id) > 256
-                or not isinstance(self.reason, str) or self.reason not in NATIVE_BLOCK_REASONS):
-            raise ValueError("Invalid native exclusion provenance")
-
-
-@dataclass(frozen=True)
-class OffscreenNode:
-    """Labelled content outside the viewport (WebKit exposes the whole page).
-
-    Read-only evidence: it is never an action target. ``rect`` is in screen
-    fractions and unclipped, so ``y`` = 2.6 means 2.6 screens below the top.
-    A node becomes tappable only by scrolling it into view and observing it
-    again as an ``Element`` (see ``WDA.scroll_to``).
-    """
-    label: str
-    role: str
-    rect: tuple[float, float, float, float]
-    value: str = ""
-    locator: str = ""
-    web: bool = False
-
-    def __post_init__(self):
-        if (not isinstance(self.label, str) or len(self.label) > 500 or not isinstance(self.value, str)
-                or len(self.value) > 500 or not isinstance(self.role, str) or not self.role or len(self.role) > 500
-                or not isinstance(self.locator, str) or len(self.locator) > 16000 or type(self.web) is not bool
-                or not isinstance(self.rect, (list, tuple)) or len(self.rect) != 4
-                or not all(finite(n) and abs(n) < 1000 for n in self.rect)):
-            raise ValueError("Invalid off-screen node")
-        object.__setattr__(self, "rect", tuple(self.rect))
-
-    @property
-    def direction(self):
-        x, y, w, h = self.rect
-        if y >= 1:
-            return "below"
-        if y + h <= 0:
-            return "above"
-        return "right" if x >= 1 else "left"
-
-    @property
-    def screens_away(self):
-        """Distance from the viewport edge, in screen heights (or widths)."""
-        x, y, w, h = self.rect
-        return round({"below": y - 1, "above": -(y + h), "right": x - 1, "left": -(x + w)}[self.direction], 3)
-
-    def public(self):
-        return {"role": self.role, "label": self.label, "value": self.value, "direction": self.direction,
-                "screens_away": self.screens_away, "web": self.web}
-
-
 # Invisible direction and width marks. Calculator's display reads "\u200e579" (a
 # left-to-right mark before the digits); kept, the answer "579" was not the literal
 # the screen showed (MobsterBench pass 6, text.calc_add).
@@ -227,11 +184,6 @@ _INVISIBLE_MARKS = re.compile("[\u200b-\u200f\u202a-\u202e\u2060-\u2064\u2066-\u
 def invisible_marks(text):
     """``text`` without zero-width and bidirectional control characters."""
     return _INVISIBLE_MARKS.sub("", text) if text else text
-
-
-# Off-screen nodes kept per snapshot (evidence only; the Eiffel Tower article
-# had 310 labelled nodes below the viewport).
-WDA_OFFSCREEN_LIMIT = 800
 
 
 @dataclass
@@ -248,10 +200,6 @@ class Snapshot:
     image_hash: str = ""
     revision: str = ""
     bundle_id: str = ""
-    excluded_elements: tuple[ExcludedElement, ...] = ()
-    # Content outside the viewport: read-only evidence, never in ``elements``,
-    # ``text``, ``public()`` or the fingerprints (screen identity is what is on screen).
-    offscreen: tuple[OffscreenNode, ...] = ()
     # Screen-sized list panes drawn over one another (WDA pane keys, see from_wda):
     # which one is in front is not in a fast source read, so the driver asks WDA.
     stacked_panes: tuple = ()
@@ -276,43 +224,24 @@ class Snapshot:
     def __post_init__(self):
         if not all(finite(n) and n > 0 for n in (self.width, self.height)):
             raise ValueError("Invalid screen dimensions")
-        if (not isinstance(self.offscreen, (list, tuple)) or len(self.offscreen) > WDA_OFFSCREEN_LIMIT
-                or any(not isinstance(node, OffscreenNode) for node in self.offscreen)):
-            raise ValueError("Invalid off-screen evidence")
-        self.offscreen = tuple(self.offscreen)
-        if (not isinstance(self.elements, (list, tuple)) or any(not isinstance(e, Element) for e in self.elements)
-                or not isinstance(self.excluded_elements, (list, tuple))
-                or any(not isinstance(e, ExcludedElement) for e in self.excluded_elements)):
+        if (not isinstance(self.elements, (list, tuple)) or any(not isinstance(e, Element) for e in self.elements)):
             raise ValueError("Invalid snapshot element collection")
-        identities = [e.id for e in (*self.elements, *self.excluded_elements)]
+        identities = [e.id for e in self.elements]
         if len(identities) > 240 or len(set(identities)) != len(identities):
             raise ValueError("Too many elements or duplicate element IDs")
-        self.excluded_elements = tuple(self.excluded_elements)
         if (not isinstance(self.text, str) or len(self.text) > 241000
                 or not isinstance(self.source, str) or not self.source or len(self.source) > 128
                 or any(not isinstance(value, str) or len(value) > 500
                        for value in (self.image_hash, self.revision, self.bundle_id))):
             raise ValueError("Invalid snapshot metadata")
 
-    def offscreen_evidence(self, limit=200, web_only=False):
-        """Off-screen content for extraction and scroll-to-target decisions,
-        nearest first: ``[{"id": "o3", "role", "label", "value", "direction",
-        "screens_away", "web"}]``. Ids index ``offscreen`` and are only valid
-        for this snapshot. Never a tap target: scroll it into view first."""
-        ranked = sorted(((node.screens_away, index) for index, node in enumerate(self.offscreen)
-                         if node.web or not web_only))
-        return [{"id": f"o{index}", **self.offscreen[index].public()} for _, index in ranked[:limit]]
-
     def public(self):
-        # Eligibility means not known excluded, never independently verified visibility.
         # Built field by field (not dataclasses.asdict: 3-5x slower, and this runs
         # ~17 times per agent step); the same keys in the same order.
         return {"source": self.source, "bundle_id": self.bundle_id, "text": self.text[:12000],
                 "elements": [{"id": e.id, "label": e.label, "role": e.role, "rect": list(e.rect),
                               "editable": e.editable, "value": e.value, "actions": list(e.actions)}
-                             for e in self.elements],
-                "excluded_elements": [{"id": e.id, "reason": e.reason} for e in self.excluded_elements],
-                "visibility_verified": False}
+                             for e in self.elements]}
 
     @property
     def fingerprint(self):
@@ -332,7 +261,7 @@ class Snapshot:
         # every input by identity (elements are frozen) and value, and is
         # recomputed whenever any of them changed.
         stamp = (self.text, self.width, self.height, self.source, self.bundle_id,
-                 self.revision if include_revision else None, self.excluded_elements)
+                 self.revision if include_revision else None)
         elements = self.elements
         cache = self.__dict__.setdefault("_fingerprints", {})
         hit = cache.get(include_revision)
@@ -346,22 +275,6 @@ class Snapshot:
         value = hashlib.sha256(json.dumps(grounding, sort_keys=True, allow_nan=False).encode()).hexdigest()
         cache[include_revision] = (tuple(elements), stamp, value)
         return value
-
-
-def same_screen(ax_fingerprint, visual_fingerprint, other_ax, other_visual):
-    """Screen-state identity match. AX is required; visual refines only when both sides have one.
-
-    A missing visual component falls back to AX-only comparison, so an
-    unavailable capture can never claim two AX-identical screens differ --
-    which would relax the ineffective-action replay guard. A present visual
-    component is change-detection identity only: never an action target and
-    never a prior fact for later decisions.
-    """
-    if ax_fingerprint != other_ax:
-        return False
-    if visual_fingerprint is not None and other_visual is not None:
-        return visual_fingerprint == other_visual
-    return True
 
 
 def pane_key(role, label, x, y, w, h):
@@ -442,7 +355,7 @@ def from_wda_root(root, hidden_panes=frozenset(), hidden_paths=frozenset(), rich
         bundle = ""
     if not all(math.isfinite(n) and n > 0 for n in (width, height)):
         raise ValueError("Invalid WDA application dimensions")
-    nodes, offscreen, visited, panes, layers, pages = [], [], 0, [], [], []
+    nodes, visited, panes, layers, pages = [], 0, [], [], []
     parked = []
     other_leaves, selected_paths, placeholders = set(), set(), {}
     editable_roles = {"TextField", "SearchField", "TextView"}
@@ -508,18 +421,13 @@ def from_wda_root(root, hidden_panes=frozenset(), hidden_paths=frozenset(), rich
         onscreen = right > left and bottom > top
         if role == "Keyboard" and not onscreen:
             parked.append(path)
-        # Text is read only for a node that can use it: on large WebKit pages most
-        # nodes sit off screen past the evidence cap (measured on synthetic Safari
-        # trees: 1.5 MB source 35.4 -> 25.3 ms, 625 KB 14.3 -> 11.2 ms).
-        keep_offscreen = (not onscreen and role not in structural
-                          and len(offscreen) < WDA_OFFSCREEN_LIMIT and w > 0 and h > 0)
-        if onscreen or keep_offscreen:
+        # Text is read only for a node that can use it: on large WebKit pages most nodes sit off screen.
+        if onscreen:
             label, value = _wda_text(a, role)
             if named and role == "Button" and a.get("accessible") != "true" and named[1] == (x, y, w, h):
                 # An inaccessible control filling an accessible, labelled wrapper is that control:
                 # TasteRank's "Filters" wraps a button named for its SF symbol ("Drag").
                 label = invisible_marks(named[0])[:500]
-        if onscreen:
             g = WDA_RECT_GRID_PT
             s_left, s_top, s_right, s_bottom = (round(left / g) * g, round(top / g) * g,
                                                 round(right / g) * g, round(bottom / g) * g)
@@ -537,9 +445,6 @@ def from_wda_root(root, hidden_panes=frozenset(), hidden_paths=frozenset(), rich
                     selected_paths.add(path)
                 if role in editable_roles and a.get("placeholderValue"):
                     placeholders[path] = invisible_marks(a.get("placeholderValue"))[:500]
-        elif keep_offscreen and (label or value.strip()):
-            # Entirely outside the viewport: evidence only (WebKit keeps the whole page).
-            offscreen.append((path, role, label, value, (x, y, w, h)))
         # (Fast sources carry no accessibility flag: a labelled Other is then taken as accessible.)
         wrapper = ((a.get("label"), (x, y, w, h)) if role == "Other" and a.get("accessible", "true") == "true"
                    and a.get("label") else None)
@@ -580,9 +485,7 @@ def from_wda_root(root, hidden_panes=frozenset(), hidden_paths=frozenset(), rich
                                   or unlabelled_button) and (role not in structural or other_leaf):
             if len(elements) >= 240:
                 # A dense page (Wikipedia's Mount Everest infobox) ended runs here. Past the
-                # target budget the rest stays readable evidence, never an action target.
-                if (label or value.strip()) and len(offscreen) < WDA_OFFSCREEN_LIMIT:
-                    offscreen.append((path, role, label, value, (left, top, right - left, bottom - top)))
+                # target budget the rest stays readable text, never an action target.
                 continue
             hit = hits.get(path)
             if bands:
@@ -597,17 +500,8 @@ def from_wda_root(root, hidden_panes=frozenset(), hidden_paths=frozenset(), rich
                 field_actions if role in editable_roles else ("TAP",),
                 _hit_inside(hit, left, top, right, bottom, width, height), enabled, path in selected_paths,
                 placeholders.get(path, "")))
-    evidence, seen = [], set()
-    for path, role, label, value, (x, y, w, h) in offscreen:
-        # WebKit nests the same text (a link and its static text): keep one.
-        key = (label or value, round(y / height, 2))
-        if key in seen:
-            continue
-        seen.add(key)
-        evidence.append(OffscreenNode(label, role, (x / width, y / height, w / width, h / height),
-                                      value, path, "XCUIElementTypeWebView" in path))
     return Snapshot(elements, "\n".join(dict.fromkeys(texts))[:12000], width, height, "wda",
-                    bundle_id=bundle, offscreen=tuple(evidence), stacked_panes=stacked_panes(panes),
+                    bundle_id=bundle, stacked_panes=stacked_panes(panes),
                     stacked_layers=tuple(layers), stacked_pages=tuple(pages), keyboard=keyboard)
 
 

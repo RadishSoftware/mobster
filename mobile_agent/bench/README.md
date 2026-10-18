@@ -125,7 +125,7 @@ All agents share the same controls:
 
 | agent | what it is |
 | --- | --- |
-| `mobster-smart` | Mobster's agent (`frontier.FrontierAgent`), in process, composed by `engines.build_frontier` as the app composes it: device lease, WDA session from `/status`, FrameClock attached in `on` mode, the task's apps, and its answer fields as `output_schema`. The verdict is about this arm. Its other models and arm settings are under "Smart, the held-out tranche, A/Bs and heats" below. |
+| `mobster-smart` | Mobster's agent (`frontier.FrontierAgent`), in process, composed by `engines.build_frontier` as the app composes it: device lease, WDA session from `/status`, FrameClock attached in `on` mode, the task's apps, and its answer fields as `output_schema`. The verdict is about this arm. Its other models are under "Smart, the held-out tranche and A/Bs" below. |
 | `gemini-cu` | Gemini's computer-use tool, `ENVIRONMENT_MOBILE`, on Vertex `generateContent`. `--cu-model auto` picks the first model that answers from 3.8 → 3.7 → 3.6 → 3.5 Flash. |
 | `som-pro` / `som-flash` | A frontier VLM with Set-of-Marks over the WDA accessibility boxes, using an M3A-style action space (`--som-model auto`: 3.1 Pro preview first). |
 
@@ -252,29 +252,26 @@ $PY -m mobile_agent.bench report --run research/bench-runs/full-YYYY-MM-DD      
 Add `--agents mobster-smart,gemini-cu,som-pro,som-flash` to include the Flash
 Set-of-Marks variant.
 
-## Smart, the held-out tranche, A/Bs and heats (October 2026)
+## Smart, the held-out tranche and A/Bs (October 2026)
 
 Smart runs on the bench as `mobster-smart` (Sonnet 5.5 on the API), `mobster-smart-haiku`, `mobster-smart-luna`
 (gpt-6-luna), `mobster-smart-sol` (gpt-6.1-sol), `mobster-smart-codex` (gpt-6.1-sol through the Codex CLI's ChatGPT
 sign-in, no per-call cost) and `mobster-smart-cc` (`claude -p`; seconds of process start per call, so not for
-timing). `+name` adds an arm's switches: `+jev`, `+oaiimg`, `+watch`, `+bold`, `+fast`, `+esc` (see
-`agents/smart.py` and running.md's frontier switches). Every way Smart reaches the phone passes the safety monitor
-first, including point taps, long presses and text writes.
+timing). Every way Smart reaches the phone passes the safety monitor first, including point taps, long presses and
+text writes.
 
 | Suite (`--suite`) | What |
 |---|---|
 | `heldout` | H1: 16 tasks (6 short, 4 retrieval, 4 multi-app, 2 text entry), frozen 2026-10-09 in `heldout-manifest.json` and never tuned on |
 | `training` | H1's siblings (same apps and shapes, other values), for anything that learns |
 | `combo` | 7 varied tasks for reading engine combinations by hand |
-| `hard` | 7 long tasks (four apps chained, web lookups, library counts) with milestones |
+| `hard` | 7 long tasks (four apps chained, web lookups, library counts) |
 
 ```
-$PY -m mobile_agent.bench run --suite heldout --agents mobster-smart,mobster-smart-haiku+jev --order abba \
+$PY -m mobile_agent.bench run --suite heldout --agents mobster-smart,mobster-smart-haiku --order abba \
     --repeats 2 --no-yield --secrets-env ~/mobster-work/secrets/bench.env --env-file mobile_agent/.env --out DIR
 $PY -m mobile_agent.bench.ab DIR                 # the paired verdict: success CI, short-task time ratio, safety
 $PY -m mobile_agent.bench.trace_view DIR         # every step of every attempt, with latency and cost
-$PY -m mobile_agent.bench.heat run --agents A,B,C --cap 150 --out DIR   # all variants on the hard set, scored by
-                                                 # the milestones reached by the checkpoint
 ```
 
 `--order abba` runs each task A B B A (the leading arm alternates by task). `--secrets-env` loads a file first, into
@@ -306,7 +303,7 @@ $PY -m mobile_agent.bench.real survey --out ~/mobster-work/realbench/survey   # 
 $PY -m mobile_agent.bench.real containers [--restore]                 # check or set the bench containers
 $PY -m mobile_agent.bench.real run --secrets-env ~/mobster-work/secrets/bench.env \
     --out ~/mobster-work/realbench/runs/NAME                          # each task once, $5 spend cap
-$PY -m mobile_agent.bench.real run --agents mobster-smart,mobster-smart+routed --order abba --repeats 2 --out DIR
+$PY -m mobile_agent.bench.real run --agents mobster-smart,mobster-smart-haiku --order abba --repeats 2 --out DIR
 $PY -m mobile_agent.bench.real report --run DIR
 ```
 

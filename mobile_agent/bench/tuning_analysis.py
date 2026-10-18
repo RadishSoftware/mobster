@@ -443,7 +443,7 @@ def trace_text(folder, max_chars=60000):
 
 def label_failures(batch, client, out_path, only_failed=True, skip=()):
     """Label each failed run of ``batch`` (official fail) with ``client``; append to ``out_path`` (JSONL)."""
-    from ..frontier import cost_usd
+    from ..model_clients import cost_usd
     done = {r.get("folder") for r in read_jsonl(out_path) if r.get("cause")}  # an errored label is asked again
     spent = 0.0
     for folder in task_folders(batch):
@@ -513,7 +513,7 @@ def first_action(out):
 def counterfactual(turns, client, variant=identity):
     """Re-ask each recorded turn under ``variant``; rows and a summary (agreement, output tokens, latency)."""
     import time
-    from .. import frontier
+    from .. import frontier, model_clients
     from .llm_units import messages as recorded_messages
     rows = []
     for folder, turn, passed in turns:
@@ -530,7 +530,7 @@ def counterfactual(turns, client, variant=identity):
         want, got = first_action(turn.get("out")), first_action(out)
         rows.append({"folder": str(folder), "step": turn.get("step"), "passed_run": passed, "error": error,
                      "s": round(time.monotonic() - started, 3), "out_tokens": usage.get("completion_tokens"),
-                     "ttft_ms": usage.get("ttft_ms"), "usd": frontier.cost_usd(client.model, usage) if usage else None,
+                     "ttft_ms": usage.get("ttft_ms"), "usd": model_clients.cost_usd(client.model, usage) if usage else None,
                      "want": want, "got": got, "op_agree": want[0] == got[0], "agree": want == got})
     ok = [r for r in rows if not r["error"]]
 

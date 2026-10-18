@@ -13,7 +13,8 @@ record would only re-certify the agent's opinion.
 import re
 import time
 
-from ..drivers import WDA, WDA_SOURCE_PATH
+from ..drivers import WDA
+from ..wda_observe import WDA_SOURCE_PATH
 from ..errors import MobsterError
 from ..state import from_wda
 from ..transport import HTTP

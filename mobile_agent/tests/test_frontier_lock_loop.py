@@ -75,7 +75,7 @@ class Phone:
                 raise TransportError("HTTP 400; WDA rejected command; not retried")
             self.screen = LIST
 
-    def tap_point(self, x, y, snapshot, timeout=10):
+    def tap_point(self, x, y, snapshot, timeout=10, purpose=None):
         self.actions.append(("TAP_POINT", x, y))
 
 
@@ -416,7 +416,7 @@ class FrontAppTests(unittest.TestCase):
             def active_app(self, timeout=5):
                 return "com.apple.springboard" if self.covered else REMINDERS
 
-            def tap_point(self, x, y, snapshot, timeout=10):
+            def tap_point(self, x, y, snapshot, timeout=10, purpose=None):
                 super().tap_point(x, y, snapshot, timeout)
                 self.covered, self.screen = False, LIST  # "Allow" closed the system alert
 

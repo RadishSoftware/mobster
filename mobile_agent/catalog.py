@@ -38,8 +38,11 @@ APPS = [
 ]
 
 
-# Names for apps outside the catalog (a benchmark's own apps), registered by whoever installs them.
-_EXTRA_NAMES = {}
+# Names for apps outside the catalog, registered by whoever installs them (a benchmark's own apps). The browsers a link
+# can land in are named here too: a card says "Chrome", not its bundle id.
+_EXTRA_NAMES = {"com.google.chrome.ios": "Chrome", "org.mozilla.ios.Firefox": "Firefox", "com.microsoft.msedge": "Edge",
+                "com.brave.ios.browser": "Brave", "com.duckduckgo.mobile.ios": "DuckDuckGo",
+                "com.opera.OperaTouch": "Opera"}
 
 
 def register_app_names(names):
@@ -47,7 +50,12 @@ def register_app_names(names):
     _EXTRA_NAMES.update({str(bundle): str(name)[:60] for bundle, name in names.items() if bundle and name})
 
 
+def app_name(bundle):
+    """The app's display name ("Safari"), or None when the catalog and the registered names don't have it."""
+    return _EXTRA_NAMES.get(bundle) or next((a["name"] for a in APPS if a["bundleId"] == bundle), None)
+
+
 def app_label(bundle):
     """The app's display name with its bundle ("CalTrack (com.x.caltrack)"), else the bundle."""
-    name = _EXTRA_NAMES.get(bundle) or next((a["name"] for a in APPS if a["bundleId"] == bundle), None)
+    name = app_name(bundle)
     return f"{name} ({bundle})" if name else bundle

@@ -20,6 +20,7 @@ import pathlib
 import re
 
 from .. import contract as K
+from .. import contract_screen as KS
 from .iosworld_stats import NON_GUARD_REFUSALS, commit_requested
 
 ROW = re.compile(r'^e\d+ (\w+) "([^"]*)"', re.M)
@@ -28,9 +29,9 @@ OTHER_REFUSALS = NON_GUARD_REFUSALS | {"tap_xy", "untargeted_swipe", "disabled",
 
 def old_family(item):
     """The family rule before the request's own word for the act counted (contract.py at e24a7f9f)."""
-    fam = set(K.FAMILIES.get(item.act, ()))
+    fam = set(KS.FAMILIES.get(item.act, ()))
     if item.act == "other":
-        fam |= {v.casefold() for v in K.COMMIT_WORDS.findall(item.quote)}
+        fam |= {v.casefold() for v in KS.COMMIT_WORDS.findall(item.quote)}
     return fam
 
 
@@ -56,19 +57,19 @@ def decisions(folder):
                      text.split("Apps you may use:\n", 1)[1].split("\n\n")[0].splitlines()]
         at = text.find("Screen elements:")
         for role, label in ROW.findall(text[at:] if at >= 0 else ""):
-            if K.label_verbs(label, role):
+            if KS.label_verbs(label, role):
                 out.append(("on screen", label, role, current))
     for e in (record.get("mobster") or {}).get("events") or ():
         if e.get("event") == "frontier_refused" and e.get("label") not in OTHER_REFUSALS:
             out.append(("refused", e.get("label") or "", "Button", app_at.get(e.get("step"), "")))
-        elif e.get("event") == "frontier_action" and e.get("operation") in ("TAP", "LONG_PRESS") and K.label_verbs(
+        elif e.get("event") == "frontier_action" and e.get("operation") in ("TAP", "LONG_PRESS") and KS.label_verbs(
                 e.get("target_label") or ""):
             out.append(("tapped", e.get("target_label") or "", "Button", e.get("app_name") or app_at.get(e.get("step"), "")))
     return record.get("goal") or "", names, out
 
 
 def main(argv=None):
-    from ..frontier import chat_client, cost_usd
+    from ..model_clients import chat_client, cost_usd
     from .iosworld import load_envs
     parser = argparse.ArgumentParser(prog="python -m mobile_agent.bench.guard_replay")
     parser.add_argument("--runs", nargs="+", required=True, help="run folders (each holding NNN-task/ folders)")
@@ -98,7 +99,7 @@ def main(argv=None):
         for folder in folders:
             _, _, decided = decisions(folder)
             for kind, label, role, app in decided:
-                verbs = frozenset(K.label_verbs(label, role))
+                verbs = frozenset(KS.label_verbs(label, role))
                 if not verbs:
                     continue
                 for index, c in enumerate(contracts):

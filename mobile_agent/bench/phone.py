@@ -18,7 +18,8 @@ import io
 import struct
 import time
 
-from ..drivers import WDA, WDA_SWIPE_SECONDS, WDA_TAP_HOLD_MS, _swipe_points, resolve_wda_session
+from ..drivers import WDA, resolve_wda_session
+from ..wda_gestures import WDA_SWIPE_SECONDS, WDA_TAP_HOLD_MS, _swipe_points
 from ..transport import HTTP, TransportError
 
 SCREENSHOT_TIMEOUT = 6
@@ -54,8 +55,10 @@ def health(url, timeout=HEALTH_TIMEOUT):
             return Health(False, session=session, reason=f"lock state unavailable: {type(error).__name__}")
         if locked is True:
             return Health(False, locked=True, session=session, reason="phone is locked")
+        if locked is not False:
+            return Health(False, session=session, reason="lock state unavailable: expected a boolean")
         if not session:
-            return Health(False, locked=bool(locked), reason="WDA has no active session")
+            return Health(False, locked=False, reason="WDA has no active session")
         return Health(True, locked=False, session=session, ms=(time.monotonic() - started) * 1000)
     finally:
         client.close()

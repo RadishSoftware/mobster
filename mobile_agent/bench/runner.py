@@ -424,7 +424,7 @@ NEUTRAL_PAGE = "https://example.com"
 
 def reset_other_apps(probe, task):
     """The task's other apps start clean too, so no attempt starts where the last one ended: Safari on a neutral page
-    (a heat's later variants found the answer's article already open, 9 Oct), Calculator cleared, the rest popped to
+    (a later attempt found the answer's article already open, 9 Oct), Calculator cleared, the rest popped to
     their root. The start app is reset last, so it is in front."""
     for bundle in task.bundles[1:]:
         if bundle == CALCULATOR:

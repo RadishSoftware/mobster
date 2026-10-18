@@ -12,7 +12,7 @@ import pathlib
 import threading
 import time
 
-from ... import frontier
+from ... import frontier, model_clients
 
 
 @dataclasses.dataclass
@@ -80,7 +80,7 @@ def client(model, reasoning="low"):
     key = (model, reasoning)
     with _lock:
         if key not in _clients:
-            _clients[key] = frontier.chat_client(model, reasoning=reasoning)
+            _clients[key] = model_clients.chat_client(model, reasoning=reasoning)
         return _clients[key]
 
 
@@ -113,7 +113,7 @@ def ask(model, system, parts, schema, spend=None, reasoning="low", timeout=120):
     except Exception as exc:  # a failed call is a row, not a crash: the scorer counts it
         return Reply(error=f"{type(exc).__name__}: {str(exc)[:200]}", seconds=time.monotonic() - started)
     seconds = time.monotonic() - started
-    usd = frontier.cost_usd(model, usage) or 0.0
+    usd = model_clients.cost_usd(model, usage) or 0.0
     if spend is not None:
         spend.add(usd)
     return Reply(out=out if isinstance(out, dict) else {"value": out}, usd=usd, seconds=seconds, usage=usage)

@@ -17,7 +17,8 @@ import os
 import sys
 
 from mobile_agent.drivers import build_driver
-from mobile_agent.engines import build_client, build_frontier, smart_config, smart_key, summarize
+from mobile_agent.engines import build_client, build_frontier, smart_config, smart_key
+from mobile_agent.smart_result import summarize
 
 GOAL = "Open Settings, then General, then About, and read the iOS version."
 APPS = {"com.apple.Preferences": "Settings"}  # the only app the agent may open

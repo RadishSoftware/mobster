@@ -4,13 +4,28 @@ from .drivers import build_driver
 from .extensions import load as load_extensions
 
 
-def build_target_driver(*, wda_url=None, session=None, expected_bundle=None, **options):
+def build_target_driver(*, wda_url=None, session=None, expected_bundle=None, connection=None, app_names=None,
+                        labeller=None, icon_memory=None, **options):
     """Select and construct the driver for one run target. No probing, no fallback.
 
     WDA sessions get one configuration call (measured snapshot settings)
-    before the driver is returned. Other targets (``options``) exist only when
-    an extension provides them (``extensions.py``).
+    before the driver is returned. ``connection="mirroring"`` is the experimental
+    iPhone Mirroring driver (mirroring.py) and ``connection="cable_bt"`` the experimental
+    Cable + Bluetooth one (cable_bt.py, ``options``: its phone), each only with its setting on. Other
+    targets (``options``) exist only when an extension provides them (``extensions.py``).
     """
+    if connection == "mirroring":
+        from . import mirroring
+        if not mirroring.enabled():
+            raise ValueError(f"The iPhone Mirroring connection is experimental: set {mirroring.ENV_FLAG}=1 to use it")
+        return build_driver("mirroring", app_names=app_names, labeller=labeller, icon_memory=icon_memory)
+    if connection == "cable_bt":
+        from . import cable_bt
+        if not cable_bt.enabled():
+            raise ValueError(f"The Cable + Bluetooth connection is experimental: set {cable_bt.ENV_FLAG}=1 to use it")
+        return build_driver("cable_bt", app_names=app_names, labeller=labeller, icon_memory=icon_memory, **options)
+    if connection not in (None, "wda"):
+        raise ValueError(f"Unknown connection {connection!r}")
     if wda_url:
         driver = build_driver("wda", url=wda_url, session=session)
         driver.configure()

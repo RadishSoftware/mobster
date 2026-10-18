@@ -5,6 +5,8 @@ import unittest
 from types import SimpleNamespace as NS
 
 from mobile_agent import contract as K
+from mobile_agent import contract_screen as KS
+from mobile_agent import contract_asks as KA
 from mobile_agent.frontier import FrontierAgent, prompt_text
 from mobile_agent.state import Element, Snapshot
 
@@ -51,36 +53,79 @@ class ContractValidationTests(unittest.TestCase):
         self.assertIn("rules it out", g.reason)
 
 
+class ForbidScopeTests(unittest.TestCase):
+    """A FORBID that rules out only what the request doesn't name ("Delete nothing else.") lets the named delete go on to
+    its own checks; any other FORBID refuses every act of its kind."""
+    REQUEST = "In Notes, delete the note Mobster QA loop A. Delete nothing else."
+    NAMED = item(app="Notes", what="Mobster QA loop A", act="delete", quote="delete the note Mobster QA loop A")
+
+    def test_the_named_delete_passes_with_its_object_on_screen(self):
+        c = contract(self.REQUEST, self.NAMED,
+                     item(kind="FORBID", app="Notes", what="other notes", act="delete", quote="Delete nothing else."))
+        g = c.check("TAP", el("Delete"), shot(el("Mobster QA loop A", "StaticText"), el("Delete")), "Notes")
+        self.assertTrue(g.allowed, g.reason)
+        self.assertEqual(g.item.what, "Mobster QA loop A")
+
+    def test_other_deletes_are_still_refused(self):
+        c = contract(self.REQUEST, self.NAMED,
+                     item(kind="FORBID", app="Notes", what="notes", act="delete", quote="Delete nothing else."))
+        g = c.check("TAP", el("Delete"), shot(el("Groceries", "StaticText"), el("Delete")), "Notes")
+        self.assertFalse(g.allowed)
+        self.assertIn("not on this screen", g.reason)
+        c.items[0].status = "closed"  # the named delete is done: any further delete is one the request rules out
+        g = c.check("TAP", el("Delete"), shot(el("Mobster QA loop A", "StaticText"), el("Delete")), "Notes")
+        self.assertFalse(g.allowed)
+        self.assertIn("rules it out", g.reason)
+
+    def test_a_forbid_with_no_exception_refuses_a_declared_delete_too(self):
+        c = contract("Delete the note Mobster QA loop A, but do not delete anything.", self.NAMED | {
+            "quote": "Delete the note Mobster QA loop A"},
+                     item(kind="FORBID", app="Notes", what="notes", act="delete", quote="do not delete anything"))
+        g = c.check("TAP", el("Delete"), shot(el("Mobster QA loop A", "StaticText"), el("Delete")), "Notes")
+        self.assertFalse(g.allowed)
+        self.assertIn("rules it out", g.reason)
+        self.assertFalse(K.excludes_others(c.items[1]))
+
+
 class VerbTests(unittest.TestCase):
     def test_first_four_words_name_the_act(self):
-        self.assertEqual(K.label_verbs("Pay $42.00"), {"pay"})
-        self.assertEqual(K.label_verbs("Confirm & Place Order"), {"confirm", "place order"})
-        self.assertEqual(K.label_verbs("A film about the Ocean's call"), set())
+        self.assertEqual(KS.label_verbs("Pay $42.00"), {"pay"})
+        self.assertEqual(KS.label_verbs("Confirm & Place Order"), {"confirm", "place order"})
+        self.assertEqual(KS.label_verbs("A film about the Ocean's call"), set())
+
+    def test_the_contract_vocabulary_is_the_approval_vocabulary_plus_first_word_only_words(self):
+        from mobile_agent.task_policy import COMMIT_CONTROL
+        words = lambda pattern: set(pattern.pattern[3:-3].split("|"))
+        self.assertEqual(words(KS.COMMIT_WORDS), words(COMMIT_CONTROL) | KS.FIRST_WORD_ONLY)
+        for word in KS.FIRST_WORD_ONLY:
+            self.assertEqual(KS.label_verbs(f"Feels {word}"), set(), word)
+            if word not in KS.OPENERS:
+                self.assertEqual(KS.label_verbs(word.title()), {word}, word)
 
     def test_known_false_triggers(self):
-        self.assertEqual(K.label_verbs("Dentist, 490 Post St, San Francisco"), set())
-        self.assertEqual(K.label_verbs("pencil.tip"), set())
-        self.assertEqual(K.label_verbs("9:30, Client call, Weekdays", "Switch"), set())
-        self.assertEqual(K.label_verbs("Feels Like"), set())
-        self.assertEqual(K.label_verbs("Your requests"), set())
-        self.assertEqual(K.label_verbs("CityRide One, Save on rides"), set())
+        self.assertEqual(KS.label_verbs("Dentist, 490 Post St, San Francisco"), set())
+        self.assertEqual(KS.label_verbs("pencil.tip"), set())
+        self.assertEqual(KS.label_verbs("9:30, Client call, Weekdays", "Switch"), set())
+        self.assertEqual(KS.label_verbs("Feels Like"), set())
+        self.assertEqual(KS.label_verbs("Your requests"), set())
+        self.assertEqual(KS.label_verbs("CityRide One, Save on rides"), set())
 
     def test_added_words_count_as_the_first_word(self):
-        self.assertEqual(K.label_verbs("Like"), {"like"})
-        self.assertEqual(K.label_verbs("Save post"), {"save", "post"})
-        self.assertEqual(K.label_verbs("Request $15.00"), {"request"})
-        self.assertEqual(K.label_verbs("Cancel Ride"), {"cancel"})
-        self.assertEqual(K.label_verbs("archive"), {"archive"})
-        self.assertEqual(K.label_verbs("Unfollow"), {"unfollow"})
-        self.assertEqual(K.label_verbs("Following"), {"unfollow"})
-        self.assertEqual(K.label_verbs("React"), {"react"})
+        self.assertEqual(KS.label_verbs("Like"), {"like"})
+        self.assertEqual(KS.label_verbs("Save post"), {"save", "post"})
+        self.assertEqual(KS.label_verbs("Request $15.00"), {"request"})
+        self.assertEqual(KS.label_verbs("Cancel Ride"), {"cancel"})
+        self.assertEqual(KS.label_verbs("archive"), {"archive"})
+        self.assertEqual(KS.label_verbs("Unfollow"), {"unfollow"})
+        self.assertEqual(KS.label_verbs("Following"), {"unfollow"})
+        self.assertEqual(KS.label_verbs("React"), {"react"})
 
     def test_identifier_labels_are_split(self):
-        self.assertEqual(K.label_verbs("mybank.checkout.confirmToggle", "Switch"), {"checkout", "confirm"})
+        self.assertEqual(KS.label_verbs("mybank.checkout.confirmToggle", "Switch"), {"checkout", "confirm"})
 
     def test_sheet_openers_commit_nothing(self):
         for label in ("Share", "Comment", "Comments", "Reply", "Reply in thread", "Cancel", "Comment Left"):
-            self.assertEqual(K.label_verbs(label), set(), label)
+            self.assertEqual(KS.label_verbs(label), set(), label)
 
 
 class FamilyTests(unittest.TestCase):
@@ -144,7 +189,7 @@ class FamilyTests(unittest.TestCase):
     def test_a_forbid_items_family_is_unchanged(self):
         c = contract("Check my orders but don't cancel anything.",
                      item(kind="FORBID", app="QuickBite", what="orders", act="cancel", quote="don't cancel anything"))
-        self.assertEqual(c.items[0].family(), set(K.FAMILIES["cancel"]))
+        self.assertEqual(c.items[0].family(), set(KS.FAMILIES["cancel"]))
 
     def test_the_commit_must_be_in_the_current_app(self):
         c = contract(PAY, PAY_ITEM)
@@ -182,15 +227,15 @@ class WriteProofTests(unittest.TestCase):
         return shot(el("Clock", "NavigationBar"), *[el(r, "StaticText") for r in rows])
 
     def test_numbers_are_whole_tokens_and_durations_match_across_units(self):
-        self.assertFalse(K._shows("1 hour", "today, +10:30hrs"))
+        self.assertFalse(KS.shows("1 hour", "today, +10:30hrs"))
         for text in ("1:00:00", "59:58", "1 hr", "60 min"):
-            self.assertTrue(K._shows("1 hour", text), text)
-        self.assertTrue(K._shows("7 pm friday", "friday 7:00 pm"))
-        self.assertTrue(K._shows("6:45 am", "6:45, gym on"))
-        self.assertFalse(K._shows("6:45 am", "16:45"))
-        self.assertFalse(K._shows("$40.45", "total $140.45"))
-        self.assertTrue(K._shows("6 people", "6 guests"))
-        self.assertFalse(K._shows("6 people", "16 guests"))
+            self.assertTrue(KS.shows("1 hour", text), text)
+        self.assertTrue(KS.shows("7 pm friday", "friday 7:00 pm"))
+        self.assertTrue(KS.shows("6:45 am", "6:45, gym on"))
+        self.assertFalse(KS.shows("6:45 am", "16:45"))
+        self.assertFalse(KS.shows("$40.45", "total $140.45"))
+        self.assertTrue(KS.shows("6 people", "6 guests"))
+        self.assertFalse(KS.shows("6 people", "16 guests"))
 
     def test_a_value_on_screen_before_any_write_in_its_app_proves_nothing(self):
         c = contract("Set a 1-hour timer in Clock.", self.TIMER)
@@ -389,9 +434,9 @@ class AmountTests(unittest.TestCase):
         self.assertFalse(c.check("TAP", el("Request $16.00"), shot(), "SplitPay").allowed)
 
     def test_bounds_parse(self):
-        low, high = K.bounds(K.Item(1, "COMMIT", act="pay", quote="pay anything at most $20"))
+        low, high = KS.bounds(KS.Item(1, "COMMIT", act="pay", quote="pay anything at most $20"))
         self.assertEqual((low, high), (None, 20.0))
-        low, high = K.bounds(K.Item(1, "COMMIT", act="order", condition="over $100"))
+        low, high = KS.bounds(KS.Item(1, "COMMIT", act="order", condition="over $100"))
         self.assertGreater(low, 100)
 
 
@@ -450,7 +495,7 @@ class ReturnKeyTests(unittest.TestCase):
     def test_an_unlabelled_field_beside_a_post_button_is_a_composer(self):
         field = el("", "TextField", editable=True, value="March summary", y=.80)
         post = el("Post comment", y=.80, x=.7)
-        self.assertTrue(K.composer_field(field, [field, post], ("March summary",)))
+        self.assertTrue(KS.composer_field(field, [field, post], ("March summary",)))
         self.assertFalse(contract("Open the Budget Tracker doc.").check("SUBMIT", field, shot(field, post), "CloudDocs").allowed)
 
 
@@ -513,8 +558,8 @@ class ReceiptTests(unittest.TestCase):
         before = shot(el("Request $20 from Leo Chen", "StaticText"), control)
         c = self.ride(before, control, shot(el("Driver arriving", "StaticText")))
         self.assertFalse(c.items[0].receipts)
-        self.assertEqual(K.receipt_patterns("request_money", {"confirm"}), [K.RECEIPTS["request_money"]])
-        self.assertEqual(K.receipt_patterns("save", {"save"}), [])  # no rows of its own: the screen changing
+        self.assertEqual(KS.receipt_patterns("request_money", {"confirm"}), [KS.RECEIPTS["request_money"]])
+        self.assertEqual(KS.receipt_patterns("save", {"save"}), [])  # no rows of its own: the screen changing
 
     def test_follow_closes_and_a_second_tap_would_undo_it(self):
         c = contract("Follow Netflix.", item(app="LockedIn", what="Netflix", act="follow", quote="Follow Netflix"))
@@ -679,8 +724,8 @@ class TrashSwipeActionTests(unittest.TestCase):
         trash = el("trash", x=.82, y=.4, w=.18, h=.08)
         gate = c.check("TAP", trash, self.row(el("12-minute timer", "StaticText", y=.42), trash), "Clock")
         self.assertTrue(gate.allowed and gate.item is not None, gate.reason)
-        self.assertTrue(K.asks(gate.item))
-        self.assertEqual(K.approval_title(gate.item), "Delete 12-minute timer?")
+        self.assertTrue(KA.asks(gate.item))
+        self.assertEqual(KA.approval_title(gate.item), "Delete 12-minute timer?")
 
     def test_a_swipe_that_only_reveals_and_other_row_actions_are_unchanged(self):
         c = contract("Set a timer for 12 minutes.", self.TIMER)
@@ -803,7 +848,7 @@ class DoneGateTests(unittest.TestCase):
     def test_low_turn_fallback_accepts_and_names_unproven_actions_only(self):
         c = self.c()
         c.update([{"id": 4, "status": "found", "value": "$9.99"}], 1)
-        ok, _, answer = c.done_gate("Balance $9.99.", K.LOW_TURNS)
+        ok, _, answer = c.done_gate("Balance $9.99.", KS.LOW_TURNS)
         self.assertTrue(ok)
         self.assertIn("Not confirmed on screen: comment.", answer)
         self.assertNotIn("SplitPay balance", answer.split("Not confirmed")[1])
@@ -811,8 +856,8 @@ class DoneGateTests(unittest.TestCase):
     def test_an_item_reopened_too_often_stops_blocking(self):
         c = contract("What is the balance?", item(kind="REPORT", app="", what="balance", quote="What is the balance?"))
         c.update([{"id": 1, "status": "found", "value": "$77.00"}], 1)
-        results = [c.done_gate("Balance $77.00", 30)[0] for _ in range(K.MAX_REOPENS + 1)]
-        self.assertEqual(results, [False] * K.MAX_REOPENS + [True])
+        results = [c.done_gate("Balance $77.00", 30)[0] for _ in range(KS.MAX_REOPENS + 1)]
+        self.assertEqual(results, [False] * KS.MAX_REOPENS + [True])
 
     def test_conditional_commit_not_triggered_is_fine_when_marked(self):
         c = contract("If rain is forecast, message the group.",
@@ -948,6 +993,48 @@ class AgentLoopTests(unittest.TestCase):
         self.assertEqual(driver.actions, [])
         self.assertIn("frontier_refused", [e["event"] for e in events])
 
+    DELETES = ("In Notes, delete the notes Mobster QA loop A and Mobster QA loop B (these are test notes). "
+               "Delete nothing else.")
+    DELETE_ITEMS = [item(app="QuickChat", what="Mobster QA loop A", act="delete", quote="delete the notes"),
+                    item(kind="FORBID", app="QuickChat", what="any other note", act="delete",
+                         quote="Delete nothing else.")]
+
+    def test_delete_nothing_else_asks_for_the_named_delete(self):
+        # Real iPhone, 13 Oct: "…Delete nothing else." refused every delete, the named ones too, for 50 turns.
+        note = screen(Element("1", "Mobster QA loop A", "StaticText", (.1, .3, .6, .04)),
+                      Element("2", "Delete", "Button", (.8, .3, .1, .04)))
+        gone = screen(Element("3", "Notes", "StaticText", (.1, .1, .6, .04)))
+        self.REQ = self.DELETES
+        asked = []
+        driver, script = Driver([note, gone, gone]), Script([[("TAP", "Delete", None)], [("DONE", None, None)]],
+                                                            self.DELETE_ITEMS)
+        FrontierAgent(driver, script, apps={"com.example.chat": "QuickChat"}, emit=[].append, screenshots=False,
+                      settle_seconds=0, approve=lambda request: asked.append(request) or "approved").run(self.REQ)
+        self.assertEqual(driver.actions, [("TAP", "Delete", None)])
+        self.assertEqual(len(asked), 1, "the named delete went through the approval card")
+
+    def test_delete_nothing_else_still_refuses_other_deletes_and_stops_stuck(self):
+        other = screen(Element("1", "Groceries", "StaticText", (.1, .3, .6, .04)),
+                       Element("2", "Delete", "Button", (.8, .3, .1, .04)))
+        self.REQ = self.DELETES
+        driver, script, result, events = self.run_agent(
+            [other] * 12, [[("TAP", "Delete", None)]] * 10, items=self.DELETE_ITEMS)
+        self.assertEqual(driver.actions, [], "a delete of something the request doesn't name never reaches the phone")
+        self.assertEqual((result["status"], result["code"]), ("blocked", "stuck"))
+        self.assertIn("refused the same step 4 times", result["reason"])
+        self.assertEqual(script.usage["calls"], 4, "it stopped at the 4th refusal, not at the turn limit")
+        self.assertIn("frontier_stuck", [e["event"] for e in events])
+
+    def test_one_refusal_then_another_way_is_not_stuck(self):
+        feed = screen(Element("1", "Delete", "Button", (.8, .3, .1, .04)),
+                      Element("2", "Archive", "Button", (.8, .5, .1, .04)))
+        self.REQ = "Clean up my inbox but do not delete anything."
+        driver, _, result, _ = self.run_agent(
+            [feed] * 8, [[("TAP", "Delete", None)]] * 3 + [[("DONE", None, None)]] * 3,
+            items=[item(kind="FORBID", app="QuickChat", what="emails", act="delete", quote="do not delete anything")])
+        self.assertEqual(driver.actions, [])
+        self.assertNotEqual(result.get("code"), "stuck", "three refusals are not yet stuck")
+
     def test_without_a_contract_the_regex_guard_stays(self):
         feed = screen(Element("1", "Delete", "Button", (.8, .3, .1, .04)))
         driver, _, result, events = self.run_agent([feed] * 3, [[("TAP", "Delete", None)], [("DONE", None, None)],
@@ -984,8 +1071,8 @@ class InstallActTests(unittest.TestCase):
         _, gate = self.gate("Get")
         self.assertTrue(gate.allowed)
         self.assertEqual(gate.item.act, "install")
-        self.assertTrue(K.asks(gate.item))
-        self.assertEqual(K.approval_title(gate.item, gate.amount), "Install Duolingo from the App Store?")
+        self.assertTrue(KA.asks(gate.item))
+        self.assertEqual(KA.approval_title(gate.item, gate.amount), "Install Duolingo from the App Store?")
 
     def test_the_ads_get_button_is_refused(self):
         snapshot = self.SCREENS["page"]
@@ -1010,7 +1097,7 @@ class InstallActTests(unittest.TestCase):
         c = contract("Buy Things 3 on the App Store.", things)
         gate = c.check("TAP", snapshot.elements[1], snapshot, "App Store")
         self.assertTrue(gate.allowed)
-        self.assertEqual(K.approval_title(gate.item, gate.amount), "Buy Things 3 for $9.99?")
+        self.assertEqual(KA.approval_title(gate.item, gate.amount), "Buy Things 3 for $9.99?")
         bounded = contract("Buy Things 3 if it is under $5.", item(app="App Store", what="Things 3", act="install",
                                                                     quote="Buy Things 3", condition="under $5"))
         self.assertFalse(bounded.check("TAP", snapshot.elements[1], snapshot, "App Store").allowed)
@@ -1025,7 +1112,7 @@ class InstallActTests(unittest.TestCase):
 
     def test_the_plan_line_names_the_app(self):
         c = contract("Install Duolingo from the App Store.", self.DUOLINGO)
-        self.assertEqual(K.plan_line(c), "This task will install Duolingo.")
+        self.assertEqual(KA.plan_line(c), "This task will install Duolingo.")
 
     def test_in_a_compact_list_only_the_named_apps_own_get_is_served(self):
         # Rows .09 apart: the Get of the row above is as near Duolingo's name as Duolingo's own (review of #68:
@@ -1035,7 +1122,7 @@ class InstallActTests(unittest.TestCase):
             y = .30 + i * .09
             rows += [Element(str(10 + i), name, "StaticText", (.25, y, .45, .03)),
                      Element(str(20 + i), "Get", "Button", (.75, y, .18, .03))]
-        snapshot = Snapshot(rows, "", 400, 800, "synthetic_fixture", bundle_id=K.APP_STORE)
+        snapshot = Snapshot(rows, "", 400, 800, "synthetic_fixture", bundle_id=KS.APP_STORE)
         c = contract("Install Duolingo from the App Store.", self.DUOLINGO)
         for get, allowed in ((rows[1], False), (rows[3], True), (rows[5], False)):
             with self.subTest(row=get.rect[1]):
@@ -1052,7 +1139,7 @@ class InstallActTests(unittest.TestCase):
         c.observe(sheet, "App Store", 1)
         self.assertEqual(c.items[0].receipts, [])
         opened = Snapshot([page.elements[0], Element("2", "Open", "Button", get.rect)], "", 400, 800,
-                          "synthetic_fixture", bundle_id=K.APP_STORE)
+                          "synthetic_fixture", bundle_id=KS.APP_STORE)
         c.observe(opened, "App Store", 2)
         self.assertEqual([r["receipt"] for r in c.items[0].receipts], ["shown: open"])
 
@@ -1072,7 +1159,7 @@ class AbsenceProofTests(unittest.TestCase):
                            "synthetic_fixture"), "Calendar", 0)
         c.update([{"id": 1, "status": "found", "value": "No events tomorrow"}], 1)
         self.assertFalse(c.proof(c.items[0])[0])
-        self.assertEqual(K.MAX_REOPENS, 1)
+        self.assertEqual(KS.MAX_REOPENS, 1)
         self.assertFalse(c.done_gate("Nothing.", 30)[0])
         self.assertTrue(c.done_gate("Nothing.", 30)[0])  # the second DONE stands, and says what was not shown
         self.assertEqual([i.id for i in c.unproven()], [1])

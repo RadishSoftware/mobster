@@ -14,7 +14,7 @@ Mobster for Mac is the product built on this loop. It sets up your iPhone, shows
 | `mobile_agent/contract.py` | What the task asked for, and the proof on screen that each part was done |
 | `mobile_agent/engines.py` | The configuration the app and the benchmarks share (model, reasoning, limits), and the result summary |
 | `mobile_agent/drivers.py`, `state.py` | WebDriverAgent's HTTP API: the accessibility tree as a snapshot, then taps, typing and swipes |
-| `mobile_agent/transport.py`, `gemini.py` | The transport under the model calls. The Claude, OpenAI and Gemini clients are in `frontier.py` |
+| `mobile_agent/transport.py`, `gemini.py` | The transport under the model calls. The Claude, OpenAI and Gemini clients and the price table are in `model_clients.py` |
 | `mobile_agent/journal.py`, `task_policy.py`, `effect_ledger.py`, `secret_filter.py`, `system_dialogs.py`, `permissions/` | The safety core: the device lock and run journal, what counts as a send, buy, post or delete, the duplicate-action guard, secret masking, iOS's own prompts, the approval gate |
 | `mobile_agent/harness_api.py` | The seam to Mobster for Mac: registries and hooks, empty in this repository |
 | `examples/reference_loop.py` | The loop's API in the order a run uses it |

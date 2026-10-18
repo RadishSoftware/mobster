@@ -4,7 +4,7 @@
   authorised by the Codex CLI's own sign-in (~/.codex/auth.json, read only; the CLI refreshes it). It is the same
   request the coding-plan branch's ``ai_plans/codex_chat.CodexPlanChat`` sends, cut to what a benchmark needs:
   one forced ``step`` function with a strict schema, images inline, a session-wide prompt cache key. A model on the
-  plan costs nothing per call, so ``frontier.cost_usd`` prices it at 0 ("chatgpt:" prefix in ``model``).
+  plan costs nothing per call, so ``model_clients.cost_usd`` prices it at 0 ("chatgpt:" prefix in ``model``).
 - ``ClaudeCLIChat`` ("claude-cli:<model>"): one headless ``claude -p`` process per call (Claude Code on the
   operator's plan), structured output through ``--json-schema``, images through stream-json input. A process
   start costs seconds (8.3 s for a trivial call, 2026-10-09), so it serves offline agreement gates, not timing.
@@ -62,6 +62,7 @@ def _responses_input(messages):
 class CodexCLIChat:
     provider = "chatgpt"
     per_call_reasoning = True
+    per_call_strict = True
     cancelled = None
 
     def __init__(self, model, *, reasoning="low", host=CODEX_HOST):
@@ -76,7 +77,7 @@ class CodexCLIChat:
         self.on_first_action = None  # streaming dispatch hook (unused here)
 
     def body(self, messages, schema, reasoning=None, strict=True):
-        from ...frontier import TOOL_DESCRIPTION
+        from ...model_clients import TOOL_DESCRIPTION
         instructions, items = _responses_input(messages)
         effort = reasoning or self.reasoning
         if effort == "none":
@@ -186,7 +187,7 @@ class ClaudeCLIChat:
         self.last_api_ms = None
 
     def complete(self, messages, schema, *, timeout=120, reasoning=None):
-        from ...frontier import anthropic_schema
+        from ...model_clients import anthropic_schema
         system = "\n\n".join(m["content"] if isinstance(m["content"], str) else
                              "".join(p.get("text", "") for p in m["content"]) for m in messages if m["role"] == "system")
         blocks = []

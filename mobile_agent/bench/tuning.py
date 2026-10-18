@@ -81,20 +81,6 @@ def append_ledger(path, record, lock=threading.Lock()):
             handle.write(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n")
 
 
-def read_ledger(path):
-    rows = []
-    try:
-        lines = pathlib.Path(path).read_text(encoding="utf-8").splitlines()
-    except OSError:
-        return rows
-    for line in lines:
-        try:
-            rows.append(json.loads(line))
-        except ValueError:
-            pass
-    return rows
-
-
 # -- the ABBA schedule ---------------------------------------------------------------------------
 
 def abba(arms, runs):
@@ -197,7 +183,7 @@ def alive(pid):
 
 def stop_runners(udids):
     try:
-        from .sim_wda import runner_pids, _signal
+        from ..sim.wda import runner_pids, _signal
     except ImportError:  # the open-source tree starts no simulator runners, so it has none to stop
         return
     for udid in udids:
@@ -249,7 +235,7 @@ def parse_sims(spec):
 
 def boot(sims, xctestrun, log_dir):
     """Boot each simulator headless (``simctl boot`` opens no window) and start its WDA runner."""
-    from .sim_wda import SimulatorWDA, ready
+    from ..sim.wda import SimulatorWDA, ready
     for udid, _, _ in sims:
         subprocess.run(["xcrun", "simctl", "boot", udid], capture_output=True)
     for udid, _, _ in sims:
@@ -537,7 +523,7 @@ def _load_envs(paths):
 
 
 def _client(model, reasoning):
-    from ..frontier import chat_client
+    from ..model_clients import chat_client
     from .stream_timing import timed
     return timed(chat_client(model, reasoning=reasoning))
 

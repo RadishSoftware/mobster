@@ -52,6 +52,34 @@ class CheckpointTests(unittest.TestCase):
         with self.assertRaises(FileExistsError):
             C.save("U", self.apps, self.root / "cp" / "seed")
 
+    def test_a_different_app_manifest_is_refused_before_data_is_cleared(self):
+        folder = self.root / "cp" / "seed"
+        C.save("U", self.apps, folder)
+        state = self.containers["com.example.alpha"] / "Documents" / "state.json"
+        state.write_text("current data")
+        with mock.patch.object(C, "terminate") as terminate, self.assertRaisesRegex(ValueError, "metadata"):
+            C.restore("U", {"alpha": "com.example.alpha"}, folder)
+        terminate.assert_not_called()
+        self.assertEqual(state.read_text(), "current data")
+
+    def test_a_corrupt_checkpoint_is_refused_before_current_data_is_changed(self):
+        for damage in ("changed", "missing"):
+            with self.subTest(damage=damage):
+                folder = self.root / "cp" / damage
+                C.save("U", self.apps, folder)
+                state = self.containers["com.example.alpha"] / "Documents" / "state.json"
+                state.write_text("current data")
+                saved = folder / "apps" / "com.example.alpha" / "Documents" / "state.json"
+                if damage == "changed":
+                    saved.write_text("damaged snapshot")
+                else:
+                    saved.unlink()
+                with mock.patch.object(C, "terminate") as terminate:
+                    _, ok = C.restore("U", self.apps, folder)
+                self.assertFalse(ok)
+                terminate.assert_not_called()
+                self.assertEqual(state.read_text(), "current data")
+
     def test_only_simulators_with_an_allowed_name_are_touched(self):
         with mock.patch.object(C, "device_name", return_value="iOSWorld Mobster 2"):
             with self.assertRaises(SystemExit):

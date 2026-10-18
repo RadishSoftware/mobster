@@ -1,6 +1,6 @@
 """Time to first token for the benchmark's Claude calls: the same request, streamed, timed, reassembled.
 
-frontier.AnthropicChat asks for a whole reply, so a turn's latency cannot be split into waiting and
+model_clients.AnthropicChat asks for a whole reply, so a turn's latency cannot be split into waiting and
 generating. ``TimedAnthropicChat`` sends the identical request body with ``"stream": true`` over the same
 kept-alive connection, with the same 429/529 handling, reads the server-sent events and rebuilds the reply
 the non-streamed call returns (content blocks, stop reason, usage). The loop sees the same answer and the
@@ -20,7 +20,7 @@ import http.client
 import json
 import time
 
-from ..frontier import RATE_LIMIT_RETRIES, AnthropicChat, AnthropicError, error_text, pause
+from ..model_clients import RATE_LIMIT_RETRIES, AnthropicChat, AnthropicError, error_text, pause
 
 TIMING_KEYS = ("ttft_ms", "text_ttft_ms", "first_action_ms", "total_ms")
 ACTIONS_KEY = '"actions"'

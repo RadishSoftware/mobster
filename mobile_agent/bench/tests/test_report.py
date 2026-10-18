@@ -58,6 +58,18 @@ class CompareTests(unittest.TestCase):
 
 
 class RenderTests(unittest.TestCase):
+    def test_render_creates_output_parents_for_an_external_run(self):
+        with tempfile.TemporaryDirectory() as external, tempfile.TemporaryDirectory() as checkout:
+            run = write_run(external, records("mobster", 1, 5000))
+            out = Path(checkout) / "research" / "reports" / "bench.md"
+            self.assertFalse(out.parent.exists())
+
+            text = render(run, out)
+
+            self.assertEqual(out.read_text(), text)
+            self.assertIn("## Success rate", text)
+            self.assertTrue((run / "records.jsonl").exists())
+
     def test_render_has_every_section(self):
         with tempfile.TemporaryDirectory() as tmp:
             rows = records("mobster-smart", 1, 5000) + records("gemini-cu", .5, 20000, unsafe=1)

@@ -84,7 +84,7 @@ JUDGE = ("You grade a report an assistant wrote after watching short videos on a
 
 
 def judge(model, goal, items, report_md):
-    from ..frontier import chat_client
+    from ..model_clients import chat_client
     notes = "\n".join(f"- {(i.get('extract') or {}).get('summary') or ''}" for i in items.values()
                       if i.get("skip") is None and (i.get("extract") or {}).get("summary"))[:12000]
     schema = {"type": "object", "additionalProperties": False, "required": ["coverage", "insight", "why"],

@@ -37,7 +37,9 @@ RESUME_AFTER_SECONDS = 20
 # The history line the model sees after the guard unlocked the phone (never a frame of the keypad).
 UNLOCKED_LINE = "Mobster unlocked the iPhone"
 
-GUARD_CAUSES = ("preflight", "launch_failed", "lock_suspected", "resume", "sheet_suspected")
+# Why the phone guard stopped a run before it acted: a run result's ``stop_code``, a refused start's ``stop`` detail,
+# and ``mobster run``'s ``error_type`` name these. Each comes with one plain sentence (alerts.CODES) and none ever
+# carries a passcode, a code or a digit count.
 STOP_CODES = ("phone_locked", "unlock_declined", "passcode_failed", "face_id", "app_locked", "apple_confirmation",
               "unplugged", "keychain_locked", "blocked_app", "system_dialog")
 
@@ -63,7 +65,7 @@ class PhoneGuard(Protocol):
 class Prepared:
     title: Optional[str]       # approval question, or None when no approval is needed; never contains a secret
     state: object = None       # skill-private (e.g. the code, held in memory only)
-    remember: Optional[dict] = None  # the approval's "Don't ask again" (server.Run.request_approval), or None
+    remember: Optional[dict] = None  # the approval's "Don't ask again" (run.Run.request_approval), or None
 
 
 @dataclass(frozen=True)
@@ -91,7 +93,7 @@ class SkillContext:
     emit: Callable[[dict], None]
     guard: Optional[PhoneGuard] = None
     # Seam S7 (optional; the defaults keep every caller working):
-    approve: Optional[Callable[[dict], str]] = None   # the frontier's approver, or None; RUN_ROUTINE commit steps only
+    approve: Optional[Callable[[dict], str]] = None   # the frontier's approver, or None; replayed commit steps only
     clarify: Optional[Callable[[dict], str]] = None   # run.request_approval limited to kind "clarify"; others raise
     run: Optional[object] = None                      # the run's harness_api.RunContext, or None (benchmarks, tests)
     # A skill that needs the user's OK returns Prepared(title=...) from prepare(): the frontier's existing path asks
@@ -129,10 +131,12 @@ def safe_check(guard, driver, cause):
         return None
     try:
         verdict = guard.check(driver, cause=cause)
+        if isinstance(verdict, GuardVerdict) and verdict.state in ("ready", "unlocked", "stop"):
+            return verdict
     except Exception:
-        return GuardVerdict("stop", "phone_locked", "Mobster couldn't check whether your iPhone is unlocked, so it "
-                                                    "stopped.")
-    return verdict if isinstance(verdict, GuardVerdict) else READY
+        pass
+    return GuardVerdict("stop", "phone_locked", "Mobster couldn't check whether your iPhone is unlocked, so it "
+                                                "stopped.")
 
 
 def safe_attached(guard):
@@ -153,6 +157,6 @@ def safe_allows(guard, bundle_id):
     if not callable(allows):
         return True
     try:
-        return bool(allows(bundle_id))
+        return allows(bundle_id) is True
     except Exception:
-        return True
+        return False

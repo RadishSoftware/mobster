@@ -4,7 +4,7 @@ answer was 4,017)."""
 import unittest
 from types import SimpleNamespace
 
-from mobile_agent.engines import lead_sentence, summarize
+from mobile_agent.smart_result import lead_sentence, summarize
 
 SCHEMA = {"type": "object", "properties": {"result": {"type": "string"}}, "required": ["result"],
           "additionalProperties": False}

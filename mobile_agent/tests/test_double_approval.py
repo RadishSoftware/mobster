@@ -12,6 +12,8 @@ from pathlib import Path
 from unittest.mock import patch
 
 from mobile_agent import engines
+from mobile_agent import smart_result
+from mobile_agent import smart_events
 from mobile_agent.frontier import prompt_text
 from mobile_agent.state import Element, Snapshot
 
@@ -86,14 +88,14 @@ class Model:
 def run(driver, steps, approve, data):
     out = []
     model = Model(steps, data["items"])
-    events = engines.SmartEvents(out.append, driver=driver, frame=lambda: None, apps={data["bundle"]: "Messages"})
+    events = smart_events.SmartEvents(out.append, driver=driver, frame=lambda: None, apps={data["bundle"]: "Messages"})
     with patch.dict(os.environ, dict(CLEAN), clear=True):
         agent = engines.build_frontier(driver, model, apps=events.apps, emit=events, config=QUICK,
                                        approve=events.approving(approve), skills=())
         events.agent = agent
         result = agent.run(data["request"])
         events.finish()
-        summary = engines.summarize(result, agent, events, request=data["request"])
+        summary = smart_result.summarize(result, agent, events, request=data["request"])
     return result, summary, out, model
 
 
@@ -172,7 +174,7 @@ class KateBellReplayTests(unittest.TestCase):
         driver = Messages(snapshots(self.DATA))
         out = []
         model = Model(list(self.STEPS), self.DATA["items"])
-        events = engines.SmartEvents(out.append, driver=driver, frame=lambda: None, apps={"com.apple.MobileSMS": "Messages"})
+        events = smart_events.SmartEvents(out.append, driver=driver, frame=lambda: None, apps={"com.apple.MobileSMS": "Messages"})
         with patch.dict(os.environ, dict(CLEAN), clear=True):
             agent = engines.build_frontier(driver, model, apps=events.apps, emit=events, config=QUICK, skills=())
             events.agent = agent

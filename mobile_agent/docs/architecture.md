@@ -29,7 +29,7 @@ request ──► task contract (contract.compile_contract, while the first scre
    act (driver) → settle → record outcome, receipts and the trace ───────────┘
         │  (on DONE)
         ▼
-   DONE gate (Contract.done_gate) → result (engines.summarize)
+   DONE gate (Contract.done_gate) → result (smart_result.summarize)
 ```
 
 ## Contents
@@ -75,14 +75,20 @@ Every task ends in `frontier.FrontierAgent.run`, built by `engines.build_frontie
 `engines.py` is the one place the engine is configured. `SmartConfig` (frozen) holds the model,
 reasoning, `max_steps` (50), `max_seconds` (900), screenshots and `settle_seconds`;
 `engines.smart_model` reads `MOBSTER_SMART_MODEL` and `MOBSTER_SMART_PROVIDER`, the one thing a user
-may change. `engines.SmartEvents` turns the loop's trace into the contract events the dashboard
-renders ([engine-contract.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/engine-contract.md)), and `engines.meter` puts every model call in the
+may change. `smart_events.SmartEvents` turns the loop's trace into the contract events the dashboard
+renders ([engine-contract.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/engine-contract.md)), and `costs.meter` puts every model call in the
 usage ledger.
 
 `compose.py` holds what `serve` and `run` share: `build_target_driver` selects the driver and
 `close_all` shuts everything down without raising. Framework errors share the
-`errors.MobsterError` root, and no subclass is retried by default. `Cancelled` (operator stop) is control flow: it is deliberately not a `MobsterError` and is
-never retried.
+`errors.MobsterError` root, and no subclass is retried by default.
+
+`harness_api.ListenerQueue` delivers listener calls on one thread in FIFO order.
+It drops ordinary events when 10,000 calls are pending and coalesces checkpoints
+per run. Run creation, completion and publication callbacks always enter that
+FIFO, so a slow listener cannot make publication overtake completion. Closing
+the queue refuses new work and reports whether accepted lifecycle calls and
+callbacks have drained before their services and journal can close.
 
 ## Perception
 
@@ -96,8 +102,7 @@ the `DRIVERS` registry:
 | `WDA` | WebDriverAgent over USB (`iproxy`, API port 8100, MJPEG port 9100) | the supported path; Mobster for Mac sets it up ([Device setup](https://docs.mobster.dev/device-setup)) |
 
 `extensions.py` is the one place optional code plugs in: an extension package may register
-further drivers (`drivers.register_driver`), snapshot sources with their traits
-(`state.SOURCE_TRAITS`), command-line flags and a server runtime. The public package ships
+further drivers (`drivers.register_driver`), snapshot sources, command-line flags and a server runtime. The public package ships
 none, and the agent behaves the same without one.
 
 Every driver re-checks its target with `grounded_target`, even when called outside the agent
@@ -137,9 +142,6 @@ field.
   is on screen, and `"parked"` when a Keyboard node sits off screen. A parked keyboard means a
   hardware keyboard, as on simulators, and keystrokes still reach the focused field.
   `WDA._await_keyboard` accepts either.
-- **Off-screen evidence** (`state.OffscreenNode`, `Snapshot.offscreen_evidence`). Labelled
-  nodes outside the viewport are kept as read-only evidence. WebKit exposes the whole page, so
-  a Safari article can be read without scrolling. These nodes are never tap targets.
 - **System-overlay recovery.** On iOS 26.0.1, WDA sometimes resolves the active app to an
   invisible system overlay, and source reads fail after about 8 s. A failed read is retried
   once with WDA's default active application set to the app Mobster opened. The hint is
@@ -151,7 +153,7 @@ field.
 locators. `content_fingerprint` leaves out the revision. The driver uses the strict form to refuse
 a stale coordinate tap (`WDA._check_current`, `stale_revision`), and the agent uses the content
 form to tell whether an action changed anything and whether the screen moved while the model
-thought. `same_screen` lets a visual fingerprint refine AX identity, but never replace it.
+thought.
 
 ### Settling
 
@@ -169,12 +171,12 @@ A read taken mid-animation is not a decision input.
   premature settles. `MOBSTER_FRAME_CLOCK_LOG` and `MOBSTER_FRAME_CLOCK_TRACE` log its decisions.
 - Scrolls use a "glide", a W3C drag with a decelerating end that moves an exact distance with
   no fling (`WDA_GLIDE_SEGMENTS`, `WDA._glide_ok`). `MOBSTER_GLIDE=0` turns it off.
-  `drivers.clear_stroke_start` moves a swipe's start off sliders and switches.
+  `wda_gestures.clear_stroke_start` moves a swipe's start off sliders and switches.
 
 ## Mobster's agent
 
 `frontier.FrontierAgent` (module docstring in `frontier.py`) runs the loop. Its model client comes
-from `frontier.chat_client`: `AnthropicChat` for `claude-*`, `OpenAIChat` for OpenAI models,
+from `model_clients.chat_client`: `AnthropicChat` for `claude-*`, `OpenAIChat` for OpenAI models,
 `GeminiChat` for `gemini-*`, or a provider saved in Settings › Models.
 
 - **Input.** Each call sees the request, the allowed apps, a cached log of what each earlier
@@ -199,9 +201,9 @@ from `frontier.chat_client`: `AnthropicChat` for `claude-*`, `OpenAIChat` for Op
 - **Saved programs** (`learned/programs.py`, `MOBSTER_PROGRAMS`). A request with the same words as
   one that ended done, with other values in its blanks, repeats that run
   (`FrontierAgent(saved_program=...)`) through the same per-action path: guards, the contract's
-  commit check, approvals and the journal. Parts of saved programs (`program_parts`) may run at a
+  commit check, approvals and the journal. Parts of saved programs (`program_parts`, `learned/parts.py`) may run at a
   planning point. The record and replay engine is `replay_core/`.
-- **Cost cap.** `frontier.cost_usd` prices usage from the `PRICES` list-price table, and the run
+- **Cost cap.** `model_clients.cost_usd` prices usage from the `PRICES` list-price table, and the run
   stops at `max_cost_usd` (status `spend_cap`). `bench/iosworld.py` scales each task's cap with
   the apps it spans, at most `MAX_TASK_COST_USD` ($0.60; `task_cost_cap`).
 
@@ -216,7 +218,7 @@ feedback and appears in the trace (`frontier_refused`).
 | Requested act | `frontier.guard`, `task_policy.requested_by` | A tap on a control whose first `GUARD_WORDS` (4) words name a commit (`task_policy.COMMIT_CONTROL`: send, pay, buy, delete, post, share, follow, call…) is refused unless the request asks for that act ("Delete" when the user asked to archive). Prohibition sentences don't count (`asked_part`). Opening a share sheet (`SHEET_OPENERS`) commits nothing. |
 | Declared commit | `contract.Contract.check` | A commit passes only when it belongs to an open COMMIT item of the current app, within the item's amount bounds, with the typed text a message needs and the object a follow names on screen. A closed commit refuses repeats. |
 | Repeats and loops | `REPEAT_ACT_FEEDBACK`, `LOOP_WINDOW`, `LOOP_REPEATS` | Typed text repeated on the screen its typing left is refused at once. Any other action repeated on the screen it was made on (it did nothing) is refused the second time. A third identical action on the same screen within the last `LOOP_WINDOW` (12) is refused as a loop. Swipes, `DISMISS` and keypad keys are exempt, and working down a list (another "Pay" on a changed screen) is not a repeat. |
-| Approvals | `FrontierAgent._approval`, `permissions.PermissionGate`, `contract.asks` | The run's permission mode (`ask_all`, `ask_important`, `dont_ask`) and the person's "Don't ask again" rules decide what asks. A declared commit asks in `ask_important`. A one-time code the agent types asks in every mode (`floor_approve`). No answer is no action. iOS's own privacy prompts ask in every mode (`system_dialogs.py`). |
+| Approvals | `FrontierAgent._approval`, `permissions.PermissionGate`, `contract_asks.asks` | The run's permission mode (`ask_all`, `ask_important`, `dont_ask`) and the person's "Don't ask again" rules decide what asks. A declared commit asks in `ask_important`. A one-time code the agent types asks in every mode (`floor_approve`). No answer is no action. iOS's own privacy prompts ask in every mode (`system_dialogs.py`). |
 | Phone guard | `agent_hooks.PhoneGuard`, `lockscreen.guard_for` | Asked at preflight, when a launch fails, when a lock is suspected and after a long wait for the person. A locked or unplugged phone stops the run (`GuardStop`) with a code (`phone_locked`, `unplugged`…). |
 | Fresh screen | `frontier._Verify`, `WDA._check_current` | One source read runs on a worker thread while the model thinks. When it differs from the screen the prompt saw, the chunk acts on the newer read and re-finds its targets by label. Reads older than `WDA_FRESH_SECONDS` are re-read before a coordinate tap. |
 | Secrets | `FrontierAgent._mask`, `secret_filter.redact` | A typed code or a skill's secret never reaches the trace, the journal or the answer. |
@@ -240,10 +242,10 @@ not sent again.
 - **DONE gate** (`Contract.done_gate`). DONE is accepted when every item has its receipt, or with
   at most `LOW_TURNS` (3) turns left, when the answer names what is unproven. A missing receipt
   reopens its item with a one-line reason, at most `MAX_REOPENS` times an item.
-- **Result** (`engines.summarize`). The outcome is `done` when every COMMIT, WRITE and REPORT item
+- **Result** (`smart_result.summarize`). The outcome is `done` when every COMMIT, WRITE and REPORT item
   is proven, `check` when one is unproven, else `couldnt_finish`, `stopped` or `declined`
-  (`engines.outcome_of`). `independently_verified` is true only for `done`. A requested output
-  format or JSON schema is filled from the answer (`engines.structure`, `structure_auto`).
+  (`smart_result.outcome_of`). `independently_verified` is true only for `done`. A requested output
+  format or JSON schema is filled from the answer (`smart_result.structure`, `structure_auto`).
 
 ## How a run flows end to end
 
@@ -256,6 +258,10 @@ not sent again.
    `prepare_wda_phone` asks the phone guard, refuses a locked phone and clears overlays. The app
    is brought forward. Pre-run hooks (`harness_api.pre_runs`) may answer from an earlier report
    or hand the loop a saved program.
+   A hook that runs with the phone and raises may already have acted: the run ends as
+   `completion_not_confirmed` with `code: outcome_unknown` and `actions_may_have_run`, and no
+   later hook and no model call follows. A hook marked `before_phone` has no phone, so its
+   failure is logged and the run goes on.
 3. **Contract.** The agent compiles the task contract while it reads the first screen.
 4. **Step loop** (up to `max_steps` turns):
    - observe a settled screen and record it in the contract;
@@ -265,7 +271,7 @@ not sent again.
      check, then the driver;
    - settle and record the outcome (`frontier_action`), the receipts and the trace.
 5. **Completion.** On DONE the gate runs; a missing receipt reopens its item and the loop goes on.
-6. **Finish.** `engines.summarize` builds the result, and the latency trace is emitted
+6. **Finish.** `smart_result.summarize` builds the result, and the latency trace is emitted
    (`latency_trace.Trace`). The server captures a final preview, closes its clients and releases
    the lease. Interrupted runs are marked `interrupted` on restart and never resumed
    automatically.
@@ -298,11 +304,11 @@ Keys and switches are read from the environment, or from a private env file pass
 
 | variable | used by | meaning |
 | --- | --- | --- |
-| `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` | `engines.smart_key`, `frontier.AnthropicChat`, `frontier.OpenAIChat` | the key Mobster's agent runs on |
+| `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` | `engines.smart_key`, `model_clients.AnthropicChat`, `model_clients.OpenAIChat` | the key Mobster's agent runs on |
 | `MOBSTER_SMART_MODEL`, `MOBSTER_SMART_PROVIDER` | `engines.smart_model` | the model, and which provider goes first when several are saved |
-| `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION` | `frontier.GeminiChat` | Gemini on Vertex through your own `gcloud` login; set the project to `<your-project-id>` (location defaults to `global`) |
+| `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION` | `model_clients.GeminiChat` | Gemini on Vertex through your own `gcloud` login; set the project to `<your-project-id>` (location defaults to `global`) |
 | `MOBSTER_ENABLE_LIVE`, `MOBSTER_PERMISSION_MODE`, `MOBSTER_ASK_BEFORE_ACTING` | `__main__` (`serve`), `setup_service`, `permissions.policy` | saved live-run gate for `serve`; the permission mode (`MOBSTER_ASK_BEFORE_ACTING=0` is the older name for `dont_ask`) |
-| `MOBSTER_PROGRAMS` | `learned/programs.py` | saved programs: on for runs from the Mac app and the API, `on` or `off` for every origin |
+| `MOBSTER_PROGRAMS` | `learned/programs.py` | saved programs: on for runs from the Mac app, the API, MCP and Remote, `on` or `off` for every origin |
 | `MOBSTER_FRAME_CLOCK_LOG`, `MOBSTER_FRAME_CLOCK_TRACE` | `frame_clock`, `drivers` | pixel settle diagnostics |
 | `MOBSTER_GLIDE` | `drivers.WDA._glide_ok` | `0` turns exact-distance scrolling off |
 | `MOBSTER_HEDGE`, `MOBSTER_HEDGE_RATIO` | `hedge` | `0` turns hedged requests off; the ratio sets their budget |
@@ -336,7 +342,6 @@ Every number below is from a dated internal run report; none is a new measuremen
 ## Related documents
 
 - [engine-contract.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/engine-contract.md): the events and result the engine emits.
-- [adaptive-architecture.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/adaptive-architecture.md): the research-backed adaptation plan.
 - [Device setup](https://docs.mobster.dev/device-setup) and [setup-api.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/setup-api.md): device setup and the local API.
 - [running.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/running.md) and [benchmarks.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/benchmarks.md): commands, configuration and
   both benchmarks.

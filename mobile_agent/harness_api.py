@@ -22,33 +22,45 @@ import logging
 import queue
 import re
 import threading
+import time
 from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Callable, Mapping, Optional, Protocol, Sequence
 
 log = logging.getLogger("mobster.harness_api")
 
-ORIGINS = ("app", "tui", "cli", "mcp", "workflow", "schedule", "api", "remote")
+ORIGINS = ("app", "tui", "cli", "mcp", "workflow", "schedule", "api", "remote", "hook", "trigger", "console")
 INTERACTIVE = frozenset({"app", "tui", "cli"})          # a person is watching and can answer
-# Runs an agent outside Mobster started (MCP here, Mobster Remote from anywhere): they use the apps the person lets
-# outside agents use and always ask before acting (permissions.policy.OUTSIDE_ORIGINS, the same set).
-UNATTENDED_ORIGINS = frozenset({"mcp", "remote"})
-# Runs that ask before acting whatever Ask before acting says, with the checks bypass off (Mobster Remote).
-FORCED_ASK_ORIGINS = frozenset({"remote"})
+# Runs an agent outside Mobster started (MCP here, Mobster Remote from anywhere, a workflow's webhook URL, a team
+# member from the console): they use the apps the person lets outside agents use and always ask before acting
+# (permissions.policy.OUTSIDE_ORIGINS also holds "trigger": a notification trigger's task).
+UNATTENDED_ORIGINS = frozenset({"mcp", "remote", "hook", "console"})
+# Runs that ask before acting whatever Ask before acting says, with the checks bypass off (Mobster Remote, a workflow
+# another tool started through its webhook URL: outlets/hooks.py, a task a notification trigger starts: its text
+# came from the person, but the moment it runs came from a notification, and a team member's run from the console).
+FORCED_ASK_ORIGINS = frozenset({"remote", "hook", "trigger", "console"})
+# Origins only a track's own client may claim (register_origin): X-Mobster-Origin names one only with the proof the
+# track checks, and every run of one is admitted by the track. With no track registered for it, it is refused.
+CLAIMED_ORIGINS = frozenset({"console"})
 # Skills a run from these origins is never offered: a Remote run doesn't read Notification Center, where codes are,
 # and no outside agent's run uses the person's connected services (CALL_TOOL, track connectors). It applies to the
 # default skills and to every registered tool.
 WITHHELD_SKILLS = MappingProxyType({"remote": frozenset({"READ_NOTIFICATIONS", "CALL_TOOL"}),
-                                    "mcp": frozenset({"CALL_TOOL"})})
+                                    "hook": frozenset({"READ_NOTIFICATIONS", "CALL_TOOL"}),
+                                    "console": frozenset({"READ_NOTIFICATIONS", "CALL_TOOL"}),
+                                    "mcp": frozenset({"CALL_TOOL"}),
+                                    "trigger": frozenset({"CALL_TOOL"})})
 
 
 def steer_sources(origin):
-    """Who may send a message to a run of ``origin`` (server.Run.steer, and threads' answers): a run an agent started
+    """Who may send a message to a run of ``origin`` (run.Run.steer, and threads' answers): a run an agent started
     from outside the Mac app hears only that surface and the Mac app; any other run never hears MCP or Remote."""
     if origin == "mcp":
         return ("mcp", "app")
     if origin == "remote":
         return ("remote", "app")
+    if origin in ("hook", "console"):
+        return ("app",)
     return ("app", "tui", "cli", "voice")
 
 
@@ -115,15 +127,17 @@ class InitialState:           # picking up a run, and a routine's hand-off to th
     steps_used: int = 0
     cost_usd: float = 0.0
     reason: str = ""          # why this state exists ("picked up after the phone disconnected")
+    held_acts: tuple = ()     # acts (send_message, post...) an earlier run may already have done: each asks again,
+                              # with "it may have gone through", in every mode (frontier UNKNOWN_REASON)
 
 
 @dataclass(frozen=True)
 class PreRun:
-    result: Optional[dict] = None              # the run is done; an engines.summarize-shaped result
+    result: Optional[dict] = None              # the run is done; a smart_result.summarize-shaped result
     handoff: Optional[InitialState] = None     # go on live from here
     program: Any = None                        # go on live with this saved program (learned/programs.Matched), or a
                                                # function (client, request) -> Matched | None the run calls first
-    parts: Any = None                          # the run's parts of saved programs (learned/programs.Parts): the live
+    parts: Any = None                          # the run's parts of saved programs (learned/parts.Parts): the live
                                                # loop may run one at a planning point; with any of the above
 
 
@@ -139,7 +153,7 @@ class StepRecord:                              # one executed agent action, for 
     screen: str                                # structural signature of the screen before (replay.py's rule)
     changed: bool
     approval: Optional[str]                    # None | "approved" | "redirected": asked right before this action
-    commit: Optional[str]                      # a contract.ASK_ACTS act, or None (commit_act below)
+    commit: Optional[str]                      # a contract_asks.ASK_ACTS act, or None (commit_act below)
     shape: tuple = ()                          # the screen before as hashed role/label pairs (replay_core.path
                                                # screen_shape): a partial match with no screen text kept
 
@@ -150,49 +164,9 @@ class RunListener(Protocol):                   # every method optional; exceptio
     def on_step(self, run, record: StepRecord) -> None: ...
     def on_checkpoint(self, run, state: dict) -> None: ...                 # end of each Smart turn (S7)
     def on_finished(self, run, summary: dict, private: dict) -> None: ...
-        # private: {"notes","plan","contract"} (contract: the task contract's items as dicts), masked; core never
+        # private: {"notes","plan","contract","screen"} (contract: the task contract's items as dicts; screen:
+        # {"hash","shape","app"} of the screen the last action left, hashes with no text, or None), masked; core never
         # journals it; a listener that stores any of it runs secret_filter.redact first (S2.1)
-
-
-# -- trajectories: procedural memory, shared by memory (routines) and testing (cached steps) ------------------------
-
-@dataclass(frozen=True)
-class TrajectoryStep:
-    op: str                                    # TAP|LONG_PRESS|TYPE|SET_TEXT|TYPE_SUBMIT|SUBMIT|SWIPE_*|LAUNCH_APP|HOME|DISMISS|WAIT
-    app: Optional[str]
-    target: Optional[dict]                     # as StepRecord.target
-    text: Optional[str]                        # a literal, or "{param}" placeholders only
-    screen: str
-    expect: Optional[dict] = None              # post-condition: {"changed": true} | {"visible": {...selector}}
-    commit: Optional[str] = None               # a contract.ASK_ACTS act, or None; replay asks when commit_act(...) is not None
-
-
-@dataclass(frozen=True)
-class Trajectory:
-    version: int
-    request: str
-    params: Mapping[str, str]                  # name -> description
-    steps: tuple                               # of TrajectoryStep, at most 60
-    source_run: Optional[str]
-    device_kind: Optional[str]
-    created_at: float
-
-
-@dataclass(frozen=True)
-class ReplayOutcome:
-    status: str                                # "done" | "handoff" | "stopped" | "declined"
-    index: int                                 # steps completed
-    reason: str
-    handoff: Optional[InitialState] = None
-
-
-class TrajectoryReplayer(Protocol):
-    def replay(self, trajectory: Trajectory, *, driver, params: Mapping[str, str],
-               approve: Optional[Callable[[dict], str]], emit: Callable[[dict], None],
-               cancelled: Callable[[], bool], guard=None) -> ReplayOutcome: ...
-        # approve: the frontier's own approver (SmartEvents.approving(run.request_approval)), or None when Ask
-        # before acting is off or in a benchmark: then a commit step is never replayed (handoff at that step).
-        # Testing's cached steps pass verify.runner.check_approver(manager), never run.request_approval.
 
 
 # -- registries (module-level; order ascending, then registration order) ------------------------------------------
@@ -207,13 +181,13 @@ class _Entry:
 
 _providers: list = []
 _tools: list = []
-_run_fields: dict = {}          # name -> (validate, public, owner)
+_run_fields: dict = {}          # name -> (validate, public, owner, model)
 _listeners: list = []
 _pre_runs: list = []
 _frontier_options: list = []
 _services: list = []
+_origins: dict = {}             # claimed origin -> (verify, admit, fields, owner)
 _thread_sink: list = []         # at most one (append, update, owner)
-_replayer: list = []            # at most one (replayer, owner)
 _seq = [0]
 _owner = [None]                 # the track whose register() is running (tracks._staged)
 _disabled: set = set()          # tracks whose registrations are off (a newer schema, a failed migration)
@@ -250,17 +224,62 @@ def register_tool(factory: Callable[[RunContext], Optional[Any]], *, order: int)
     _tools.append(_next(order, factory))
 
 
-def register_run_field(name: str, validate: Callable[[Any, Any], Any], *, public: bool = True) -> None:
+def register_run_field(name: str, validate: Callable[[Any, Any], Any], *, public: bool = True,
+                       model: bool = True) -> None:
     """``name``: a camelCase body field of POST /api/runs (and Runtime.create(extras=)); ``validate(value,
     runtime)`` -> the clean value, or raise ValueError(a sentence). Duplicates and core field names raise. Part of
-    the idempotency fingerprint. ``public=False`` keeps it out of Run.public() and the journal."""
+    the idempotency fingerprint. ``public=False`` keeps it out of Run.public() and the journal. ``model=False``: a
+    run with this field calls no model (its pre-run hook ends the run), so it needs no key, asks no plan question and
+    never goes to a coding-agent engine (``calls_no_model``)."""
     if not isinstance(name, str) or not RUN_FIELD.fullmatch(name):
         raise ValueError("A run field's name is camelCase, 2 to 32 characters")
     if name in CORE_FIELDS or name in _run_fields:
         raise ValueError(f"The run field {name} is already registered")
     if not callable(validate):
         raise ValueError("A run field needs a validate(value, runtime) function")
-    _run_fields[name] = (validate, bool(public), _owner[0])
+    _run_fields[name] = (validate, bool(public), _owner[0], bool(model))
+
+
+@dataclass(frozen=True)
+class Admission:
+    """What a claimed origin's track allows one run (register_origin's ``admit``): ``apps``, the app bundles it may
+    use (intersected with the phone's own list; None: no further limit); ``cap_usd``, a lower spending stop;
+    ``ask_floor``, ``ask_all`` to make the run ask before every change; ``long_tasks`` False: never a long task;
+    ``queue`` False: refused, never queued, when the phone is busy (it is admitted again only as it starts now)."""
+    apps: Optional[frozenset] = None
+    cap_usd: Optional[float] = None
+    ask_floor: Optional[str] = None
+    long_tasks: bool = True
+    queue: bool = True
+
+
+def register_origin(origin: str, *, verify: Callable[[Any], Optional[Mapping[str, Any]]],
+                    admit: Callable[..., Admission], fields: Sequence[str]) -> None:
+    """``origin`` (one of CLAIMED_ORIGINS) is claimed only with this track's proof. ``verify(headers)`` -> the run
+    fields every run from that request carries (``fields``, run fields this track registered), or None to refuse the
+    request. ``admit(runtime, *, extras, phone, engine)`` -> an Admission for one run of that origin, or raises
+    APIError: Runtime.create asks it for every such run, after the phone is chosen. A request that names one of
+    ``fields`` itself is refused: only ``verify`` sets them."""
+    if origin not in CLAIMED_ORIGINS:
+        raise ValueError(f"{origin} isn't an origin a track may claim")
+    if origin in _origins:
+        raise ValueError(f"The origin {origin} is already claimed")
+    if not callable(verify) or not callable(admit):
+        raise ValueError("A claimed origin needs verify(headers) and admit(runtime, ...)")
+    _origins[origin] = (verify, admit, frozenset(fields), _owner[0])
+
+
+def origin_claim(origin: str):
+    """(verify, admit, fields) for a claimed origin whose track is on, else None (then the origin is refused)."""
+    entry = _origins.get(origin)
+    if entry is None or entry[3] in _disabled:
+        return None
+    return entry[:3]
+
+
+def claimed_fields() -> frozenset:
+    """Run fields only a claimed origin's ``verify`` may set: a request naming one itself is refused."""
+    return frozenset().union(*[entry[2] for entry in _origins.values()]) if _origins else frozenset()
 
 
 def register_run_listener(listener: RunListener) -> None:
@@ -273,7 +292,7 @@ def register_pre_run(hook: Callable[[RunContext, Any, Optional[Callable[[dict], 
                      order: int) -> None:
     """Called with (ctx, driver, approve) after the phone is ready and before the first model call; ``approve`` is
     the approver the frontier gets (None when Ask before acting is off); the first non-None PreRun wins.
-    Orders: harness pick-up 0, memory routines 10."""
+    Orders: harness pick-up 0, long-form pick-up 1, the front door 2, packs 3, long-form follow-up 5, learned 20 and up."""
     if not callable(hook):
         raise ValueError("A pre-run hook is a function")
     _pre_runs.append(_next(order, hook))
@@ -331,21 +350,6 @@ def update_thread_item(thread_id: str, item_id: str, changes: dict) -> Optional[
     except Exception:  # noqa: BLE001
         log.exception("update_thread_item failed")
         return None
-
-
-def register_replayer(replayer: TrajectoryReplayer) -> None:
-    """Memory only. A second replayer raises."""
-    if _replayer:
-        raise ValueError("A trajectory replayer is already registered")
-    if not callable(getattr(replayer, "replay", None)):
-        raise ValueError("A replayer has a replay(...) method")
-    _replayer.append((replayer, _owner[0]))
-
-
-def replayer() -> Optional[TrajectoryReplayer]:
-    if _replayer and _replayer[0][1] not in _disabled:
-        return _replayer[0][0]
-    return None
 
 
 # -- what the core reads ------------------------------------------------------------------------------------------
@@ -409,8 +413,16 @@ def frontier_options(ctx: RunContext) -> dict:
 
 def run_fields() -> dict:
     """{name: (validate, public)} of every active run field."""
-    return {name: (validate, public) for name, (validate, public, owner) in _run_fields.items()
+    return {name: (validate, public) for name, (validate, public, owner, _) in _run_fields.items()
             if owner not in _disabled}
+
+
+def calls_no_model(extras) -> bool:
+    """Whether a run with these validated fields calls no model: one of them is set and was registered with
+    ``model=False``."""
+    extras = extras or {}
+    return any(extras.get(name) is not None for name, (_, _, owner, model) in _run_fields.items()
+               if not model and owner not in _disabled)
 
 
 def clean_extras(extras, runtime) -> dict:
@@ -427,6 +439,17 @@ def clean_extras(extras, runtime) -> dict:
             raise ValueError("Unsupported task field")
         clean[name] = fields[name][0](value, runtime)
     return clean
+
+
+# The run field a track gives a run that must stay on this Mac (Network X-ray's report): ``{STAY_ON_MAC: True}``.
+STAY_ON_MAC = "stayOnMac"
+
+
+def stays_on_mac(extras) -> bool:
+    """Whether a run with these run fields stays on this Mac: Mobster never uploads it (a share link, a destination,
+    a feedback report) and only the Mac app reads it. It reads the run's own field, not the registry, so a run made
+    before a restart, or by a track that is off now, still stays."""
+    return isinstance(extras, Mapping) and extras.get(STAY_ON_MAC) is True
 
 
 def public_extras(extras) -> dict:
@@ -472,17 +495,14 @@ def clarify_only(request_approval: Callable[[dict], str]) -> Callable[[dict], st
 
 class ListenerQueue:
     """Hands listener calls to one thread, so a listener never slows the agent. ``on_created``, ``on_event``,
-    ``on_step``, ``on_finished`` and plain callables go through one ordered queue, bounded at ``capacity``: an
-    overflowing ``on_event`` or ``on_step`` is dropped with one log line and counted in ``dropped`` (a recorder that
-    sees a gap in ``index`` discards that trajectory); ``on_created``, ``on_finished`` and plain callables wait up to
-    ``WAIT`` seconds for room instead (a run's start and end are never lost), and a callable that still finds none
-    runs at once. ``on_checkpoint`` is coalesced latest-wins per run."""
-
-    WAIT = 2.0
-
+    ``on_step``, ``on_finished`` and plain callables share one FIFO. Ordinary events are dropped when its pending
+    length reaches ``capacity`` (a recorder that sees an index gap discards that trajectory). Lifecycle calls and
+    plain callbacks always enqueue, preserving completion-before-publication order without waiting on a listener.
+    ``on_checkpoint`` is coalesced latest-wins per run."""
 
     def __init__(self, capacity=10_000):
-        self._queue = queue.Queue(maxsize=capacity)
+        self._queue = queue.Queue()
+        self._capacity = capacity
         self._checkpoints = {}
         self._lock = threading.Lock()
         self.dropped = 0
@@ -492,8 +512,9 @@ class ListenerQueue:
 
     def _ensure(self):
         if self._thread is None:
-            self._thread = threading.Thread(target=self._loop, name="mobster-listeners", daemon=True)
-            self._thread.start()
+            thread = threading.Thread(target=self._loop, name="mobster-listeners", daemon=True)
+            thread.start()
+            self._thread = thread
 
     def post(self, method, *args):
         """Queue a listener call. Nothing is queued while no listener is registered, except ``on_finished`` and
@@ -508,39 +529,30 @@ class ListenerQueue:
             with self._lock:
                 fresh = key not in self._checkpoints
                 self._checkpoints[key] = args
-            if fresh:
-                self._put(("checkpoint", key))
+            if fresh and not self._put(("checkpoint", key)):
+                with self._lock:
+                    self._checkpoints.pop(key, None)  # no token was queued; the next checkpoint must try again
             return
-        self._put(("call", method, args), wait=method in ("on_created", "on_finished"))
+        self._put(("call", method, args), required=method in ("on_created", "on_finished"))
 
     def call(self, fn):
-        """Run ``fn()`` on the dispatcher thread after every call queued before it (at once, on this thread, when
-        the queue stays full for WAIT seconds)."""
-        if self._closed:
-            return
-        if not self._put(("fn", fn), wait=True):
-            try:
-                fn()
-            except Exception:  # noqa: BLE001
-                log.exception("a queued call failed")
+        """Run ``fn()`` on the dispatcher thread after every call queued before it."""
+        self._put(("fn", fn), required=True)
 
-    def _put(self, item, wait=False):
+    def _put(self, item, required=False):
         with self._lock:
+            if self._closed:
+                return False
             self._ensure()
-        try:
-            if wait:
-                self._queue.put(item, timeout=self.WAIT)
-            else:
-                self._queue.put_nowait(item)
-            self._overflowing = False
-            return True
-        except queue.Full:
-            with self._lock:
+            if not required and self._capacity > 0 and self._queue.qsize() >= self._capacity:
                 self.dropped += 1
                 if not self._overflowing:
                     self._overflowing = True
                     log.warning("run listeners are behind: dropping calls until they catch up")
-            return False
+                return False
+            self._queue.put_nowait(item)
+            self._overflowing = False
+            return True
 
     def _loop(self):
         while True:
@@ -548,8 +560,9 @@ class ListenerQueue:
             try:
                 if item is None:
                     return
-                if self._closed and item[0] != "fn":
-                    continue  # closed: what close() didn't deliver in its time is dropped
+                if self._closed and (item[0] == "checkpoint" or
+                                     item[0] == "call" and item[1] not in ("on_created", "on_finished")):
+                    continue  # after the grace period, only lifecycle calls and plain callbacks drain
                 if item[0] == "checkpoint":
                     with self._lock:
                         args = self._checkpoints.pop(item[1], None)
@@ -563,6 +576,7 @@ class ListenerQueue:
                     except Exception:  # noqa: BLE001
                         log.exception("a queued call failed")
             finally:
+                item = args = None  # A parked worker must not retain a completed run or its checkpoint text.
                 self._queue.task_done()
 
     def flush(self, timeout=5.0):
@@ -570,35 +584,45 @@ class ListenerQueue:
         if self._thread is None:
             return True
         done = threading.Event()
-        try:
-            self._queue.put(("fn", done.set), timeout=timeout)
-        except queue.Full:
+        if not self._put(("fn", done.set), required=True):
             return False
         return done.wait(timeout)
 
     def close(self, timeout=2.0):
-        """Deliver what is queued for up to ``timeout`` seconds, then drop the rest and stop the thread."""
-        if self._thread is None or self._closed:
-            self._closed = True
-            return
-        self.flush(timeout)
-        self._closed = True
-        try:
-            self._queue.put_nowait(None)
-        except queue.Full:
-            pass
+        """Stop accepting calls and drain required callbacks. True only once the dispatcher exits.
+
+        A timed-out close drops ordinary events; lifecycle calls and plain callbacks still drain.
+        Repeated close waits again, so their service and journal owners can safely outlive them.
+        """
+        deadline = time.monotonic() + max(0.0, timeout)
+        if not self._closed:
+            if self._thread is not threading.current_thread():
+                self.flush(max(0.0, deadline - time.monotonic()))
+            with self._lock:
+                if not self._closed:
+                    self._closed = True
+                    self._checkpoints.clear()
+                    if self._thread is not None:
+                        self._queue.put_nowait(None)
+        thread = self._thread
+        if thread is None:
+            return True
+        if thread is threading.current_thread():
+            return False
+        thread.join(max(0.0, deadline - time.monotonic()))
+        return not thread.is_alive()
 
 
 # -- staging for tracks.load (S1) ---------------------------------------------------------------------------------
 
 def _snapshot():
     return (list(_providers), list(_tools), dict(_run_fields), list(_listeners), list(_pre_runs),
-            list(_frontier_options), list(_services), list(_thread_sink), list(_replayer))
+            list(_frontier_options), list(_services), list(_thread_sink), dict(_origins))
 
 
 def _restore(snapshot):
     for target, saved in zip((_providers, _tools, _run_fields, _listeners, _pre_runs, _frontier_options, _services,
-                              _thread_sink, _replayer), snapshot):
+                              _thread_sink, _origins), snapshot):
         target.clear()
         if isinstance(target, dict):
             target.update(saved)
@@ -627,7 +651,7 @@ def disabled(track) -> bool:
 
 
 def reset_for_tests() -> None:
-    _restore(((), (), {}, (), (), (), (), (), ()))
+    _restore(((), (), {}, (), (), (), (), (), {}))
     _disabled.clear()
     _owner[0] = None
 
@@ -636,24 +660,25 @@ def reset_for_tests() -> None:
 
 def commit_act(op: str, label: Optional[str], recorded: Optional[str], app: Optional[str]) -> Optional[str]:
     """The one commit test for code that acts without the frontier's contract (routine replay, cached test steps,
-    tools). Not None when: ``recorded`` is in contract.ASK_ACTS; or ``op`` is SUBMIT or TYPE_SUBMIT; or ``label``
+    tools). Not None when: ``recorded`` is in contract_asks.ASK_ACTS; or ``op`` is SUBMIT or TYPE_SUBMIT; or ``label``
     matches task_policy.COMMIT_CONTROL or any verb in contract.FAMILIES[a] for a in ASK_ACTS; or ``app`` is the
     App Store. Returns the act ("other" when only the control's words or a submit say so). Harness may widen
     COMMIT_CONTROL and FAMILIES, never narrow them."""
-    from . import contract
+    from . import contract_screen
+    from . import contract_asks
     from .task_policy import COMMIT_CONTROL
-    if recorded in contract.ASK_ACTS:
+    if recorded in contract_asks.ASK_ACTS:
         return recorded
-    if app == contract.APP_STORE:
+    if app == contract_screen.APP_STORE:
         return "install"
     text = " ".join(str(label or "").split())
-    if text and contract.deletes(text):
+    if text and contract_screen.deletes(text):
         return "delete"  # the trash glyph, or Move to Trash
     if text:
-        for act in contract.ACTS:
-            if act not in contract.ASK_ACTS:
+        for act in contract_screen.ACTS:
+            if act not in contract_asks.ASK_ACTS:
                 continue
-            for verb in contract.FAMILIES.get(act, ()):
+            for verb in contract_screen.FAMILIES.get(act, ()):
                 if re.search(r"\b" + re.escape(verb) + r"\b", text, re.I):
                     return act
         if COMMIT_CONTROL.search(text):
@@ -699,6 +724,8 @@ HOOKS = frozenset({
     "wifi_may_reach",  # (udid) -> whether an unplugged phone may still be reached over the Mac app's Wi-Fi relay
     "usb_attached",    # (udid) -> True, False, or None when it can't be told
     "devicectl_json",  # (args, timeout) -> CoreDevice's JSON for `xcrun devicectl ARGS`
+    "coredevice_locked",  # (udid) -> True or False from `devicectl device info lockState` (USB or Wi-Fi), None if unsure
+    "coredevice_apps",    # (udid, kind) -> the phone's "user" or "system" apps as installed_apps rows; raises on failure
     "track_disabled",  # (track, reason) -> None: a track's journal schema turned it off
     # The quality and speed modules Mobster for Mac ships and the open-source engine doesn't. Without them the engine
     # sends each model call once, offers no skills, knows no app names and keeps no frame clock.
@@ -706,17 +733,14 @@ HOOKS = frozenset({
     "skills",          # () -> the skills offered to every run (skills.default_skills())
     "app_catalog",     # () -> the known apps: [{"bundleId", "name"}, ...] (catalog.APPS)
     "frame_clock",     # () -> the frame_clock module: scroll odometry on the MJPEG stream
+    "ios_slice",       # (snapshot, request, driver) -> a turn's section of the iOS guide about the screen, or ""
+    "screen_text",     # () -> the two-headed check's reader (screen_text.ScreenText), or None without its helper
+    "pixel_screen",    # () -> the pixel-screen reader (perception): wda_snapshot(image, *, size, bundle, source,
+                       #    started, ocr) -> a Snapshot of a screenshot's text, for an app whose tree is too slow
 })
 _hooks: dict = {}
 _hooks_loaded = [False]
 _hooks_lock = threading.RLock()
-
-
-def set_hook(name: str, value: Optional[Callable]) -> None:
-    """The harness's hook module sets ``name``; a test may too (None clears it)."""
-    if name not in HOOKS:
-        raise ValueError(f"no engine hook named {name!r}")
-    _hooks[name] = value
 
 
 def hook(name: str) -> Optional[Callable]:

@@ -27,7 +27,7 @@ import urllib.request
 import xml.etree.ElementTree as ET
 
 from ..compose import build_target_driver
-from ..drivers import WDA_SOURCE_PATH
+from ..wda_observe import WDA_SOURCE_PATH
 from ..paths import build_dir
 
 OCR = build_dir() / "ocr"

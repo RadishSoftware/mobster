@@ -82,6 +82,27 @@ class TabPageTests(unittest.TestCase):
         driver.observe()
         self.assertEqual(len(asked), 2)  # a tab-bar tap: asked again
 
+    def test_a_relaunch_asks_which_page_shows_again(self):
+        driver = WDA("http://127.0.0.1:8100", "s")
+        asked = []
+
+        def call(method, path, body=None, timeout=10):
+            if path.startswith("/source"):
+                return CHAT
+            if path == "/elements":
+                asked.append(body["value"])
+                return [{"ELEMENT": "P2"}]
+            return {"/element/P2/attribute/index": 1}.get(path)
+        driver.call = call
+        driver.http = type("Http", (), {"request": staticmethod(lambda *a, **k: {})})()
+        driver._check_current = lambda snapshot, deadline: None
+        driver.observe()
+        driver.observe()
+        self.assertEqual(len(asked), 1)
+        self.assertTrue(driver.relaunch_app("com.example.quickchat"))  # the app comes back on its first tab
+        driver.observe()
+        self.assertEqual(len(asked), 2)
+
     def test_an_unknown_answer_hides_nothing(self):
         driver = WDA("http://127.0.0.1:8100", "s")
         driver.call = lambda method, path, body=None, timeout=10: (

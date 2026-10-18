@@ -1,8 +1,8 @@
 """Permission modes and app approvals, like a coding harness's permission modes.
 
 - ``policy``: the modes (ask_all, ask_important, dont_ask), the settings in agent.env, and which apps Mobster may use
-  (approved one by one, the first time a task needs each). An allowed app is the boundary: in it, reading and moving
-  around never ask.
+  (approved once per task, on one card for the apps it names; Always allow keeps them). An allowed app is the
+  boundary: in it, reading and moving around never ask.
 - ``rules``: today's rules as the gate reads them: a typed one-time code (asks in every mode), a change that stays on
   the phone (asks in ask_all), and the kind of action a "Don't ask again" remembers per app.
 - ``gate``: one per run; allow or ask for each action, with the card's title. The agent's own commit test says what
@@ -14,6 +14,7 @@ The agent loops call the gate at one place each (frontier ``_approval``, agent `
 ``PhoneTools._approval``); a run without a gate (benchmarks, ``mobster verify``) behaves exactly as before.
 """
 
+from .exceptions import remember_in
 from .gate import Decision, PermissionGate, PermissionGuard, action_from, decision_for
 from .policy import (ASK_ALL, ASK_IMPORTANT, DONT_ASK, MODES, AppPolicy, Settings, effective_mode, from_env,
                      from_file, loosens)
@@ -30,4 +31,4 @@ def gate_for_run(*, override=None, origin=None, goal="", emit=None, settings=Non
 
 __all__ = ["ASK_ALL", "ASK_IMPORTANT", "DONT_ASK", "MODES", "Action", "AppPolicy", "Decision", "PermissionGate",
            "PermissionGuard", "Settings", "action_from", "decision_for", "effective_mode", "from_env", "from_file",
-           "gate_for_run", "loosens"]
+           "gate_for_run", "loosens", "remember_in"]

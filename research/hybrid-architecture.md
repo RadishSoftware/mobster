@@ -42,7 +42,7 @@ Measured offline on a typical TAP screen with `classify_output=True`:
 `stop_gate`, `output_intent`, `screen_has_loading`, `side_effect_risk`).
 Dense multi-target screens add one target question per legal operation group.
 
-### Hard constraints (mobile_agent/docs/adaptive-architecture.md)
+### Hard constraints
 
 - No vector DB, no extra agent layers, no policy training until measured limits
   justify it.
@@ -137,8 +137,7 @@ Mobster's answer to that bottleneck is **not** extra agent layers:
 
 Unmeasured here: real multi-app iOSWorld tasks, physical device success rate,
 and any claim that hybrid routing beats a pure-Jev baseline on those tasks.
-Those need a device-backed eval with independent oracles (mobile_agent/docs/adaptive-architecture
-release gates).
+Those need a device-backed eval with independent oracles.
 
 ## Uncalibrated thresholds (disclosed)
 

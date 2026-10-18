@@ -2,7 +2,7 @@
 
 import unittest
 
-from mobile_agent.drivers import Deadline
+from mobile_agent.transport import Deadline
 from mobile_agent.state import from_wda, pane_key
 
 NOTES = """<?xml version="1.0" encoding="UTF-8"?>

@@ -162,17 +162,14 @@ def build_training():
 
 
 # The hard set (H-hard, 9 Oct, owner: "harder benchmark problems ... long horizon, complex"): long multi-app chains,
-# web testing and library counts, for heats between engine variants (bench/heat.py). Not held out: it is for
-# telling architectures apart by progress. Each task lists milestones: (name, app or None, text seen on a screen).
+# web testing and library counts. Not held out: it is for telling architectures apart.
 HARD_BUDGET = (40, 360)
 
 
-def _hard(id, apps, goal, field, expect, *, mode="text", milestones=(), **kw):
-    task = Task(id=id, category="hard", apps=tuple(apps), goal=goal,
+def _hard(id, apps, goal, field, expect, *, mode="text", **kw):
+    return Task(id=id, category="hard", apps=tuple(apps), goal=goal,
                 checks=(Claimed(), AnswerIs(field, expect, mode)), answer=((field, "string"),),
-                steps=HARD_BUDGET[0], seconds=HARD_BUDGET[1], tags=tuple(f"milestone:{a or '*'}:{t}"
-                                                                        for a, t in milestones), **kw)
-    return task
+                steps=HARD_BUDGET[0], seconds=HARD_BUDGET[1], **kw)
 
 
 def build_hard():
@@ -183,52 +180,33 @@ def build_hard():
               "of the Calendar event 'MobsterBench Review' on 15 October 2026, using Calculator for the arithmetic, "
               "and report the result. Do not change any note, reminder or event.", "result", Literal("202440"),
               mode="number", fixtures=("notes.bench", "reminders.bench", "calendar.bench"), safety=REVERSIBLE_RESET,
-              allow=("calculator_keys", "text_entry"),
-              milestones=(("Notes", "4817"), ("Reminders", "Water the plants"), ("Calendar", "Room 42"),
-                          ("Calculator", "4,820"), ("Calculator", "202,440"))),
+              allow=("calculator_keys", "text_entry")),
         _hard("hard.city_incorporated", ["contacts", "safari"],
               "In Contacts, find the city in Bench Tester's address. Then in Safari open the English Wikipedia "
               "article about that city and report the year the city was incorporated. Do not call, message or edit "
               "the contact.", "year", Literal("1955"), mode="number", fixtures=("contacts.bench",),
-              safety=READ_ONLY_HISTORY, allow=("text_entry",),
-              milestones=(("Contacts", "Cupertino"), ("Safari", "Cupertino"), ("Safari", "Incorporated"),
-                          ("Safari", "1955"))),
+              safety=READ_ONLY_HISTORY, allow=("text_entry",)),
         _hard("hard.turing_years", ["notes", "safari", "calculator"],
               "Open the note 'MobsterBench Note' in Notes and open the web link written in it in Safari. Find the "
               "year Alan Turing's paper 'On Computable Numbers' was published, then use Calculator to subtract that "
               "year from 2026, and report the result." + LOOK_ONLY, "result", Literal("90"), mode="number",
-              fixtures=("notes.bench",), safety=REVERSIBLE_RESET, allow=("calculator_keys", "text_entry"),
-              milestones=(("Notes", "Alan_Turing"), ("Safari", "Alan Turing"), ("Safari", "Computable Numbers"),
-                          ("Calculator", "90"))),
+              fixtures=("notes.bench",), safety=REVERSIBLE_RESET, allow=("calculator_keys", "text_entry")),
         _hard("hard.files_folders", ["files"],
               "In Files, open On My iPhone, then the MobsterBench folder, and report how many folders it contains."
-              + LOOK_ONLY, "count", Literal("4"), mode="number", fixtures=("files.dogs12",),
-              milestones=(("Files", "On My iPhone"), ("Files", "eyes8"))),
+              + LOOK_ONLY, "count", Literal("4"), mode="number", fixtures=("files.dogs12",)),
         _hard("hard.album_count", ["photos"],
               "In Photos, find the album 'MobsterBench Receipts' and report how many photos it contains." + LOOK_ONLY,
-              "count", Literal("12"), mode="number", fixtures=("photos.receipts12",),
-              milestones=(("Photos", "Albums"), ("Photos", "MobsterBench Receipts"))),
+              "count", Literal("12"), mode="number", fixtures=("photos.receipts12",)),
         _hard("hard.reminders_sorted", ["reminders"],
               "In Reminders, open the list MobsterBench and report its incomplete reminders in alphabetical order, "
               "separated by commas. Do not complete, edit or add reminders.", "reminders",
               Literal(r"pick up dry cleaning[,;]? (and )?return library books[,;]? (and )?water the plants"),
-              mode="regex", fixtures=("reminders.bench",),
-              milestones=(("Reminders", "MobsterBench"), ("Reminders", "Pick up dry cleaning"))),
+              mode="regex", fixtures=("reminders.bench",)),
         _hard("hard.example_iana", ["safari"],
               "In Safari, on this page follow the 'More information' link and report the main heading of the page it "
               "opens.", "heading", Literal("Example Domains"), start_url="https://example.com",
-              safety=READ_ONLY_HISTORY, milestones=(("Safari", "More information"), ("Safari", "Example Domains"))),
+              safety=READ_ONLY_HISTORY),
     )
-
-
-def milestones(task):
-    """[(app or None, text)] from a hard task's tags."""
-    out = []
-    for tag in task.tags:
-        if tag.startswith("milestone:"):
-            _, app, text = tag.split(":", 2)
-            out.append((None if app == "*" else app, text))
-    return out
 
 
 COMBO_IDS = ("t.short.sounds", "t.short.contact_company", "t.ret.calendar_location", "t.ret.hopper_birthplace",

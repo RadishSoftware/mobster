@@ -13,23 +13,6 @@ class RiskTier(StrEnum):
     SIDE_EFFECT = "side_effect"
 
 
-# Calibrated claim acceptance (evals/verifier_calibration.py, 24 Sep): 80 answers
-# replayed from MobsterBench evidence, 23 right and 57 decoys (other literals of the same
-# shape on the same screens). claim_field separated them with AUROC 0.98: every decoy
-# scored <= 0.34; 21 of 23 right answers scored >= 0.6. The overall verdict rejected
-# right answers it could not tie to the final screen. Accepted this way are logged as
-# "claims_calibrated" and re-audited by the same script on every new run.
-CALIBRATED_CLAIM_FLOORS = {"claim_field": .6, "claim_entity": .7}
-CALIBRATED_MAX_UNCLEAR = .2
-
-
-def claims_calibrated(signals):
-    """The per-claim scores alone accept the answer (see CALIBRATED_CLAIM_FLOORS)."""
-    return (all(isinstance(signals.get(name), float) and signals[name] >= floor
-                for name, floor in CALIBRATED_CLAIM_FLOORS.items())
-            and isinstance(signals.get("p_unclear"), float) and signals["p_unclear"] < CALIBRATED_MAX_UNCLEAR)
-
-
 # AUTHORITY_RULES spirit: send/post/buy/follow/like are never implicit.
 SIDE_EFFECT_REQUEST = re.compile(
     r"\b(send|post|like|follow|buy|purchase|order|pay|submit|publish|comment|share|"
@@ -98,11 +81,16 @@ def springboard_keypad(snapshot):
 # Controls whose tap commits something the user would want to see first:
 # money, messages, publishing and deletion. Narrower than SIDE_EFFECT_CONTROL,
 # which also covers routine commits like "Done" and "Save" in Settings.
-COMMIT_CONTROL = re.compile(
-    r"\b(send|post|publish|reply|comment|share|tweet|buy|purchase|order|pay|checkout|place order|"
-    r"transfer|donate|tip|subscribe|book|reserve|delete|erase|remove|reset|install|upload|redeem|"
-    r"call|dial|facetime|follow|sign[ -]?up|submit|confirm)\b",
-    re.I)
+# The words are regex fragments; contract.COMMIT_WORDS is built from them.
+COMMIT_CONTROL_WORDS = (
+    "send", "post", "publish", "reply", "comment", "share", "tweet", "buy", "purchase", "order", "pay", "checkout",
+    "place order", "transfer", "donate", "tip", "subscribe", "book", "reserve", "delete", "erase", "remove", "reset",
+    "install", "upload", "redeem", "call", "dial", "facetime", "follow", "sign[ -]?up", "submit", "confirm")
+COMMIT_CONTROL = re.compile(r"\b(" + "|".join(COMMIT_CONTROL_WORDS) + r")\b", re.I)
+# Leading words of a label that can name a commit.
+GUARD_WORDS = 4
+# Controls that only open a sheet of choices (whose committing choice is guarded itself).
+SHEET_OPENERS = frozenset({"share", "share…", "share..."})
 
 
 APPROVAL_OPERATIONS = frozenset({"TAP", "SUBMIT", "TYPE_SUBMIT"})
@@ -147,6 +135,11 @@ CONTROL_WORDS = 2
 PLACE_ORDER = re.compile(r"^place\s+(?:(?:your|the|this|my)\s+)?order\b", re.I)
 
 
+# Bare labels that only open a composer or a sheet (a tap on them sends nothing).
+TAP_OPENERS = frozenset({"share", "share…", "share...", "comment", "comments", "reply"})
+UNSEND = re.compile(r"\b(?:unsend|undo send)\b", re.I)
+
+
 def commit_label(label, role=None):
     """The commit a control's own label names, as it reads in the label, or None.
 
@@ -159,6 +152,12 @@ def commit_label(label, role=None):
     label = " ".join((label or "").split())
     if ROW_STATE.search(label):
         return None
+    folded = label.casefold()
+    if role is not None and folded in TAP_OPENERS:
+        return None  # it opens a composer or a sheet, whose own Send or Post asks
+    unsend = UNSEND.search(label)
+    if unsend and role not in EDITABLE_ROLES:
+        return unsend.group(0)
     match = COMMIT_CONTROL.search(label) or APPROVAL_COMMIT.search(label)
     if role not in CONTENT_ROLES:
         return match.group(0) if match else None
@@ -181,7 +180,7 @@ def _holds(outer, point):
     return x - 1e-6 <= point[0] <= x + w + 1e-6 and y - 1e-6 <= point[1] <= y + h + 1e-6
 
 
-def _same_words(a, b):
+def same_words(a, b):
     return " ".join((a or "").split()).casefold() == " ".join((b or "").split()).casefold()
 
 
@@ -201,7 +200,7 @@ def approval_subject(elements, target):
     around = [e for e in elements if e is not target and e.id != target.id and _holds(e, point)]
     area = lambda e: e.rect[2] * e.rect[3]
     controls = sorted((e for e in around if e.role not in CONTENT_ROLES and e.role not in CONTAINER_ROLES),
-                      key=lambda e: (not _same_words(e.label, target.label), area(e)))
+                      key=lambda e: (not same_words(e.label, target.label), area(e)))
     if controls:
         control = controls[0]
         if not control.label.strip():
@@ -222,7 +221,7 @@ def label_role(operation, role):
 
 
 def approval_kind(operation, label, *, risk_tier, uncertain=False, role=None):
-    """What "ask before acting" asks about this action in the Fast engine: "commit", "unsure" or None.
+    """What "ask before acting" asks about this action: "commit", "unsure" or None.
 
     "commit": the action puts something out in the world. Only a tap, a submit or typing followed
     by Return can, and only when the control's own label names a commit (Send, Buy, Post, Delete,
@@ -245,14 +244,6 @@ def approval_kind(operation, label, *, risk_tier, uncertain=False, role=None):
     return "unsure" if uncertain else None
 
 
-def needs_approval(operation, label, *, risk_tier, side_effect_risk=None, role=None):
-    """Whether "ask before acting" pauses this action as a commit (see ``approval_kind``).
-
-    ``side_effect_risk`` is accepted for callers that pass it and no longer decides anything.
-    """
-    return approval_kind(operation, label, risk_tier=risk_tier, role=role) == "commit"
-
-
 # The act a commit approval names, from the control's label or else the request, and its title.
 APPROVAL_TITLES = {
     "send": "Send this message?", "reply": "Send this reply?", "comment": "Post this comment?",
@@ -270,7 +261,7 @@ APPROVAL_TITLES = {
     "block": "Block this contact?", "report": "Report this?", "unsubscribe": "Unsubscribe?",
     "unfollow": "Unfollow this account?", "unmatch": "Unmatch?", "archive": "Archive this?",
     "junk": "Mark this as junk?", "rent": "Rent this?", "get": "Get this app?", "end call": "End this call?",
-    "react": "Send this reaction?",
+    "react": "Send this reaction?", "unsend": "Unsend this message?",
 }
 MESSAGE_ACTS = frozenset({"send", "reply", "comment", "post", "publish", "tweet", "share"})
 # Acts whose card names who it goes to ("Send this message to Sam?").
@@ -283,6 +274,8 @@ def _act(match):
         return "place order"
     if act.replace(" ", "") == "signup":
         return "sign up"
+    if act in ("unsend", "undo send"):
+        return "unsend"
     if act.startswith("cancel ") or act.startswith("end "):
         return "end call" if act == "end call" else act
     return APPROVAL_ACT_ALIASES.get(act, act)
@@ -358,11 +351,6 @@ def asked_part(request):
     return PROHIBITION_SENTENCE.sub(" ", request or "")
 
 
-def prohibitions(request):
-    """The request's prohibition sentences, verbatim, for copying into each milestone."""
-    return " ".join(match.group(0).strip() for match in PROHIBITION_SENTENCE.finditer(request or ""))
-
-
 def asks_for_changes(request):
     return bool(CHANGE_REQUEST.search(asked_part(request)))
 
@@ -371,10 +359,6 @@ def _inflections(word):
     word = word.casefold()
     stem = word[:-1] if word.endswith("e") else word
     return {word, word + "s", word + "d", word + "ed", stem + "ing", stem + "ed", word + "ment", stem + "ion"}
-
-
-# A control that names no act counts as navigation only below this side-effect score.
-REQUESTED_NAVIGATION_MAX_RISK = .7
 
 
 # Acts that are the same request in other words: "order a cake" is completed by "Go to
@@ -400,7 +384,7 @@ def synonyms(act):
     return out
 
 
-def requested_by(request, operation, role, label, side_effect_risk=None):
+def requested_by(request, operation, role, label):
     """Whether this action is one the request's own words ask for (never for a look-only request).
 
     Text into a search field is a search. Text elsewhere needs the request to ask for
@@ -422,5 +406,5 @@ def requested_by(request, operation, role, label, side_effect_risk=None):
             if STATE_CHANGING_LABEL.fullmatch(m.group(0)) or SIDE_EFFECT_CONTROL.fullmatch(m.group(0))
             or COMMIT_CONTROL.fullmatch(m.group(0)) or CHANGE_REQUEST.fullmatch(m.group(0))}
     if not acts:
-        return side_effect_risk is not None and side_effect_risk < REQUESTED_NAVIGATION_MAX_RISK
+        return True
     return all((_inflections(act) | synonyms(act)) & words for act in acts)

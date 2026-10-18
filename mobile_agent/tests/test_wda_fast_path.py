@@ -3,7 +3,8 @@
 import unittest
 from unittest.mock import Mock, patch
 
-from mobile_agent.drivers import WDA, WDA_SETTLE_CAP_SECONDS
+from mobile_agent.drivers import WDA
+from mobile_agent.wda_observe import WDA_SETTLE_CAP_SECONDS
 from mobile_agent.state import from_wda
 
 

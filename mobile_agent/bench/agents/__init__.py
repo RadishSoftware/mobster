@@ -16,8 +16,7 @@ def build_agents(names, *, env_file=None, cu_model="gemini-3.8-flash", som_model
             agents[name] = GeminiComputerUseAgent(cu_model, vertex=vertex, settle=settle)
         elif name == "som-pro":
             agents[name] = SetOfMarksAgent(som_model, name="som-pro", vertex=vertex, settle=settle)
-        elif name.split("+")[0] in SMART_MODELS:
-            # Mobster's agent, optionally with arm settings: "mobster-smart+stream".
+        elif name in SMART_MODELS:
             agents[name] = SmartAgent(name, env_file=env_file)
         elif name == "som-flash":
             agents[name] = SetOfMarksAgent(som_flash_model, name="som-flash", vertex=vertex, settle=settle)

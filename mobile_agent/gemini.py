@@ -67,8 +67,6 @@ class GCloudToken:
             cls._lock.release()
 
 
-# Image input limits for one request: enough for a screen of grid cells or all
-# photos of one profile, small enough that one call never uploads megabytes.
 def configured():
     if os.environ.get('TEXT_MODEL_PROVIDER') == 'vertex':
         return bool(os.environ.get('GOOGLE_CLOUD_PROJECT') and os.environ.get('TEXT_MODEL'))

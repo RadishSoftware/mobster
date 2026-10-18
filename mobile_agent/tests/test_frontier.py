@@ -7,10 +7,9 @@ import unittest
 import unittest.mock
 from types import SimpleNamespace
 
-from mobile_agent.frontier import (KEYBOARD_ROW, CallCancelled, FrontierAgent, OpenAIChat, cost_usd, normalize_reply,
-                                   failure_feedback, guard, prompt_messages, prompt_text, screen_rows,
-                                   typing_timeout)
-from mobile_agent.state import Element, Snapshot
+from mobile_agent.frontier import KEYBOARD_ROW, FrontierAgent, normalize_reply, failure_feedback, guard, prompt_messages, prompt_text, screen_rows
+from mobile_agent.model_clients import (CallCancelled, OpenAIChat, cost_usd)
+from mobile_agent.state import Element, Snapshot, typing_timeout
 
 
 def screen(*elements, bundle="com.example.mail"):
@@ -31,7 +30,7 @@ class Driver:
         self.actions.append((operation, getattr(target, "label", target), text))
         self.index += 1
 
-    def tap_point(self, x, y, snapshot, timeout=10):
+    def tap_point(self, x, y, snapshot, timeout=10, purpose=None):
         self.actions.append(("TAP_POINT", round(x, 3), round(y, 3)))
         self.index += 1
 
@@ -89,7 +88,7 @@ class FrontierLoopTests(unittest.TestCase):
         # B7 (5 Oct): the driver used to swipe across the middle of the screen whatever the model aimed at, and
         # the owner's 5:55 AM alarm opened instead of the one targeted. The stroke now goes through the target
         # row wherever it is, so the step names it (this test pinned the old, untargeted stroke).
-        from mobile_agent.engines import step_text
+        from mobile_agent.smart_events import step_text
         label = "Buy oat milk, Incomplete"
         for rect in ((.05, .10, .9, .05), (.05, .47, .9, .06)):
             with self.subTest(rect=rect):
@@ -124,6 +123,20 @@ class FrontierLoopTests(unittest.TestCase):
         points = [a[1:] for a in driver.actions if a[0] == "TAP_POINT"]
         self.assertEqual(len(points), 3)
         self.assertEqual(len(set(points)), 3)
+
+    def test_a_point_tap_that_raises_after_dispatch_is_never_retried(self):
+        snapshot = screen()
+        driver = Driver([snapshot])
+
+        def tap(x, y, snapshot, timeout=10, purpose=None):
+            driver.actions.append(("TAP_POINT", x, y, purpose))
+            raise TypeError("tap response could not be decoded")
+
+        driver.tap_point = tap
+        agent = FrontierAgent(driver, Script([]), screenshots=False)
+        with self.assertRaisesRegex(TypeError, "response could not be decoded"):
+            agent._execute("TAP_XY", None, None, None, snapshot, point=(.2, .3))
+        self.assertEqual(driver.actions, [("TAP_POINT", .2, .3, "tap_xy")])
 
     def test_done_after_an_idle_dismiss_is_kept(self):
         note = screen(Element("1", "Currently reading: Pachinko", "StaticText", (.1, .3, .8, .05)))
@@ -287,7 +300,7 @@ class KeypadChainTests(unittest.TestCase):
 
 class SwitchAndWaitTests(unittest.TestCase):
     def test_a_row_wide_switch_is_tapped_at_its_knob(self):
-        from mobile_agent.drivers import switch_point
+        from mobile_agent.wda_gestures import switch_point
         row = Element("1", "Outdoor Seating", "Switch", (.05, .5, .9, .05))
         x, _ = switch_point(row, 400)
         self.assertAlmostEqual(x, .95 - 30 / 400)
@@ -715,7 +728,7 @@ class ModelErrorTests(unittest.TestCase):
 
     def post(self, connections, chat=None, sleep=None):
         chat = chat or OpenAIChat("gpt-5.6-sol", key="sk-test")
-        with unittest.mock.patch("mobile_agent.frontier.http.client.HTTPSConnection", connections.Connection), \
+        with unittest.mock.patch("mobile_agent.model_clients.http.client.HTTPSConnection", connections.Connection), \
                 unittest.mock.patch("mobile_agent.frontier.time.sleep", sleep or (lambda seconds: None)):
             return chat.complete([{"role": "user", "content": "hi"}], {"type": "object", "properties": {}})
 
@@ -757,6 +770,33 @@ class ModelErrorTests(unittest.TestCase):
             self.post(connections)
         self.assertEqual(connections.requests, 1)
 
+    def test_retry_backoff_spends_the_original_call_deadline(self):
+        now = [0.0]
+        chat = OpenAIChat("gpt-5.6-sol", key="sk-test")
+        connections = Connections(Reply(503, {"error": "busy"}), Reply(200, OK_REPLY))
+
+        def sleep(seconds):
+            now[0] += seconds
+
+        with unittest.mock.patch("mobile_agent.model_clients.http.client.HTTPSConnection", connections.Connection), \
+                unittest.mock.patch("mobile_agent.frontier.time.monotonic", side_effect=lambda: now[0]), \
+                unittest.mock.patch("mobile_agent.frontier.time.sleep", side_effect=sleep):
+            with self.assertRaises(TimeoutError):
+                chat.complete([{"role": "user", "content": "hi"}], {"type": "object"}, timeout=.5)
+        self.assertEqual(connections.requests, 1)
+        self.assertEqual(now[0], .5)
+
+    def test_a_reused_connection_updates_its_socket_timeout(self):
+        chat = OpenAIChat("gpt-5.6-sol", key="sk-test")
+        connections = Connections(Reply(200, OK_REPLY))
+        self.post(connections, chat=chat)
+        socket = chat.connection.sock = unittest.mock.Mock()
+        with unittest.mock.patch("mobile_agent.model_clients.http.client.HTTPSConnection", connections.Connection):
+            chat.complete([{"role": "user", "content": "hi"}], {"type": "object"}, timeout=.5)
+        socket.settimeout.assert_called_once()
+        self.assertGreater(socket.settimeout.call_args.args[0], 0)
+        self.assertLessEqual(socket.settimeout.call_args.args[0], .5)
+
     def test_stop_ends_a_rate_limit_wait_at_once(self):
         stop = threading.Event()
         threading.Timer(.3, stop.set).start()
@@ -765,7 +805,7 @@ class ModelErrorTests(unittest.TestCase):
         connections = Connections(Reply(429, {"error": {"message": "Rate limit reached", "type": "requests",
                                                         "code": "rate_limit_exceeded"}}))
         started = time.monotonic()
-        with unittest.mock.patch("mobile_agent.frontier.http.client.HTTPSConnection", connections.Connection):
+        with unittest.mock.patch("mobile_agent.model_clients.http.client.HTTPSConnection", connections.Connection):
             with self.assertRaises(CallCancelled):
                 chat.complete([{"role": "user", "content": "hi"}], {"type": "object", "properties": {}})
         self.assertLess(time.monotonic() - started, 1.0)  # the backoff alone is 1 + 2 + 4 + 8 + 16 s
@@ -815,7 +855,7 @@ class ActionCeilingTests(unittest.TestCase):
     """QA matrix code-read risk 14: a task that ends at the action ceiling says so, not that it used all its turns."""
 
     def test_the_ceiling_is_named_in_the_result_and_its_sentence(self):
-        from mobile_agent import engines
+        from mobile_agent import smart_result
         labels = "ABCDEFGH"
         screens = [screen(*(Element(str(i), label, "Button", (.1, .05 * i, .2, .04)) for i, label in enumerate(labels)),
                           Element("99", f"Step {n}", "StaticText", (.1, .9, .5, .04))) for n in range(12)]
@@ -824,15 +864,15 @@ class ActionCeilingTests(unittest.TestCase):
         with unittest.mock.patch("mobile_agent.frontier.MAX_ACTIONS", 4):
             result = FrontierAgent(Driver(screens), Script(steps), screenshots=False, settle_seconds=0).run("Tap them.")
         self.assertEqual((result["status"], result["actions"], result["reason"]), ("max_steps", 4, "4 actions used"))
-        self.assertEqual(engines.reason_of("max_steps", "couldnt_finish", result["reason"], None),
+        self.assertEqual(smart_result.reason_of("max_steps", "couldnt_finish", result["reason"], None),
                          "The task took 4 actions, the most one task can take, before finishing.")
-        self.assertEqual(engines.reason_of("max_steps", "couldnt_finish", "50 turns used", None),
+        self.assertEqual(smart_result.reason_of("max_steps", "couldnt_finish", "50 turns used", None),
                          "The task used all 50 steps before finishing.")
 
 
 class GeminiReasoningTests(unittest.TestCase):
     def body_for(self, reasoning):
-        from mobile_agent.frontier import GeminiChat
+        from mobile_agent.model_clients import GeminiChat
         client = GeminiChat("gemini-3.8-flash", reasoning=reasoning, project="p")
         reply = {"candidates": [{"content": {"parts": [{"text": "{}"}]}}], "usageMetadata": {}}
         with unittest.mock.patch.object(GeminiChat, "_post", return_value=reply) as post, \

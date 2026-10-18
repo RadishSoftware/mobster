@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
+.ruff_cache/
 mobile_agent/.venv/
 # Packaging output (`pip wheel .`, `python -m build`)
 /build/
@@ -28,11 +29,14 @@ mobile_agent/.state/
 *.mobileprovision
 # The one exception: the license server's PUBLIC key, which the Mac app is built with.
 !desktop/src-tauri/license-public.pem
+# And the public certificate chains Mobster's servers sent, which the pinning tests check (mobile_agent/pinning.py).
+!mobile_agent/tests/fixtures/tls/*.pem
 
 # Per-user OS, editor and tool state. These are listed here rather than left to a
 # personal global gitignore, which other clones do not have. Xcode user data and
 # result bundles embed the macOS username, device names and UDIDs.
 .DS_Store
+/Screenshot *.png
 .claude/settings.local.json
 xcuserdata/
 *.xcuserstate

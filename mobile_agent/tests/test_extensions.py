@@ -15,7 +15,7 @@ class LoadTests(unittest.TestCase):
         """load() as on a fresh start, with ``package`` in place of mobile_agent.private."""
         fresh = extensions.Hooks()
         with mock.patch.object(extensions, "PACKAGE", package), mock.patch.object(extensions, "hooks", fresh), \
-                mock.patch.object(extensions, "_loaded", False):
+                mock.patch.object(extensions, "_loaded", False), mock.patch.object(extensions, "_load_error", None):
             return extensions.load()
 
     def folder(self, name, files):
@@ -45,6 +45,25 @@ class LoadTests(unittest.TestCase):
     def test_a_package_registers_its_hooks(self):
         name = self.folder("mobster_real_extension", {"__init__.py": "def register(hooks):\n    hooks.cli.append('extra')\n"})
         self.assertEqual(self.load(name).cli, ["extra"])
+
+    def test_failed_registration_never_becomes_a_successful_cached_load(self):
+        module = mock.Mock()
+        module.register.side_effect = RuntimeError("extension didn't initialize")
+        with mock.patch.object(extensions, "_loaded", False), mock.patch.object(extensions, "_load_error", None), \
+                mock.patch.object(extensions.importlib, "import_module", return_value=module):
+            for _ in range(2):
+                with self.assertRaisesRegex(RuntimeError, "didn't initialize"):
+                    extensions.load()
+                self.assertFalse(extensions._loaded)
+            module.register.assert_called_once()
+
+    def test_missing_dependency_is_not_treated_as_an_absent_extension(self):
+        error = ModuleNotFoundError("missing dependency", name="extension_dependency")
+        with mock.patch.object(extensions, "_loaded", False), mock.patch.object(extensions, "_load_error", None), \
+                mock.patch.object(extensions.importlib, "import_module", side_effect=error):
+            with self.assertRaises(ModuleNotFoundError):
+                extensions.load()
+            self.assertFalse(extensions._loaded)
 
 
 if __name__ == "__main__":

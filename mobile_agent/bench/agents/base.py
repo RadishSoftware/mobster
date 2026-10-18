@@ -125,27 +125,13 @@ def extract_json_object(text):
     if marker:
         text = text[marker[-1].end():]
     starts = [i for i, c in enumerate(text) if c == "{"]
+    decoder = json.JSONDecoder()
     for start in (starts[:1] if marker else reversed(starts)):
-        depth, in_string, escape = 0, False, False
-        for index in range(start, len(text)):
-            char = text[index]
-            if in_string:
-                escape = (char == "\\" and not escape)
-                if char == '"' and not escape:
-                    in_string = False
-                continue
-            if char == '"':
-                in_string = True
-            elif char == "{":
-                depth += 1
-            elif char == "}":
-                depth -= 1
-                if depth == 0:
-                    try:
-                        value = json.loads(text[start:index + 1])
-                    except ValueError:
-                        break
-                    return value if isinstance(value, dict) else None
+        try:
+            value, _ = decoder.raw_decode(text, start)
+        except ValueError:
+            continue
+        return value if isinstance(value, dict) else None
     return None
 
 

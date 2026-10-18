@@ -3,8 +3,8 @@
 The agent loop's local ``blocked_pairs`` / ``typed_fields`` sets guard one
 observation or one generated string. They are not a durable record of logical
 effects already attempted on this run (precision-guard audit, 19 Sep 2026).
-This component is that ledger: the agent loop can call it around every
-dispatch of a persistent side-effect action.
+This component is that ledger: the agent loop asks ``would_duplicate`` before every
+dispatch of a persistent side-effect action and records its outcome after.
 
 Policy: persistent side-effect actions (TAP that committed a form, TYPE
 append, INCREMENT/DECREMENT) must not be dispatched twice for the same
@@ -23,24 +23,17 @@ empty and never shares state with another run.
 # Operations that can leave a durable effect on the device.
 PERSISTENT_OPERATIONS = frozenset({"TAP", "TYPE", "TYPE_SUBMIT", "INCREMENT", "DECREMENT", "SUBMIT"})
 
-# Outcomes that leave the effect applied, or leave it unknown. A second
-# dispatch of the same logical effect is a duplicate.
-BLOCKING_OUTCOMES = frozenset({
-    "intent",  # recorded, outcome not yet known (in-flight counts as unknown)
-    "acknowledged",
-    "observed_change",
-    "observed_unchanged",
-    "unknown",
-    "unproven",  # dispatched without a drawn baseline: its effect is still unknown
-})
-
-# Pre-dispatch refusals: no app code ran and nothing is ambiguous.
+# Proven refusals and outcomes explicitly reconciled by settle/resolve.
+# Every other outcome blocks replay, including an unfamiliar outcome.
 RELEASING_OUTCOMES = frozenset({
     "not_dispatched",
     "failed_pre_dispatch",
     "observed_absent",  # a fresh look after an unknown outcome showed the action did not happen (settle)
     "resolved",  # the same effect, sent again after that look or with the person's OK, came back answered
 })
+
+# A refusal before anything was sent. It releases a slot nothing was sent through, never one an earlier send holds.
+PRE_DISPATCH_REFUSALS = frozenset({"not_dispatched", "failed_pre_dispatch"})
 
 # Times one unknown outcome can be released by a look showing nothing happened. A retry whose own outcome is unknown
 # again stays blocked.
@@ -65,32 +58,14 @@ class EffectLedger:
             return effect
         return (operation, target_id, text)
 
-    def record_intent(self, operation, target_id, text=None, *, effect=None):
-        """Record that this logical effect is about to be dispatched.
-
-        Calling this never clears a prior acknowledged/unknown outcome.
-        """
-        if operation not in PERSISTENT_OPERATIONS:
-            return
-        key = self._key(operation, target_id, text, effect)
-        prior = self._effects.get(key)
-        blocked = prior is not None and prior["outcome"] in BLOCKING_OUTCOMES
-        self._effects[key] = {
-            "operation": operation,
-            "target_id": target_id,
-            "text": text,
-            "outcome": prior["outcome"] if blocked else "intent",
-            "attempts": (prior["attempts"] if prior else 0) + 1,
-        }
-
     def would_duplicate(self, operation, target_id, text=None, *, effect=None):
         """True when this logical effect was already attempted on this run
-        and the prior outcome is acknowledged/unknown (or still in flight).
+        and the prior outcome is acknowledged or unknown.
         """
         if operation not in PERSISTENT_OPERATIONS:
             return False
         record = self._effects.get(self._key(operation, target_id, text, effect))
-        return record is not None and record["outcome"] in BLOCKING_OUTCOMES
+        return record is not None and record["outcome"] not in RELEASING_OUTCOMES
 
     def record_outcome(self, operation, target_id, text=None, outcome="acknowledged", *,
                        effect=None, context=None):
@@ -100,7 +75,8 @@ class EffectLedger:
         ``failed_pre_dispatch``) releases the slot. Anything else -- including
         ``unknown`` -- keeps the block so an ambiguous outcome is never
         auto-retried. ``unproven`` also blocks: without a drawn baseline,
-        the dispatched action's effect is still unknown. ``context``: what the
+        the dispatched action's effect is still unknown. A later pre-dispatch refusal is ignored while an
+        earlier attempt's outcome is held: it cannot erase an acknowledged or unknown effect. ``context``: what the
         caller needs to settle an unknown outcome later (the screen before the
         action), kept on the record.
         """
@@ -110,16 +86,18 @@ class EffectLedger:
             raise ValueError("Effect outcome must be a non-empty string")
         key = self._key(operation, target_id, text, effect)
         record = self._effects.get(key)
+        if (record is not None and outcome in PRE_DISPATCH_REFUSALS
+                and record["outcome"] not in RELEASING_OUTCOMES):
+            return  # a later refusal says nothing about the earlier attempt, which may have run
         if record is None:
-            record = {"operation": operation, "target_id": target_id, "text": text,
-                      "attempts": 0}
+            record = {"operation": operation, "target_id": target_id, "text": text}
             self._effects[key] = record
         record["outcome"] = outcome
         if context is not None:
             record["context"] = context
 
     def lookup(self, operation, target_id, text=None, *, effect=None):
-        """A copy of this logical effect's record (operation, outcome, attempts, context...), or None."""
+        """A copy of this logical effect's record (operation, outcome, context...), or None."""
         record = self._effects.get(self._key(operation, target_id, text, effect))
         return dict(record) if record is not None else None
 
@@ -127,7 +105,7 @@ class EffectLedger:
         """Keys of the effects still held back (a blocking outcome) whose record ``match(key, record)`` accepts: a
         caller whose effect key carries the screen finds the same control's effect from a screen still showing."""
         return [key for key, record in self._effects.items()
-                if record["outcome"] in BLOCKING_OUTCOMES and match(key, dict(record))]
+                if record["outcome"] not in RELEASING_OUTCOMES and match(key, dict(record))]
 
     def settle(self, operation, target_id, text=None, *, effect=None, happened):
         """Settle an ``unknown`` outcome from a fresh observation; the outcome after.

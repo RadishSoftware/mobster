@@ -1,18 +1,15 @@
 """Mobster's Smart engine (frontier.FrontierAgent) on the bench phone, composed as the app composes it.
 
-``engines.build_frontier`` with SMART_CONFIG's loop and switches (pinned only where unset, so an arm's settings
-win), the device lease, WDA's current session with a FrameClock attached, the task's apps, its answer fields as
-``output_schema``, and the task's budgets. The answer goes through ``engines.summarize`` exactly as the app's
+``engines.build_frontier`` with SMART_CONFIG's loop, the device lease, WDA's current session with a FrameClock attached, the task's apps, its answer fields as
+``output_schema``, and the task's budgets. The answer goes through ``smart_result.summarize`` exactly as the app's
 result does (the DONE turn's data_json when it fits, else one structuring call).
 
-Agents (``SMART_AGENTS``):
+Agents (``SMART_MODELS``):
   ``mobster-smart``         Claude Sonnet 5.5 on the API (Smart's default model).
   ``mobster-smart-haiku``   Claude Haiku 5.5 on the API.
   ``mobster-smart-codex``   gpt-6.1-sol on the operator's ChatGPT plan through the Codex CLI's sign-in ($0 a call).
   ``mobster-smart-cc``      Sonnet 5.5 through ``claude -p`` (Claude Code's plan): seconds of process start per
                             call, so it is for success comparisons only.
-An arm is any of these plus ``+NAME`` settings (``arm_settings``): ``mobster-smart+stream`` sets
-MOBSTER_STREAM_DISPATCH=on for that agent's runs only. Settings are environment switches the loop reads.
 
 Every action Smart sends reaches the phone through ``SmartGuardedDriver``: the bench safety monitor sees it first,
 including the paths ``execute`` does not cover (a point tap, a long press, write_text, set_value, a clear).
@@ -40,32 +37,11 @@ SMART_MODELS = {
     "mobster-smart-sol": "gpt-6.1-sol",
     "mobster-smart-cc": "claude-cli:claude-sonnet-5-5",
 }
-# "+name" suffixes: the environment an arm runs with (on top of SMART_CONFIG's switches).
-ARM_SETTINGS = {
-    "stream": {"MOBSTER_STREAM_DISPATCH": "on"},
-    "diffs": {"MOBSTER_SCREEN_DIFFS": "on"},
-    "delegate": {"MOBSTER_DELEGATE": "on"},
-    "check": {"MOBSTER_DONE_CHECK": "on"},
-    "smallshot": {"MOBSTER_SCREENSHOT_DIET": "on"},
-    "cards": {"MOBSTER_APP_CARDS": "on"},
-    "route": {"MOBSTER_HAIKU_ROUTE": "on"},
-}
 # A runaway task stops here (dollars at list price); the plan backends cost 0 a call.
 TASK_CAP_USD = 0.60
 # A long task reads for minutes: its cap, and the most apps a run is offered (server.MAX_SMART_APPS).
 LONG_CAP_USD = 1.00
 MAX_OFFERED_APPS = 120
-
-
-def arm_settings(name):
-    """(base agent name, {env: value}) for "mobster-smart+diffs+stream"."""
-    base, *flags = name.split("+")
-    env = {}
-    for flag in flags:
-        if flag not in ARM_SETTINGS:
-            raise ValueError(f"unknown arm setting {flag!r}; choose from {sorted(ARM_SETTINGS)}")
-        env.update(ARM_SETTINGS[flag])
-    return base, env
 
 
 # Per-attempt diagnosis: every event's small scalar fields, so a failure is
@@ -93,7 +69,7 @@ class SmartGuardedDriver:
                    "/wda/touchAndHold", "/wda/doubleTap", "/wda/element")
 
     def call(self, method, path, body=None, timeout=10):
-        from ...drivers import DriverRejection
+        from ...driver_guards import DriverRejection
         if method == "POST" and isinstance(path, str):
             intent = None
             if path == "/url":
@@ -112,7 +88,7 @@ class SmartGuardedDriver:
         opener = getattr(self._driver, "open_url", None)
         intent = ActionIntent("OPEN_URL", bundle=getattr(self._driver, "_last_bundle", "") or "")
         if self._monitor.check(intent).blocked:
-            from ...drivers import DriverRejection
+            from ...driver_guards import DriverRejection
             raise DriverRejection("unsupported_or_stale_target")
         self._recorder.action("OPEN_URL")
         if callable(opener):
@@ -122,7 +98,7 @@ class SmartGuardedDriver:
         return self._driver.call("POST", "/url", {"url": url, "bundleId": "com.apple.mobilesafari"}, timeout)
 
     def execute(self, operation, target, snapshot, text=None, timeout=10):
-        from ...drivers import DriverRejection
+        from ...driver_guards import DriverRejection
         if operation == "LAUNCH_APP":
             intent = ActionIntent("LAUNCH_APP", app_target=str(target), bundle=snapshot.bundle_id or "")
         elif operation in HOST_KEYS or target is None:
@@ -138,7 +114,7 @@ class SmartGuardedDriver:
         return self._driver.execute(operation, target, snapshot, text=text, timeout=timeout)
 
     def _check(self, intent):
-        from ...drivers import DriverRejection
+        from ...driver_guards import DriverRejection
         if self._monitor.check(intent).blocked:
             raise DriverRejection("unsupported_or_stale_target")
         self._recorder.action(intent.operation, label=intent.label[:80] or None)
@@ -150,12 +126,9 @@ class SmartGuardedDriver:
         except Exception:
             return ""
 
-    def tap_point(self, x, y, snapshot, timeout=10, **kwargs):
+    def tap_point(self, x, y, snapshot, timeout=10, purpose=None):
         self._check(intent_for_point("TAP", snapshot, x, y, title=self._title(snapshot)))
-        try:
-            return self._driver.tap_point(x, y, snapshot, timeout=timeout, **kwargs)
-        except TypeError:
-            return self._driver.tap_point(x, y, snapshot, timeout=timeout)
+        return self._driver.tap_point(x, y, snapshot, timeout=timeout, purpose=purpose)
 
     def dismiss_at(self, x, y, snapshot, timeout=10):
         """FrontierAgent's DISMISS: a tap on a point meant to be empty, checked as a DISMISS (safety.classify)."""
@@ -189,7 +162,7 @@ class SmartGuardedDriver:
 
 
 def build_client(model, reasoning):
-    from ...frontier import chat_client
+    from ...model_clients import chat_client
     from .plan_clients import plan_client
     return plan_client(model, reasoning) or chat_client(model, reasoning=reasoning)
 
@@ -197,15 +170,13 @@ def build_client(model, reasoning):
 class SmartAgent:
     kind = "mobster"
 
-    def __init__(self, name="mobster-smart", *, env_file=None, model=None, settings=None, reasoning=None, as_app=False,
+    def __init__(self, name="mobster-smart", *, env_file=None, model=None, reasoning=None, as_app=False,
                  inventory=None):
         self.name = name
         self.env_file = env_file
-        base, env = arm_settings(name)
-        self.model = model or SMART_MODELS.get(base)
+        self.model = model or SMART_MODELS.get(name)
         if self.model is None:
-            raise ValueError(f"unknown Smart agent {base!r}; choose from {sorted(SMART_MODELS)}")
-        self.settings = {**env, **(settings or {})}
+            raise ValueError(f"unknown Smart agent {name!r}; choose from {sorted(SMART_MODELS)}")
         self.reasoning = reasoning
         self.as_app = as_app
         self.inventory = dict(inventory or {})
@@ -213,8 +184,7 @@ class SmartAgent:
     def config(self):
         from ...engines import SMART_CONFIG
         config = {"agent": self.name, "engine": "smart", "model": self.model,
-                  "reasoning": self.reasoning or SMART_CONFIG.reasoning, "settings": dict(self.settings),
-                  "switches": dict(SMART_CONFIG.switches)}
+                  "reasoning": self.reasoning or SMART_CONFIG.reasoning}
         if self.as_app:
             config.update({"as_app": True, "permission_mode": "ask_important", "approvals": "recorded, declined",
                            "apps_offered": len(self.inventory) or "catalog"})
@@ -256,7 +226,9 @@ class SmartAgent:
 
     def run(self, task, ctx):
         from ...compose import build_target_driver, close_all
-        from ...engines import SMART_CONFIG, build_frontier, meter, summarize
+        from ...engines import SMART_CONFIG, build_frontier
+        from ...costs import meter
+        from ...smart_result import summarize
         from ...frame_clock import attach_frame_clock
         from ...journal import Lease
 
@@ -288,9 +260,9 @@ class SmartAgent:
             if len(trace) < TRACE_EVENTS and kind not in QUIET_EVENTS:
                 trace.append(_compact(event, round((t - ctx.started) * 1000)))
 
-        # The arm's own settings: set for this run and put back after it, so nothing one arm chose leaks into the
-        # next attempt.
-        settings = {**self.settings, "MOBSTER_TRACE_IMAGES": "on", "MOBSTER_TRACE_SCREENS": "on"}
+        # The trace switch the loop reads: set for this run and put back after it, so it doesn't leak into the next
+        # attempt.
+        settings = {"MOBSTER_TRACE_SCREENS": "on"}
         saved = {key: os.environ.get(key) for key in settings}
         os.environ.update(settings)
         lease = driver = client = agent = session = None
@@ -299,7 +271,7 @@ class SmartAgent:
         try:
             lease = Lease.device(ctx.wda_url)
             driver = build_target_driver(wda_url=ctx.wda_url, session=ctx.session)
-            attach_frame_clock(driver, wda_url=ctx.wda_url, session=ctx.session, mode="on")
+            attach_frame_clock(driver, wda_url=ctx.wda_url, session=ctx.session)
             if not (self.as_app and getattr(task, "start", "app") == "home"):
                 driver.call("POST", "/wda/apps/activate", {"bundleId": task.bundle})
             guarded = SmartGuardedDriver(driver, ctx.monitor, recorder)
@@ -308,12 +280,12 @@ class SmartAgent:
             extras = {}
             if self.as_app:
                 extras, session = as_app_extras(task, apps, client, self.model, emit, cards, ledger)
-            agent = build_frontier(guarded, client, apps=apps, emit=emit, pin=False,
+            agent = build_frontier(guarded, client, apps=apps, emit=emit,
                                    max_cost_usd=LONG_CAP_USD if session is not None else TASK_CAP_USD,
                                    cancelled=lambda: ctx.monitor.stopped, output_schema=task.answer_schema(),
                                    max_steps=task.max_steps or None, max_seconds=max(1, ctx.remaining()),
                                    **extras)
-            # The arm's settings are read when the agent is built and while it runs; keep them set until it ends.
+            # The switch is read while the agent runs; keep it set until it ends.
             outcome = agent.run(task.goal)
             report = markdown = None
             if session is not None:

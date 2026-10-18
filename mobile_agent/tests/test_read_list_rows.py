@@ -31,6 +31,12 @@ def prompts(events):
     return [e["text"] for e in events if e["event"] == "frontier_prompt"]
 
 
+def listing_rows(prompt):
+    """The rows READ_LIST put in ``prompt``, without the fence lines around them."""
+    block = prompt.split(frontier.LISTING_HEAD, 1)[1].split("\n\n", 1)[0].splitlines()
+    return [line for line in block if line not in (frontier.FENCE_OPEN, frontier.FENCE_CLOSE)]
+
+
 def run(screens, steps, request=TRIPS):
     driver, events = Driver(screens), []
     FrontierAgent(driver, Script(steps), emit=events.append, screenshots=False, settle_seconds=0).run(request)
@@ -61,9 +67,9 @@ class ReadListRowsTests(unittest.TestCase):
         with mock.patch.object(frontier, "READ_LIST_ROWS", 3):
             driver, events = run(pages, [("READ_LIST", None, None), ("READ_LIST", None, None), ("DONE", None, None),
                                          ("DONE", None, None)])
-        first, second = (p.split(frontier.LISTING_HEAD, 1)[1].split("\n\n", 1)[0] for p in prompts(events)[1:3])
-        self.assertEqual([line[:8] for line in first.splitlines()], ["SFO, C00", "SFO, C01", "SFO, C02"])
-        self.assertEqual([line[:8] for line in second.splitlines()], ["SFO, C03", "SFO, C04", "SFO, C05"])
+        first, second = (listing_rows(p) for p in prompts(events)[1:3])
+        self.assertEqual([line[:8] for line in first], ["SFO, C00", "SFO, C01", "SFO, C02"])
+        self.assertEqual([line[:8] for line in second], ["SFO, C03", "SFO, C04", "SFO, C05"])
         self.assertEqual([a[0] for a in driver.actions], ["SWIPE_UP"] * 4)
 
     def test_a_screen_holding_more_rows_than_the_cap_is_read_on_without_a_swipe(self):
@@ -71,8 +77,7 @@ class ReadListRowsTests(unittest.TestCase):
         with mock.patch.object(frontier, "READ_LIST_ROWS", 3):
             driver, events = run([tall, tall, tall], [("READ_LIST", None, None), ("READ_LIST", None, None),
                                                       ("DONE", None, None), ("DONE", None, None)])
-        second = prompts(events)[2].split(frontier.LISTING_HEAD, 1)[1].split("\n\n", 1)[0]
-        self.assertEqual([line[:8] for line in second.splitlines()], ["SFO, C03", "SFO, C04"])
+        self.assertEqual([line[:8] for line in listing_rows(prompts(events)[2])], ["SFO, C03", "SFO, C04"])
 
     def test_a_read_list_after_another_action_reads_afresh(self):
         # Moved by another action in between: the rows on screen are read again, as before this change (Row 1 twice).
@@ -83,8 +88,7 @@ class ReadListRowsTests(unittest.TestCase):
         with mock.patch.object(frontier, "READ_LIST_ROWS", 2):
             _, events = run(pages, [("READ_LIST", None, None), ("SWIPE_DOWN", None, None), ("READ_LIST", None, None),
                                     ("DONE", None, None), ("DONE", None, None)])
-        third = prompts(events)[3].split(frontier.LISTING_HEAD, 1)[1].split("\n\n", 1)[0]
-        self.assertEqual(third.splitlines(), ["Row 1", "Row 2"])
+        self.assertEqual(listing_rows(prompts(events)[3]), ["Row 1", "Row 2"])
 
     def test_a_list_that_ended_is_read_from_its_top_again(self):
         # The end of a list is not a stop: a later READ_LIST in the same place reads what is there.

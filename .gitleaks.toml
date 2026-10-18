@@ -4,6 +4,14 @@ title = "Mobster"
 [extend]
 useDefault = true
 
+# In-app feedback's staff channel webhook is the license API's server secret (DISCORD_FEEDBACK_WEBHOOK_URL), never in
+# the source or a build.
+[[rules]]
+id = "discord-webhook-url"
+description = "A Discord webhook URL"
+regex = '''discord(?:app)?\.com/api/(?:v\d+/)?webhooks/\d{5,}/[A-Za-z0-9_-]{20,}'''
+keywords = ["webhooks"]
+
 [[allowlists]]
 description = "Exact synthetic fixture values; tests, examples and QA files are still scanned"
 regexTarget = "secret"
@@ -27,7 +35,13 @@ regexes = [
   '^test-relay-secret-that-is-long-enough-1234567890$',
   '^dGVzdC1yb3V0ZS1zZWNyZXQtMzItYnl0ZXMtbG9uZyE=$',
   '^bm90IGEga2V5$',
-  '^dGhlIHNhbXBsZSBub25jZQ==$'
+  '^dGhlIHNhbXBsZSBub25jZQ==$',
+  # The license API's trial ledger tests: a made-up ledger key and the health test's fake Stripe secrets.
+  '^test-ledger-key-0123456789abcdef0123456789$',
+  '^sk_test_0123456789abcdef$',
+  '^whsec_0123456789abcdef0123$',
+  # Settings › Team's fake agent (dashboard/src/features/team/fake-team.ts): a station's public key, bytes 1 to 32.
+  '^AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA$'
 ]
 
 [[allowlists]]
@@ -45,3 +59,8 @@ regexes = [
   '^pk_(?:live|test)_[0-9A-Za-z]{16,}$',
   '^sb_publishable_[0-9A-Za-z_-]{16,}$'
 ]
+
+[[allowlists]]
+description = "The team features' test vectors (mobile_agent/tests/teams_vectors.py writes them): public keys, credential ids and signatures made in memory for the run. No private key is ever written; every other rule still scans the file"
+targetRules = ["generic-api-key"]
+paths = ['''^mobile_agent/tests/fixtures/teams/vectors\.json$''']

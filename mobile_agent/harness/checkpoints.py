@@ -11,7 +11,9 @@ was unplugged or locked, can be picked up: ``pick_up`` starts a **new** run with
 and ``extras.resumeFrom`` naming the old one. Its pre-run hook (``pre_run``, order 0) hands the frontier the saved
 state, with the feedback "You're picking up a task after it was interrupted. The last action may or may not have
 happened: look at the screen before repeating anything." The frontier reads the screen before its first decision, so
-no action runs again without a new decision, and every send, buy, post or delete still asks. Never automatic.
+no action runs again without a new decision, and every send, buy, post or delete still asks. An act the earlier run may
+already have done (one the person approved, or one whose answer was lost: ``held_acts``) asks again in the new run with
+"it may have gone through", in every mode, and is refused where nobody can answer. Never automatic.
 
 The checkpoint of a run that can't be picked up (done, declined, a spending limit) is deleted when its loop ends
 (``ended``); the rest go with their run (ON DELETE CASCADE) when history drops it.
@@ -327,6 +329,24 @@ ACT_WORDS = {"send_message": "sending a message", "reply": "sending a reply", "p
              "cancel": "cancelling", "install": "installing an app"}
 
 
+def held_acts(run):
+    """The acts (send_message, post, pay...) ``run`` may already have done, oldest first and once each: the ones the
+    person approved, and the ones whose send's answer was lost (frontier_failed, outcome unknown). Its in-memory
+    effect ledger is gone with it, so a picked-up run holds these instead."""
+    acts = []
+    for event in getattr(run, "events", None) or ():
+        kind = event.get("event")
+        if kind == "frontier_approval" and event.get("answer") == "approved":
+            act = event.get("act")
+        elif kind == "frontier_failed" and event.get("outcome") == "unknown":
+            act = event.get("held_act")
+        else:
+            continue
+        if isinstance(act, str) and act and act not in acts:
+            acts.append(act)
+    return tuple(acts)
+
+
 def handoff(state, original):
     """The InitialState a picked-up run starts from."""
     notes = [str(note) for note in state.get("notes") or ()]
@@ -344,11 +364,17 @@ def handoff(state, original):
                                  + (f" ({label[:60]})" if label else "") for step, act, label in done[-5:])
                      + ". It may already have happened: check the screen (the thread, the sent or saved item) "
                        "before doing it again.")
+    held = held_acts(original) if original is not None else ()
+    lost = [act for act in held if act not in {item[1] for item in done}]
+    if lost:
+        feedback += (" The answer to an earlier attempt at " + ", ".join(ACT_WORDS.get(act, act) for act in lost)
+                     + " was lost: it may have gone through. Check the screen before doing it again; doing it again "
+                       "asks the user first.")
     return harness_api.InitialState(
         plan=str(state.get("plan") or ""), notes=tuple(notes[-40:]),
         history=tuple(str(line) for line in state.get("history") or ()), feedback=feedback,
         steps_used=max(0, int(state.get("step") or 0)), cost_usd=float(state.get("cost_usd") or 0.0),
-        reason="picked up after the task was interrupted")
+        reason="picked up after the task was interrupted", held_acts=held)
 
 
 _resumed = {}   # run id -> turns already used, for frontier_options (read once)

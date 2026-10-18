@@ -10,11 +10,11 @@ from mobile_agent.bench import heldout as H
 from mobile_agent.bench import suite as S
 from mobile_agent.bench.agents import build_agents
 from mobile_agent.bench.agents.base import Context, Recorder
-from mobile_agent.bench.agents.smart import SmartAgent, SmartGuardedDriver, arm_settings, map_smart
+from mobile_agent.bench.agents.smart import SmartAgent, SmartGuardedDriver, map_smart
 from mobile_agent.bench.runner import make_plan
 from mobile_agent.bench.safety import Monitor
 from mobile_agent.bench.tests.fakes import context, element, snapshot
-from mobile_agent.drivers import DriverRejection
+from mobile_agent.driver_guards import DriverRejection
 
 FORBIDDEN = r"\b(send|buy|purchase|pay|post|delete|like|follow|call|message|install|turn (on|off))\b"
 
@@ -75,18 +75,16 @@ class AbbaPlan(unittest.TestCase):
 
 
 class SmartAgents(unittest.TestCase):
-    def test_arm_settings_compose(self):
-        base, env = arm_settings("mobster-smart+diffs+stream")
-        self.assertEqual(base, "mobster-smart")
-        self.assertEqual(env, {"MOBSTER_SCREEN_DIFFS": "on", "MOBSTER_STREAM_DISPATCH": "on"})
-        with self.assertRaises(ValueError):
-            arm_settings("mobster-smart+nonsense")
-
     def test_build_agents_knows_every_smart_backend(self):
-        agents = build_agents(["mobster-smart", "mobster-smart-codex+diffs"])
+        agents = build_agents(["mobster-smart", "mobster-smart-codex"])
         self.assertEqual(agents["mobster-smart"].model, "claude-sonnet-5-5")
-        self.assertEqual(agents["mobster-smart-codex+diffs"].model, "codex:gpt-6.1-sol")
-        self.assertEqual(agents["mobster-smart-codex+diffs"].settings, {"MOBSTER_SCREEN_DIFFS": "on"})
+        self.assertEqual(agents["mobster-smart-codex"].model, "codex:gpt-6.1-sol")
+
+    def test_a_plus_suffix_is_an_unknown_agent(self):
+        with self.assertRaises(ValueError):
+            build_agents(["mobster-smart+stream"])
+        with self.assertRaises(ValueError):
+            SmartAgent("mobster-smart+stream")
 
     def test_completed_maps_the_structured_answer_and_blocked_is_no_success(self):
         task = H.build_heldout()[5]  # contact city
@@ -133,6 +131,20 @@ class SmartGuard(unittest.TestCase):
         guarded, driver, monitor = self.guarded(task)
         screen = snapshot([element("Battery", "Cell", rect=(.0, .5, 1, .06))])
         guarded.tap_point(.5, .53, screen)
+        self.assertEqual(driver.sent, [("tap_point", .5, .53)])
+
+    def test_a_type_error_after_dispatch_does_not_retry_the_tap(self):
+        task = H.build_heldout()[0]
+        guarded, driver, _ = self.guarded(task)
+        screen = snapshot([element("Battery", "Cell", rect=(.0, .5, 1, .06))])
+
+        def tap(x, y, snapshot, timeout=10, **kwargs):
+            driver.sent.append(("tap_point", x, y))
+            raise TypeError("failure after dispatch")
+
+        driver.tap_point = tap
+        with self.assertRaisesRegex(TypeError, "failure after dispatch"):
+            guarded.tap_point(.5, .53, screen, purpose="tap_xy")
         self.assertEqual(driver.sent, [("tap_point", .5, .53)])
 
     def test_set_value_on_a_switch_is_refused(self):

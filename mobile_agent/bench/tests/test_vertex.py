@@ -64,6 +64,13 @@ class VertexTests(unittest.TestCase):
 
 
 class CostTests(unittest.TestCase):
+    def test_flash_lite_uses_its_own_rates_instead_of_the_flash_prefix(self):
+        usage = {"promptTokenCount": 1_000_000, "candidatesTokenCount": 1_000_000}
+        for model in ("gemini-3.5-flash-lite", "gemini-3.5-flash-lite-001"):
+            with self.subTest(model=model):
+                self.assertAlmostEqual(cost_usd(model, usage), 2.80)
+        self.assertAlmostEqual(cost_usd("gemini-3.5-flash", usage), 10.50)
+
     def test_unknown_model_or_usage_is_unpriced(self):
         self.assertIsNone(cost_usd("gemini-9", {"promptTokenCount": 1}))
         self.assertIsNone(cost_usd("gemini-3.7-flash", {}))

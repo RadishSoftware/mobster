@@ -128,7 +128,15 @@ def restore(udid, bundles, src):
     """Put a checkpoint back: every app's data folders and the shared groups, as saved. Returns (seconds, ok)."""
     src = pathlib.Path(src)
     meta = json.loads((src / "checkpoint.json").read_text())
+    if not isinstance(meta, dict) or meta.get("apps") != bundles or not isinstance(meta.get("digest"), str):
+        raise ValueError("checkpoint metadata doesn't match the apps to restore; no app data was changed")
     started = time.monotonic()
+    roots = [(f"{bundles[app]}/{rel}", src / "apps" / bundles[app] / rel)
+             for app in sorted(bundles) for rel in PERSISTENT]
+    groups = src / "groups"
+    roots += [(f"group/{folder.name}", folder) for folder in sorted(groups.iterdir())] if groups.is_dir() else []
+    if _digest(roots) != meta["digest"]:
+        return round(time.monotonic() - started, 2), False
     terminate(udid, bundles.values())
     for app, bundle in bundles.items():
         container = app_container(udid, bundle)
@@ -151,13 +159,17 @@ def restore(udid, bundles, src):
 
 def digest(udid, bundles):
     """sha256 over the persistent folders' files (paths and bytes), apps in name order, then the shared groups."""
-    h = hashlib.sha256()
     roots = []
     for app in sorted(bundles):
         container = app_container(udid, bundles[app])
         if container is not None:
             roots += [(f"{bundles[app]}/{rel}", container / rel) for rel in PERSISTENT]
     roots += [(f"group/{g}", f) for g, f in sorted(group_containers(udid).items())]
+    return _digest(roots)
+
+
+def _digest(roots):
+    h = hashlib.sha256()
     for label, root in roots:
         if not root.is_dir():
             continue
@@ -168,10 +180,7 @@ def digest(udid, bundles):
                     continue
                 path = pathlib.Path(dirpath) / name
                 h.update(f"{label}/{path.relative_to(root)}".encode())
-                try:
-                    h.update(path.read_bytes())
-                except OSError:
-                    pass
+                h.update(path.read_bytes())
     return h.hexdigest()
 
 

@@ -4,7 +4,8 @@ worked. Offline: a fake WDA with one wheel."""
 
 import unittest
 
-from mobile_agent.drivers import WDA, WheelNotSet, wheel_items, wheel_number, wheel_shows
+from mobile_agent.drivers import WDA
+from mobile_agent.wda_text import WheelNotSet, wheel_items, wheel_number, wheel_shows
 from mobile_agent.frontier import FrontierAgent
 from mobile_agent.state import Element
 from mobile_agent.tests.test_frontier import Driver, Script, screen

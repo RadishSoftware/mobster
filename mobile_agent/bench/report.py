@@ -281,7 +281,9 @@ def render(run_dir, out_path=None, today=None):
               "and time budgets, the same safety monitor and the same gestures as Mobster.", ""]
     text = "\n".join(lines) + "\n"
     if out_path:
-        Path(out_path).write_text(text)
+        out_path = Path(out_path)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(text)
     return text
 
 

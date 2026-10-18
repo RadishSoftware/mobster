@@ -36,7 +36,8 @@ INTRO_RATES = {"gemini-3.8-flash": (0.75, 3.75), "gemini-3.7-flash": (0.75, 3.75
 
 def cost_usd(model, usage):
     """Published-rate estimate; None when the model or usage is unknown (never a synthetic zero)."""
-    base = next((name for name in RATES if model == name or model.startswith(name + "-")), None)
+    base = next((name for name in sorted(RATES, key=len, reverse=True)
+                 if model == name or model.startswith(name + "-")), None)
     if base is None or not isinstance(usage, dict):
         return None
     prompt = usage.get("promptTokenCount")

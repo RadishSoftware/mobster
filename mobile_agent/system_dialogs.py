@@ -23,6 +23,10 @@ Rules that hold in every mode:
   (``note_paste``). The clipboard's contents aren't read back: the window stands for "the text is Mobster's". Any
   other paste prompt is refused ("Don't Allow Paste").
 - Open in "App"? is pressed only right after Mobster opened that link itself (``note_open``).
+- An iOS update nag gets "Later" (installing restarts the phone); a Screen Time limit stops the run (a limit is never
+  ignored for the user); Undo Typing (a shake) gets "Cancel", never "Undo"; a website sign-in asks.
+- A connection that sees only pixels reads the alert from the screen (``from_screen``) and taps its button by name;
+  it recognizes only iOS's own kinds of alert, so an app's alert stays the agent's, under its approvals.
 
 The mode is the user's permission mode (``permission_mode``): ask_all, ask_important (default) or dont_ask, read
 the way ``permissions.policy`` reads it (MOBSTER_PERMISSION_MODE; MOBSTER_ASK_BEFORE_ACTING=0 as
@@ -30,7 +34,7 @@ dont_ask), and through that package when it is present. Runs an outside agent st
 ask_important.
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import os
 import re
 import threading
@@ -39,7 +43,7 @@ import unicodedata
 
 ASK_ALL, ASK_IMPORTANT, DONT_ASK = "ask_all", "ask_important", "dont_ask"
 MODES = (ASK_ALL, ASK_IMPORTANT, DONT_ASK)
-OUTSIDE_ORIGINS = frozenset({"mcp", "remote"})
+OUTSIDE_ORIGINS = frozenset({"mcp", "remote", "hook", "trigger", "console"})
 # How long after Mobster set the clipboard (or opened a link) the dialog that follows is taken to be its own.
 PASTE_WINDOW_S = 20.0
 OPEN_WINDOW_S = 15.0
@@ -99,13 +103,25 @@ PATTERNS = (
     ("apple_account", re.compile(r"apple account|apple id|itunes store|sign in to icloud|enter (?:the|your) password",
                                  re.I)),
     ("trust_computer", re.compile(r"trust this computer", re.I)),
+    ("software_update", re.compile(r"\b(?:ios|software) update\b|\bupdate is (?:now )?available|is now available|"
+                                   r"\binstall (?:now|tonight)\b", re.I)),
+    ("screen_time", re.compile(r"^time limit\b|reached your limit on|you['’]ve reached your limit", re.I)),
+    ("web_sign_in", re.compile(r"(?:wants|would like) to use .{1,80} to sign in", re.I)),
+    ("undo_typing", re.compile(r"^undo typing\b", re.I)),
     ("rating", re.compile(r"^enjoying .+\?|rate (?:this app|us)|tap a star to rate", re.I)),
     ("low_battery", re.compile(r"^low battery\b", re.I)),
 )
 ALLOW = re.compile(r"^(?:allow(?: once| while using(?: the)? app| full access| paste)?|ok|open|continue|"
                    r"change to always allow|save password)$", re.I)
 DENY = re.compile(r"^(?:don['’]?t allow(?: paste)?|ask app not to track|cancel|not now|keep only while using|"
-                  r"close|later|never for this website)$", re.I)
+                  r"close|later|remind me later|don['’]?t trust|never for this website)$", re.I)
+# The buttons of iOS's own alerts, as they read on screen: a connection that sees only pixels finds an alert by them.
+BUTTONS = frozenset(name.casefold() for name in (
+    "Allow", "Don't Allow", "Allow Once", "Allow While Using App", "Allow While Using the App", "Ask App Not to Track",
+    "Allow Paste", "Don't Allow Paste", "OK", "Cancel", "Not Now", "Open", "Limit Access...", "Limit Access…",
+    "Allow Full Access", "Select Photos...", "Select Photos…", "Close", "Later", "Remind Me Later", "Install Now",
+    "Install Tonight", "Low Power Mode", "Trust", "Don't Trust", "Continue", "Keep Only While Using",
+    "Change to Always Allow", "Undo", "Save Password", "Never for This Website", "Ignore Limit", "Settings"))
 
 
 def fold(text):
@@ -128,6 +144,7 @@ class Dialog:
     buttons: tuple
     kind: str = "unknown"            # a PATTERNS kind, "permission" (Allow / Don't Allow), or "unknown"
     app: str = ""
+    on_screen: bool = False          # read from the screen (a connection that sees only pixels), not from WDA
 
     @property
     def grant(self):
@@ -144,12 +161,13 @@ class Dialog:
     def allow_button(self):
         """The narrowest grant on offer: Allow Once before Allow While Using App, Limit Access before Full Access."""
         return (self.button("Allow Once", "Allow While Using App", "Allow While Using the App", "Limit Access...",
-                            "Allow", "Allow Full Access", "OK", "Continue", "Allow Paste", "Open")
+                            "Select Photos...", "Select Contacts...", "Allow", "Allow Full Access", "OK", "Continue",
+                            "Allow Paste", "Open")
                 or next((b for b in self.buttons if ALLOW.match(fold(b))), None))
 
     def deny_button(self):
         return (self.button("Don't Allow", "Ask App Not to Track", "Don't Allow Paste", "Not Now", "Cancel",
-                            "Keep Only While Using", "Close", "Later")
+                            "Keep Only While Using", "Close", "Later", "Remind Me Later", "Don't Trust")
                 or next((b for b in self.buttons if DENY.match(fold(b))), None))
 
     def public(self):
@@ -167,8 +185,12 @@ def classify(text, buttons=()):
     return Dialog(text=plain[:400], buttons=buttons, kind=kind, app=app_named(text))
 
 
-def read(driver, timeout=READ_TIMEOUT):
-    """The dialog in front as a Dialog, or None. Never raises: a runner that doesn't answer reads as no dialog."""
+def read(driver, timeout=READ_TIMEOUT, snapshot=None):
+    """The dialog in front as a Dialog, or None. Never raises: a runner that doesn't answer reads as no dialog.
+    A connection without WebDriverAgent (iPhone Mirroring, Cable + Bluetooth) reads it from ``snapshot``
+    (``from_screen``)."""
+    if not callable(getattr(driver, "call", None)):
+        return from_screen(snapshot) if snapshot is not None else None
     try:
         text = driver.call("GET", "/alert/text", timeout=timeout)
     except Exception:
@@ -182,28 +204,46 @@ def read(driver, timeout=READ_TIMEOUT):
     return classify(text, buttons if isinstance(buttons, list) else [])
 
 
+def from_screen(snapshot):
+    """iOS's alert on a screen read as text (OCR lines or a tree), or None: its buttons by their names (BUTTONS),
+    its text from the lines just above them. Only an alert of a kind iOS shows counts (a known prompt, or Allow
+    with Don't Allow): an app's own "OK" and "Cancel" stay the app's, for the agent and its approvals."""
+    elements = list(getattr(snapshot, "elements", ()) or ())
+    buttons = [e for e in elements if fold(e.label).casefold() in BUTTONS and .2 <= e.center[1] <= .95]
+    if not buttons:
+        return None
+    top = min(e.center[1] for e in buttons)
+    lines = [e for e in elements if e not in buttons and top - .32 <= e.center[1] < top - .005
+             and .08 <= e.center[0] <= .92 and fold(e.label)]
+    lines.sort(key=lambda e: (round(e.center[1], 3), e.center[0]))
+    text = " ".join(fold(e.label) for e in lines)
+    names = [e.label for e in sorted(buttons, key=lambda e: (round(e.center[1], 2), e.center[0]))]
+    dialog = classify(text, names)
+    if dialog.kind == "unknown":
+        return None
+    return Dialog(text=dialog.text, buttons=dialog.buttons, kind=dialog.kind, app=dialog.app, on_screen=True)
+
+
 # -- what Mobster did just before (paste, open a link) -----------------------------------------------------------
 
 @dataclass
 class Recent:
     """What Mobster itself just did that makes a following dialog its own: a clipboard it set, a link it opened."""
-    pasted_at: float = 0.0
-    opened_at: float = 0.0
+    pasted_at: float | None = None
+    opened_at: float | None = None
     opened_url: str = ""
-    lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
 
-_recent = {}
 _recent_lock = threading.Lock()
 
 
 def recent(driver):
-    """The Recent record for ``driver`` (kept per driver object, for the life of the process)."""
-    key = id(driver)
+    """The Recent record owned by ``driver``, for that driver's lifetime."""
     with _recent_lock:
-        found = _recent.get(key)
+        found = getattr(driver, "recent_dialogs", None)
         if found is None:
-            found = _recent[key] = Recent()
+            found = Recent()
+            driver.recent_dialogs = found
         return found
 
 
@@ -289,7 +329,8 @@ def decide(dialog, mode=ASK_IMPORTANT, *, can_ask=True, recent_=None, in_app=Fal
                                                "Mobster never answers that: answer it on your iPhone, then run "
                                                "the task again.")
     if kind == "paste":
-        mine = recent_ is not None and now - recent_.pasted_at <= PASTE_WINDOW_S
+        pasted_at = recent_.pasted_at if recent_ is not None else None
+        mine = pasted_at is not None and 0 <= now - pasted_at <= PASTE_WINDOW_S
         if mine and allow:
             return Decision("press", dialog, allow, reason="the text being pasted is what Mobster just typed.")
         if mode == ASK_ALL and can_ask:
@@ -300,7 +341,8 @@ def decide(dialog, mode=ASK_IMPORTANT, *, can_ask=True, recent_=None, in_app=Fal
                                                           "stays private.")
         return ask(f"Let {who} paste from your clipboard?")
     if kind == "open_in_app":
-        mine = recent_ is not None and now - recent_.opened_at <= OPEN_WINDOW_S
+        opened_at = recent_.opened_at if recent_ is not None else None
+        mine = opened_at is not None and 0 <= now - opened_at <= OPEN_WINDOW_S
         if mine and allow and mode != ASK_ALL:
             return Decision("press", dialog, allow, reason="Mobster opened this link for the task.")
         if not mine and deny and not can_ask:
@@ -311,6 +353,22 @@ def decide(dialog, mode=ASK_IMPORTANT, *, can_ask=True, recent_=None, in_app=Fal
             return ask(f"Let {who} track you across other apps and websites?", deny)
         return Decision("press", dialog, deny, reason="apps work without tracking you, so Mobster asked it not "
                                                       "to track.")
+    if kind == "software_update":
+        later = dialog.button("Later", "Remind Me Later", "Not Now")
+        if later and not (mode == ASK_ALL and can_ask):
+            return Decision("press", dialog, later, reason="installing iOS restarts the phone and isn't part of the "
+                                                           "task, so Mobster chose later.")
+        return ask("Install the iOS update now?", later, "Installing restarts your iPhone.")
+    if kind == "screen_time":
+        return Decision("stop", dialog, reason="Screen Time's limit for this app is up. Mobster never ignores a limit "
+                                               "for you: extend it on your iPhone, then run the task again.")
+    if kind == "undo_typing":
+        cancel = dialog.button("Cancel")
+        if cancel:
+            return Decision("press", dialog, cancel, reason="it keeps the text as it is.")
+        return Decision("leave", dialog)
+    if kind == "web_sign_in":
+        return ask(f"Let {who} use the website's sign-in?", allow, "The app could see your sign-in for that site.")
     if kind in ("rating", "low_battery") and deny:
         return Decision("press", dialog, deny, reason="it changes nothing, so Mobster closed it.")
     if kind == "notifications":
@@ -348,9 +406,17 @@ def answered(decision, answer):
     return None
 
 
-def press(driver, decision, timeout=10):
-    """Press the decision's button (WebDriverAgent finds it by its real name). Raises when the runner refuses."""
-    driver.call("POST", "/alert/accept", {"name": decision.button}, timeout=timeout)
+def press(driver, decision, timeout=10, snapshot=None):
+    """Press the decision's button: WebDriverAgent finds it by its real name; a connection that sees only pixels
+    taps the button with that name on ``snapshot``. Raises when it can't (nothing is pressed then)."""
+    if callable(getattr(driver, "call", None)) and not decision.dialog.on_screen:
+        driver.call("POST", "/alert/accept", {"name": decision.button}, timeout=timeout)
+        return
+    wanted = fold(decision.button).casefold()
+    found = [e for e in getattr(snapshot, "elements", ()) or () if fold(e.label).casefold() == wanted]
+    if len(found) != 1:
+        raise ValueError(f"the alert's “{decision.button}” isn't on the screen once")
+    driver.execute("TAP", found[0], snapshot, timeout=timeout)
 
 
 def line(decision, pressed=None, by_user=False):
@@ -375,7 +441,8 @@ TOPICS = {"notifications": "notifications", "tracking": "tracking", "paste": "Al
           "calendar": "the calendar", "reminders": "reminders", "bluetooth": "Bluetooth",
           "local_network": "the local network", "motion": "motion and fitness", "speech": "speech recognition",
           "media": "the media library", "home": "Home data", "health": "health data", "face_id": "Face ID",
-          "focus": "Focus status"}
+          "focus": "Focus status", "software_update": "an iOS update", "screen_time": "a Screen Time limit",
+          "web_sign_in": "a website sign-in", "undo_typing": "Undo Typing"}
 
 
 def thread_text(kind, app, button, by="mobster"):

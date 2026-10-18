@@ -44,18 +44,44 @@ def load_env_file(path, missing_ok=False):
     and reported in ``warnings``; so is a file that cannot be read.
     """
     import os
+    from . import env_secrets
+    values, warnings = _parse_env_file(path, missing_ok)
+    loaded = []
+    # Settings can choose the secret store (MOBSTER_VAULT=file). App secrets come only from its locked read,
+    # never this plaintext snapshot, which may precede a key replacement or logout.
+    for key, value in values.items():
+        if key not in env_secrets.SECRET_NAMES and key not in os.environ:
+            os.environ[key] = value
+            loaded.append(key)
+    secrets, problems = env_secrets.secrets_for(path, values)
+    warnings += problems
+    if not env_secrets.applies(path):
+        secrets = {key: value for key, value in values.items() if key in env_secrets.SECRET_NAMES}
+    for key, value in secrets.items():
+        if key not in os.environ:
+            os.environ[key] = value
+            loaded.append(key)
+    return EnvFile(loaded, warnings)
+
+
+def read_env_values(path):
+    """{NAME: value} for the file's valid lines, without touching the environment ({} when it can't be read)."""
+    return _parse_env_file(path, missing_ok=True)[0]
+
+
+def _parse_env_file(path, missing_ok):
     import re
-    loaded, warnings = [], []
+    values, warnings = {}, []
     name = Path(path).name
     try:
         data = Path(path).read_bytes()
     except FileNotFoundError:
         if not missing_ok:
             warnings.append(missing_env_file(path))
-        return EnvFile(loaded, warnings)
+        return values, warnings
     except OSError as error:
         warnings.append(f"{name} could not be read ({type(error).__name__}); no settings were loaded from it")
-        return EnvFile(loaded, warnings)
+        return values, warnings
     for number, raw in enumerate(data.removeprefix(b"\xef\xbb\xbf").splitlines(), 1):
         try:
             line = raw.decode("utf-8").strip()
@@ -75,10 +101,11 @@ def load_env_file(path, missing_ok=False):
             continue
         if len(value) >= 2 and value[0] == value[-1] and value[0] in "'\"":
             value = value[1:-1]
-        if key not in os.environ:
-            os.environ[key] = value
-            loaded.append(key)
-    return EnvFile(loaded, warnings)
+        if "\x00" in value:
+            warnings.append(f"{name} line {number} contains a null character; skipped it")
+            continue
+        values.setdefault(key, value)  # the first line for a name wins, as it did when each line set the environment
+    return values, warnings
 
 
 # Where each key and setting this process loaded came from: {name: "env-file" | "mac-app"}. A name set in the shell

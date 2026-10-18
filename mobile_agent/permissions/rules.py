@@ -16,7 +16,6 @@ from dataclasses import dataclass
 import re
 import unicodedata
 
-READ_OPS = frozenset({"READ_LIST", "SCROLL_TO", "WAIT", "DONE", "BLOCKED", "SCREEN", "READ"})
 TYPE_OPS = frozenset({"TYPE", "SET_TEXT"})
 RETURN_OPS = frozenset({"SUBMIT", "TYPE_SUBMIT"})
 TAP_OPS = frozenset({"TAP", "LONG_PRESS", "TAP_XY"})
@@ -44,6 +43,16 @@ class Action:
     # Where typed digits came from, when the run knows: the rows it has seen that hold them (a 4 to 10 digit group with
     # the digits in it). () when it saw them nowhere; None when it can't say (code_entry then fails closed as before).
     origins: tuple | None = None
+    # The control's frame and the screen's elements, for the signals that read the screen around an action
+    # (permissions.consequence: a dialog, a composer, a reply chip). () when unknown.
+    rect: tuple = ()
+    around: tuple = ()
+    # The screen was read from pixels only (iPhone Mirroring, a video and Bluetooth connection): every element is a
+    # line of text, with no buttons, rows, dialogs or switches to tell them apart.
+    pixels: bool = False
+    # What a named icon's glyph looks like (perception: "paper plane", "heart", "trash"), "" for anything else: read
+    # beside its name, so a glyph that commits under a name that doesn't still asks.
+    glyph: str = ""
 
 
 _PUNCT = re.compile(r"[\"“”'‘’«»!?¡¿…]+")
@@ -61,6 +70,11 @@ def norm(text):
             break
         text = shorter
     return text
+
+
+def words_of(label):
+    """The words of ``label``, folded by ``norm``."""
+    return re.findall(r"[\w'’-]+", norm(label))
 
 
 # -- one-time codes ------------------------------------------------------------------------------------------------
@@ -117,7 +131,7 @@ _OTP_TEXT = re.compile(r"\bis your (?:[\w.&'’-]+ ){0,3}(?:code|pin|passcode)\b
 _PICKER_ROLES = frozenset({"PickerWheel", "Picker", "DatePicker", "Slider", "Stepper", "SegmentedControl"})
 _DIGITS = re.compile(r"^\s*(?:\d[\s-]?){4,10}\s*$")
 _ONE_DIGIT = re.compile(r"^\s*\d\s*$")
-_SEARCH = re.compile(r"\b(search|find|where to|look up|query|filter)\b", re.I)
+SEARCH_WORDS = re.compile(r"\b(?:search|find|where to|look up|query|filter)\b", re.I)
 
 
 def looks_like_otp(text):
@@ -185,7 +199,7 @@ def changes(action):
     if op in ADJUST_OPS:
         return "change"
     if op in RETURN_OPS:
-        searching = action.role == "SearchField" or bool(_SEARCH.search(label))
+        searching = action.role == "SearchField" or bool(SEARCH_WORDS.search(label))
         return None if searching else "submit"
     if op not in TAP_OPS:
         return None
@@ -210,8 +224,8 @@ OUTSIDE_FIRST = {"like": "react", "unlike": "react", "react": "react", "follow":
                  "retweet": "post", "reblog": "post", "block": "block", "unblock": "block", "report": "report"}
 # Rows (not controls) whose words only say what they show: a song "Like a Prayer, Madonna" names no act. A row counts
 # when it reads like a control: no comma, at most this many words ("Block this Caller").
-OUTSIDE_ROW_ROLES = frozenset({"Cell", "StaticText", "Image", "Icon"})
-OUTSIDE_ROW_WORDS = 4
+CONTENT_ROLES = frozenset({"Cell", "StaticText", "Image", "Icon"})
+ROW_WORDS = 4
 
 
 def outside_act(action):
@@ -221,10 +235,10 @@ def outside_act(action):
                                                                      "SearchField"):
         return None
     label = " ".join((action.label or "").split())
-    words = re.findall(r"[\w'’-]+", norm(label))
+    words = words_of(label)
     if not words or words[0] not in OUTSIDE_FIRST:
         return None
-    if action.role in OUTSIDE_ROW_ROLES and ("," in label or len(words) > OUTSIDE_ROW_WORDS):
+    if action.role in CONTENT_ROLES and ("," in label or len(words) > ROW_WORDS):
         return None
     return OUTSIDE_FIRST[words[0]]
 

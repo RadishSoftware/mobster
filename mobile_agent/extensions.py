@@ -4,7 +4,7 @@ The core drives an iPhone through WebDriverAgent (WDA). A build may add other
 device targets in a ``mobile_agent.private`` package, which is not part of the
 public distribution. When that package is present, ``load()`` imports it once and
 calls its ``register(hooks)``; it adds its drivers (``drivers.register_driver``),
-snapshot sources (``state.SOURCE_TRAITS``) and the hooks below. Without it every
+snapshot sources and the hooks below. Without it every
 hook stays empty and the core behaves exactly the same.
 """
 
@@ -24,7 +24,7 @@ class Hooks:
         # ``run(args, output)``, which returns an exit code or None when the core
         # should handle the command (``__main__``).
         self.cli = []
-        # (config) -> a ``server.Runtime`` subclass for this config, or None (``server.serve``).
+        # (config) -> a ``server.Runtime`` subclass for this config, or None (``serve.serve``).
         self.runtime_for = None
         # Evaluation harness targets (``evals.harness``): objects with
         # ``add_arguments(target_group)`` and ``probe(args)`` (a probe, or None if not selected).
@@ -34,25 +34,36 @@ class Hooks:
 hooks = Hooks()
 _lock = threading.Lock()
 _loaded = False
+_load_error = None
 
 
 def load():
     """Import the optional extension once. Returns the hooks, filled or empty."""
-    global _loaded
+    global _loaded, _load_error
     with _lock:
+        if _load_error is not None:
+            raise _load_error
         if _loaded:
             return hooks
-        _loaded = True
         try:
             module = importlib.import_module(PACKAGE)
         except ModuleNotFoundError as error:
             if error.name != PACKAGE:
+                _load_error = error
                 raise
+            _loaded = True
             return hooks
+        except Exception as error:
+            _load_error = error
+            raise
         register = getattr(module, "register", None)
-        if register is None:
-            # A folder with no __init__.py, such as the __pycache__ a removed package leaves in a checkout,
-            # imports as an empty namespace package: there is no extension.
-            return hooks
-        register(hooks)
+        # A folder with no __init__.py, such as a leftover __pycache__, imports as an empty namespace package.
+        if register is not None:
+            try:
+                register(hooks)
+            except Exception as error:
+                # Registration may already have changed drivers or hooks. Never retry that partial setup.
+                _load_error = error
+                raise
+        _loaded = True
         return hooks

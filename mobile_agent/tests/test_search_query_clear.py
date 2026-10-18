@@ -3,6 +3,7 @@
 import unittest
 
 from mobile_agent.drivers import WDA
+from mobile_agent.driver_guards import DriverRejection
 from mobile_agent.state import Element, Snapshot
 
 
@@ -54,7 +55,7 @@ class SearchClearTests(unittest.TestCase):
 
     def test_the_value_finds_the_field_only_when_name_and_kind_are_not_unique(self):
         driver = Recorder()
-        answers = [[{"ELEMENT": "A"}, {"ELEMENT": "B"}], [], [{"ELEMENT": "C"}, {"ELEMENT": "D"}]]
+        answers = [[{"ELEMENT": "A"}, {"ELEMENT": "B"}], [], [{"ELEMENT": "C"}]]
         driver.call = lambda method, path, body=None, timeout=10: (
             driver.calls.append((method, path, body)) or (answers.pop(0) if path == "/elements" else None))
         field, snapshot = screen("MobsterBench Note")
@@ -63,6 +64,22 @@ class SearchClearTests(unittest.TestCase):
         self.assertEqual(len(predicates), 3)
         self.assertIn("value == 'MobsterBench Note'", predicates[-1])
         self.assertEqual(driver.calls[-1][1], "/element/C/clear")
+
+    def test_a_clear_never_picks_the_first_of_multiple_matching_fields(self):
+        for typing in (False, True):
+            with self.subTest(typing=typing):
+                driver = Recorder()
+                self.addCleanup(driver.close)
+                driver.call = lambda method, path, body=None, timeout=10: (
+                    driver.calls.append((method, path, body)) or [{"ELEMENT": "A"}, {"ELEMENT": "B"}])
+                field, snapshot = screen("same draft in two fields")
+                with self.assertRaises(DriverRejection):
+                    if typing:
+                        driver.execute("TYPE_SUBMIT", field, snapshot, text="replacement")
+                    else:
+                        driver.clear_text(field)
+                self.assertTrue(driver.calls)
+                self.assertTrue(all(path == "/elements" for _method, path, _body in driver.calls))
 
     def test_a_truncated_long_value_is_found_by_its_head(self):
         driver = Recorder()
@@ -89,6 +106,48 @@ if __name__ == "__main__":
 
 
 class ElementTypingTests(unittest.TestCase):
+    def test_a_failed_typing_dispatch_never_falls_back_to_keystrokes(self):
+        from mobile_agent.transport import TransportError
+        for operation in ("TYPE", "TYPE_SUBMIT"):
+            with self.subTest(operation=operation):
+                driver = Recorder()
+                self.addCleanup(driver.close)
+                field = Element("f", "Message", "TextField", (.1, .2, .8, .05), editable=True,
+                                actions=("TAP", "TYPE", "TYPE_SUBMIT"))
+                snapshot = Snapshot([field], "", 393, 852, "wda")
+                recorded = driver.call
+
+                def call(method, path, body=None, timeout=10):
+                    result = recorded(method, path, body, timeout)
+                    if path.endswith("/value"):
+                        raise TransportError("request outcome unknown; not retried")
+                    return result
+
+                driver.call = call
+                with self.assertRaises(TransportError):
+                    driver.execute(operation, field, snapshot, text="one message")
+                self.assertEqual([path for _, path, _ in driver.calls], ["/elements", "/element/E1/value"])
+
+    def test_a_failed_read_only_lookup_can_use_the_focusing_route(self):
+        from mobile_agent.transport import TransportError
+        driver = Recorder()
+        self.addCleanup(driver.close)
+        field = Element("f", "Message", "TextField", (.1, .2, .8, .05), editable=True,
+                        actions=("TAP", "TYPE"))
+        snapshot = Snapshot([field], "", 393, 852, "wda")
+        recorded = driver.call
+
+        def call(method, path, body=None, timeout=10):
+            result = recorded(method, path, body, timeout)
+            if path == "/elements":
+                raise TransportError("lookup failed")
+            return result
+
+        driver.call = call
+        driver._await_keyboard = lambda deadline: True
+        driver.execute("TYPE", field, snapshot, text="one message")
+        self.assertEqual([path for _, path, _ in driver.calls], ["/elements", "/actions", "/wda/keys"])
+
     def test_an_unfocused_text_view_is_typed_through_the_element(self):
         # mem-041: a coordinate tap left focus in the title and the body went there.
         driver = Recorder()
@@ -165,10 +224,9 @@ class ReplaceTextTests(unittest.TestCase):
         self.assertEqual([path for _, path, _ in driver.calls], ["/elements", "/element/E1/clear", "/wda/keys"])
         self.assertEqual(driver.calls[-1][2], {"value": ["DL1358"]})
 
-    def test_a_failed_clear_is_typed_over_but_a_search_field_goes_back_to_the_caller(self):
-        # MegaMart's search field timed out clearing at 5 s; a second clear by the caller cost 5 s more.
+    def test_a_failed_clear_never_continues_typing_or_requests_a_fallback(self):
         from mobile_agent.transport import TransportError
-        for role, typed in (("TextField", True), ("SearchField", False)):
+        for role in ("TextField", "SearchField"):
             driver = Recorder()
             recorded = driver.call
 
@@ -178,9 +236,26 @@ class ReplaceTextTests(unittest.TestCase):
                     raise TransportError("HTTP TimeoutError; request outcome unknown; not retried")
                 return recorded(method, path, body, timeout)
             driver.call = call
-            self.assertEqual(driver.replace_text(self.field("PS5", role=role, label="search_products_field"), "x"),
-                             typed)
-            self.assertEqual(driver.calls[-1][1] != "/element/E1/clear", typed)
+            with self.assertRaises(TransportError):
+                driver.replace_text(self.field("PS5", role=role, label="search_products_field"), "x")
+            self.assertEqual([path for _, path, _ in driver.calls], ["/elements", "/element/E1/clear"])
+
+    def test_a_failed_clear_never_repeats_through_the_active_field(self):
+        from mobile_agent.transport import TransportError
+        driver = Recorder()
+        recorded = driver.call
+
+        def call(method, path, body=None, timeout=10):
+            result = recorded(method, path, body, timeout)
+            if path.endswith("/clear"):
+                raise TransportError("request outcome unknown; not retried")
+            return result
+
+        driver.call = call
+        field, snapshot = screen("old query")
+        with self.assertRaises(TransportError):
+            driver.write_text(field, snapshot, "new query")
+        self.assertEqual([path for _, path, _ in driver.calls], ["/elements", "/element/E1/clear"])
 
     def test_empty_search_fields_unnamed_or_ambiguous_fields_are_left_to_the_caller(self):
         driver = Recorder()
@@ -207,7 +282,7 @@ class ParkedKeyboardWaitTests(unittest.TestCase):
         seen = []
         driver.observe = lambda timeout=10: seen.append(1) or Snapshot(
             [field], "", 393, 852, "wda", keyboard=keyboard)
-        with patch("mobile_agent.drivers.WDA_KEYBOARD_WAIT_SECONDS", .3):
+        with patch("mobile_agent.wda_text.WDA_KEYBOARD_WAIT_SECONDS", .3):
             self.assertTrue(driver._await_keyboard(Deadline(5)))
         return len(seen)
 

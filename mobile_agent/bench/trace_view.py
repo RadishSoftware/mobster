@@ -1,10 +1,9 @@
-"""A run's steps as a table, for reading engine combinations by hand (TRACE-REVIEW.md).
+"""A run's steps as a table, for reading engine combinations by hand.
 
   python -m mobile_agent.bench.trace_view RUN_DIR [--task ID]
 
-Per attempt: one line per decision (planner call or executor step) with its latency and cost, the actions it
-took and whether each changed the screen, refusals, chunk stops, executor surprises, watcher answers, and the end:
-status, answer, verdict and the failing checks.
+Per attempt: one line per decision with its latency and cost, the actions it took and whether each changed the
+screen, refusals, chunk stops, and the end: status, answer, verdict and the failing checks.
 """
 
 import argparse
@@ -36,8 +35,7 @@ def attempt_lines(folder, record):
         elif kind == "frontier_decision":
             out = (prompts.get(event.get("step")) or {}).get("out") or {}
             ops = " | ".join(f"{a.get('operation')} {a.get('target') or a.get('target_label') or a.get('app') or ''}"
-                             + (f" {a.get('text')!r}" if a.get("text") else "") for a in out.get("actions") or ()) \
-                if event.get("source") != "executor" else ",".join(event.get("ops") or ())
+                             + (f" {a.get('text')!r}" if a.get("text") else "") for a in out.get("actions") or ())
             lines.append(f"- t={event['t_ms'] / 1000:6.1f} step {event.get('step')} [{event.get('source') or 'planner'}] "
                          f"{', '.join(pending_ms)} ${pending_cost:.4f} :: {event.get('thought', '')[:90]!r} :: {ops[:160]}"
                          + (f" :: next={event.get('next')}" if event.get("next") else ""))
@@ -48,11 +46,6 @@ def attempt_lines(folder, record):
         elif kind in ("frontier_refused", "frontier_chunk_stop", "frontier_failed"):
             lines.append(f"    ! {kind} {event.get('label') or event.get('reason') or event.get('error') or ''} "
                          f"{str(event.get('wanted') or event.get('detail') or '')[:80]}")
-        elif kind == "frontier_executor":
-            lines.append(f"    > executor {event.get('do')} {event.get('hint')!r} how={event.get('how')} "
-                         f"top={event.get('top')} left={event.get('left')}")
-        elif kind == "frontier_watch":
-            lines.append(f"    ~ watch expected={event.get('expected')} popup={event.get('popup')} ({event.get('expect')})")
         elif kind == "frontier_contract":
             lines.append(f"    contract: {event.get('items')}")
     summary = {}

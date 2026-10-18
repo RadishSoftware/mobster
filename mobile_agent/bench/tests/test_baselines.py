@@ -21,6 +21,12 @@ def cu(responses, phone=None, task=VERSION):
 
 
 class ComputerUseTests(unittest.TestCase):
+    def test_final_json_with_escaped_quotes_and_braces_is_parsed(self):
+        answer = {"ios_version": '26.0 "preview} build'}
+        final = "ANSWER_JSON: " + json.dumps({"status": "done", "answer": answer}) + "\nFinished."
+        run, _, _ = cu([model_turn(text(final))])
+        self.assertEqual((run.status, run.answer), ("completed", answer))
+
     def test_request_uses_the_mobile_environment_and_sends_a_screenshot(self):
         run, vertex, _ = cu([model_turn(text('ANSWER_JSON: {"status": "done", "answer": {"ios_version": "26.0.1"}}'))])
         body = vertex.requests[0]

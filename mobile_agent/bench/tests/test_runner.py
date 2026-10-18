@@ -3,6 +3,7 @@
 import json
 import tempfile
 import unittest
+from unittest import mock
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -142,6 +143,18 @@ class YieldTests(unittest.TestCase):
     def test_app_not_running_means_idle(self):
         from mobile_agent.bench.runner import app_idle
         self.assertTrue(app_idle("http://127.0.0.1:9", wait_seconds=0, sleep=lambda s: None))
+
+
+class HealthTests(unittest.TestCase):
+    def test_only_a_known_unlocked_phone_is_healthy(self):
+        from mobile_agent.bench.phone import health
+        for locked in (False, True, None, "false", 0, {}, []):
+            with self.subTest(locked=locked), mock.patch("mobile_agent.bench.phone.HTTP") as http:
+                http.return_value.request.side_effect = [{"sessionId": "s", "value": {"ready": True}},
+                                                         {"value": locked}]
+                result = health("http://unused.invalid")
+                self.assertEqual(result.ok, locked is False)
+                http.return_value.close.assert_called_once()
 
 
 if __name__ == "__main__":

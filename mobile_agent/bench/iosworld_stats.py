@@ -55,7 +55,7 @@ import random
 import re
 import statistics
 
-from ..task_policy import COMMIT_CONTROL
+from ..task_policy import COMMIT_CONTROL, GUARD_WORDS, SHEET_OPENERS
 
 # iOSWorld's 133 tasks by category (tasks.json, 26 Sep 2026).
 FULL_MIX = {"single_app": 27, "multi_app": 60, "memory": 46}
@@ -63,8 +63,6 @@ CATEGORIES = tuple(FULL_MIX)
 # frontier_refused labels that are not the commit guard.
 NON_GUARD_REFUSALS = frozenset({"loop", "repeat", "idle_wait", "dismiss_exhausted"})
 COMMIT_OPS = frozenset({"TAP", "LONG_PRESS"})
-SHEET_OPENERS = frozenset({"share", "share…", "share..."})  # as frontier.guard: opening a sheet commits nothing
-GUARD_WORDS = 4
 EVENTS_CAP = 400  # iosworld.run_task keeps the last 400 events: counts from a capped list may be short
 WDA_CRASH = re.compile(r"ConnectionRefused|ConnectionReset|ConnectionAborted|RemoteDisconnected|BrokenPipe|"
                        r"TransportError|URLError|IncompleteRead|Connection refused|Connection reset", re.I)

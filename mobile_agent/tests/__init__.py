@@ -3,7 +3,8 @@
 Every test module imports this package first, so ``guard()`` runs before any test does. A test never sees a key from
 this Mac: not one in the shell's environment, not the Mac app's agent.env, not the key vault's files, not the
 Keychain, also when a test clears its environment. A failure message shows a key-shaped value only by its last four
-characters. Nor does a test run this Mac's Codex, Claude Code or Gemini CLI, or a login shell.
+characters. Nor does a test run this Mac's Codex, Claude Code or Gemini CLI, or a login shell, or reach a Mobster
+service running on this Mac (the Mac app, `mobster serve`): the service address is pinned to a closed port.
 """
 
 import atexit
@@ -33,6 +34,11 @@ HELPER = ("TEXT_MODEL", "TEXT_MODEL_BASE_URL", "TEXT_MODEL_PROVIDER", "MOBSTER_H
 KEY_PLACES = ("MOBSTER_ENV_FILE", "CODEX_HOME", "CLAUDE_CONFIG_DIR", "GEMINI_CLI_HOME", "XDG_CONFIG_HOME",
               "CLOUDSDK_CONFIG")
 
+# Where $MOBSTER_URL points in a test: the discard port, which nothing on a Mac listens on. Without it, the clients of
+# threads/client.py (`mobster chat`, MCP's approvals and phone_task) find a running service at 8765 or at the address it
+# wrote to .state/api-url beside the source, and a test would raise a real approval card in the Mac app.
+NO_SERVICE = "http://127.0.0.1:9"
+
 HOME = os.path.realpath(tempfile.mkdtemp(prefix="mobster-test-home-"))
 # Where this run's device leases go (journal._LEASE_ROOT, set below).
 LEASES = os.path.realpath(tempfile.mkdtemp(prefix="mobster-test-leases-"))
@@ -54,6 +60,9 @@ def guard(environ=os.environ):
         del environ[name]
     # The Mac app's agent.env, the key vault's files and every other file under ~ are this run's empty ones.
     environ["HOME"] = HOME
+    # No service of this Mac answers a test, also one the shell named in MOBSTER_URL. A test of the client's own
+    # discovery removes this from the environment (test_api_address) and patches where it looks.
+    environ["MOBSTER_URL"] = NO_SERVICE
     # Plan sign-ins and provider keys go to files in that HOME, never the person's Keychain; so do Mobster Remote's
     # device key and the outlets' secrets.
     environ["MOBSTER_VAULT"] = "file"
@@ -68,6 +77,21 @@ def guard(environ=os.environ):
 
 
 guard()
+
+# A source checkout keeps its data beside the package (paths.user_data_dir). A test's follows its HOME instead: this
+# run's empty HOME, or the folder a test points HOME at, so that test gets its own stores and Keychain names too.
+# test_data_isolation checks the real rule in a process of its own.
+from mobile_agent import paths as _paths  # noqa: E402
+
+_user_data_dir = _paths.user_data_dir
+
+
+def _test_user_data_dir():
+    root = _user_data_dir()
+    return _paths.installed_data_dir() if root == _paths.CHECKOUT_DATA else root
+
+
+_paths.user_data_dir = _test_user_data_dir
 
 _expanduser = posixpath.expanduser
 
@@ -103,6 +127,17 @@ def _harness(name):
 _vault = _harness("ai_plans.vault")
 if _vault is not None:
     _vault.on_mac = lambda: False
+# So are the Mac app's settings secrets (env_secrets.py): a test that wants a Keychain patches in a fake one.
+from mobile_agent import env_secrets as _env_secrets  # noqa: E402
+
+_env_secrets.on_mac = lambda: False
+
+# Nor does a test reach Mobster's account service (api.mobster.dev), also one that clears the environment: without
+# MOBSTER_ACCOUNT_API it is the discard port too, so Settings › Connectors finds Mobster's own OAuth apps unreachable
+# (connectors/shared.py). The tests of that service point MOBSTER_ACCOUNT_API at a fake.
+_share = _harness("share")
+if _share is not None:
+    _share.ACCOUNT_API = NO_SERVICE
 
 # A phone's device lease (journal.Lease.device) is this run's own, whatever HOME or $TMPDIR a test sets. In the data
 # folder or the temporary folder it would meet the lease of the Mac app or a benchmark on the same address: a test
@@ -186,6 +221,26 @@ if _connectors_vault is not None:
                 else _connectors_vault.FileVault(os.path.join(HOME, "connectors-keychain.json")))
 
     _connectors_vault.backend = _connectors_backend_in_a_file
+
+# Nor does a test reach the Keychain through the Security framework (keychain_acl.py): a store a test made without a
+# fake bridge (tests/fake_keychain.py) is refused before it reads or writes anything. Turning prompts off touches no item.
+from mobile_agent import keychain_acl as _keychain_acl  # noqa: E402
+
+
+class _RefusedBridge:
+    def no_prompts(self):
+        pass
+
+    def __getattr__(self, name):
+        def refused(*args, **kwargs):
+            why = ("A test tried to reach this Mac's Keychain through the Security framework "
+                   f"(keychain_acl {name}). Give the store a FakeBridge (tests/fake_keychain.py)")
+            REFUSED.append(why)
+            raise PermissionError(errno.EPERM, why)
+        return refused
+
+
+_keychain_acl.system_bridge = lambda: _RefusedBridge()
 
 # Whatever finds one, a test process never starts it: subprocess refuses this Mac's coding agents (any outside the
 # temporary folder, where a test's fakes are), every login shell and every Keychain command of /usr/bin/security, before
