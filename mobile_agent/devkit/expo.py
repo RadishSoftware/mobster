@@ -164,6 +164,20 @@ def find_app(cwd, runner=None):
     return app
 
 
+def resolve_project(given=None):
+    """Resolve an explicit absolute project path, or use the current directory when omitted."""
+    if not given:
+        return find_app(Path.cwd())
+    folder = Path(os.path.expanduser(given))
+    if not folder.is_absolute():
+        raise DevError("Pass the absolute path of the Expo project.", "Use the folder that holds package.json.")
+    if not folder.is_dir():
+        shown = " ".join(str(given).split())
+        shown = shown if len(shown) <= 80 else "…" + shown[-79:]
+        raise DevError(f"“{shown}” isn't a folder on this Mac.", "Pass the absolute path of the project.")
+    return find_app(folder)
+
+
 # -- Metro -------------------------------------------------------------------------------------------------------
 
 def metro_running(port=DEFAULT_PORT, *, opener=None, root=None):

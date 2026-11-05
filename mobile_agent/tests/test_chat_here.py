@@ -7,8 +7,8 @@ from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from mobile_agent import chat_here
-from mobile_agent.__main__ import NoDevice
 from mobile_agent.api_errors import APIError
+from mobile_agent.cli_run import NoDevice
 from mobile_agent.threads import cli as served_chat
 
 
@@ -44,7 +44,7 @@ class LocalChatTests(unittest.TestCase):
         args = self.args()
         args.device = "Studio iPhone"
         with patch.object(chat_here, "service_running", return_value=False), \
-                patch("mobile_agent.__main__.device_target", return_value={"wdaUrl": "http://127.0.0.1:8103"}), \
+                patch("mobile_agent.cli_run.device_target", return_value={"wdaUrl": "http://127.0.0.1:8103"}), \
                 patch.object(chat_here, "run_here", return_value=0) as run:
             self.assertEqual(chat_here.maybe_here(args), 0)
         self.assertEqual(run.call_args.args[0].wda_url, "http://127.0.0.1:8103")
@@ -58,7 +58,7 @@ class LocalChatTests(unittest.TestCase):
         args.device = "Missing iPhone"
         out = io.StringIO()
         with patch.object(chat_here, "service_running", return_value=False), \
-                patch("mobile_agent.__main__.device_target", side_effect=NoDevice("No device has that name.")), \
+                patch("mobile_agent.cli_run.device_target", side_effect=NoDevice("No device has that name.")), \
                 patch.object(chat_here, "run_here") as run, redirect_stdout(out):
             self.assertEqual(chat_here.maybe_here(args), 3)
         self.assertEqual(json.loads(out.getvalue())["code"], "no_device")
@@ -69,7 +69,7 @@ class LocalChatTests(unittest.TestCase):
         args.message, args.json, args.device = [], False, "Studio iPhone"
         terminal = SimpleNamespace(isatty=lambda: True)
         with patch.object(chat_here, "service_running", return_value=False), \
-                patch("mobile_agent.__main__.device_target", return_value={"wdaUrl": "http://127.0.0.1:8103"}), \
+                patch("mobile_agent.cli_run.device_target", return_value={"wdaUrl": "http://127.0.0.1:8103"}), \
                 patch("mobile_agent.tui.main", return_value=0) as tui, \
                 patch.object(chat_here.sys, "stdin", terminal), patch.object(chat_here.sys, "stdout", terminal):
             self.assertEqual(chat_here.maybe_here(args), 0)

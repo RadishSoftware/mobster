@@ -4,6 +4,18 @@ All notable changes to Mobster CLI are listed here. The format follows [Keep a C
 
 ## Unreleased
 
+### Fixed
+
+- Failed permission-store writes leave the active grants unchanged.
+- Simulator leases close even when release callbacks fail, and simulator listings use one lease observation per row.
+- Verification suites drain refused checks without recursive calls.
+- Recent terminal-thread addresses use atomic file replacement.
+
+### Maintenance
+
+- Remove unused attach adapters and Android recording scaffolding; retain the existing app scorer and Android logs.
+- Remove retired engine-export and app-only packaging/CI code from the standalone CLI.
+
 ### Added
 
 - When no run is active, the canvas offers **Pause** or **Resume** for a published workflow's schedule, notification or app trigger, even with saved or unsaved edits. Saved draft changes can show **Changes not published** or **Proven, not published**.

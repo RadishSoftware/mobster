@@ -131,8 +131,7 @@ class _KeptAliveJSON:
     def _post(self, path, payload, headers, timeout, *, label, final_429=lambda raw: False):
         """``json.loads`` of the reply; ``headers()`` is called per attempt (a Vertex token may refresh)."""
         deadline = Deadline(timeout)
-        claim = getattr(self, "_claim", None)
-        own = claim is None or claim.acquire(blocking=False)
+        own = self._claim.acquire(blocking=False)
         connection = self.connection if own else None
         server_errors = 0
         try:
@@ -173,15 +172,14 @@ class _KeptAliveJSON:
                 return json.loads(raw)
             raise RuntimeError("unreachable")
         finally:
-            if own and claim is not None:
-                claim.release()
-            elif not own and connection is not None:
+            if own:
+                self._claim.release()
+            elif connection is not None:
                 connection.close()
 
     def _count(self, usage):
         """Add one call's normalised usage (prompt/completion/cached/cache-write tokens) to the running total."""
-        lock = getattr(self, "_count_lock", None) or threading.Lock()
-        with lock:
+        with self._count_lock:
             for key in ("prompt_tokens", "completion_tokens", "cached_tokens", "cache_write_tokens"):
                 self.usage[key] += usage.get(key, 0)
             self.usage["calls"] += 1

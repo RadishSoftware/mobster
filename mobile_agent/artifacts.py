@@ -358,19 +358,15 @@ def _block(block, frames, screens, draw_map=None):
 
 def _comparison_html(block, escaped=False):
     options = block["options"]
-    labels = list(dict.fromkeys(f["label"] for o in options for f in o.get("facts") or ()))
     picked = block.get("recommended")
     head = "".join(f'<th class="{"pick" if o["id"] == picked else ""}">{o["name"] if escaped else _e(o["name"])}'
                    + ('<span class="badge">Pick</span>' if o["id"] == picked else "")
                    + (f'<span class="meta"> {_e(o["subtitle"])}</span>' if o.get("subtitle") else "") + "</th>"
                    for o in options)
     body = []
-    for label in labels:
-        cells = []
-        for o in options:
-            value = next((f["value"] for f in o.get("facts") or () if f["label"] == label), "")
-            cells.append(f'<td>{value if escaped else _e(value)}</td>')
-        body.append(f'<tr><th scope="row">{_e(label)}</th>{"".join(cells)}</tr>')
+    for label, values in result_blocks.comparison_rows(options):
+        cells = "".join(f'<td>{value if escaped else _e(value)}</td>' for value in values)
+        body.append(f'<tr><th scope="row">{_e(label)}</th>{cells}</tr>')
     for key, word, mark in (("pros", "Pros", "+"), ("cons", "Cons", "−")):
         if any(o.get(key) for o in options):
             cells = "".join("<td>" + "".join(f'<p class="pc">{mark} {_e(x)}</p>' for x in o.get(key) or ()) + "</td>"

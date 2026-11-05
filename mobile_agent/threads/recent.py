@@ -1,7 +1,8 @@
 """The conversation each terminal used last, per Mobster address: `mobster chat` continues it, completion lists it."""
 
 import json
-import os
+
+from ..paths import write_text_atomic
 
 
 def path():
@@ -28,8 +29,6 @@ def remember_thread(url, thread_id):
     saved[url] = thread_id
     try:
         file.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-        handle = os.open(file, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-        with os.fdopen(handle, "w") as stream:
-            stream.write(json.dumps(saved))
+        write_text_atomic(file, json.dumps(saved))
     except OSError:
         pass

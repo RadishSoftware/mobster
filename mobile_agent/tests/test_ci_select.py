@@ -11,13 +11,11 @@ ci_select = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(ci_select)
 
 RULES = """
-mobile_agent      backend lint perf
-docs              backend design
-dashboard         backend dashboard design
+mobile_agent      backend lint
+docs              backend
 other             backend
 CHANGELOG.md      backend
-scripts           backend lint perf
-site              site lint
+scripts           backend lint
 """
 
 FILES = {
@@ -40,14 +38,7 @@ FILES = {
     "docs/other.md": "other\n",
     "other/data.txt": "nobody names me\n",
     "CHANGELOG.md": "# Changelog\n",
-    "scripts/ci-local.sh": "#!/bin/sh\n",
-    "dashboard/package.json": "{}\n",
-    "dashboard/DESIGN.md": "design\n",
-    "dashboard/src/widget.ts": "export const x = 1\n",
-    "dashboard/src/widget.test.ts": "import { x } from './widget'\n",
-    "dashboard/src/guard.test.ts": "import { readFileSync, readdirSync } from 'node:fs'\n",
-    "dashboard/src/design-doc.test.ts": "import { readFileSync } from 'node:fs'\nreadFileSync('../DESIGN.md')\n",
-    "site/app/page.tsx": "export default 1\n",
+    "scripts/ci_select.py": "# selector fixture\n",
 }
 
 
@@ -94,21 +85,15 @@ class SelectTest(unittest.TestCase):
     def test_a_deleted_file_nothing_names_runs_nothing_extra(self):
         self.assertEqual(self.backend("other/gone.txt"), {"test_permissions", "test_plan_gate"})
 
-    def test_the_dashboard_runs_vitest_related_plus_the_tests_that_read_files(self):
-        plan, _ = self.plan("dashboard/src/widget.ts")
-        self.assertEqual(plan["dashboard"], {"src/widget.ts", "src/guard.test.ts"})
-        plan, _ = self.plan("dashboard/DESIGN.md")
-        self.assertEqual(plan["dashboard"], {"src/guard.test.ts", "src/design-doc.test.ts"})
 
-    def test_lint_and_design_see_only_the_changed_files(self):
-        plan, _ = self.plan("mobile_agent/core.py", "docs/guide.md", "site/app/page.tsx")
+    def test_selection_writes_only_backend_and_changed_python_inputs(self):
+        plan, _ = self.plan("mobile_agent/core.py", "docs/guide.md")
         self.assertEqual(plan["ruff"], ["mobile_agent/core.py"])
-        self.assertEqual(plan["design"], {"docs/guide.md"})
-        self.assertEqual(plan["eslint"], ["app/page.tsx"])
-
-    def test_a_change_the_dashboard_does_not_read_selects_no_dashboard(self):
-        plan, _ = self.plan("site/app/page.tsx")
-        self.assertEqual(plan["dashboard"], set())
+        with tempfile.TemporaryDirectory() as folder:
+            ci_select.write(folder, plan)
+            self.assertEqual({p.name for p in Path(folder).iterdir()}, {"backend.txt", "ruff.txt"})
+            self.assertEqual((Path(folder) / "ruff.txt").read_text(), "mobile_agent/core.py\n")
+            self.assertEqual(set((Path(folder) / "backend.txt").read_text().splitlines()), plan["backend"])
 
 
     def test_a_file_no_test_names_runs_the_whole_backend(self):
@@ -125,14 +110,10 @@ class SelectTest(unittest.TestCase):
             subprocess.run(["git", "-C", str(self.root), "rm", "-q", "--cached", "mobile_agent/orphan.py"], check=True)
             (self.root / "mobile_agent" / "orphan.py").unlink()
 
-    def test_a_change_to_the_gate_runs_every_stage_in_full(self):
-        plan, _ = self.plan("scripts/ci-local.sh")
-        self.assertEqual((plan["backend"], plan["dashboard"], plan["design"]), ("ALL", "ALL", "ALL"))
+    def test_a_change_to_the_gate_runs_the_whole_backend(self):
+        plan, _ = self.plan("scripts/ci_select.py")
+        self.assertEqual(plan["backend"], "ALL")
 
-    def test_a_dashboard_config_runs_the_dashboard_in_full(self):
-        plan, why = self.plan("dashboard/package.json")
-        self.assertEqual(plan["dashboard"], "ALL")
-        self.assertIn("dashboard/package.json", why["dashboard"])
 
     def test_a_file_that_does_not_parse_runs_the_whole_backend(self):
         (self.root / "mobile_agent" / "broken.py").write_text("def (\n")
@@ -144,8 +125,8 @@ class SelectTest(unittest.TestCase):
             (self.root / "mobile_agent" / "broken.py").unlink()
 
 
-    def test_the_safety_core_and_the_public_cut_tests_exist(self):
-        for name in ci_select.SAFETY_CORE + ci_select.PUBLIC_CUT:
+    def test_the_safety_core_tests_exist(self):
+        for name in ci_select.SAFETY_CORE:
             path = ROOT / (name.replace(".", "/") + ".py")
             self.assertTrue(path.is_file(), f"{name} is in ci_select.py but {path} is missing")
 

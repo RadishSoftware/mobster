@@ -1,6 +1,5 @@
 """The Expo dev loop as MCP tools: ``expo_preview`` opens the app from Metro, ``expo_reload`` reloads it."""
 
-import os
 import time
 from pathlib import Path
 
@@ -14,18 +13,6 @@ START_WAIT = 30
 RELOAD_SETTLE = 2.0
 MAX_EXPECT_WAIT = 30
 BUNDLE_WAIT = 20
-
-
-def project_of(args):
-    given = args.get("project")
-    if given:
-        folder = Path(os.path.expanduser(given))
-        if not folder.is_absolute():
-            raise DevError("Pass the absolute path of the Expo project.", "Use the folder that holds package.json.")
-        if not folder.is_dir():
-            raise DevError(f"{quoted(given, 80)} isn't a folder on this Mac.", "Pass the absolute path of the project.")
-        return expo.find_app(folder)
-    return expo.find_app(Path.cwd())
 
 
 def quoted(text, limit=LOG_TAIL):
@@ -59,7 +46,7 @@ def _fail(error):
 
 def preview(toolset, args, call, sleep=time.sleep):
     try:
-        app = project_of(args)
+        app = expo.resolve_project(args.get("project"))
         if not app.expo:
             raise DevError("expo_preview opens Expo apps, and this React Native app has no Expo.",
                            "Run it from Xcode, or install a build with install_app.")
@@ -105,7 +92,7 @@ def preview(toolset, args, call, sleep=time.sleep):
 def reload(toolset, args, call, sleep=time.sleep):
     port = int(args.get("port") or expo.DEFAULT_PORT)
     try:
-        app = project_of(args)
+        app = expo.resolve_project(args.get("project"))
         record = toolset._record_for(args)
         expo.reload(port)
     except DevError as error:

@@ -382,11 +382,7 @@ class TaskStartMixin:
                 if run.lease:
                     run.lease.close()
                 raise
-            for identifier in expired:
-                self.runs.pop(identifier, None)
-                if getattr(self, "frames", None) is not None:
-                    self.frames.delete(identifier)
-            self.runs[run.id] = run
+            self._retain_run(run, expired)
             thread = None
             try:
                 if waits is not None:
@@ -422,6 +418,14 @@ class TaskStartMixin:
             fleet.mark_used(phone)
         return (run, False) if idempotency_key else run
 
+    def _retain_run(self, run, expired):
+        # Call under self.lock after journal.create succeeds; its expired ids own history retention.
+        for identifier in expired:
+            self.runs.pop(identifier, None)
+            if getattr(self, "frames", None) is not None:
+                self.frames.delete(identifier)
+        self.runs[run.id] = run
+
     def compose_result(self, *, app, goal, summary, idempotency_key, extras=None, origin="workflow",
                        device=(None, None)):
         # No phone, no model call, acts on nothing; Run.finish validates its blocks like any task's.
@@ -446,11 +450,7 @@ class TaskStartMixin:
                       frames=getattr(self, "frames", None), device_id=device[0], device_name=device[1],
                       extras=extras, origin=origin, listeners=getattr(self, "listeners", None))
             expired = self.journal.create(run.metadata(), idempotency_key, fingerprint)
-            for identifier in expired:
-                self.runs.pop(identifier, None)
-                if getattr(self, "frames", None) is not None:
-                    self.frames.delete(identifier)
-            self.runs[run.id] = run
+            self._retain_run(run, expired)
         if run.listeners is not None:
             run.listeners.post("on_created", run, self)
         self.publish("runs", {"event": "run_created", "runId": run.id,
@@ -486,11 +486,7 @@ class TaskStartMixin:
                       frames=getattr(self, "frames", None), extras=extras, origin=origin,
                       listeners=getattr(self, "listeners", None))
             expired = self.journal.create(run.metadata(), idempotency_key, fingerprint)
-            for identifier in expired:
-                self.runs.pop(identifier, None)
-                if getattr(self, "frames", None) is not None:
-                    self.frames.delete(identifier)
-            self.runs[run.id] = run
+            self._retain_run(run, expired)
         if run.listeners is not None:
             run.listeners.post("on_created", run, self)
         self.publish("runs", {"event": "run_created", "runId": run.id,

@@ -67,6 +67,19 @@ class CliTests(unittest.TestCase):
         self.assertEqual((code, err.strip()), (1, "mobster memory: Mobster doesn't remember that anymore."))
         self.assertEqual(self.store.count(), 1)
 
+    def test_remove_reports_the_fact_it_actually_deleted(self):
+        fact = self.store.add_fact("My gym is on 5th Street")
+        forget = MemoryStore.forget
+
+        def forget_after_edit(store, fact_id):
+            store.update_fact(fact_id, text="My gym is on 6th Street")
+            return forget(store, fact_id)
+
+        with mock.patch.object(MemoryStore, "forget", forget_after_edit):
+            code, out, err = main(["memory", "rm", fact["id"]])
+        self.assertEqual((code, out.strip(), err), (0, "Forgot: My gym is on 6th Street", ""))
+        self.assertEqual(self.store.count(), 0)
+
     def test_refusals_exit_1_with_the_sentence(self):
         code, out, err = main(["memory", "add", "My PIN is 4821"])
         self.assertEqual((code, out, err.strip()),

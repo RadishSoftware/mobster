@@ -206,7 +206,6 @@ class Suite:
         self.units = []
         self.started_at = self.finished_at = None
         self._lock = threading.Lock()
-        self._resolved = {}
         self._abort_called = False
         self._sealed = False
         self.stop_reason = None
@@ -341,26 +340,27 @@ class Suite:
             with self._lock:
                 if self.stop.is_set():
                     return None
-                if queue:
-                    unit = queue.popleft()
+                unit = queue.popleft() if queue else None
+                if unit is not None:
                     unit.started = True
                     self._inflight += 1
-                    break
-                if not self._inflight:
+                elif not self._inflight:
                     return None
-            time.sleep(.02)
-        if self.spread:
-            unit.target = target
-            unit.check, unit.record, unit.refused, unit.notes = self._resolve(unit.entry, target)
-            if self.repeat > 1 and unit.check is not None:
-                bind_repeat = getattr(self.attempt, "bind_repeat", None)
-                if callable(bind_repeat):
-                    bind_repeat(unit.check, unit.record)
-            if unit.refused is not None:
-                with self._lock:
-                    self._inflight -= 1
-                return self._take(queue, target)
-        return unit
+            if unit is None:
+                time.sleep(.02)
+                continue
+            if self.spread:
+                unit.target = target
+                unit.check, unit.record, unit.refused, unit.notes = self._resolve(unit.entry, target)
+                if self.repeat > 1 and unit.check is not None:
+                    bind_repeat = getattr(self.attempt, "bind_repeat", None)
+                    if callable(bind_repeat):
+                        bind_repeat(unit.check, unit.record)
+                if unit.refused is not None:
+                    with self._lock:
+                        self._inflight -= 1
+                    continue
+            return unit
 
     def _work(self, queue, target):
         while True:

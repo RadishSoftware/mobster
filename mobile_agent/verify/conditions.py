@@ -87,7 +87,7 @@ def _location(value, where="conditions.location"):
         except ValueError:
             value = None
         if value is None:
-            raise CheckError("conditions.location must be {latitude: 52.52, longitude: 13.405} or \"52.52,13.405\".")
+            raise CheckError(f"{where} must be {{latitude: 52.52, longitude: 13.405}} or \"52.52,13.405\".")
     if not isinstance(value, dict) or set(value) != {"latitude", "longitude"}:
         raise CheckError(f"{where} needs a latitude and a longitude, such as {{latitude: 52.52, longitude: 13.405}}.")
     out = {}
@@ -98,18 +98,6 @@ def _location(value, where="conditions.location"):
             raise CheckError(f"{where}.{key} must be a number from -{limit} to {limit}.")
         out[key] = float(number)
     return out
-
-
-def _point(value, where):
-    if isinstance(value, str):
-        parts = value.split(",")
-        try:
-            value = {"latitude": float(parts[0]), "longitude": float(parts[1])} if len(parts) == 2 else None
-        except ValueError:
-            value = None
-        if value is None:
-            raise CheckError(f"{where} must be {{latitude: 52.52, longitude: 13.405}} or \"52.52,13.405\".")
-    return _location(value, where)
 
 
 def _route(value):
@@ -123,7 +111,8 @@ def _route(value):
     speed = value.get("speed", 20)
     if isinstance(speed, bool) or not isinstance(speed, (int, float)) or not 0 < speed <= 1000:
         raise CheckError("conditions.route.speed must be a number of metres per second, above 0 and up to 1000.")
-    return {"waypoints": [_point(point, f"conditions.route.waypoints[{index}]") for index, point in enumerate(points)],
+    return {"waypoints": [_location(point, f"conditions.route.waypoints[{index}]")
+                          for index, point in enumerate(points)],
             "speed": float(speed)}
 
 

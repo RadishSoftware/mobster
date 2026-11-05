@@ -135,7 +135,7 @@ class ForgetTests(Base):
 
     def test_saying_it_yourself_lifts_a_forget_and_delete_everything_clears_the_list(self):
         fact = self.learn("My gym is on 5th Street", "value", "global")["fact"]
-        self.store.delete_fact(fact["id"])
+        self.store.forget(fact["id"])
         self.assertEqual(self.learn("My gym is on 5th Street", "value", "global")["status"], "forgotten")
         self.store.add_fact("My gym is on 5th Street")
         self.assertEqual(self.store.count(), 1)

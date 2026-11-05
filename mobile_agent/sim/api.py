@@ -742,11 +742,6 @@ class SimulatorManager:
         lease.close()
         return False
 
-    def _holder(self, entry):
-        record = holders.read(self.data_dir, entry["udid"])
-        return None if record is None or not self._in_use(entry) else {
-            key: record.get(key) for key in ("client", "session", "pid", "since")}
-
     def release_mine(self) -> list:
         """Ask every simulator held by an agent started from the same app as this process to let go.
 
@@ -770,12 +765,14 @@ class SimulatorManager:
             device = present.get(entry["udid"])
             state = device.state if device else "Missing"
             url = wda_url(entry["wda_port"])
+            in_use = self._in_use(entry) if device else False
+            record = holders.read(self.data_dir, entry["udid"]) if in_use else None
+            holder = {key: record.get(key) for key in ("client", "session", "pid", "since")} if record else None
             rows.append({"udid": entry["udid"], "name": entry["name"], "device_type": entry["device_type"],
                          "runtime": entry["runtime"], "state": state,
                          "wda": "ready" if state == "Booted" and self.wda.ready(url) else "stopped",
                          "wda_url": url, "mjpeg_url": wda_url(entry["mjpeg_port"]),
-                         "in_use": self._in_use(entry) if device else False,
-                         "holder": self._holder(entry) if device else None,
+                         "in_use": in_use, "holder": holder,
                          "last_used_at": entry.get("last_used_at")})
         return rows
 

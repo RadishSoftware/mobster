@@ -1,30 +1,12 @@
 #!/usr/bin/env python3
-"""Chooses what the fast pre-merge gate (scripts/ci-local.sh --fast) runs for a set of changed files.
+"""Select backend test modules and Ruff inputs for changed repository paths.
 
     ci_select.py --root CHECKOUT --out DIR < changed-paths
 
-The changed paths come one per line, relative to the repository root (git diff --name-only). It writes, in DIR:
-
-    backend.txt     the test modules to run, one per line, or ALL
-    dashboard.txt   the files `vitest related` starts from, relative to dashboard/, or ALL, or nothing
-    ruff.txt        the Python files ruff checks
-    design.txt      the files the design checks scan, or ALL
-    eslint.txt      the site files ESLint checks
-
-and prints one "fast: ..." line per stage saying why. A stage it cannot narrow runs in full: a path no test module
-names (by import, or by a string that is its path), a dashboard file outside src/, a config file. The backend's choice:
-
-- A test module runs when its import closure reaches a changed Python file. The graph is the AST of every module
-  under mobile_agent/: import statements, relative ones resolved, and strings that name a module ("mobile_agent.x",
-  as mock.patch and -m take them). Importing a.b.c imports a and a.b too.
-- A test module runs when it, or a module in its closure, holds a string that is the changed path: from the
-  repository root ("docs/cli.md", ROOT / "docs" / "cli.md"), from a folder above the module (Path(__file__).parent /
-  "fixtures"), its file name ("CHANGELOG.md") or a glob that matches it ("*.mdx"). For a changed Python file only the
-  test side counts (mobile_agent/tests/), since runtime modules name their own package all the time.
-- The safety core always runs (SAFETY_CORE), and the public cut's tests run when a changed path ships in the public
-  tree (scripts/public-paths.txt).
-
-Only the standard library, so a macOS system python3 runs it.
+Writes backend.txt (test modules or ALL) and ruff.txt (changed Python files).
+The backend selection follows Python import closures and literal file references.
+Unmapped existing files run the full suite; every selection includes the safety core.
+The same dependency graph supplies ci_backend.py's conservative result-cache keys.
 """
 
 from __future__ import annotations
@@ -59,27 +41,12 @@ SAFETY_CORE = (
     "mobile_agent.tests.test_secret_filter",
     "mobile_agent.tests.test_tape",  # the replay guard: a regression hid for a week when it ran only for tape paths
 )
-PUBLIC_CUT = ("mobile_agent.tests.test_public_cut", "mobile_agent.tests.test_public_publish")
-PUBLIC_TOOLS = ("scripts/public-paths.txt", "scripts/cut-public-tree.sh", "scripts/check_public_tree.py",
-                "scripts/publish-public-tree.sh", "scripts/public-tree", ".gitattributes")
-# dashboard/ paths `vitest related` can start from. The files that set up every test (the configs, the lockfile, the
-# test setup) run the dashboard in full, and so does a path outside dashboard/ that it reads (docs/brand, the catalog).
-DASHBOARD_SOURCES = ("dashboard/src/", "dashboard/dev-bridge/")
-DASHBOARD_SETUP = ("dashboard/package.json", "dashboard/package-lock.json", "dashboard/tsconfig.json",
-                   "dashboard/vite.config.ts", "dashboard/vitest.config.ts", "dashboard/index.html",
-                   "dashboard/build-revision.ts", "dashboard/src/test-setup.ts")
-# A dashboard test that reads files itself is outside vitest's module graph. One that walks folders (readdirSync,
-# import.meta.glob, a ** pattern) runs on every dashboard change; one that reads named files runs when it names a
-# changed file (its file name, or its name without the extension).
-FS_READ = re.compile(r"readFileSync|readdirSync|import\.meta\.glob|globSync|from ['\"](?:node:)?fs(?:/promises)?['\"]")
-FS_WALK = re.compile(r"readdirSync|readdir\(|import\.meta\.glob|globSync|\*\*|opendir")
 # Strings that are patterns or templates, not paths: regular expressions, format strings.
 NOT_A_PATH = re.compile(r"[\[\]\\%{}$^()|+<>]")
 WILD = re.compile(r"[*?.]*")
-RUFF_ROOTS = ("mobile_agent/", "scripts/", "desktop/scripts/")
-# Changes to how the gate itself runs: every stage runs in full.
-GATE = ("scripts/ci-local.sh", "scripts/ci_select.py", "scripts/ci_backend.py", "scripts/ci_inputs.py",
-        "scripts/ci-inputs.txt", "scripts/ci-sandbox.sb")
+RUFF_ROOTS = ("mobile_agent/", "scripts/")
+# Changes to test selection or execution run the full backend.
+GATE = ("scripts/ci_select.py", "scripts/ci_backend.py", "scripts/ci_inputs.py", "scripts/ci-inputs.txt")
 
 
 def segments(path):
@@ -413,21 +380,16 @@ def select(root, changed, rules=None, cache=None):
     root = Path(root)
     rules = rules or ci_inputs.Rules(ci_inputs.MANIFEST.read_text())
     changed = sorted({p.strip() for p in changed if p.strip()})
-    plan = {"backend": set(), "dashboard": set(), "ruff": [], "design": set(), "eslint": []}
+    plan = {"backend": set(), "ruff": []}
     why = {}
 
-    def full(stage, reason):
-        if plan[stage] != "ALL":
-            plan[stage], why[stage] = "ALL", reason
-
-    def reads(path, stage):
-        readers = rules.readers(segments(path))
-        return readers is None or ci_inputs.EVERY in readers or stage in readers
+    def full_backend(reason):
+        if plan["backend"] != "ALL":
+            plan["backend"], why["backend"] = "ALL", reason
 
     gate = [p for p in changed if any(p == g or p.startswith(g + "/") for g in GATE)]
     if gate:
-        for stage in ("backend", "dashboard", "design"):
-            full(stage, f"{gate[0]} decides how CI runs")
+        full_backend(f"{gate[0]} decides how CI runs")
 
     # -- backend
     graph = Graph(root, cache)
@@ -435,11 +397,14 @@ def select(root, changed, rules=None, cache=None):
     closures = {test: graph.closure(test) for test in tests}
     unmapped = []
     for path in changed:
-        if plan["backend"] == "ALL" or not reads(path, "backend"):
+        if plan["backend"] == "ALL":
+            break
+        readers = rules.readers(segments(path))
+        if readers is not None and ci_inputs.EVERY not in readers and "backend" not in readers:
             continue
         module = graph.by_path.get(path)
         if module is not None and not module.parsed:
-            full("backend", f"{path} does not parse")
+            full_backend(f"{path} does not parse")
             break
         # The modules that name the path. For a Python file only the test side counts: runtime modules name their own
         # package all the time, and the import graph already follows them.
@@ -455,100 +420,22 @@ def select(root, changed, rules=None, cache=None):
         if not hits and (root / path).exists():
             unmapped.append(path)
     if unmapped and plan["backend"] != "ALL":
-        full("backend", f"no test module names {unmapped[0]}"
+        full_backend(f"no test module names {unmapped[0]}"
                         + (f" (and {len(unmapped) - 1} more)" if len(unmapped) > 1 else ""))
     if plan["backend"] != "ALL":
         selected = len(plan["backend"])
         plan["backend"] |= {name for name in SAFETY_CORE if name in graph.modules}
-        public = public_paths(root)
-        if any(ships(path, public) for path in changed) or any(
-                p == t or p.startswith(t + "/") for p in changed for t in PUBLIC_TOOLS):
-            plan["backend"] |= {name for name in PUBLIC_CUT if name in graph.modules}
         why["backend"] = (f"{selected} of {len(tests)} test modules reach a changed path, "
                           f"{len(plan['backend'])} with the safety core")
 
-    # -- dashboard
-    dash = [p for p in changed if reads(p, "dashboard")]
-    if plan["dashboard"] != "ALL" and dash:
-        setup = [p for p in dash if p in DASHBOARD_SETUP or not p.startswith("dashboard/")]
-        if setup:
-            full("dashboard", f"{setup[0]} sets up every dashboard test")
-        else:
-            # Sources start vitest related; another file under dashboard/ (DESIGN.md, qa/)
-            # only the tests that read files.
-            plan["dashboard"] = {p[len("dashboard/"):] for p in dash if p.startswith(DASHBOARD_SOURCES)
-                                 and (root / p).exists()}
-            readers = sorted(fs_tests(root, dash))
-            plan["dashboard"] |= set(readers)
-            why["dashboard"] = (f"vitest related from {len(dash)} changed files, plus {len(readers)} tests that read "
-                                "files themselves; tsc incremental; the startup bundle budget")
-    elif not dash:
-        why["dashboard"] = "no changed path is read by the dashboard"
-
-    # -- ruff, the design checks, ESLint
     plan["ruff"] = [p for p in changed if p.endswith(".py") and p.startswith(RUFF_ROOTS) and (root / p).exists()]
-    design = [p for p in changed if reads(p, "design")]
-    if plan["design"] != "ALL":
-        if any(p.startswith("scripts/design-checks/") for p in design):
-            full("design", "the design checks themselves changed")
-        else:
-            plan["design"] = {p for p in design if (root / p).exists()}
-            why["design"] = f"{len(plan['design'])} changed files scanned"
-    plan["eslint"] = [p[len("site/"):] for p in changed if p.startswith("site/") and (root / p).exists()
-                      and p.endswith((".ts", ".tsx", ".js", ".jsx", ".mjs"))]
-    if any(p.startswith("site/") and Path(p).name.startswith(("eslint", "package")) for p in changed):
-        plan["eslint"] = "ALL"
     return plan, why
-
-
-def fs_tests(root, changed=()):
-    """The dashboard tests outside vitest's module graph that may read one of the changed paths."""
-    names = set()
-    for path in changed:
-        name = Path(path).name
-        names.add(name)
-        stem = name.split(".")[0]
-        if len(stem) >= 4:
-            names.add(stem)
-    found = []
-    for base in ("src", "dev-bridge"):
-        for directory, dirs, files in os.walk(Path(root, "dashboard", base)):
-            dirs[:] = [d for d in dirs if d != "node_modules"]
-            for file in files:
-                if re.search(r"\.test\.[cm]?[jt]sx?$", file):
-                    full = Path(directory, file)
-                    text = full.read_text(encoding="utf-8", errors="replace")
-                    if FS_READ.search(text) and (FS_WALK.search(text) or any(name in text for name in names)):
-                        found.append(full.relative_to(Path(root, "dashboard")).as_posix())
-    return found
-
-
-def public_paths(root):
-    """(ships, path) lines of scripts/public-paths.txt."""
-    lines = []
-    try:
-        text = Path(root, "scripts/public-paths.txt").read_text()
-    except OSError:
-        return lines
-    for line in text.splitlines():
-        line = line.split("#", 1)[0].strip()
-        if line:
-            lines.append((not line.startswith("!"), segments(line.lstrip("!"))))
-    return lines
-
-
-def ships(path, lines):
-    segs, best = segments(path), None
-    for shipped, rule in lines:
-        if segs[: len(rule)] == rule and (best is None or len(rule) > len(best[1])):
-            best = (shipped, rule)
-    return bool(best and best[0])
 
 
 def write(out, plan):
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
-    for stage in ("backend", "dashboard", "ruff", "design", "eslint"):
+    for stage in ("backend", "ruff"):
         value = plan[stage]
         (out / f"{stage}.txt").write_text("ALL\n" if value == "ALL" else "".join(f"{v}\n" for v in sorted(value)))
 
@@ -561,12 +448,10 @@ def main(argv=None):
     args = parser.parse_args(argv)
     plan, why = select(args.root, sys.stdin.read().splitlines(), cache=args.cache)
     write(args.out, plan)
-    for stage in ("backend", "dashboard", "design"):
-        value = plan[stage]
-        if value == "ALL":
-            print(f"fast: {stage} in full: {why[stage]}")
-        elif stage in why:
-            print(f"fast: {stage}: {why[stage]}")
+    if plan["backend"] == "ALL":
+        print(f"fast: backend in full: {why['backend']}")
+    else:
+        print(f"fast: backend: {why['backend']}")
     print(f"fast: ruff on {len(plan['ruff'])} files")
     return 0
 

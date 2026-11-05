@@ -153,18 +153,7 @@ class ApiBase(BaseHTTPRequestHandler):
             self.send_header("Cache-Control", "no-store")
             self.end_headers()
             return
-        self.send_response(status)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(data)))
-        self.send_header("Cache-Control", "no-store")
-        self.send_header("X-Content-Type-Options", "nosniff")
-        if tag:
-            self.send_header("ETag", tag)
-        self.end_headers()
-        try:
-            self.wfile.write(data)
-        except (OSError, TimeoutError):
-            self.close_connection = True
+        self.send_bytes(data, "application/json", status, (("ETag", tag),) if tag else ())
 
     def send_api_error(self, exc):
         self.send_json({"error": str(exc), "code": exc.code, **exc.details}, exc.status)

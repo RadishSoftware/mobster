@@ -137,7 +137,7 @@ def run_memory(request):
 
 
 def delete_fact(request):
-    _store().delete_fact(request.params["id"])
+    _store().forget(request.params["id"])
     publish({"event": "fact_changed", "op": "deleted", "id": request.params["id"]})
     return Response.json({"deleted": True})
 

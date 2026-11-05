@@ -448,10 +448,6 @@ class MemoryStore:
             project.export_file(self, fact["scopeId"])
         return fact
 
-    def delete_fact(self, fact_id):
-        self.forget(fact_id)
-        return True
-
     def mark_looked(self):
         """The person has opened the page: what was new is no longer new. Returns the time (milliseconds)."""
         now = self.clock()

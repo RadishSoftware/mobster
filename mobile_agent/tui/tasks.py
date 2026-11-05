@@ -69,11 +69,8 @@ class TaskMixin:
     def remember_here(self, goal):
         """Without conversations (the demo): a "Remember that …" message becomes proposals,
         else None to run it as a task."""
-        try:
-            from ..memory import extract
-            from ..memory.store import default_store
-        except ImportError:
-            return None
+        from ..memory import extract
+        from ..memory.store import default_store
         found = extract.remember_only(goal)
         if not found:
             return None

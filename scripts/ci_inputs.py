@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""Hashes what one local CI stage reads from a git tree, so scripts/ci-local.sh can skip a stage whose inputs
-already passed.
+"""Hash the repository inputs declared for a CI stage.
+
+ci_backend.py and ci_select.py also use these rules to track backend dependencies.
 
     ci_inputs.py keys TREE [extra:WORD...] [stage:NAME [extra:WORD...]]...
         print "NAME KEY" for each stage, KEY being 16 characters; extra: words before the first stage: apply to
         every stage, the ones after a stage: to that stage
     ci_inputs.py list STAGE TREE      print the tree entries the key covers, one per line
-    ci_inputs.py stages               print the stage names scripts/ci-inputs.txt knows
+    ci_inputs.py stages               print the stage names scripts/ci-inputs.txt declares
 
 The key covers the whole tree except what scripts/ci-inputs.txt says the stage never reads. A path no line
 names counts as read by every stage, so a new file or folder runs every stage until someone classifies it.

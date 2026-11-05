@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 
 from . import textedit
-from .clients import _home, _read, write_atomic
+from .client_files import _home, _read, write_atomic
 
 BLOCK = (
     "## Verify UI changes with Mobster\n"

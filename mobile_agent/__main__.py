@@ -5,7 +5,17 @@ import sys
 
 from . import __version__, links
 from .cli_constants import DEFAULT_WDA_URL, EXIT_COULDNT, EXIT_FAILED, EXIT_OK, EXIT_USAGE
-from .cli_run import DeviceBusy, MissingKey, NoDevice, error_line, error_result, no_device_reason, output, wda_url_for
+from .cli_run import (
+    DeviceBusy,
+    MissingKey,
+    NoDevice,
+    device_target,
+    error_line,
+    error_result,
+    no_device_reason,
+    output,
+    wda_url_for,
+)
 from .paths import DATA_DIR_ENV, build_dir, source_checkout, user_data_dir
 
 DOCS = links.DOCS
@@ -55,19 +65,6 @@ def check_placement(parser, args, on_error=None):
             wda_url_type(os.environ["MOBSTER_WDA_URL"])
         except argparse.ArgumentTypeError as problem:
             error(f"$MOBSTER_WDA_URL: {problem}")
-
-
-def device_target(name):
-    """The device `--device NAME` names (devices.discover), with a WDA address to drive."""
-    from . import devices
-    try:
-        item = devices.resolve(devices.discover(probe=False), name)
-    except LookupError as error:
-        raise NoDevice(str(error)) from None
-    if not item.get("wdaUrl"):
-        raise NoDevice(f"“{item['name']}” isn't set up yet. {item.get('reason') or ''} Set it up with "
-                       "`mobster setup`, or in Mobster for Mac.".replace("  ", " "))
-    return item
 
 
 PHONE_WORDS = {"ready": "Ready", "busy": "In use", "connected": "Connected", "needs_setup": "Needs setup",

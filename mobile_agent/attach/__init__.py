@@ -1,4 +1,4 @@
-"""Attach to what an app draws with: a WebView's DOM, a Flutter semantics tree, and a score for every app.
+"""Experimental app scoring from the accessibility tree, including WebView and Flutter detection.
 
 Dark behind ``MOBSTER_EXPERIMENTAL_ATTACH=1``. Nothing here runs unless a caller checks ``enabled()``.
 """

@@ -3,6 +3,7 @@ import atexit
 
 from ..api_errors import APIError
 from ..api_routes import Response, Route, register
+from ..service_support import needs_app
 from . import DevError, expo, expo_dev
 
 _started = {}   # project root -> the Metro this process started for it
@@ -18,17 +19,10 @@ atexit.register(_stop_all)
 
 
 def _app(project):
-    from ..mcp_server.expo_tools import project_of
     try:
-        return project_of({"project": project})
+        return expo.resolve_project(project)
     except DevError as error:
         raise APIError(error.line(), 400, "bad_project") from None
-
-
-def _needs_app(request):
-    local = getattr(request.runtime, "local_api", None) or {}
-    if local.get("app_session") and not request.app_session:
-        raise APIError("Do this in the Mobster app.", 403, "app_only")
 
 
 def _project(request):
@@ -55,7 +49,7 @@ def status_route(request):
 
 
 def dev_route(request):
-    _needs_app(request)
+    needs_app(request)
     app = _project(request)
     try:
         server, started = expo_dev.ensure(app, _port(request))
@@ -68,7 +62,7 @@ def dev_route(request):
 
 
 def reload_route(request):
-    _needs_app(request)
+    needs_app(request)
     app = _project(request)
     server = expo_dev.status(app)
     if server["state"] != "running":
@@ -81,7 +75,7 @@ def reload_route(request):
 
 
 def stop_route(request):
-    _needs_app(request)
+    needs_app(request)
     app = _project(request)
     pid = expo_dev.stop(app.root)
     _started.pop(str(app.root), None)

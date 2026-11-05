@@ -19,6 +19,7 @@ from pathlib import Path
 
 from ..api_errors import APIError
 from ..api_routes import Response, Route, register
+from ..service_support import needs_app
 from . import links
 
 
@@ -29,12 +30,6 @@ def _root(request, body):
         raise APIError("Send project: the absolute path of the project's folder.", 400, "bad_project")
     from ..verify.checks import project_root
     return project_root(path)
-
-
-def _needs_app(request):
-    local = getattr(request.runtime, "local_api", None) or {}
-    if local.get("app_session") and not request.app_session:
-        raise APIError("Do this in the Mobster app.", 403, "app_only")
 
 
 def _guard(call):
@@ -67,7 +62,7 @@ def listed(request):
 
 
 def saved(request):
-    _needs_app(request)
+    needs_app(request)
     body = request.body if isinstance(request.body, dict) else {}
     root = _root(request, body)
     link = _guard(lambda: links.save(root, body.get("name"), body.get("url"), body.get("title") or ""))
@@ -75,7 +70,7 @@ def saved(request):
 
 
 def removed(request):
-    _needs_app(request)
+    needs_app(request)
     root = _root(request, {})
     name = (request.query.get("name") or [None])[0]
     return Response.json({"removed": _guard(lambda: links.remove(root, name))})
