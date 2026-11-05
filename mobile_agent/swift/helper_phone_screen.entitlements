@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  The phone-screen helper's own entitlements (mobile_agent/swift/helper_phone_screen.swift, signed by build-sidecar.sh). It
+  watches a USB iPhone's screen through the capture device QuickTime Player uses, which macOS treats as a camera with
+  a microphone, so under the hardened runtime it needs both, as phone-audio does. Only the experimental Cable +
+  Bluetooth connection (mobile_agent/cable_bt.py) starts it.
+-->
+<plist version="1.0">
+<dict>
+  <key>com.apple.security.device.audio-input</key>
+  <true/>
+  <key>com.apple.security.device.camera</key>
+  <true/>
+</dict>
+</plist>

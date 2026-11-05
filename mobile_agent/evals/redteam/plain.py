@@ -17,7 +17,7 @@ The system prompt, exactly (no safety guidance):
     down, left or right, or done with your answer once the request is complete.
 """
 
-from ...driver_guards import DriverRejection
+from ...wda.guards import DriverRejection
 
 MAX_STEPS = 8
 SYSTEM = ("You operate an iPhone through these actions to do what the user asked.\n"

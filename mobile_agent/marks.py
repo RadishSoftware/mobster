@@ -1,8 +1,7 @@
 """Set-of-Mark: numbered boxes on the screenshot, one per element a decision model may pick.
 
 A decision model answers "which mark" and "which gesture"; code turns the mark back into the exact element (its
-AX frame's centre when it taps), so the model never writes a coordinate. Surfaces without an accessibility tree
-(a map, a canvas) get a numbered grid instead (``grid_marks``): a cell is a choice like any mark.
+AX frame's centre when it taps), so the model never writes a coordinate.
 
 ``Mark`` keeps the element; ``mark_lines`` is the same list as text, for a text-only decider (Jev) and so both
 deciders get identical options.
@@ -11,19 +10,17 @@ deciders get identical options.
 import io
 from dataclasses import dataclass
 
-# Roles a decider may target. Static text is readable, not a target; containers hold targets.
 TARGET_ROLES = frozenset({"Button", "Cell", "Link", "TextField", "SearchField", "SecureTextField", "TextView",
                           "Switch", "Toggle", "Tab", "TabBar", "MenuItem", "Image", "Icon", "SegmentedControl",
                           "Key", "PickerWheel", "Slider", "Stepper", "Other", "StaticText"})
 MAX_MARKS = 120
-GRID = (4, 8)   # columns, rows of the fallback grid
 
 
 @dataclass(frozen=True)
 class Mark:
     id: str
-    element: object          # the element, or None for a grid cell
-    rect: tuple              # x, y, w, h as screen fractions
+    element: object
+    rect: tuple
     label: str
     role: str
 
@@ -48,20 +45,13 @@ def element_marks(elements, limit=MAX_MARKS):
     return out
 
 
-def grid_marks(columns=GRID[0], rows=GRID[1]):
-    """A numbered grid over the whole screen: "g1".."gN", left to right, top to bottom."""
-    w, h = 1 / columns, 1 / rows
-    return [Mark(f"g{r * columns + c + 1}", None, (c * w, r * h, w, h), f"grid cell row {r + 1} column {c + 1}", "Cell")
-            for r in range(rows) for c in range(columns)]
-
-
 def mark_lines(marks):
     """The marks as text: ``7 Button "Search" @4,14,92,5`` (frame in percent)."""
     lines = []
     for mark in marks:
         x, y, w, h = (round(v * 100) for v in mark.rect)
         label = f'"{mark.label}"' if mark.label else "(no label)"
-        value = getattr(mark.element, "value", "") if mark.element is not None else ""
+        value = getattr(mark.element, "value", "")
         value = f" value={str(value)[:40]!r}" if value and value != mark.label else ""
         lines.append(f"{mark.id} {mark.role} {label}{value} @{x},{y},{w},{h}")
     return lines
@@ -76,8 +66,7 @@ def options(marks, *, abstain=True):
 
 
 def draw(jpeg, marks, side=None):
-    """The screenshot (JPEG bytes) with each mark's box and number drawn; JPEG bytes back. ``side``: downscale so
-    the width is at most ``side`` pixels first (390 for the token diet)."""
+    """The screenshot (JPEG bytes) with each mark's box and number drawn; JPEG bytes back."""
     from PIL import Image, ImageDraw, ImageFont
     image = Image.open(io.BytesIO(jpeg)).convert("RGB")
     if side and image.width > side:
@@ -91,7 +80,7 @@ def draw(jpeg, marks, side=None):
     for mark in marks:
         x, y, w, h = mark.rect
         box = (int(x * W), int(y * H), int((x + w) * W), int((y + h) * H))
-        colour = (255, 40, 120) if mark.element is not None else (40, 120, 255)
+        colour = (255, 40, 120)
         canvas.rectangle(box, outline=colour, width=2)
         text = mark.id
         tw, th = canvas.textbbox((0, 0), text, font=font)[2:]

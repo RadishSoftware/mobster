@@ -1,0 +1,149 @@
+---
+title: "Models, keys and costs"
+sidebarTitle: "Models and keys"
+description: "The plan or API key Mobster's agent runs on, the key each command needs, spend caps and what a task costs."
+icon: "key-round"
+keywords: ["chatgpt plan", "codex", "claude code", "gemini cli", "grok", "subscription", "api key", "anthropic key", "claude key", "openai key", "mobster login", "cost", "price per task", "spend cap"]
+---
+
+Mobster has no model account of its own. Its agent runs on a plan you already pay for, such as Codex or Claude Code, or on an API key that bills you directly, and your key stays on your Mac.
+
+## Which key does what
+
+| You run | Engine | Key |
+|---|---|---|
+| A task in Mobster for Mac, the terminal UI or `mobster run` | Mobster's agent | `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` |
+| `mobster chat`, `phone_task` | Mobster's agent | The same |
+| `mobster verify` or `mobster test` with steps, `verify_start` with `smart` over MCP | Mobster's agent (`Smart`) | The same |
+| A launch-only check, or your coding agent driving over `mobster mcp` | None: Mobster calls no model | None |
+
+With a Claude key, Mobster's agent runs on Claude Sonnet 5.5, also when an OpenAI key is set beside it. With an OpenAI key alone, it runs on GPT-5.6 Sol. To use OpenAI when both are saved, choose it in Settings › Models or run `mobster login --provider openai`. `MOBSTER_SMART_MODEL` picks any other model by its id.
+
+## Keys on this Mac
+
+A key comes from the [Claude Console](https://platform.claude.com/settings/keys) (it starts with `sk-ant-`) or the [OpenAI Platform](https://platform.openai.com/api-keys) (it starts with `sk-`). Add credit in Billing before you create it. Both accounts are separate from a Claude or ChatGPT subscription.
+
+Mobster for Mac asks for the key in Setup and changes it in Settings › Models. In Terminal, `mobster login` asks for it:
+
+```sh
+mobster login
+```
+
+```text Output
+Mobster's agent runs on your own Claude or OpenAI key.
+You pay them for what it uses, and the key stays on this Mac.
+
+Which AI do you use?
+  1  Claude, by Anthropic   recommended
+  2  OpenAI
+Choose 1 or 2 [1]: 1
+
+Get a key from the Claude Console: https://platform.claude.com/settings/keys
+Paste your Claude key (it starts with sk-ant-; it isn't shown):
+```
+
+Mobster tests the key with one small request to your provider, then saves it in your login Keychain. A key that fails the test isn't saved. The Mac app and every `mobster` command share the saved key, and Mobster shows only its prefix and last four characters:
+
+```sh
+mobster login status
+```
+
+```text Output
+Keys
+  ✓ Claude  sk-ant-…a7f2    from Mobster for Mac  Mobster's agent uses it
+  – OpenAI  not set
+```
+
+In a script or CI, `mobster login --provider anthropic --with-key < key.txt` reads the key from the file. It exits 0 once the key is saved and 1 when the test fails. A key in `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`, in your shell or an [env file](/configuration#env-files), works too. `mobster logout` removes a saved key and prints `✓ Removed the Claude key from this Mac.`
+
+<span id="use-your-plan"></span>
+## Plans you already pay for
+
+A plan runs your tasks with no API key.
+
+When you choose Continue in Setup's AI step, Mobster saves your coding-agent choice for scheduled workflows too. A workflow's model steps prefer that agent while it is ready and Mobster's own agent has no key. If your chosen agent isn't ready, Mobster tries another ready coding agent. Setup waits for the choice to save before it continues.
+
+| Plan | How Mobster uses it | Set it up |
+|---|---|---|
+| Codex (ChatGPT Plus or Pro) | Your own Codex does the task, with your iPhone as its only tool | [Codex](https://developers.openai.com/codex/cli) installed and signed in with ChatGPT (`codex login`) |
+| Claude Code (Claude Pro or Max) | Your own Claude Code does the task, with your iPhone as its only tool | [Claude Code](https://code.claude.com/docs/en/setup) installed and signed in |
+| Gemini (Google account) | Your own Gemini CLI does the task, with your iPhone as its only tool | [Gemini CLI](https://github.com/google-gemini/gemini-cli) installed and signed in with Google |
+| Grok (SuperGrok, X Premium+) | Mobster's agent runs on your plan | `mobster login grok`, then enter the code on any device |
+| Kimi Code, Z.ai GLM Coding Plan, MiniMax Token Plan, Qwen (Alibaba Coding Plan), Qwen Token Plan, Xiaomi MiMo Token Plan, OpenCode Go | Mobster's agent runs on your plan | `mobster login kimi` (`zai`, `minimax`, `qwen`, `qwen_token`, `mimo`, `opencode_go`), then paste the plan's key |
+
+Codex, Claude Code and Gemini CLI sign in with their own command. `mobster login codex` says which:
+
+```text Output
+Codex signs in itself: in Terminal, run codex login. Mobster runs your Codex from then on; it never sees your sign-in.
+```
+
+- **Who does the task.** Pick **Mobster**, **Codex**, **Claude Code** or **Gemini CLI** in the composer. With no key for Mobster's own agent, tasks and saved workflows go to the coding agent that's signed in: the one you chose in Setup, else Codex, Claude Code, then Gemini CLI.
+- **What it costs.** Nothing per task: it counts toward the plan's usage limits. The result reads "On your Claude plan, 48k tokens", and **Technical details** › **Inference** adds what those tokens would cost at list price. Plan tokens never count as spend.
+- **What Mobster runs.** Your own, unmodified `codex`, `claude` or `gemini`. Mobster never reads their sign-in, hides your API keys from them, and turns off their shell, file and web tools: the iPhone is their only tool.
+- **How the result reads.** **Done** when every fact in the answer is on a screen the agent read, and it typed and committed nothing. Otherwise **Take a look**: only Mobster's own agent checks that a change shows on the screen.
+- **Approvals.** The same [permission modes](/safety#links) apply whichever agent works.
+
+<span id="use-an-api-key"></span>
+## Other providers and local models
+
+Mobster's agent also runs on another provider's key, a model on this Mac, or any OpenAI-compatible endpoint. Each has a name for `mobster login`:
+
+| Kind | Names |
+|---|---|
+| Hosted | `google` (Gemini API), `openrouter`, `xai`, `groq`, `cerebras`, `mistral`, `deepseek`, `together`, `fireworks`, `moonshot`, `zai_api`, `minimax_api`, `dashscope` (Alibaba Model Studio), `xiaomi`, `meta`, `vercel` (AI Gateway), `huggingface`, `nvidia`, `baseten`, `deepinfra` |
+| On this Mac | `ollama`, `lmstudio` |
+| Any OpenAI-compatible endpoint | `custom`, with `--base-url` and `--model` |
+
+`mobster login openrouter` asks for the key, then checks it against the provider's model list before it saves it:
+
+```text Output
+Paste your OpenRouter key (from https://openrouter.ai/settings/keys):
+```
+
+- A base URL starts with `https://`. `http://` works only for this Mac or your local network.
+- A key in the provider's usual variable (`XAI_API_KEY`, `OPENROUTER_API_KEY` ...) works too.
+- A model that can't see images reads the screen as text.
+- `mobster logout <provider>` forgets it.
+
+## What a task costs
+
+Mobster's agent spends on your key. Before each task, the Mac app shows an estimate in cents, and Settings › Models shows what your tasks cost this month at your provider's published rates.
+
+| Run | Measured | Cost |
+|---|---|---|
+| A task: median of 7 iOSWorld tasks on iOS Simulators, Claude Sonnet 5.5 | 12 Oct 2026 | \$0.118 |
+| A two-step check with steps, run fresh: iPhone 15 Pro, iOS 26.0.1, Claude Sonnet 5.5, each of 5 runs | 17 Oct 2026 | \$0.017 |
+| The same check, replayed from its learned steps with no model call | 17 Oct 2026 | \$0.00 |
+
+A launch-only check calls no model and costs nothing. An agent you connect over MCP spends on its own model. Mobster adds up each call from the provider's own usage report, and a call with no reported price shows as unpriced, never as free.
+
+## Spend caps
+
+A cap stops a task before its next model call once the task's spend reaches it. The task ends with status `spend_cap`.
+
+| Where | How |
+|---|---|
+| Mobster for Mac | Settings › Models: **Stop a task that reaches \$…** (on at \$1) and **Monthly limit** (off) |
+| Terminal UI | `/cap 0.50`, or `/cap off` |
+| `mobster run`, `mobster serve` | `--spend-cap-usd 0.50` |
+| `mobster verify`, a check file | `--max-usd`, or `budget.max_usd` (default 0.25, at most 1.00) |
+
+While a cap is set, a model with no listed price counts at the highest listed price, so the cap stops the task early rather than never. The task's reason says `Mobster has no price for <model>, so it counted the highest listed price`.
+
+## What the model sees
+
+Your provider gets the task, the text on the iPhone's screen and a small screenshot of each step, plus what the task needs from your conversation, memory and files. [Privacy and your data](/privacy) has the whole list.
+
+## Next
+
+<CardGroup cols={3}>
+  <Card title="Quickstart: Mobster CLI" icon="terminal" href="/quickstart/cli">
+    Install the CLI, add your key and run a task.
+  </Card>
+  <Card title="Add to your agent" icon="bot" href="/agents">
+    Give Claude Code or Codex your iPhone over MCP.
+  </Card>
+  <Card title="Settings" icon="settings" href="/mac/settings#models">
+    Models, spend limits and approvals in Mobster for Mac.
+  </Card>
+</CardGroup>

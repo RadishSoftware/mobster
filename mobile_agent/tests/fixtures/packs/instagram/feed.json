@@ -1,0 +1,389 @@
+{
+"note": "Synthetic: the shape of Instagram 448.0.0's screen on a real iPhone (13 Oct 2026), every name, handle and text made up.",
+"rows": [
+{
+"role": "Cell",
+"label": "Stories Tray",
+"rect": [
+0.0,
+0.13,
+1.0,
+0.15
+],
+"value": "Button, Your story, Unseen, 1 of 12"
+},
+{
+"role": "Cell",
+"label": "Button, Your story, Unseen",
+"rect": [
+0.0,
+0.13,
+0.26,
+0.13
+]
+},
+{
+"role": "Other",
+"label": "me.test. Profile picture",
+"rect": [
+0.03,
+0.14,
+0.2,
+0.09
+]
+},
+{
+"role": "Cell",
+"label": "Button, story.one's story, Unseen",
+"rect": [
+0.26,
+0.13,
+0.26,
+0.13
+]
+},
+{
+"role": "Other",
+"label": "story.one. Profile picture",
+"rect": [
+0.3,
+0.14,
+0.2,
+0.09
+]
+},
+{
+"role": "Button",
+"label": "bakery.daily",
+"rect": [
+0.13,
+0.29,
+0.68,
+0.02
+]
+},
+{
+"role": "Image",
+"label": "Verified account",
+"rect": [
+0.35,
+0.29,
+0.03,
+0.01
+]
+},
+{
+"role": "Button",
+"label": "Post options",
+"rect": [
+0.89,
+0.27,
+0.11,
+0.07
+]
+},
+{
+"role": "Cell",
+"label": "media-cell",
+"rect": [
+0.0,
+0.34,
+1.0,
+0.31
+]
+},
+{
+"role": "Image",
+"label": "Photo by bakery.daily",
+"rect": [
+0.0,
+0.34,
+1.0,
+0.31
+]
+},
+{
+"role": "Cell",
+"label": "action-cell",
+"rect": [
+0.0,
+0.65,
+1.0,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "Like",
+"rect": [
+0.01,
+0.65,
+0.1,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "2004 likes",
+"rect": [
+0.11,
+0.67,
+0.11,
+0.02
+]
+},
+{
+"role": "StaticText",
+"label": "2,004",
+"rect": [
+0.1,
+0.67,
+0.11,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "Comment",
+"rect": [
+0.22,
+0.65,
+0.1,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "20 comments",
+"rect": [
+0.33,
+0.67,
+0.05,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "Repost",
+"rect": [
+0.38,
+0.65,
+0.1,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "Repost number is 36",
+"rect": [
+0.48,
+0.67,
+0.05,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "Send",
+"rect": [
+0.53,
+0.65,
+0.1,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "134 shares",
+"rect": [
+0.63,
+0.67,
+0.07,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "Save",
+"rect": [
+0.89,
+0.65,
+0.1,
+0.05
+]
+},
+{
+"role": "StaticText",
+"label": "bakery.daily Sourdough fresh out of the oven… more",
+"rect": [
+0.03,
+0.7,
+0.94,
+0.02
+]
+},
+{
+"role": "Link",
+"label": "bakery.daily",
+"rect": [
+0.03,
+0.7,
+0.15,
+0.02
+]
+},
+{
+"role": "Link",
+"label": "more",
+"rect": [
+0.69,
+0.7,
+0.09,
+0.02
+]
+},
+{
+"role": "StaticText",
+"label": "9 hours ago",
+"rect": [
+0.03,
+0.73,
+0.94,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "trail.runner and coach.kim",
+"rect": [
+0.13,
+0.78,
+0.68,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "Post options",
+"rect": [
+0.89,
+0.76,
+0.11,
+0.07
+]
+},
+{
+"role": "Cell",
+"label": "page-cell",
+"rect": [
+0.0,
+0.82,
+1.0,
+0.08
+]
+},
+{
+"role": "Image",
+"label": "Video by trail.runner",
+"rect": [
+0.0,
+0.82,
+1.0,
+0.08
+]
+},
+{
+"role": "Button",
+"label": "Create a post, story or live video",
+"rect": [
+0.03,
+0.08,
+0.08,
+0.04
+]
+},
+{
+"role": "Button",
+"label": "Instagram Main Feed",
+"rect": [
+0.35,
+0.08,
+0.35,
+0.04
+]
+},
+{
+"role": "Button",
+"label": "Notifications",
+"rect": [
+0.9,
+0.08,
+0.07,
+0.04
+],
+"value": "Unread"
+},
+{
+"role": "Button",
+"label": "Main feed",
+"rect": [
+0.0,
+0.9,
+0.2,
+0.06
+],
+"value": "1",
+"selected": true
+},
+{
+"role": "Button",
+"label": "Reels",
+"rect": [
+0.2,
+0.9,
+0.2,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "Direct messages , 6 unread messages",
+"rect": [
+0.4,
+0.9,
+0.2,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "6",
+"rect": [
+0.52,
+0.93,
+0.02,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "Explore",
+"rect": [
+0.6,
+0.9,
+0.19,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "Profile",
+"rect": [
+0.79,
+0.9,
+0.2,
+0.06
+]
+}
+]
+}

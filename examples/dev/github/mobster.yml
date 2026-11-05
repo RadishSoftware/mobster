@@ -1,0 +1,42 @@
+# Mobster checks on every pull request, on a Mac of yours (https://docs.mobster.dev/ci).
+# The runner needs Mobster for Mac in Applications. On that Mac, `mobster ci doctor` says what's missing.
+name: mobster
+on: pull_request
+permissions:
+  contents: read
+  pull-requests: write   # the one comment Mobster keeps up to date
+concurrency:
+  group: mobster-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+env:
+  MOBSTER: /Applications/Mobster.app/Contents/MacOS/mobster-agent
+jobs:
+  checks:
+    runs-on: [self-hosted, macOS, mobster]
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # the diff needs the base branch
+      - name: Test what this PR changed
+        run: |
+          "$MOBSTER" ci run
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}   # only checks with steps use it
+      - name: Upload the report
+        id: upload
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobster-report
+          path: .mobster/ci/
+          include-hidden-files: true
+          retention-days: 14
+          if-no-files-found: ignore
+      - name: Comment on the PR
+        if: always()
+        run: |
+          "$MOBSTER" ci comment
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          MOBSTER_ARTIFACT_URL: ${{ steps.upload.outputs.artifact-url }}

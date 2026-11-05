@@ -1,0 +1,229 @@
+{
+  "about": "Mobster's brand art variants: each is a named preset for a ground, a cut and a type lockup. A blog post or a share image names one in its frontmatter with a seed and a category. Production builds render approved variants only; product/brand-art/variants.mjs enforces it. Adding a variant: docs/brand/art/README.md, 'Add a variant'. Fields: ground (kind, plate, zoom, flow), cut (null; or box 'upper' with margin and height as fractions of the frame; or box 'bleed' with [left, top, width] in percent of the frame's width and the frame's full height), calm (renderer calm zones, fractions of the frame; {band: 'bottom'} means the cut's bottom band left of its notch), grain, theme and lockup (the type layout, set as HTML over the image), and cover (the same ground as a cover with no type: its own cut and calm zones; site/tools/make-covers.mjs).",
+  "categories": [
+    "phone-work",
+    "developers",
+    "connectors",
+    "profiles",
+    "events",
+    "releases"
+  ],
+  "variants": {
+    "pour": {
+      "description": "The category's glaze plate, full bleed. The lockup top left; the meta and title bottom left, over the plate's calm lower left, with a quiet zone.",
+      "approved": true,
+      "approvedOn": "2026-10-16",
+      "approvedBy": "owner",
+      "seenAs": "direction B, 16 Oct 2026: 'B and C look the best' and 'I just like the wordmarks and text on the abstract art bg'",
+      "ground": {
+        "kind": "plate",
+        "plate": "generated/smooth-{category}/plate-3840-lanczos.png",
+        "flow": {
+          "amount": 0,
+          "scale": 1.2
+        },
+        "blur": 0
+      },
+      "cut": null,
+      "grain": {
+        "amount": 0.5
+      },
+      "theme": "dark",
+      "lockup": {
+        "layout": "pour",
+        "lockup": "top-left",
+        "stack": "bottom-left",
+        "titleSize": 0.06,
+        "metaSize": 0.028,
+        "lockupHeight": 0.028,
+        "margin": 0.06,
+        "cards": "on use-case cards the lockup heads the bottom stack"
+      },
+      "calm": [
+        {
+          "x": 0,
+          "y": 0.4,
+          "w": 0.72,
+          "h": 0.6,
+          "radius": 0,
+          "feather": 0.22,
+          "blur": 0.8,
+          "dim": 0.42
+        },
+        {
+          "x": 0.02,
+          "y": 0.02,
+          "w": 0.23,
+          "h": 0.2,
+          "radius": 0.02,
+          "feather": 0.06,
+          "blur": 0.7,
+          "dim": 0.5
+        }
+      ],
+      "cover": {
+        "about": "A cover carries no type: the plate full bleed, no calm zones.",
+        "cut": null,
+        "calm": []
+      }
+    },
+    "paper-cut": {
+      "description": "Warm paper. The glaze shows through the cut: three bands in the upper part of the frame, the middle one slid right by the Swipe's 29%. The lockup in the top-right notch; the meta and title in ink below, on paper.",
+      "approved": true,
+      "approvedOn": "2026-10-16",
+      "approvedBy": "owner",
+      "seenAs": "direction C, 16 Oct 2026: 'B and C look the best'. The title moved off the glaze onto paper, per the owner's rule that type never sits on a streak",
+      "ground": {
+        "kind": "plate",
+        "plate": "generated/smooth-{category}/plate-3840-lanczos.png",
+        "flow": {
+          "amount": 0,
+          "scale": 1.2
+        },
+        "blur": 0
+      },
+      "cut": {
+        "box": "upper",
+        "margin": 0.06,
+        "height": 0.56,
+        "outside": "paper",
+        "slide": true
+      },
+      "grain": {
+        "amount": 0.5
+      },
+      "theme": "light",
+      "lockup": {
+        "layout": "paper",
+        "lockup": "top-right-notch",
+        "stack": "bottom-left",
+        "titleSize": 0.05,
+        "metaSize": 0.028,
+        "lockupHeight": 0.03,
+        "margin": 0.06
+      },
+      "calm": [],
+      "cover": {
+        "about": "A cover carries no type: the variant's cut fills the frame inside its margins, no calm zones.",
+        "cut": {
+          "box": "upper",
+          "margin": 0.06,
+          "height": 1,
+          "outside": "paper",
+          "slide": true
+        },
+        "calm": []
+      }
+    },
+    "night-cut": {
+      "description": "Neutral Night (#121212). The glaze shows only through the cut: the Swipe's three bands, the middle one slid right, placed where the frame leaves room (a banner's right half, a card's upper part). Light type on Night beside or below the cut, never on the glaze.",
+      "approved": true,
+      "approvedOn": "2026-10-16",
+      "approvedBy": "owner",
+      "seenAs": "the LinkedIn cover, 16 Oct 2026: the owner picked the Night cover over pour and paper-cut, with the line 'Test and automate apps on real iPhones.' (docs/brand/social/linkedin/cover.png)",
+      "ground": {
+        "kind": "plate",
+        "plate": "generated/smooth-{category}/plate-3840-lanczos.png",
+        "flow": {
+          "amount": 0,
+          "scale": 1.2
+        },
+        "blur": 0
+      },
+      "cut": {
+        "box": "upper",
+        "margin": 0.06,
+        "height": 0.56,
+        "outside": "#121212",
+        "slide": true
+      },
+      "grain": {
+        "amount": 0.5
+      },
+      "theme": "dark",
+      "lockup": {
+        "layout": "night",
+        "lockup": "top-right-notch",
+        "stack": "bottom-left",
+        "titleSize": 0.05,
+        "metaSize": 0.028,
+        "lockupHeight": 0.03,
+        "margin": 0.06,
+        "banners": "on a banner the cut sits right and the title left of it, on Night"
+      },
+      "calm": [],
+      "cover": {
+        "about": "A cover carries no type: the variant's cut fills the frame inside its margins, no calm zones.",
+        "cut": {
+          "box": "upper",
+          "margin": 0.06,
+          "height": 1,
+          "outside": "#121212",
+          "slide": true
+        },
+        "calm": []
+      }
+    },
+    "pour-cut": {
+      "description": "The glaze cut into the Swipe's three bands, bleeding off the left, top and bottom edges, over Night. The title on the bottom band's calm left; the lockup in the top-right notch and the meta in the bottom-right notch.",
+      "approved": false,
+      "approvedOn": null,
+      "approvedBy": null,
+      "seenAs": null,
+      "ground": {
+        "kind": "plate",
+        "plate": "generated/smooth-{category}/plate-3840-lanczos.png",
+        "blur": 0,
+        "flow": {
+          "amount": 0,
+          "scale": 1.2
+        },
+        "zoom": 1.2,
+        "focus": [
+          0.52,
+          0.5
+        ],
+        "zoomByAspect": {
+          "wide": 1.2,
+          "square": 1,
+          "tall": 1
+        }
+      },
+      "cut": {
+        "box": "bleed",
+        "bleed": [
+          -12,
+          0,
+          112
+        ],
+        "outside": "night",
+        "slide": true
+      },
+      "grain": {
+        "amount": 0.5
+      },
+      "theme": "dark",
+      "lockup": {
+        "layout": "pour-cut",
+        "lockup": "top-right-notch",
+        "title": "bottom-band-left",
+        "meta": "bottom-right-notch",
+        "titleSize": 0.05,
+        "metaSize": 0.028,
+        "lockupHeight": 0.028,
+        "titleBottomMin": 0.06
+      },
+      "calm": [
+        {
+          "band": "bottom",
+          "feather": 0.1,
+          "blur": 0.8,
+          "dim": 0.4
+        }
+      ]
+    }
+  },
+  "plates": {
+    "about": "Per-category overrides for every variant that uses a generated plate: a string swaps the plate; an object can also set its blur."
+  }
+}

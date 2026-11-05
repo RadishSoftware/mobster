@@ -1,0 +1,555 @@
+{
+"name": "settings_root",
+"bundle": "com.apple.Preferences",
+"keyboard": "",
+"w": 402.0,
+"h": 874.0,
+"elements": [
+{
+"role": "NavigationBar",
+"label": "Settings",
+"value": "",
+"rect": [
+0.0,
+0.0732,
+0.995,
+0.119
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "StaticText",
+"label": "Settings",
+"value": "Settings",
+"rect": [
+0.0398,
+0.1373,
+0.3284,
+0.0458
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Button",
+"label": "Apple Account, Sign in to access your iCloud data, the App Store, Apple services, and more.",
+"value": "",
+"rect": [
+0.0398,
+0.1922,
+0.9154,
+0.1053
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Image",
+"label": "apple.id",
+"value": "",
+"rect": [
+0.0796,
+0.2105,
+0.1493,
+0.0686
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "StaticText",
+"label": "Apple Account",
+"value": "Apple Account",
+"rect": [
+0.2488,
+0.2105,
+0.3383,
+0.0275
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "StaticText",
+"label": "Sign in to access your iCloud data, the App Store, Apple services, and more.",
+"value": "Sign in to access your iCloud data, the App Store, Apple services, and more.",
+"rect": [
+0.2488,
+0.238,
+0.5871,
+0.0412
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Image",
+"label": "chevron.forward",
+"value": "",
+"rect": [
+0.8955,
+0.238,
+0.0199,
+0.0137
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Button",
+"label": "Ready for Apple Intelligence",
+"value": "",
+"rect": [
+0.0398,
+0.3341,
+0.9154,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "StaticText",
+"label": "Ready for Apple Intelligence",
+"value": "Ready for Apple Intelligence",
+"rect": [
+0.0796,
+0.3524,
+0.5274,
+0.0229
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Image",
+"label": "chevron.forward",
+"value": "",
+"rect": [
+0.8955,
+0.357,
+0.0199,
+0.0183
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Button",
+"label": "General",
+"value": "",
+"rect": [
+0.0398,
+0.4348,
+0.9154,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "StaticText",
+"label": "General",
+"value": "General",
+"rect": [
+0.0697,
+0.4485,
+0.2587,
+0.032
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Image",
+"label": "chevron.forward",
+"value": "",
+"rect": [
+0.8955,
+0.4577,
+0.0199,
+0.0137
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Button",
+"label": "Accessibility",
+"value": "",
+"rect": [
+0.0398,
+0.4943,
+0.9154,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "StaticText",
+"label": "Accessibility",
+"value": "Accessibility",
+"rect": [
+0.0697,
+0.508,
+0.3483,
+0.032
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Image",
+"label": "chevron.forward",
+"value": "",
+"rect": [
+0.8955,
+0.5172,
+0.0199,
+0.0137
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Button",
+"label": "Action Button",
+"value": "",
+"rect": [
+0.0398,
+0.5538,
+0.9154,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "StaticText",
+"label": "Action Button",
+"value": "Action Button",
+"rect": [
+0.0697,
+0.5675,
+0.3682,
+0.032
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Image",
+"label": "chevron.forward",
+"value": "",
+"rect": [
+0.8955,
+0.5767,
+0.0199,
+0.0137
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Button",
+"label": "Apple Intelligence & Siri",
+"value": "",
+"rect": [
+0.0398,
+0.6133,
+0.9154,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "StaticText",
+"label": "Apple Intelligence & Siri",
+"value": "Apple Intelligence & Siri",
+"rect": [
+0.0697,
+0.627,
+0.5572,
+0.032
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Image",
+"label": "chevron.forward",
+"value": "",
+"rect": [
+0.8955,
+0.6362,
+0.0199,
+0.0137
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Button",
+"label": "Camera",
+"value": "",
+"rect": [
+0.0398,
+0.6728,
+0.9154,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "StaticText",
+"label": "Camera",
+"value": "Camera",
+"rect": [
+0.0697,
+0.6865,
+0.2587,
+0.032
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Image",
+"label": "chevron.forward",
+"value": "",
+"rect": [
+0.8955,
+0.6957,
+0.0199,
+0.0137
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Button",
+"label": "Home Screen & App Library",
+"value": "",
+"rect": [
+0.0398,
+0.7323,
+0.9154,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "StaticText",
+"label": "Home Screen & App Library",
+"value": "Home Screen & App Library",
+"rect": [
+0.0697,
+0.746,
+0.6368,
+0.032
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Image",
+"label": "chevron.forward",
+"value": "",
+"rect": [
+0.8955,
+0.7551,
+0.0199,
+0.0137
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Button",
+"label": "Search",
+"value": "",
+"rect": [
+0.0398,
+0.7918,
+0.9154,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "StaticText",
+"label": "Search",
+"value": "Search",
+"rect": [
+0.0697,
+0.8055,
+0.2488,
+0.032
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Image",
+"label": "chevron.forward",
+"value": "",
+"rect": [
+0.8955,
+0.8146,
+0.0199,
+0.0137
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Button",
+"label": "StandBy",
+"value": "",
+"rect": [
+0.0398,
+0.8513,
+0.9154,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "StaticText",
+"label": "StandBy",
+"value": "StandBy",
+"rect": [
+0.0697,
+0.865,
+0.2687,
+0.032
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Image",
+"label": "chevron.forward",
+"value": "",
+"rect": [
+0.8955,
+0.8741,
+0.0199,
+0.0137
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Toolbar",
+"label": "Toolbar",
+"value": "",
+"rect": [
+0.0,
+0.9016,
+0.995,
+0.0961
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "SearchField",
+"label": "Search",
+"value": "Search",
+"rect": [
+0.0796,
+0.9199,
+0.8358,
+0.0412
+],
+"editable": true,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Button",
+"label": "Dictate",
+"value": "",
+"rect": [
+0.8358,
+0.9291,
+0.0398,
+0.0229
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Image",
+"label": "Search",
+"value": "",
+"rect": [
+0.1095,
+0.9291,
+0.0597,
+0.0229
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Button",
+"label": "Dictate",
+"value": "",
+"rect": [
+0.8358,
+0.9291,
+0.0398,
+0.0229
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+}
+]
+}

@@ -1,0 +1,348 @@
+---
+title: "Running checks in CI"
+sidebarTitle: "CI"
+keywords: ["ci", "github actions", "gitlab ci", "mobster ci", "pr comment", "merge request", "run my checks in ci", "junit", "self-hosted runner", "pull request", "repro steps"]
+description: "Run your checks on every pull request, on your own Mac, with one comment containing the verdict, the video and the repro steps."
+icon: "workflow"
+---
+
+`mobster ci` runs your app's checks on every pull request or merge request. It tests the screens the pull request changed, on simulators, and on any iPhone plugged into a Mac of yours. Then it keeps one comment on the pull request up to date: the verdict, and for each failure the repro steps, the frame, a GIF, the video and the command that runs it again.
+
+You run the checks on your own Mac. Mobster hosts no runners and no phones, and charges nothing per run or per device. The `mobster` command in a job is the agent inside [Mobster for Mac](https://mobster.dev/download).
+
+| Where it runs | What `mobster ci init` writes | Page |
+| --- | --- | --- |
+| A Mac of yours, GitHub Actions | `.github/workflows/mobster.yml` | [Below](#a-mac-of-yours) |
+| A Mac of yours, GitLab CI | the `mobster` job in `.gitlab-ci.yml` | [GitLab CI](/ci/gitlab) |
+| A Mac of yours | the Mac as a runner, Mac mini setup included | [A Mac as your runner](/ci/mac-runner) |
+
+## A Mac of yours
+
+On a Mac of yours the runner is the Mac, and it also tests on any iPhone plugged into it. It needs [Mobster for Mac](https://mobster.dev/download) in Applications and an active plan.
+
+From your project's folder:
+
+```sh
+mobster ci init
+```
+
+It reads the `origin` remote to tell GitHub from GitLab, writes the workflow, and prints what's left:
+
+```text
+Wrote .github/workflows/mobster.yml.
+
+Next:
+  1. On the Mac that runs the checks: mobster ci doctor
+  2. Register it as a self-hosted runner with the label mobster: https://docs.mobster.dev/ci/mac-runner
+  3. Add ANTHROPIC_API_KEY as a repository secret, for checks with steps.
+  4. Commit the file and open a pull request.
+```
+
+Add `--device "Test iPhone"` to test on a phone plugged into the runner too ([below](#your-iphone-in-ci)). On the runner, `mobster ci doctor` says what the Mac still needs:
+
+```text
+✓ Apple silicon              this Mac is arm64
+✓ Xcode                      Xcode 26.4
+✓ iOS Simulator runtime      iOS 26.4
+✓ Mobster for Mac            in Applications
+✓ Mobster plan               active on this Mac
+✗ System sleep               after 10 minutes
+                             Run `sudo pmset -a sleep 0 disksleep 0`, so the Mac never sleeps through a job.
+! Restart after a power cut  off
+                             Run `sudo pmset -a autorestart 1`.
+✓ Automatic login            as ci
+✓ Runner service             GitHub Actions runner
+✓ Free disk                  212 GB
+✓ Phones this runner allows  none: checks run on simulators only
+
+Fix the rows marked ✗, then run `mobster ci doctor` again.
+```
+
+## The workflow
+
+`mobster ci init` writes this file. It runs on a runner with the `mobster` label, so your other jobs stay on hosted runners.
+
+```yaml .github/workflows/mobster.yml
+name: mobster
+on: pull_request
+permissions:
+  contents: read
+  pull-requests: write   # the one comment Mobster keeps up to date
+concurrency:
+  group: mobster-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+env:
+  MOBSTER: /Applications/Mobster.app/Contents/MacOS/mobster-agent
+jobs:
+  checks:
+    runs-on: [self-hosted, macOS, mobster]
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # the diff needs the base branch
+      - name: Test what this PR changed
+        run: |
+          "$MOBSTER" ci run
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}   # only checks with steps use it
+      - name: Upload the report
+        id: upload
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobster-report
+          path: .mobster/ci/
+          include-hidden-files: true
+          retention-days: 14
+          if-no-files-found: ignore
+      - name: Comment on the PR
+        if: always()
+        run: |
+          "$MOBSTER" ci comment
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          MOBSTER_ARTIFACT_URL: ${{ steps.upload.outputs.artifact-url }}
+```
+
+1. `mobster ci run` fetches the pull request's base branch and runs [`mobster test pr`](/testing#test-a-pull-request) with `--video`. It builds the app, runs the saved checks that cover the changed screens, and drafts a check for each changed screen none covers. The suite's folder is copied to `.mobster/ci/`. The step fails when a check fails or couldn't run.
+2. The upload keeps the hidden `.mobster/ci/` folder as the job's artifact: `junit.xml`, `pr.json`, the HTML report, frames, GIFs and videos. The generated workflow and standalone action include this hidden folder too.
+3. `mobster ci comment` creates the comment, or updates the one it made on an earlier push. It also writes the job's summary. It never fails the job.
+
+With [Mobster Checks](/ci/github-app) installed on the repository and GitHub connected in Mobster on the runner, the verdict also appears as the check `Mobster`, with each frame linked to the job's report.
+
+Launch-only checks need no key. A check with steps runs Smart on `ANTHROPIC_API_KEY` until it passes once. Later runs can replay the approved steps; healing and generated text can still require model calls ([Replay and heals](/testing#replay-and-heals)).
+
+## The Mobster test action
+
+`RadishSoftware/test-action` runs `mobster test pr`, uploads the report and keeps the comment in one step. Use it in place of the `mobster ci` steps above when you want one `uses:` line. It runs on a Mac with [Mobster for Mac](https://mobster.dev/download) in Applications, and hosts no runner of its own.
+
+```yaml .github/workflows/mobster.yml
+name: mobster
+on: pull_request
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  test:
+    runs-on: [self-hosted, macOS, mobster]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: RadishSoftware/test-action@v1
+        with:
+          scheme: YourApp
+```
+
+| Input | Default | What it does |
+| --- | --- | --- |
+| `base` | the pull request's base branch | The branch the changed screens are measured against |
+| `sim` | each check's own | Simulator device types, one per line, such as `iPhone 17 Pro@iOS 26.4` |
+| `device` | none | iPhones on this runner, one per line, by their names in `mobster devices`. The runner's `MOBSTER_RUNNER_DEVICES` must list each |
+| `testflight` | none | With `device`, the bundle ID of your app's TestFlight build. The runner's `MOBSTER_RUNNER_TESTFLIGHT` must list it |
+| `build` | `true` | Build the app before testing it |
+| `scheme`, `project` | the only one | The Xcode scheme and the `.xcodeproj` or `.xcworkspace` to build |
+| `drafts` | `run` | Checks for changed screens no check covers: `run`, `write` or `off`. Drafts never fail the pull request |
+| `args` | none | More `mobster test pr` flags, such as `--retries 2 --parallel 2`. Use `device` and `testflight` for phones |
+| `working-directory` | `.` | The folder that holds `.mobster` |
+| `comment` | `true` | Keep one comment on the pull request. The job summary has the verdict either way |
+| `tested-with` | `false` | End the comment with a "Tested with Mobster" line that links to mobster.dev |
+| `fail-on-failure` | `true` | Fail the job when a check fails or couldn't run |
+| `artifact-name`, `retention-days` | `mobster-report`, `14` | The uploaded report's name and how many days GitHub keeps it |
+| `github-token` | the job's token | The token that writes the comment. It needs `pull-requests: write` |
+
+It sets four outputs: `exit-code` (0 passed, 1 failed, 2 needs review, 3 couldn't run), `headline`, `report-dir` and `artifact-url`.
+
+The comment is the one in [The comment](#the-comment), and it ends without a credit line unless you set `tested-with: true`. A phone or TestFlight app named in the workflow runs only when the runner's `.env` lists it, as in [Your iPhone in CI](#your-iphone-in-ci), because a pull request can edit the workflow file but not the runner. On the [Team plan](/pricing), set `MOBSTER_TEAM_KEY` in the step's `env` and the comment links your team's hosted report ([Share the report with your team](#share-the-report-with-your-team)).
+
+## The comment
+
+Updated in place on every push:
+
+````markdown
+### Mobster checks: 11 passed, 1 failed
+
+Changed screens: `PaywallView`, `SettingsView`, at `a6d8d39`
+
+| Check | Device | Expected | Found | Frame |
+| --- | --- | --- | --- | --- |
+| **Failed** The paywall shows three plans | iPhone 17 Pro, iOS 26.4 | text “Choose your plan” | not on screen; closest: "Choose a plan" | [paywall.jpg](…) |
+| **Passed** Today lists the three habits | iPhone 17 Pro, iOS 26.4 | 2 expectations | as expected | [today.jpg](…) |
+
+GIF of the failure: `paywall.gif`, [in the report](…).
+
+<details><summary>Repro: The paywall shows three plans (failed, assertion failed on the final screen)</summary>
+
+1. Use iPhone 17 Pro, iOS 26.4.
+2. Open `yourapp://paywall`.
+3. Tap Upgrade
+4. Scroll to the plans
+
+Expected text “Choose your plan”; found not on screen; closest: "Choose a plan".
+
+**App problem:** assertion failed on the final screen.
+
+Requests in step 4:
+
+- GET api.yourapp.com 200 142
+
+The app's log in step 4 (Scroll to the plans):
+
+```
+    9.312  notice [yourapp/store] loaded 3 products
+```
+
+Video: [001-paywall-1.mp4](…), GIF: [paywall.gif](…), Frame: [paywall.jpg](…)
+
+Run it again:
+
+```sh
+mobster test .mobster/checks/paywall.yaml --sim 'iPhone 17 Pro@iOS 26.4'
+```
+
+</details>
+
+[Report, frames and GIFs](…)
+````
+
+- Each check that didn't pass gets a folded repro: the device, the deep link it opened, the steps it took, what it expected and found, which side to look at (the app, the check or the environment), the requests and last log lines of the step it failed on, its media, and the command that runs it on the same device. The requests and log lines in the example are illustrative. Up to 5 checks get one.
+- Typed text, email addresses and phone numbers in a step show as `•••`.
+- GitHub doesn't show images from a workflow's artifacts inside a comment, so the frames, GIFs and videos are links to the uploaded report.
+
+## Share the report with your team
+
+On the [Team plan](/pricing), the comment can link your team's hosted report instead of the job's artifacts: the frames, GIFs and videos open in the console, sealed ([Share a report with your team](/testing#share-a-report-with-your-team)).
+
+1. In the console, an Admin makes an upload key under Reports › Upload keys. It's shown once, as `<team id>:mtk_…`.
+2. Add it to the repository's secrets as `MOBSTER_TEAM_KEY`.
+3. Pass it to the test step:
+
+```yaml
+      - name: Test what this PR changed
+        run: |
+          "$MOBSTER" ci run
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          MOBSTER_TEAM_KEY: ${{ secrets.MOBSTER_TEAM_KEY }}
+```
+
+With `MOBSTER_TEAM_KEY` set, `mobster ci run` adds `--share`, and `mobster ci comment` links the hosted report on GitHub and GitLab. The report's key is in the comment's links, so anyone who can read the pull request and is a member of the team can open it. An upload key only uploads: it reads nothing, and an Admin can revoke it in the console. Without the key, nothing changes.
+
+## Your iPhone in CI
+
+A pull request can edit the workflow file, so a phone named only there doesn't reach it. The runner's owner lists the phones it may test, and any TestFlight apps, in the runner's `.env` file, which no pull request can change:
+
+```sh ~/actions-runner/.env
+MOBSTER_RUNNER_DEVICES=Test iPhone
+MOBSTER_RUNNER_TESTFLIGHT=com.example.yourapp
+```
+
+```yaml
+      - name: Test what this PR changed
+        run: |
+          "$MOBSTER" ci run --device "Test iPhone" --testflight com.example.yourapp
+```
+
+- A `--device` or `--testflight` the runner doesn't list stops the job before a check runs. Put these flags before `--`; forwarded `mobster test pr` flags after `--` cannot select a phone or TestFlight build. Restart the runner after you change `.env`.
+- On a phone, a check drives only builds you installed: the device build from this job, a build Xcode installed, or a TestFlight build you named. An App Store app couldn't run.
+- Smart steps stay in your app, and never send, buy, post or delete on the phone.
+- With several phones on the runner, list each in `MOBSTER_RUNNER_DEVICES` and pass each with `--device`, as in `mobster ci run --device "Test iPhone" --device "Lab iPhone"`. Every check runs on every phone. Add `--spread` after `--` and each check runs once, on whichever phone is free ([Share the checks between phones](/testing#share-the-checks-between-phones)). `mobster ci init` takes `--device` more than once as well, and the test action's `device` input takes one phone per line.
+- Keep the phone unlocked, awake and charging. [A Mac as your runner](/ci/mac-runner) has the settings.
+
+<Warning>A self-hosted runner runs the code in each pull request. Don't use one on a public repository that takes pull requests from forks: GitHub's [security hardening guide](https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions#hardening-for-self-hosted-runners) explains why. Use a test phone signed in to a test account.</Warning>
+
+## More flags
+
+Flags after `--` go to `mobster test pr`:
+
+```yaml
+        run: |
+          "$MOBSTER" ci run --sim "iPhone 17 Pro" --sim "iPhone SE (3rd generation)" -- --parallel 2 --retries 2
+```
+
+`--no-video` turns the screen recordings off. [CLI: mobster ci](/reference/cli#mobster-ci) lists every flag.
+
+## Start a workflow from a CI box with an org API key
+
+On the [Team plan](/pricing), a CI box that has no Mac can put a saved workflow in line on one of your team's phones with an org API key. The job waits its turn on the phone, and the Mac that has it admits the job as it does any request. Make the key in the console with the `run_workflow` and `read_registry` scopes ([API keys](/console#api-keys)), then find the Mac and phone ids in the registry and start the job:
+
+```sh
+curl -s "https://api.mobster.dev/api/orgs/$ORG/registry" -H "Authorization: Bearer $MOBSTER_ORG_KEY"
+curl -s "https://api.mobster.dev/api/orgs/$ORG/jobs" -H "Authorization: Bearer $MOBSTER_ORG_KEY" -H "Content-Type: application/json" \
+  -d '{"kind": "run_workflow", "mac": "'$MAC'", "phone": "'$PHONE'", "args": {"workflow": "'$WORKFLOW'"}}'
+```
+
+It prints the job with its place in line: `{"job": {"id": "…", "state": "queued", "position": 1, "starts_in_s": 120, …}}`. Poll `GET /api/orgs/$ORG/jobs/$JOB` until `state` is `finished` or `failed`. A job that comes back `unknown` may have started, so Mobster never sends it again: look at the run on the Mac. Or have Mobster post to your server when the job ends ([Webhooks](/console#webhooks)).
+
+To run a project's checks on a Mac's simulators instead, make the key with `run_tests` and queue a `run_tests` job with `"phone": "sims"` and `"args": {"project": "<id>"}`. The Mac builds the app and runs every check, as **Run checks** on the project's page does, and the report is on the Mac. Choosing which checks or simulators to run isn't available yet: the job runs the project's own. See [The queue](/console#the-queue) for every state and refusal.
+
+## Run your XCTest targets too
+
+`--xctest` goes after `--` like any other `mobster test pr` flag. The project builds once, and the unit tests join the checks in the comment, the JUnit file and the report ([Your XCTest targets](/testing#your-xctest-targets)):
+
+```yaml
+        run: |
+          "$MOBSTER" ci run --sim "iPhone 17 Pro" -- --xctest
+```
+
+The comment gains one line per failed test, with its file and line:
+
+```markdown
+### Mobster checks: 2 passed, 1 failed, XCTest 1 failed of 4
+
+**XCTest 1 failed of 4**
+
+- Ran `DaybreakTests` (4 tests): no test file changed, so every target runs
+- `PlanTests.testAnnualPlanIsBilledYearly` failed: PlanTests.swift:16: XCTAssertEqual failed: ("month") is not equal to ("year")
+```
+
+## Results in other tools
+
+`.mobster/ci/junit.xml` works with any JUnit reader. GitLab shows it in the merge request on its own. On GitHub, with [test-reporter](https://github.com/dorny/test-reporter):
+
+```yaml
+      - name: Show the results
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: Mobster checks
+          path: .mobster/ci/junit.xml
+          reporter: java-junit
+```
+
+Each check is a test case named after the check, grouped by device. With `--xctest`, each of your test targets is a suite of its own in the same file, and each test is a case named after its class and test. A flaky check passes with the property `flaky=true` unless you run with `--strict`. A quarantined check shows as skipped.
+
+## Every check, not only the changed screens
+
+`mobster ci run` tests what the pull request changed. To run every check, on a schedule or on `main`, call `mobster test` in a job of its own:
+
+```yaml .github/workflows/nightly.yml
+name: nightly checks
+on:
+  schedule:
+    - cron: "0 3 * * *"
+jobs:
+  checks:
+    runs-on: [self-hosted, macOS, mobster]
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          /Applications/Mobster.app/Contents/MacOS/mobster-agent sim doctor --fix
+          /Applications/Mobster.app/Contents/MacOS/mobster-agent test --video --junit build/junit.xml --html build/mobster-report
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobster-nightly
+          path: build/mobster-report
+```
+
+- Point each check's `app.path` at your build, such as `.mobster/build/Build/Products/Debug-iphonesimulator/<App>.app`, and build it in a step before the checks.
+- `--parallel N` runs N simulators at once. Keep N at or below half the runner's cores: on a Mac with 8 GB of memory, more than 2 slows every run down.
+
+## Several machines
+
+`--shard I/N` splits the checks evenly: run `mobster test --shard 1/3`, `--shard 2/3` and `--shard 3/3` on three runners with a matrix strategy, and upload each runner's folder. An empty shard exits 0.

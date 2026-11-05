@@ -1,0 +1,27 @@
+---
+title: "Could not connect to lockdownd: Pairing dialog response pending (-19)"
+sidebarTitle: "Pairing dialog response pending"
+description: "Your iPhone is waiting for you to tap Trust. Unlock it, tap Trust and enter your passcode."
+icon: "triangle-alert"
+keywords: ["lockdownd", "pairing", "trust", "libimobiledevice"]
+"article:modified_time": "2026-10-26"
+---
+
+You see this: libimobiledevice prints `ERROR: Could not connect to lockdownd: Pairing dialog response pending (-19)` when Mobster talks to a phone this Mac hasn't paired with yet.
+
+## Why it happens
+
+The iPhone showed **Trust This Computer?** and nobody answered it, or the phone is locked so it can't show it. Mobster never taps Trust for you.
+
+## Fix
+
+1. Unlock the iPhone.
+2. Tap **Trust** on the prompt, then enter your passcode.
+3. If you tapped **Don't Trust**, unplug the phone and plug it in again so it asks again.
+4. Choose **Check again** in Mobster for Mac, or run `mobster doctor`.
+
+## Check it worked
+
+`idevice_id -l` prints the phone's UDID once this Mac sees it, and `mobster doctor` stops printing `! USB iPhone … connected but not trusted`.
+
+Checked 26 Oct 2026 against Mobster 0.4.0. Back to [Troubleshooting](/troubleshooting#iphone).

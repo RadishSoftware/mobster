@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "mobster": {
+      "type": "local",
+      "command": "/opt/mobster/bin/mobster",
+      "args": ["mcp"],
+      "env": {},
+      "tools": ["*"]
+    }
+  }
+}

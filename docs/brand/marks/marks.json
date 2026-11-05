@@ -1,0 +1,3511 @@
+{
+  "about": "Every mark of another company Mobster shows: the agents, assistants and AI providers it works with, the services it connects to, and the companies Network X-ray names, each used only to name the product or say whose servers they are (README.md). scripts/gen_agent_marks.py writes every surface's copy.",
+  "marks": [
+    {
+      "id": "claude",
+      "name": "Claude",
+      "products": [
+        "Claude",
+        "Claude Desktop",
+        "Claude Code"
+      ],
+      "owner": "Anthropic",
+      "file": "claude.svg",
+      "ink": false,
+      "surfaces": [
+        "app",
+        "site",
+        "remote",
+        "docs"
+      ],
+      "source": "https://www.anthropic.com/press-kit",
+      "taken": "2026-10-16",
+      "rules": "https://www.anthropic.com/press-kit",
+      "note": "Claude Spark - Clay from the press kit, as claude.ai shows it; Claude Code's logo is the same spark beside its name",
+      "box": [
+        0.367,
+        0.184,
+        93.633,
+        93.633
+      ],
+      "scale": 0.979
+    },
+    {
+      "id": "openai",
+      "name": "OpenAI",
+      "products": [
+        "ChatGPT",
+        "OpenAI"
+      ],
+      "owner": "OpenAI",
+      "file": "openai.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "site",
+        "remote",
+        "docs"
+      ],
+      "source": "https://developers.openai.com/",
+      "taken": "2026-10-16",
+      "rules": "https://openai.com/brand/",
+      "note": "the blossom from OpenAI's developer site header; openai.com/brand refuses automated reads",
+      "box": [
+        0.0,
+        0.0,
+        24.0,
+        24.0
+      ],
+      "scale": 0.989
+    },
+    {
+      "id": "cursor",
+      "name": "Cursor",
+      "products": [
+        "Cursor"
+      ],
+      "owner": "Anysphere",
+      "file": "cursor.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "site",
+        "docs"
+      ],
+      "source": "https://cursor.com/brand",
+      "taken": "2026-10-16",
+      "rules": "https://cursor.com/brand",
+      "note": "CUBE_2D from Cursor's brand kit",
+      "box": [
+        0.0,
+        0.0,
+        466.73,
+        532.364
+      ],
+      "scale": 0.937
+    },
+    {
+      "id": "gemini",
+      "name": "Gemini",
+      "products": [
+        "Gemini",
+        "Google's models"
+      ],
+      "owner": "Google",
+      "file": "gemini.svg",
+      "ink": false,
+      "surfaces": [
+        "app",
+        "site",
+        "remote"
+      ],
+      "source": "https://www.gstatic.com/lamda/images/gemini_sparkle_aurora_33f86dc0c0257da337c63.svg",
+      "taken": "2026-10-16",
+      "note": "the sparkle gemini.google.com serves, its gradient a picture inside the file",
+      "box": [
+        7.875,
+        7.875,
+        176.25,
+        176.25
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "gemini-cli",
+      "name": "Gemini CLI",
+      "products": [
+        "Gemini CLI"
+      ],
+      "owner": "Google",
+      "file": "gemini-cli.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "site",
+        "docs"
+      ],
+      "source": "https://geminicli.com/",
+      "taken": "2026-10-16",
+      "note": "@lobehub/icons-static-svg 1.95.1 (MIT), a vector copy of the icon geminicli.com serves only as a PNG",
+      "box": [
+        0.0,
+        0.0,
+        24.0,
+        24.0
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "codex",
+      "name": "Codex",
+      "products": [
+        "Codex"
+      ],
+      "owner": "OpenAI",
+      "file": "codex.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "site",
+        "remote",
+        "docs"
+      ],
+      "source": "https://developers.openai.com/codex",
+      "taken": "2026-10-16",
+      "rules": "https://openai.com/brand/",
+      "note": "@lobehub/icons-static-svg 1.95.1 (MIT), a vector copy of the cloud in the Codex app's icon: OpenAI publishes it only as the app's PNGs",
+      "box": [
+        0.0,
+        0.0,
+        24.0,
+        24.0
+      ],
+      "scale": 0.95,
+      "scale_fixed": 0.95
+    },
+    {
+      "id": "copilot",
+      "name": "GitHub Copilot",
+      "products": [
+        "GitHub Copilot",
+        "VS Code (Copilot)"
+      ],
+      "owner": "GitHub",
+      "file": "copilot.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "site",
+        "docs"
+      ],
+      "source": "https://brand.github.com/",
+      "taken": "2026-10-16",
+      "rules": "https://brand.github.com/",
+      "note": "Copilot_Icon from GitHub's logo kit",
+      "box": [
+        0.0,
+        7.875,
+        96.0,
+        80.25
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "vscode",
+      "name": "Visual Studio Code",
+      "products": [
+        "VS Code"
+      ],
+      "owner": "Microsoft",
+      "file": "vscode.svg",
+      "ink": false,
+      "surfaces": [
+        "app",
+        "site",
+        "docs"
+      ],
+      "source": "https://code.visualstudio.com/brand",
+      "taken": "2026-10-16",
+      "rules": "https://code.visualstudio.com/brand",
+      "note": "the icon from VS Code's icon pack",
+      "box": [
+        0.0,
+        0.195,
+        100.0,
+        99.609
+      ],
+      "scale": 0.906
+    },
+    {
+      "id": "goose",
+      "name": "goose",
+      "products": [
+        "goose"
+      ],
+      "owner": "Block",
+      "file": "goose.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "site"
+      ],
+      "source": "https://github.com/block/goose",
+      "taken": "2026-10-16",
+      "note": "the bird of goose's desktop app icon, cut out unchanged",
+      "box": [
+        456.614,
+        419.743,
+        1152.06,
+        1152.06
+      ],
+      "scale": 0.968
+    },
+    {
+      "id": "perplexity",
+      "name": "Perplexity",
+      "products": [
+        "Perplexity"
+      ],
+      "owner": "Perplexity AI",
+      "file": "perplexity.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "site",
+        "remote"
+      ],
+      "source": "https://www.perplexity.ai/",
+      "taken": "2026-10-16",
+      "note": "the pplx-logo-mark symbol perplexity.ai draws in its header, read in a browser (the path's length and checksum match the page's)",
+      "box": [
+        0.352,
+        0.117,
+        29.297,
+        31.758
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "make",
+      "name": "Make",
+      "products": [
+        "Make"
+      ],
+      "owner": "Celonis",
+      "file": "make.svg",
+      "ink": false,
+      "surfaces": [
+        "app",
+        "remote",
+        "callback",
+        "site"
+      ],
+      "source": "https://www.make.com/",
+      "taken": "2026-10-16",
+      "note": "the symbol of the logo in make.com's header, cut out unchanged",
+      "box": [
+        1.361,
+        10.409,
+        21.772,
+        15.36
+      ],
+      "scale": 0.946
+    },
+    {
+      "id": "grok",
+      "name": "Grok",
+      "products": [
+        "Grok",
+        "xAI's models"
+      ],
+      "owner": "xAI",
+      "file": "grok.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "site",
+        "remote",
+        "docs"
+      ],
+      "source": "https://data.x.ai/logos/SpaceXAI_Grok_Assets.zip",
+      "taken": "2026-10-16",
+      "rules": "https://x.ai/legal/brand-guidelines",
+      "note": "Grok_Logomark from the Grok brand kit",
+      "box": [
+        0.0,
+        0.0,
+        1024.0,
+        988.0
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "mistral",
+      "name": "Mistral AI",
+      "products": [
+        "Le Chat",
+        "Mistral"
+      ],
+      "owner": "Mistral AI",
+      "file": "mistral.svg",
+      "ink": false,
+      "surfaces": [
+        "app",
+        "site",
+        "remote"
+      ],
+      "source": "https://mistral.ai/brand",
+      "taken": "2026-10-16",
+      "rules": "https://mistral.ai/brand",
+      "note": "Icon-Gradient from Mistral_Logos_2026.zip",
+      "box": [
+        10.758,
+        30.691,
+        140.484,
+        100.617
+      ],
+      "scale": 0.975
+    },
+    {
+      "id": "raycast",
+      "name": "Raycast",
+      "products": [
+        "Raycast"
+      ],
+      "owner": "Raycast",
+      "file": "raycast.svg",
+      "ink": false,
+      "surfaces": [
+        "app",
+        "remote",
+        "docs"
+      ],
+      "source": "https://www.raycast.com/press",
+      "taken": "2026-10-16",
+      "rules": "https://www.raycast.com/press",
+      "note": "the mark from Raycast's press kit",
+      "box": [
+        0.0,
+        0.0,
+        228.0,
+        228.0
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "zapier",
+      "name": "Zapier",
+      "products": [
+        "Zapier"
+      ],
+      "owner": "Zapier",
+      "file": "zapier.svg",
+      "ink": false,
+      "fill": true,
+      "surfaces": [
+        "app",
+        "remote",
+        "callback",
+        "site",
+        "docs"
+      ],
+      "source": "https://zapier.com/brand",
+      "taken": "2026-10-17",
+      "rules": "https://zapier.com/brand",
+      "note": "the 150 px app icon from App Icon.svg on Zapier's brand page, cut out of the sheet unchanged (the orange platform as a container for the wordmark): Zapier's smallest expression of its logo, for favicons and app stores, so it is the icon every tile here shows",
+      "box": [
+        0.0,
+        0.0,
+        150.0,
+        150.0
+      ],
+      "scale": 1
+    },
+    {
+      "id": "windsurf",
+      "name": "Devin Desktop",
+      "products": [
+        "Devin Desktop"
+      ],
+      "owner": "Cognition",
+      "file": "devin.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "site",
+        "docs"
+      ],
+      "source": "https://devin.ai/brand",
+      "taken": "2026-11-05",
+      "rules": null,
+      "note": "the Devin symbol as devin.ai serves it (https://devin.ai/favicon.svg), unchanged: the same symbol as the brand kit's avatar, without the avatar's square. Windsurf is Devin Desktop since 2 Jun 2026",
+      "box": [
+        69.727,
+        48.975,
+        287.207,
+        328.711
+      ],
+      "scale": 0.981
+    },
+    {
+      "id": "zed",
+      "name": "Zed",
+      "products": [
+        "Zed"
+      ],
+      "owner": "Zed Industries",
+      "file": "zed.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "site"
+      ],
+      "source": "https://zed.dev/",
+      "taken": "2026-10-16",
+      "note": "the mark from zed.dev",
+      "box": [
+        0.0,
+        0.0,
+        96.0,
+        96.0
+      ],
+      "scale": 0.954
+    },
+    {
+      "id": "cline",
+      "name": "Cline",
+      "products": [
+        "Cline"
+      ],
+      "owner": "Cline Bot",
+      "file": "cline.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "site"
+      ],
+      "source": "https://cline.bot/press",
+      "taken": "2026-10-16",
+      "note": "the mark from Cline's press kit",
+      "box": [
+        0.438,
+        0.219,
+        111.125,
+        101.938
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "opencode",
+      "name": "opencode",
+      "products": [
+        "opencode"
+      ],
+      "owner": "Anomaly",
+      "file": "opencode.svg",
+      "dark": "opencode-dark.svg",
+      "ink": false,
+      "surfaces": [
+        "app",
+        "site",
+        "docs"
+      ],
+      "source": "https://opencode.ai/brand",
+      "taken": "2026-10-16",
+      "rules": "https://opencode.ai/brand",
+      "note": "light and dark marks from opencode's brand kit",
+      "box": [
+        0.0,
+        0.0,
+        240.0,
+        300.0
+      ],
+      "scale": 0.844
+    },
+    {
+      "id": "antigravity",
+      "name": "Google Antigravity",
+      "products": [
+        "Google Antigravity"
+      ],
+      "owner": "Google",
+      "file": "antigravity.svg",
+      "ink": false,
+      "surfaces": [
+        "app",
+        "site"
+      ],
+      "source": "https://antigravity.google/press",
+      "taken": "2026-10-16",
+      "note": "the full-colour icon from Antigravity's press kit",
+      "box": [
+        22.5,
+        28.125,
+        134.648,
+        123.75
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "amp",
+      "name": "Amp",
+      "products": [
+        "Amp"
+      ],
+      "owner": "Amp",
+      "file": "amp.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "site"
+      ],
+      "source": "https://ampcode.com/press-kit",
+      "taken": "2026-10-16",
+      "note": "Amp's logo from its press kit (Amp's mark is its name)",
+      "box": [
+        0.0,
+        19.758,
+        281.0,
+        123.486
+      ],
+      "scale": 1.25
+    },
+    {
+      "id": "anthropic",
+      "name": "Anthropic",
+      "products": [
+        "Anthropic"
+      ],
+      "owner": "Anthropic",
+      "file": "anthropic.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "docs"
+      ],
+      "source": "https://www.anthropic.com/press-kit",
+      "taken": "2026-10-16",
+      "rules": "https://www.anthropic.com/press-kit",
+      "note": "the Anthropic symbol from the press kit",
+      "box": [
+        0.539,
+        0.0,
+        91.461,
+        63.969
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "kimi",
+      "name": "Kimi",
+      "products": [
+        "Kimi"
+      ],
+      "owner": "Moonshot AI",
+      "file": "kimi.svg",
+      "dark": "kimi-dark.svg",
+      "ink": false,
+      "surfaces": [
+        "app"
+      ],
+      "source": "https://www.kimi.com/en/resources/kimi-brand",
+      "taken": "2026-10-16",
+      "rules": "https://www.kimi.com/en/resources/kimi-brand",
+      "note": "Kimi's logomark, light and dark",
+      "box": [
+        48.164,
+        36.211,
+        100.547,
+        96.68
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "moonshot",
+      "name": "Moonshot AI",
+      "products": [
+        "Moonshot AI"
+      ],
+      "owner": "Moonshot AI",
+      "file": "moonshot.svg",
+      "ink": true,
+      "surfaces": [
+        "app"
+      ],
+      "source": "https://www.moonshot.ai/",
+      "taken": "2026-10-16",
+      "note": "the symbol of Moonshot AI's logo, cut out unchanged",
+      "box": [
+        0.0,
+        0.0,
+        31.941,
+        32.406
+      ],
+      "scale": 0.921
+    },
+    {
+      "id": "deepseek",
+      "name": "DeepSeek",
+      "products": [
+        "DeepSeek"
+      ],
+      "owner": "DeepSeek",
+      "file": "deepseek.svg",
+      "ink": true,
+      "surfaces": [
+        "app"
+      ],
+      "source": "https://api-docs.deepseek.com/img/logo-mark-light.svg",
+      "taken": "2026-10-16",
+      "box": [
+        0.163,
+        1.75,
+        26.634,
+        19.611
+      ],
+      "scale": 0.998
+    },
+    {
+      "id": "qwen",
+      "name": "Qwen",
+      "products": [
+        "Qwen"
+      ],
+      "owner": "Alibaba Cloud",
+      "file": "qwen.svg",
+      "ink": false,
+      "surfaces": [
+        "app"
+      ],
+      "source": "https://chat.qwen.ai/",
+      "taken": "2026-10-16",
+      "note": "the symbol of Qwen's logo, cut out unchanged",
+      "box": [
+        0.0,
+        0.0,
+        19.7,
+        20.008
+      ],
+      "scale": 0.925
+    },
+    {
+      "id": "groq",
+      "name": "Groq",
+      "products": [
+        "Groq"
+      ],
+      "owner": "Groq",
+      "file": "groq.svg",
+      "ink": true,
+      "surfaces": [
+        "app"
+      ],
+      "source": "https://groq.com/",
+      "taken": "2026-10-16",
+      "note": "the bolt of Groq's logo, cut out unchanged",
+      "box": [
+        0.0,
+        1.449,
+        369.551,
+        560.848
+      ],
+      "scale": 1.194
+    },
+    {
+      "id": "cerebras",
+      "name": "Cerebras",
+      "products": [
+        "Cerebras"
+      ],
+      "owner": "Cerebras Systems",
+      "file": "cerebras.svg",
+      "ink": false,
+      "surfaces": [
+        "app"
+      ],
+      "source": "https://www.cerebras.ai/",
+      "taken": "2026-10-16",
+      "note": "the symbol of Cerebras's logo, cut out unchanged",
+      "box": [
+        0.375,
+        0.375,
+        36.094,
+        47.25
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "together",
+      "name": "Together AI",
+      "products": [
+        "Together AI"
+      ],
+      "owner": "Together AI",
+      "file": "together.svg",
+      "ink": false,
+      "surfaces": [
+        "app"
+      ],
+      "source": "https://www.together.ai/",
+      "taken": "2026-10-16",
+      "note": "the symbol of Together's logo, cut out unchanged",
+      "box": [
+        0.0,
+        0.0,
+        27.0,
+        25.154
+      ],
+      "scale": 0.894
+    },
+    {
+      "id": "fireworks",
+      "name": "Fireworks AI",
+      "products": [
+        "Fireworks AI"
+      ],
+      "owner": "Fireworks AI",
+      "file": "fireworks.svg",
+      "ink": false,
+      "surfaces": [
+        "app"
+      ],
+      "source": "https://fireworks.ai/icon0.svg",
+      "taken": "2026-10-16",
+      "box": [
+        0.0,
+        8.0,
+        32.0,
+        15.812
+      ],
+      "scale": 1.255
+    },
+    {
+      "id": "huggingface",
+      "name": "Hugging Face",
+      "products": [
+        "Hugging Face"
+      ],
+      "owner": "Hugging Face",
+      "file": "huggingface.svg",
+      "ink": false,
+      "surfaces": [
+        "app"
+      ],
+      "source": "https://huggingface.co/brand",
+      "taken": "2026-10-16",
+      "rules": "https://huggingface.co/brand",
+      "note": "hf-logo.svg from Hugging Face's brand assets",
+      "box": [
+        25.0,
+        32.0,
+        206.5,
+        191.5
+      ],
+      "scale": 0.84
+    },
+    {
+      "id": "nvidia",
+      "name": "NVIDIA",
+      "products": [
+        "NVIDIA"
+      ],
+      "owner": "NVIDIA",
+      "file": "nvidia.svg",
+      "ink": false,
+      "surfaces": [
+        "app"
+      ],
+      "source": "https://www.nvidia.com/",
+      "taken": "2026-10-16",
+      "rules": "https://brand.nvidia.com/",
+      "note": "the eye of NVIDIA's logo, cut out unchanged",
+      "box": [
+        0.062,
+        11.5,
+        31.188,
+        21.0
+      ],
+      "scale": 0.983
+    },
+    {
+      "id": "zai",
+      "name": "Z.ai",
+      "products": [
+        "Z.ai"
+      ],
+      "owner": "Zhipu AI",
+      "file": "zai.svg",
+      "ink": true,
+      "surfaces": [
+        "app"
+      ],
+      "source": "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
+      "taken": "2026-10-16",
+      "note": "the three Z shapes of Z.ai's logo, its tile left out",
+      "box": [
+        5.664,
+        7.055,
+        18.672,
+        15.898
+      ],
+      "scale": 0.949
+    },
+    {
+      "id": "minimax",
+      "name": "MiniMax",
+      "products": [
+        "MiniMax"
+      ],
+      "owner": "MiniMax",
+      "file": "minimax.svg",
+      "ink": false,
+      "surfaces": [
+        "app"
+      ],
+      "source": "https://platform.minimax.io/docs",
+      "taken": "2026-10-16",
+      "note": "the symbol of MiniMax's docs logo, cut out unchanged",
+      "box": [
+        0.1,
+        0.0,
+        36.828,
+        30.99
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "baseten",
+      "name": "Baseten",
+      "products": [
+        "Baseten"
+      ],
+      "owner": "Baseten",
+      "file": "baseten.svg",
+      "ink": true,
+      "surfaces": [
+        "app"
+      ],
+      "source": "https://www.baseten.co/",
+      "taken": "2026-10-16",
+      "note": "the symbol of Baseten's logo, cut out unchanged",
+      "box": [
+        0.0,
+        2.965,
+        22.775,
+        28.076
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "deepinfra",
+      "name": "DeepInfra",
+      "products": [
+        "DeepInfra"
+      ],
+      "owner": "DeepInfra",
+      "file": "deepinfra.svg",
+      "ink": true,
+      "surfaces": [
+        "app"
+      ],
+      "source": "https://deepinfra.com/",
+      "taken": "2026-10-16",
+      "note": "the symbol of DeepInfra's logo, cut out unchanged",
+      "box": [
+        0.0,
+        0.984,
+        27.234,
+        29.695
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "alibaba-cloud",
+      "name": "Alibaba Cloud",
+      "products": [
+        "Alibaba Cloud Model Studio"
+      ],
+      "owner": "Alibaba Cloud",
+      "file": "alibaba-cloud.svg",
+      "ink": false,
+      "surfaces": [
+        "app"
+      ],
+      "source": "https://www.alibabacloud.com/",
+      "taken": "2026-10-16",
+      "note": "the symbol of Alibaba Cloud's logo, cut out unchanged",
+      "box": [
+        0.0,
+        0.0,
+        59.8,
+        37.258
+      ],
+      "scale": 1.093
+    },
+    {
+      "id": "vercel",
+      "name": "Vercel",
+      "products": [
+        "Vercel AI Gateway"
+      ],
+      "owner": "Vercel",
+      "file": "vercel.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://vercel.com/geist/brands",
+      "taken": "2026-10-16",
+      "rules": "https://vercel.com/geist/brands",
+      "note": "the triangle from Vercel's press kit",
+      "box": [
+        0.0,
+        0.0,
+        1155.0,
+        999.346
+      ],
+      "scale": 0.959
+    },
+    {
+      "id": "openrouter",
+      "name": "OpenRouter",
+      "products": [
+        "OpenRouter"
+      ],
+      "owner": "OpenRouter",
+      "file": "openrouter.svg",
+      "ink": true,
+      "surfaces": [
+        "app"
+      ],
+      "source": "https://openrouter.ai/",
+      "taken": "2026-10-16",
+      "note": "the mark in openrouter.ai's header",
+      "box": [
+        19.82,
+        17.199,
+        365.556,
+        258.46
+      ],
+      "scale": 0.943
+    },
+    {
+      "id": "meta",
+      "name": "Meta",
+      "products": [
+        "Meta's models"
+      ],
+      "owner": "Meta",
+      "file": "meta.svg",
+      "ink": true,
+      "surfaces": [
+        "app"
+      ],
+      "source": "https://www.meta.com/brand/resources/meta/company-brand/",
+      "taken": "2026-10-16",
+      "rules": "https://www.meta.com/brand/resources/meta/company-brand/",
+      "note": "@lobehub/icons-static-svg 1.95.1 (MIT), the same symbol as Meta's own, whose file embeds a raster",
+      "companies": [
+        "Meta"
+      ],
+      "box": [
+        0.0,
+        3.984,
+        24.0,
+        16.031
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "ollama",
+      "name": "Ollama",
+      "products": [
+        "Ollama"
+      ],
+      "owner": "Ollama",
+      "file": "ollama.svg",
+      "ink": true,
+      "surfaces": [
+        "app"
+      ],
+      "source": "https://ollama.com/public/ollama.png",
+      "taken": "2026-10-16",
+      "note": "Ollama's own PNG (181 x 256, more than four times the largest tile's box), inside the SVG",
+      "box": [
+        0.0,
+        17.676,
+        181.0,
+        238.27
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "lmstudio",
+      "name": "LM Studio",
+      "products": [
+        "LM Studio"
+      ],
+      "owner": "Element Labs",
+      "file": "lmstudio.svg",
+      "ink": true,
+      "surfaces": [
+        "app"
+      ],
+      "source": "https://lmstudio.ai/",
+      "taken": "2026-10-16",
+      "note": "@lobehub/icons-static-svg 1.95.1 (MIT), a vector of the bars in LM Studio's app icon, which it publishes only as a picture on its own tile",
+      "box": [
+        0.0,
+        1.969,
+        24.0,
+        19.453
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "typesafe",
+      "name": "TypeSafe",
+      "products": [
+        "TypeSafe"
+      ],
+      "owner": "TypeSafe",
+      "file": "typesafe.svg",
+      "ink": false,
+      "surfaces": [
+        "app"
+      ],
+      "source": "https://typesafe.ai/",
+      "taken": "2026-10-16",
+      "note": "the favicon typesafe.ai links (framerusercontent.com, read 19 Sep 2026), its PNG inside the SVG",
+      "box": [
+        0.0,
+        0.0,
+        400.0,
+        400.0
+      ],
+      "scale": 0.826
+    },
+    {
+      "id": "xai",
+      "name": "xAI",
+      "products": [
+        "xAI's API"
+      ],
+      "owner": "xAI",
+      "file": "xai.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "docs"
+      ],
+      "source": "https://x.ai/",
+      "taken": "2026-10-16",
+      "rules": "https://x.ai/legal/brand-guidelines",
+      "note": "the mark in x.ai's header today",
+      "box": [
+        40.0,
+        0.0,
+        2176.0,
+        833.0
+      ],
+      "scale": 1.333
+    },
+    {
+      "id": "akamai",
+      "name": "Akamai",
+      "products": [
+        "Akamai"
+      ],
+      "owner": "Akamai",
+      "file": "akamai.svg",
+      "ink": true,
+      "surfaces": [
+        "app"
+      ],
+      "source": "https://github.com/simple-icons/simple-icons/tree/13.21.0",
+      "taken": "2026-10-15",
+      "rules": "https://github.com/simple-icons/simple-icons/blob/develop/DISCLAIMER.md",
+      "note": "Simple Icons 13.21.0 (CC0 1.0)",
+      "companies": [
+        "Akamai"
+      ],
+      "box": [
+        0.938,
+        0.0,
+        22.125,
+        24.0
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "amazon",
+      "name": "Amazon",
+      "products": [
+        "Amazon"
+      ],
+      "owner": "Amazon",
+      "file": "amazon.svg",
+      "ink": true,
+      "surfaces": [
+        "app"
+      ],
+      "source": "https://github.com/simple-icons/simple-icons/tree/13.21.0",
+      "taken": "2026-10-15",
+      "rules": "https://github.com/simple-icons/simple-icons/blob/develop/DISCLAIMER.md",
+      "note": "Simple Icons 13.21.0 (CC0 1.0)",
+      "companies": [
+        "Amazon"
+      ],
+      "box": [
+        0.0,
+        1.078,
+        24.0,
+        21.844
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "apple",
+      "name": "Apple",
+      "products": [
+        "Apple"
+      ],
+      "owner": "Apple",
+      "file": "apple.svg",
+      "ink": true,
+      "surfaces": [
+        "app"
+      ],
+      "source": "https://github.com/simple-icons/simple-icons/tree/13.21.0",
+      "taken": "2026-10-15",
+      "rules": "https://github.com/simple-icons/simple-icons/blob/develop/DISCLAIMER.md",
+      "note": "Simple Icons 13.21.0 (CC0 1.0)",
+      "companies": [
+        "Apple"
+      ],
+      "box": [
+        2.203,
+        0.0,
+        19.594,
+        24.0
+      ],
+      "scale": 0.917
+    },
+    {
+      "id": "bugsnag",
+      "name": "Bugsnag",
+      "products": [
+        "Bugsnag"
+      ],
+      "owner": "SmartBear",
+      "file": "bugsnag.svg",
+      "ink": true,
+      "surfaces": [
+        "app"
+      ],
+      "source": "https://github.com/simple-icons/simple-icons/tree/13.21.0",
+      "taken": "2026-10-15",
+      "rules": "https://github.com/simple-icons/simple-icons/blob/develop/DISCLAIMER.md",
+      "note": "Simple Icons 13.21.0 (CC0 1.0)",
+      "companies": [
+        "Bugsnag"
+      ],
+      "box": [
+        3.656,
+        0.0,
+        16.688,
+        24.0
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "bytedance",
+      "name": "ByteDance",
+      "products": [
+        "ByteDance"
+      ],
+      "owner": "ByteDance",
+      "file": "bytedance.svg",
+      "ink": true,
+      "surfaces": [
+        "app"
+      ],
+      "source": "https://github.com/simple-icons/simple-icons/tree/13.21.0",
+      "taken": "2026-10-15",
+      "rules": "https://github.com/simple-icons/simple-icons/blob/develop/DISCLAIMER.md",
+      "note": "Simple Icons 13.21.0 (CC0 1.0)",
+      "companies": [
+        "ByteDance"
+      ],
+      "box": [
+        0.0,
+        1.453,
+        24.0,
+        21.094
+      ],
+      "scale": 0.969
+    },
+    {
+      "id": "fastly",
+      "name": "Fastly",
+      "products": [
+        "Fastly"
+      ],
+      "owner": "Fastly",
+      "file": "fastly.svg",
+      "ink": true,
+      "surfaces": [
+        "app"
+      ],
+      "source": "https://github.com/simple-icons/simple-icons/tree/13.21.0",
+      "taken": "2026-10-15",
+      "rules": "https://github.com/simple-icons/simple-icons/blob/develop/DISCLAIMER.md",
+      "note": "Simple Icons 13.21.0 (CC0 1.0)",
+      "companies": [
+        "Fastly"
+      ],
+      "box": [
+        1.406,
+        0.0,
+        21.188,
+        24.0
+      ],
+      "scale": 0.933
+    },
+    {
+      "id": "google-g",
+      "name": "Google",
+      "products": [
+        "Google"
+      ],
+      "owner": "Google",
+      "file": "google-g.svg",
+      "ink": true,
+      "surfaces": [
+        "app"
+      ],
+      "source": "https://github.com/simple-icons/simple-icons/tree/13.21.0",
+      "taken": "2026-10-15",
+      "rules": "https://github.com/simple-icons/simple-icons/blob/develop/DISCLAIMER.md",
+      "note": "Simple Icons 13.21.0 (CC0 1.0); the G; the id isn't google, which names Gemini's API",
+      "companies": [
+        "Google"
+      ],
+      "box": [
+        0.281,
+        0.0,
+        23.438,
+        24.0
+      ],
+      "scale": 0.991
+    },
+    {
+      "id": "snapchat",
+      "name": "Snap",
+      "products": [
+        "Snap"
+      ],
+      "owner": "Snap",
+      "file": "snapchat.svg",
+      "ink": true,
+      "surfaces": [
+        "app"
+      ],
+      "source": "https://github.com/simple-icons/simple-icons/tree/13.21.0",
+      "taken": "2026-10-15",
+      "rules": "https://github.com/simple-icons/simple-icons/blob/develop/DISCLAIMER.md",
+      "note": "Simple Icons 13.21.0 (CC0 1.0); Snapchat's ghost, Snap Inc.'s mark",
+      "companies": [
+        "Snap"
+      ],
+      "box": [
+        0.0,
+        0.75,
+        24.0,
+        22.5
+      ],
+      "scale": 0.905
+    },
+    {
+      "id": "twilio",
+      "name": "Twilio Segment",
+      "products": [
+        "Twilio Segment"
+      ],
+      "owner": "Twilio",
+      "file": "twilio.svg",
+      "ink": true,
+      "surfaces": [
+        "app"
+      ],
+      "source": "https://github.com/simple-icons/simple-icons/tree/13.21.0",
+      "taken": "2026-10-15",
+      "rules": "https://github.com/simple-icons/simple-icons/blob/develop/DISCLAIMER.md",
+      "note": "Simple Icons 13.21.0 (CC0 1.0); Twilio's mark for Segment, which Twilio owns; Simple Icons has no Segment icon",
+      "companies": [
+        "Twilio Segment"
+      ],
+      "box": [
+        0.0,
+        0.0,
+        24.0,
+        24.0
+      ],
+      "scale": 0.926
+    },
+    {
+      "id": "unity",
+      "name": "Unity",
+      "products": [
+        "Unity"
+      ],
+      "owner": "Unity Technologies",
+      "file": "unity.svg",
+      "ink": true,
+      "surfaces": [
+        "app"
+      ],
+      "source": "https://github.com/simple-icons/simple-icons/tree/13.21.0",
+      "taken": "2026-10-15",
+      "rules": "https://github.com/simple-icons/simple-icons/blob/develop/DISCLAIMER.md",
+      "note": "Simple Icons 13.21.0 (CC0 1.0)",
+      "companies": [
+        "Unity"
+      ],
+      "box": [
+        1.359,
+        0.0,
+        21.281,
+        24.0
+      ],
+      "scale": 0.932
+    },
+    {
+      "id": "x",
+      "name": "X",
+      "products": [
+        "X"
+      ],
+      "owner": "X Corp.",
+      "file": "x.svg",
+      "ink": true,
+      "surfaces": [
+        "app"
+      ],
+      "source": "https://github.com/simple-icons/simple-icons/tree/13.21.0",
+      "taken": "2026-10-15",
+      "rules": "https://github.com/simple-icons/simple-icons/blob/develop/DISCLAIMER.md",
+      "note": "Simple Icons 13.21.0 (CC0 1.0)",
+      "companies": [
+        "X"
+      ],
+      "box": [
+        0.0,
+        1.125,
+        24.0,
+        21.75
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "airtable",
+      "name": "Airtable",
+      "products": [
+        "Airtable"
+      ],
+      "owner": "Formagrid Inc. (Airtable)",
+      "file": "airtable.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "site",
+        "callback"
+      ],
+      "source": "https://www.airtable.com/images/favicon/baymax/favicon.svg?v=3",
+      "taken": "2026-10-17",
+      "rules": "https://airtable.com/trademark-guidelines",
+      "note": "Airtable's logo files are behind a shared Airtable view linked from its trademark guidelines (https://airtable.com/appiyS5IzOTBBj0el/shrxP0DqMdbLVY7fd/tblcRB6iqKxlYNrlV); that view is script-rendered and its attachment links could not be fetched without a browser, so no kit file was taken. Took the SVG favicon airtable.com serves itself (the icon, the three-shape mark). Only edit: removed the <style> block (path{fill:#000} with a prefers-color-scheme white override) and put fill=\"#000\" on the three paths; geometry and the translate group are unchanged. Could be swapped for the kit's icon later.",
+      "box": [
+        3.712,
+        8.192,
+        57.857,
+        49.153
+      ],
+      "scale": 0.965
+    },
+    {
+      "id": "amplitude",
+      "name": "Amplitude",
+      "products": [
+        "Amplitude"
+      ],
+      "owner": "Amplitude, Inc.",
+      "file": "amplitude.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://framerusercontent.com/images/vqninpQZmsdOKgDIl5C4C1e3Q.svg",
+      "taken": "2026-10-17",
+      "rules": "https://brand.amplitude.com/",
+      "note": "The Amplitude symbol (the A with the wave), dark version (#231f20), linked from brand.amplitude.com (the Amplitude Brand Guide) and kept as published, with its inline style fill. The guide also serves the white version (framerusercontent.com/images/o7RJTD0r7u0FLxVhCucqflo1Egg.svg). The guide's public pages offer no kit zip and no written logo rules.",
+      "box": [
+        0.0,
+        37.5,
+        800.0,
+        717.188
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "attio",
+      "name": "Attio",
+      "products": [
+        "Attio"
+      ],
+      "owner": "Attio Ltd",
+      "file": "attio.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://a.storyblok.com/f/234930/8a6f825750/attio-logo-pack.zip",
+      "taken": "2026-10-17",
+      "rules": "https://attio.com/brand",
+      "note": "attio-logo-pack/svg/attio-logomark-dark.svg from the logo pack linked on attio.com/brand, unchanged (the black logomark; a white variant ships too). Same drawing as attio.com/brand/v1/attio-logomark.svg.",
+      "box": [
+        0.0,
+        0.0,
+        68.326,
+        56.062
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "axiom",
+      "name": "Axiom",
+      "products": [
+        "Axiom"
+      ],
+      "owner": "Axiom, Inc.",
+      "file": "axiom.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://axiom.co/",
+      "taken": "2026-10-17",
+      "note": "axiom.co/brand and /press 404 and no kit is published (helloaxiom.ai/brand belongs to a different company). Took the symbol inline in axiom.co's own header/footer (viewBox 0 0 13 11, aria-label Axiom) on 2026-10-17. Only edits: dropped width/height/role/aria-label/class, and replaced fill=\"currentColor\" with fill=\"#000\". The path is unchanged.",
+      "box": [
+        0.609,
+        0.0,
+        11.604,
+        10.436
+      ],
+      "scale": 0.953
+    },
+    {
+      "id": "basecamp",
+      "name": "Basecamp",
+      "products": [
+        "Basecamp"
+      ],
+      "owner": "37signals LLC",
+      "file": "basecamp.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://basecamp.com/assets/images/general/favicon.svg",
+      "taken": "2026-10-17",
+      "rules": "https://developer.37signals.com/guidelines.html",
+      "note": "the SVG favicon served by basecamp.com, unchanged (#29353c). basecamp.com/about/press now returns the home page and offers no files; the 37signals integration guidelines point to it for logos and say to contact them first.",
+      "box": [
+        0.0,
+        2.562,
+        32.0,
+        26.875
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "beehiiv",
+      "name": "beehiiv",
+      "products": [
+        "beehiiv"
+      ],
+      "owner": "beehiiv",
+      "file": "beehiiv.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://www.beehiiv.com/",
+      "taken": "2026-10-17",
+      "note": "No press or brand page (beehiiv.com/media-kit, /press, /brand are 404). Took the logo inline in beehiiv.com's own header (id=beehiiv-logo, viewBox 0 0 1396.92 308.78): one path holding the hive symbol followed by the wordmark letters. Cut out the wordmark by keeping only the first five sub-paths (the hive, up to the 'M558.67...' letter b), coordinates unchanged, viewBox tightened to 0 0 326 309; fill=\"#000\" replaces the site's white fill class.",
+      "box": [
+        0.0,
+        0.0,
+        326.0,
+        308.809
+      ],
+      "scale": 0.947
+    },
+    {
+      "id": "bitrise",
+      "name": "Bitrise",
+      "products": [
+        "Bitrise"
+      ],
+      "owner": "Bitrise Ltd.",
+      "file": "bitrise.svg",
+      "ink": false,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://cdn.prod.website-files.com/5db35de024bb983af1b4e151/5e6222627b1e83310cd3bc98_favicon_256x256.svg",
+      "taken": "2026-10-17",
+      "rules": "https://bitrise.io/press",
+      "note": "The press kit (https://bitrise.io/press/kit) is a Google Drive folder and its bitrise-icon.svg is white (#FFF) only. Taken instead the SVG favicon of bitrise.io (favicon_256x256.svg, Bitbot in brand purple #683D87, the site's own file) in its own colour, byte-for-byte. Press page colours: #6A3C98 #500E82 #DEB4FF #10C0C0 #95FFEC.",
+      "box": [
+        23.0,
+        42.0,
+        210.0,
+        172.5
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "box",
+      "name": "Box",
+      "products": [
+        "Box"
+      ],
+      "owner": "Box, Inc.",
+      "file": "box.svg",
+      "ink": false,
+      "fill": true,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://developer.box.com/images/sidebar/box.svg",
+      "taken": "2026-10-17",
+      "rules": "https://www.box.com/legal/trademark",
+      "note": "box.com (kit, press page, trademark page) sits behind a Cloudflare challenge and the brand asset kit is a Box shared folder. Taken the Box developer docs' own app icon, developer.box.com/images/sidebar/box.svg, unchanged: white Box logo on its #0061D5 rounded square. The square was kept because the white logo has no colour of its own without it.",
+      "box": [
+        0.0,
+        0.0,
+        91.641,
+        91.641
+      ],
+      "scale": 1
+    },
+    {
+      "id": "buildkite",
+      "name": "Buildkite",
+      "products": [
+        "Buildkite"
+      ],
+      "owner": "Buildkite Pty Ltd",
+      "file": "buildkite.svg",
+      "ink": false,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://buildkite.com/_astro/buildkite-mark.D56ywXpU.svg",
+      "taken": "2026-10-17",
+      "rules": "https://buildkite.com/about/brand-assets/",
+      "note": "Mark file from the Buildkite brand-assets page, unchanged. Two greens (#14CC80, #30F2A2) that differ by tone; the green is about 2:1 on white, flagged below.",
+      "box": [
+        0.0,
+        0.0,
+        480.0,
+        319.688
+      ],
+      "scale": 1.014
+    },
+    {
+      "id": "cal",
+      "name": "Cal.com",
+      "products": [
+        "Cal.com"
+      ],
+      "owner": "Cal.com, Inc.",
+      "file": "cal.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://cal.com/brand",
+      "taken": "2026-10-17",
+      "rules": "https://cal.com/brand",
+      "note": "the 'Cal' icon from cal-logo-square-black.svg in the brand kit zip linked from cal.com/brand: the three white glyph paths, unchanged, the #242424 square dropped, viewBox tightened. The icon is the page's 'tight layouts or logo-only grids' mark and the favicon. The kit also ships a white-square and a black logo version.",
+      "box": [
+        64.488,
+        133.488,
+        249.023,
+        132.324
+      ],
+      "scale": 1.138
+    },
+    {
+      "id": "calendly",
+      "name": "Calendly",
+      "products": [
+        "Calendly"
+      ],
+      "owner": "Calendly LLC",
+      "file": "calendly.svg",
+      "ink": false,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://calendly.com/media/favicon/icon.svg",
+      "taken": "2026-10-17",
+      "note": "No downloadable kit or brand page found on calendly.com (calendly.com/press is a scheduling page, /brand and others 404). Taken the site's own SVG favicon, calendly.com/media/favicon/icon.svg, unchanged: white C on its blue gradient circle.",
+      "box": [
+        0.0,
+        0.0,
+        32.0,
+        32.0
+      ],
+      "scale": 0.834
+    },
+    {
+      "id": "clerk",
+      "name": "Clerk",
+      "products": [
+        "Clerk"
+      ],
+      "owner": "Clerk, Inc.",
+      "file": "clerk.svg",
+      "ink": false,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://clerk.com/v2/downloads/symbol-primary.svg",
+      "taken": "2026-10-17",
+      "rules": "https://clerk.com/brand-assets",
+      "note": "symbol-primary.svg from clerk.com/brand-assets (the Download as SVG for the Symbol), unchanged. Two purples (#6C47FF, #BAB1FF). symbol-dark.svg and symbol-light.svg also exist but are one-colour.",
+      "box": [
+        0.0,
+        0.0,
+        101.25,
+        128.0
+      ],
+      "scale": 0.992
+    },
+    {
+      "id": "clickhouse",
+      "name": "ClickHouse",
+      "products": [
+        "ClickHouse"
+      ],
+      "owner": "ClickHouse, Inc.",
+      "file": "clickhouse.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://clickhouse.design/images/brand/logos/logomark-black.svg",
+      "taken": "2026-10-17",
+      "rules": "https://clickhouse.design/brand/logo-usage",
+      "note": "logomark-black.svg from the ClickHouse design site's logo page (linked from clickhouse.com/media as ClickHouse-Logomark-Black.svg); <style> class converted to fill=\"#161616\", drawing unchanged. A white logomark exists for dark grounds.",
+      "box": [
+        26.953,
+        24.316,
+        100.195,
+        100.488
+      ],
+      "scale": 0.967
+    },
+    {
+      "id": "clickup",
+      "name": "ClickUp",
+      "products": [
+        "ClickUp"
+      ],
+      "owner": "Mango Technologies (ClickUp)",
+      "file": "clickup.svg",
+      "ink": false,
+      "surfaces": [
+        "app",
+        "site",
+        "callback"
+      ],
+      "source": "https://clickup.com/assets/brand/v4/Logomark-gradient.svg",
+      "taken": "2026-10-17",
+      "rules": "https://clickup.com/brand",
+      "note": "Logomark-gradient.svg from clickup.com/brand (Symbol), unchanged. Same file as today; re-checked live on 2026-10-17, still the current v4 symbol.",
+      "box": [
+        6.0,
+        0.75,
+        52.0,
+        63.0
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "close",
+      "name": "Close",
+      "products": [
+        "Close"
+      ],
+      "owner": "Elastic Inc. (Close)",
+      "file": "close.svg",
+      "ink": false,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://close.com/downloads/close-logo-2024",
+      "taken": "2026-10-17",
+      "rules": "https://close.com/brand",
+      "note": "mark.svg from close-logo-2024.zip (linked from close.com/brand), unchanged. Re-checked: it is the current atom mark of the 2024 kit and the page still offers this kit.",
+      "box": [
+        0.0,
+        0.875,
+        64.0,
+        58.25
+      ],
+      "scale": 0.989
+    },
+    {
+      "id": "cloudflare",
+      "name": "Cloudflare",
+      "products": [
+        "Cloudflare"
+      ],
+      "owner": "Cloudflare, Inc.",
+      "file": "cloudflare.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://cf-assets.www.cloudflare.com/dzlvafdwdttg/735eoClKJf9XfkqCJs1mfZ/b6767158f39af8d538517df918b8fc2e/logo-white-desktop.svg",
+      "taken": "2026-10-17",
+      "rules": "https://www.cloudflare.com/press/press-kit/",
+      "note": "The press-kit zip (Logos.zip) holds only PNG and JPG. Took the official site's single-colour SVG logo and kept only its first two paths (the cloud), dropping the wordmark. Paths unchanged, fill white, so ink. The orange cloud icon is also in cloudflare.com/icons.svg (symbol 'cloudflare') if a coloured version is wanted.",
+      "companies": [
+        "Cloudflare"
+      ],
+      "box": [
+        0.0,
+        0.832,
+        68.643,
+        31.201
+      ],
+      "scale": 1.1
+    },
+    {
+      "id": "coda",
+      "name": "Coda",
+      "products": [
+        "Coda",
+        "Superhuman Docs"
+      ],
+      "owner": "Coda (part of Superhuman, formerly Grammarly)",
+      "file": "coda.svg",
+      "ink": false,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://cdn.coda.io/icons/svg/color/coda.svg",
+      "taken": "2026-10-17",
+      "rules": "https://coda.io/",
+      "note": "Coda's own icon from its CDN, the mark coda.io serves as its icon, unchanged",
+      "box": [
+        1.383,
+        0.266,
+        35.234,
+        39.359
+      ],
+      "scale": 0.86
+    },
+    {
+      "id": "coderabbit",
+      "name": "CodeRabbit",
+      "products": [
+        "CodeRabbit"
+      ],
+      "owner": "CodeRabbit Inc.",
+      "file": "coderabbit.svg",
+      "ink": false,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://www.coderabbit.ai/content/assets/orange-logomark.svg",
+      "taken": "2026-10-17",
+      "rules": "https://www.coderabbit.ai/brand",
+      "note": "Orange mark from coderabbit.ai/brand, unchanged (orange disc, white rabbit).",
+      "box": [
+        0.0,
+        0.0,
+        1201.0,
+        1201.0
+      ],
+      "scale": 0.85
+    },
+    {
+      "id": "contentful",
+      "name": "Contentful",
+      "products": [
+        "Contentful"
+      ],
+      "owner": "Contentful GmbH (from Salesforce)",
+      "file": "contentful.svg",
+      "ink": false,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://github.com/contentful/forma-36/blob/main/packages/website/resources/icons/contentful-by-salesforce-logo.svg",
+      "taken": "2026-10-17",
+      "note": "contentful.com, press.contentful.com and the brand kit sit behind a Vercel bot checkpoint (HTTP 429 to curl and WebFetch), so the kit could not be downloaded. Took the five mark paths (blue, orange, yellow C) out of the Contentful 'from Salesforce' lockup SVG in Contentful's own forma-36 repo, dropped the wordmark and 'from Salesforce', tightened the viewBox. Paths unchanged. Re-check against press.contentful.com/media_kits when the kit loads.",
+      "box": [
+        0.0,
+        0.0,
+        23.25,
+        25.875
+      ],
+      "scale": 0.994
+    },
+    {
+      "id": "crowdin",
+      "name": "Crowdin",
+      "products": [
+        "Crowdin"
+      ],
+      "owner": "Crowdin",
+      "file": "crowdin.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://support.crowdin.com/assets/logos/symbol/svg/crowdin-symbol-cWhite.svg",
+      "taken": "2026-10-17",
+      "rules": "https://support.crowdin.com/using-logo/ and https://support.crowdin.com/crowdin_brand_guidlines_3q_2026.pdf",
+      "note": "Crowdin symbol kit file is an app-icon plate with the glyph on it. Took the cWhite file (white plate, #263238 glyph) and dropped only the plate path; the six glyph paths are unchanged. One colour #263238, so ink.",
+      "box": [
+        13.281,
+        13.906,
+        56.719,
+        52.812
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "customerio",
+      "name": "Customer.io",
+      "products": [
+        "Customer.io"
+      ],
+      "owner": "Peaberry Software (Customer.io)",
+      "file": "customerio.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://www.dropbox.com/scl/fi/3uds9omjzx2ab7z8yitqa/customer-io-logos.zip",
+      "taken": "2026-10-17",
+      "rules": "https://brand.customer.io/docs/logo",
+      "note": "customer-io-logos/svg/logomark_spruce.svg, unchanged (spruce #0B363B is the on-light logomark; verdant and white versions exist for dark grounds). Previous verdant file replaced: verdant #ABFFAE is invisible on white. Mark is one colour, so ink.",
+      "box": [
+        6.0,
+        6.0,
+        52.0,
+        52.125
+      ],
+      "scale": 0.879
+    },
+    {
+      "id": "datadog",
+      "name": "Datadog",
+      "products": [
+        "Datadog"
+      ],
+      "owner": "Datadog, Inc.",
+      "file": "datadog.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://corp.dd-static.net/zip/Logo_Assets.zip",
+      "taken": "2026-10-17",
+      "rules": "https://www.datadoghq.com/about/resources/",
+      "note": "Logo_Assets.zip, DD Vector Logos/Icon/SVG/dd_icon_rgb.svg (Bits the dog, the official Datadog logo icon). Removed Illustrator metadata, converted the .st0 style class to fill/clip attributes (#632CA6), dropped Illustrator-only attributes. Drawing unchanged. Purple is weak on #1E1E1E and the kit ships a white icon, so ink.",
+      "companies": [
+        "Datadog"
+      ],
+      "box": [
+        0.0,
+        0.0,
+        800.55,
+        856.839
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "discord",
+      "name": "Discord",
+      "products": [
+        "Discord"
+      ],
+      "owner": "Discord Inc.",
+      "file": "discord.svg",
+      "glyph": "discord.svg",
+      "ink": false,
+      "surfaces": [
+        "app",
+        "callback",
+        "site"
+      ],
+      "source": "https://cdn.discordapp.com/assets/content/a736b95923ddbc155e828651c92471292e40727655d770a06cec89c48ba0b41f.zip",
+      "taken": "2026-10-17",
+      "rules": "https://discord.com/branding",
+      "note": "Discord-Symbol-Blurple.svg from the Symbol (Color) download on discord.com/branding (the 'Clyde' logo symbol). Converted: the <style> class .cls-1{fill:#5865f2} became fill='#5865f2' on the path; XML prolog, <defs> and ids removed. Drawing unchanged. Kit also has black and white symbols.",
+      "box": [
+        0.0,
+        0.0,
+        126.644,
+        95.972
+      ],
+      "scale": 0.935
+    },
+    {
+      "id": "duckdb",
+      "name": "DuckDB",
+      "products": [
+        "DuckDB"
+      ],
+      "owner": "DuckDB Foundation",
+      "file": "duckdb.svg",
+      "ink": false,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://duckdb.org/design/duckdb.zip",
+      "taken": "2026-10-17",
+      "rules": "https://duckdb.org/design/",
+      "note": "DuckDB_icon-lightmode.svg from duckdb.org/design/duckdb.zip (the icon: yellow duck on a #1a1a1a disc); <style> classes converted to fill attributes, Illustrator comment and ids removed. The darkmode icon differs only by #1d1d1b for #1a1a1a, so no -dark file.",
+      "box": [
+        0.0,
+        0.0,
+        500.0,
+        500.0
+      ],
+      "scale": 0.85
+    },
+    {
+      "id": "expo",
+      "name": "Expo",
+      "products": [
+        "Expo"
+      ],
+      "owner": "650 Industries (Expo)",
+      "file": "expo.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "callback",
+        "site",
+        "docs"
+      ],
+      "source": "https://github.com/expo/logos/archive/main.zip",
+      "taken": "2026-10-17",
+      "rules": "https://expo.dev/brand",
+      "note": "svg/logo-type-a.svg from github.com/expo/logos (the repo expo.dev/brand points to); file byte-for-byte, black #000. expo.dev's rendered header could not be compared (JS-drawn); the brand page still links this repo. Kit also has logo-type-b.",
+      "box": [
+        0.422,
+        0.656,
+        23.156,
+        20.672
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "fireflies",
+      "name": "Fireflies.ai",
+      "products": [
+        "Fireflies.ai"
+      ],
+      "owner": "Fireflies.ai Corp.",
+      "file": "fireflies.svg",
+      "ink": false,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://fireflies.ai/",
+      "taken": "2026-10-17",
+      "note": "the symbol (eight gradient paths, wordmark text dropped) from the inline logo-with-text SVG in fireflies.ai's header, unchanged. fireflies.ai/press is a 404 and no brand kit was found.",
+      "box": [
+        0.786,
+        2.0,
+        20.0,
+        20.0
+      ],
+      "scale": 0.917
+    },
+    {
+      "id": "github",
+      "name": "GitHub",
+      "products": [
+        "GitHub",
+        "GitHub checks"
+      ],
+      "owner": "GitHub, Inc.",
+      "file": "github.svg",
+      "glyph": "github-glyph.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "callback",
+        "site",
+        "docs"
+      ],
+      "source": "https://brand.github.com/GitHub_Logos.zip",
+      "taken": "2026-10-17",
+      "rules": "https://brand.github.com/foundations/logo",
+      "note": "GitHub_Invertocat_Black.svg from GitHub_Logos.zip (SVG/ folder; not the _Clearspace variant). File byte-for-byte. The kit also has GitHub_Invertocat_White.svg. Its glyph, for a button beside GitHub's name, is GitHub's own mark-github-24 octicon (https://github.com/primer/octicons, MIT), read 2026-10-17.",
+      "box": [
+        0.0,
+        0.0,
+        98.0,
+        95.129
+      ],
+      "scale": 0.976
+    },
+    {
+      "id": "gitlab",
+      "name": "GitLab",
+      "products": [
+        "GitLab"
+      ],
+      "owner": "GitLab Inc.",
+      "file": "gitlab.svg",
+      "ink": false,
+      "surfaces": [
+        "app",
+        "callback",
+        "docs"
+      ],
+      "source": "https://about.gitlab.com/images/press/gitlab-logo-500-rgb.svg",
+      "taken": "2026-10-17",
+      "rules": "https://about.gitlab.com/press/press-kit/",
+      "note": "gitlab-logo-500-rgb.svg from the press kit (the tanuki, 380x380, current). Converted: three CSS classes became fill attributes (#fca326, #fc6d26, #e24329); XML prolog, <defs>/<style>, ids removed. Drawing unchanged. The handbook logo rules (handbook.gitlab.com) redirect to a login, so not read.",
+      "box": [
+        112.07,
+        114.297,
+        155.859,
+        151.406
+      ],
+      "scale": 0.923
+    },
+    {
+      "id": "google-drive",
+      "name": "Google Drive",
+      "products": [
+        "Google Drive"
+      ],
+      "owner": "Google LLC",
+      "file": "google-drive.svg",
+      "ink": false,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://www.gstatic.com/images/branding/productlogos/drive_2026/v2/web/192px.svg",
+      "taken": "2026-10-17",
+      "rules": "https://developers.google.com/workspace/drive/api/guides/branding",
+      "note": "Google's own 2026 Drive product icon (drive_2026, v2; replaces the 2020 icon Mobster has), linked from https://workspace.google.com/products/drive/. Only change: viewBox='0 0 192 192' added (file had width/height only). Google's branding page links a PNG of the same icon (https://www.gstatic.com/images/branding/productlogos/drive_2026/v2/web-64dp/logo_drive_2026_color_2x_web_64dp.png).",
+      "box": [
+        12.75,
+        18.0,
+        166.5,
+        154.125
+      ],
+      "scale": 0.904
+    },
+    {
+      "id": "google-sheets",
+      "name": "Google Sheets",
+      "products": [
+        "Google Sheets"
+      ],
+      "owner": "Google LLC",
+      "file": "google-sheets.svg",
+      "ink": false,
+      "surfaces": [
+        "app",
+        "callback",
+        "site"
+      ],
+      "source": "https://www.gstatic.com/images/branding/productlogos/sheets_2026/v2/web/192px.svg",
+      "taken": "2026-10-17",
+      "rules": "https://developers.google.com/identity/branding-guidelines",
+      "note": "Google's own 2026 Sheets product icon vector (sheets_2026, v2; replaces the 2020 icon). File byte-for-byte. It holds a blur filter that the generator accepts; the preview matches Google's 512 px PNG (https://www.gstatic.com/images/branding/productlogos/sheets_2026/v2/web-512dp/logo_sheets_2026_color_2x_web_512dp.png). Not taken from the Sheets branding page: Google publishes no Sheets-specific icon rules, so Drive's rules (google-drive row) are the nearest.",
+      "box": [
+        7.875,
+        31.875,
+        176.25,
+        128.25
+      ],
+      "scale": 0.877
+    },
+    {
+      "id": "grafana",
+      "name": "Grafana",
+      "products": [
+        "Grafana"
+      ],
+      "owner": "Grafana Labs",
+      "file": "grafana.svg",
+      "ink": false,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://raw.githubusercontent.com/grafana/grafana/main/public/img/grafana_icon.svg",
+      "taken": "2026-10-17",
+      "note": "No downloadable brand kit or guidelines page is published on grafana.com (/brand, /press, /about/press have none). Took public/img/grafana_icon.svg from Grafana Labs' own GitHub org (grafana/grafana): the orange-to-yellow gradient Grafana logo. Only edits: removed the XML prolog, Illustrator comment, empty group, enable-background/xml:space attributes, and converted the .st0 class to fill=\"url(#SVGID_1_)\"; the path and gradient are unchanged. grafana.com itself now shows a flat #FF671D version of the same mark (storyblok grafana-logo-orange-40x40.svg); the gradient file is the logo as Grafana publishes it in its repo.",
+      "box": [
+        8.227,
+        0.686,
+        334.547,
+        363.34
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "granola",
+      "name": "Granola",
+      "products": [
+        "Granola"
+      ],
+      "owner": "Granola",
+      "file": "granola.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://www.granola.ai/",
+      "taken": "2026-10-17",
+      "rules": "https://grano.la/press",
+      "note": "the spiral cut out of the inline header logo of granola.ai (first subpath of the one-path logo; #1E1E1E, wordmark dropped). The public press kit at grano.la/press is a Google Drive folder (Logos, Photos...) with no direct file link, so not taken. The site's favicon.svg is an embedded PNG, not vector.",
+      "box": [
+        174.023,
+        174.023,
+        959.766,
+        1001.953
+      ],
+      "scale": 0.971
+    },
+    {
+      "id": "helpscout",
+      "name": "Help Scout",
+      "products": [
+        "Help Scout"
+      ],
+      "owner": "Help Scout PBC",
+      "file": "helpscout.svg",
+      "dark": "helpscout-dark.svg",
+      "ink": false,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://www.helpscout.com/brand/",
+      "taken": "2026-10-17",
+      "rules": "https://www.helpscout.com/brand/",
+      "note": "Mark/Default/HelpScout-Mark-OnLight.svg (Cobalt #304DDB) from HelpScout-Logos.zip, unchanged; dark: Mark/Secondary/HelpScout-Mark-OnDark.svg (#4176FA). The kit also has one-colour versions (#131B24 and white).",
+      "box": [
+        0.0,
+        0.0,
+        80.0,
+        95.938
+      ],
+      "scale": 0.985
+    },
+    {
+      "id": "honeycomb",
+      "name": "Honeycomb",
+      "products": [
+        "Honeycomb"
+      ],
+      "owner": "Hound Technology, Inc. (Honeycomb)",
+      "file": "honeycomb.svg",
+      "ink": false,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://www.honeycomb.io/",
+      "taken": "2026-10-17",
+      "note": "No brand kit or press page is published (honeycomb.io/brand and /press are 404). Took the logo inline in honeycomb.io's own page (title=Honeycomb, href=/) on 2026-10-17: the four coloured hexagons (#FFB000, #64BA00, #F96E10, #0298EC) are the last four paths of the logo svg; cut out the wordmark paths (#25303E) and kept the four hexagon paths unchanged, viewBox 0 0 51 48.",
+      "box": [
+        0.0,
+        0.0,
+        50.701,
+        48.012
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "intercom",
+      "name": "Intercom",
+      "products": [
+        "Intercom"
+      ],
+      "owner": "Intercom, Inc.",
+      "file": "intercom.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://www.intercom.com/",
+      "taken": "2026-10-17",
+      "note": "No brand kit or press kit is published (intercom.com/press redirects to the home page; /brand, /press-kit, /brand-assets 404). Took the symbol inline in intercom.com's own header (the 36x37 viewBox svg shown on mobile; the 620x102 wordmark beside it was not used) on 2026-10-17: the Intercom chat-bars-and-smile mark as a one-colour rounded square with the bars and smile cut out. Only edits: dropped the class attribute and replaced fill=\"currentColor\" with fill=\"#000\" (the header draws it in ink).",
+      "companies": [
+        "Intercom"
+      ],
+      "box": [
+        0.0,
+        0.492,
+        36.0,
+        36.0
+      ],
+      "scale": 0.85
+    },
+    {
+      "id": "jira",
+      "name": "Jira",
+      "products": [
+        "Jira"
+      ],
+      "owner": "Atlassian",
+      "file": "jira.svg",
+      "ink": false,
+      "fill": true,
+      "surfaces": [
+        "app",
+        "callback",
+        "site"
+      ],
+      "source": "https://atlassian.design/assets/8601660886bc/logos/jira_app.zip",
+      "taken": "2026-10-17",
+      "rules": "https://atlassian.design/foundations/logos",
+      "note": "jira/SVG/Jira_icon.svg from Atlassian's jira_app.zip (current logo after the 2025 rebrand: blue #1868DB square with white glyph). Kept whole: in Atlassian's current Jira logo the square is part of the mark (the lockups Jira_logo_light/dark draw it the same way), and a white glyph alone is invisible on a light tile. Not an ink mark; no separate dark version is offered.",
+      "box": [
+        0.0,
+        0.0,
+        48.0,
+        48.0
+      ],
+      "scale": 1
+    },
+    {
+      "id": "jotform",
+      "name": "Jotform",
+      "products": [
+        "Jotform"
+      ],
+      "owner": "Jotform Inc.",
+      "file": "jotform.svg",
+      "ink": false,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://www.jotform.com/assets/resources/svg/jotform-icon-transparent.svg",
+      "taken": "2026-10-17",
+      "rules": "https://www.jotform.com/resources/",
+      "note": "jotform-icon-transparent.svg from the Brand Assets page (icons section), unchanged: four brand-coloured bars (#0099FF, #FF6100, #FFB629, #0A1551). Same drawing as favicon-2021.svg without its white square.",
+      "box": [
+        147.656,
+        132.422,
+        304.688,
+        335.156
+      ],
+      "scale": 0.948
+    },
+    {
+      "id": "klaviyo",
+      "name": "Klaviyo",
+      "products": [
+        "Klaviyo"
+      ],
+      "owner": "Klaviyo, Inc.",
+      "file": "klaviyo.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://www.klaviyo.com/",
+      "taken": "2026-10-17",
+      "note": "klaviyo.com/press is a 404 and klaviyo.com/brand redirects in a loop. Klaviyo's brand guidelines sit on a Brandpad page for employees and partners (brandpad.io/klaviyo-guidelines returns 404 and is described as confidential), so no kit file was taken. Took the flag symbol inline in klaviyo.com's own header (viewBox 0 0 266 178, path 'M266 178H0V0h266l-55.835 89z') on 2026-10-17, with fill=\"#000\" in place of currentColor and the class/style attributes dropped.",
+      "box": [
+        0.0,
+        0.0,
+        266.0,
+        178.199
+      ],
+      "scale": 0.909
+    },
+    {
+      "id": "launchdarkly",
+      "name": "LaunchDarkly",
+      "products": [
+        "LaunchDarkly"
+      ],
+      "owner": "Catamorphic Co. (LaunchDarkly)",
+      "file": "launchdarkly.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://launchdarkly.com/",
+      "taken": "2026-10-17",
+      "note": "launchdarkly.com has no brand or press page (/brand and /press return 404). The symbol is the site's own footer logo (inline SVG, viewBox 0 0 39 39, 'LaunchDarkly Home' link), copied unchanged. It is white as served, so it must be drawn in the page's ink.",
+      "box": [
+        0.0,
+        0.0,
+        39.0,
+        39.0
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "linear",
+      "name": "Linear",
+      "products": [
+        "Linear"
+      ],
+      "owner": "Linear Orbit, Inc.",
+      "file": "linear.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "callback",
+        "site"
+      ],
+      "source": "https://static.linear.app/design-assets/Linear-Brand-Assets.zip?v=3",
+      "taken": "2026-10-17",
+      "rules": "https://linear.app/brand",
+      "note": "logo-dark.svg from Linear-Brand-Assets.zip: the 'Linear logo' logomark (not linear-icon.svg, the app icon square). It is the dark (#222326) version, for light grounds; logo-light.svg is the same drawing in #fff. File byte-for-byte.",
+      "box": [
+        0.0,
+        0.0,
+        100.0,
+        100.0
+      ],
+      "scale": 0.91
+    },
+    {
+      "id": "lokalise",
+      "name": "Lokalise",
+      "products": [
+        "Lokalise"
+      ],
+      "owner": "Lokalise",
+      "file": "lokalise.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://lokalise.com/uploads/Lokalise_Media_Kit_e8df4903ad.zip",
+      "taken": "2026-10-17",
+      "note": "Lokalise_Media_Kit.zip (linked from lokalise.com), Logomark/SVG/Lokalise_pink_logomark.svg. The kit's logomark is the three-bar symbol on a pink rounded square; the square is dropped and the symbol (clip group, fill #131E29) kept unchanged with the viewBox cropped to the symbol. The kit's Logo SVGs show the same symbol beside the wordmark in #1D1D1B (black) or white. One colour, so ink.",
+      "box": [
+        103.667,
+        95.311,
+        282.642,
+        320.18
+      ],
+      "scale": 0.984
+    },
+    {
+      "id": "mcp",
+      "name": "Model Context Protocol",
+      "products": [
+        "Model Context Protocol",
+        "an MCP server of your own"
+      ],
+      "owner": "the MCP project (Anthropic)",
+      "file": "mcp.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "callback",
+        "site",
+        "docs"
+      ],
+      "source": "https://mintcdn.com/mcp/2BMHnlNW5OqOohXZ/logo/dark.svg",
+      "taken": "2026-10-17",
+      "rules": "https://modelcontextprotocol.io/",
+      "note": "raw/mcp/light.svg and dark.svg verified: byte-identical to the logo served by modelcontextprotocol.io (header logo, mintcdn.com/mcp/.../logo/dark.svg); the GitHub repo docs/favicon.svg draws the same three strokes in white on a black rounded square. Both are the lockup (symbol + 'Model Context Protocol' wordmark). Cut the wordmark: kept the first three stroke paths of light.svg (black strokes) unchanged; viewBox set to 195x195. No brand kit or brand page exists (modelcontextprotocol.io/brand is 404).",
+      "box": [
+        18.662,
+        16.758,
+        155.771,
+        172.91
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "mercury",
+      "name": "Mercury",
+      "products": [
+        "Mercury"
+      ],
+      "owner": "Mercury Technologies, Inc.",
+      "file": "mercury.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://mercury.com/icon.svg",
+      "taken": "2026-10-17",
+      "note": "icon.svg served by mercury.com (the ornament, #272735), unchanged except the <style> dark-mode rule (#f4f5f9) and the id attribute removed. mercury.com/brand, /press and /media-kit are 404; no press kit found.",
+      "box": [
+        0.0,
+        0.0,
+        500.0,
+        500.0
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "metricool",
+      "name": "Metricool",
+      "products": [
+        "Metricool"
+      ],
+      "owner": "Metricool",
+      "file": "metricool.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://static.metricool.com/resources/img/metricool-logo.svg",
+      "taken": "2026-10-17",
+      "note": "No brand kit or press kit is published (metricool.com/press is a blog post list; /brand and /media-kit are blog pages). Took the SVG Metricool serves itself on static.metricool.com: the infinity-loop symbol, which matches the dark mark on the lime app icon at metricool.com's favicon (checked 2026-10-17). Only edits: removed the XML prolog, DOCTYPE, the <style> block (dark grey rgb(61,61,61), white in dark mode) and width/height 100%; moved the style attributes to fill/fill-rule attributes with fill=\"rgb(61,61,61)\". Path and transform unchanged.",
+      "box": [
+        8.0,
+        147.0,
+        496.0,
+        218.0
+      ],
+      "scale": 1.112
+    },
+    {
+      "id": "miro",
+      "name": "Miro",
+      "products": [
+        "Miro"
+      ],
+      "owner": "RealtimeBoard, Inc. (Miro)",
+      "file": "miro.svg",
+      "ink": false,
+      "fill": true,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://miro.com/",
+      "taken": "2026-10-17",
+      "note": "the yellow rounded tile with the Miro glyph from the inline header logo of miro.com (wordmark cut out); style classes converted to fills from the site's own CSS: miro-yellow #FDE050, primary #1C1C1E. No brand kit or guidelines page is published (miro.com/brand, /about/brand, /press all 404; Miro's community says to ask).",
+      "box": [
+        0.0,
+        0.0,
+        320.0,
+        320.0
+      ],
+      "scale": 1
+    },
+    {
+      "id": "mixpanel",
+      "name": "Mixpanel",
+      "products": [
+        "Mixpanel"
+      ],
+      "owner": "Mixpanel, Inc.",
+      "file": "mixpanel.svg",
+      "ink": false,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://brand.mixpanel.com/assets/logos/logo-mark-purple.svg",
+      "taken": "2026-10-17",
+      "rules": "https://brand.mixpanel.com/",
+      "note": "logo-mark-purple.svg from brand.mixpanel.com (Mixpanel Brand Guidelines, updated 2026-04-20), unchanged. Purple #7856FF is Mixpanel's signature colour and reads on white and on #1E1E1E; black and white logomarks (logo-mark.svg, logo-mark-white.svg) also exist.",
+      "companies": [
+        "Mixpanel"
+      ],
+      "box": [
+        17.227,
+        19.961,
+        105.547,
+        100.625
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "mobbin",
+      "name": "Mobbin",
+      "products": [
+        "Mobbin"
+      ],
+      "owner": "Mobbin",
+      "file": "mobbin.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://mobbin.com/",
+      "taken": "2026-10-17",
+      "note": "mobbin.com has no brand or press page (/brand, /press return 404). The mark is the M in the site's own header (inline SVG, viewBox 0 0 139 64, fill currentColor, 'Mobbin' title); the path is unchanged and given fill #000 because currentColor is not available outside the page. The site's SVG favicon is a raster PNG inside an SVG, so the header M is the vector source. Mobbin's logo is this M.",
+      "box": [
+        0.0,
+        0.0,
+        139.0,
+        64.07
+      ],
+      "scale": 1.013
+    },
+    {
+      "id": "monday",
+      "name": "monday.com",
+      "products": [
+        "monday.com"
+      ],
+      "owner": "monday.com Ltd.",
+      "file": "monday.svg",
+      "ink": false,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://cdn.prod.website-files.com/656da6fea306219773d04208/69f1f07236c38c800a45a687_monday-logo.svg",
+      "taken": "2026-10-17",
+      "rules": "https://www.brand-monday.com/",
+      "note": "monday-logo.svg served by monday.com's own homepage (the logomark: red, yellow and green marks); dropped only the white <circle> backing. The press kit (monday.com/p/news/press-kit, logo pack 2026) ships PNG only; brand-monday.com refused every automated read (TLS handshake), so its rules are unread.",
+      "box": [
+        11.156,
+        17.906,
+        23.625,
+        13.781
+      ],
+      "scale": 1.049
+    },
+    {
+      "id": "n8n",
+      "name": "n8n",
+      "products": [
+        "n8n"
+      ],
+      "owner": "n8n GmbH",
+      "file": "n8n.svg",
+      "ink": false,
+      "surfaces": [
+        "app",
+        "callback",
+        "site"
+      ],
+      "source": "https://n8n.io/brandguidelines/n8n_logos.zip",
+      "taken": "2026-10-17",
+      "rules": "https://n8n.io/brandguidelines",
+      "note": "n8n_pink+black_logo.svg from n8n_logos.zip: kept only the first path (the pink #EA4B71 node-chain symbol), dropped the three wordmark paths and the clip group. Path unchanged; viewBox left at the logo's 576x160.",
+      "box": [
+        0.0,
+        0.0,
+        304.875,
+        159.75
+      ],
+      "scale": 1.31
+    },
+    {
+      "id": "neon",
+      "name": "Neon",
+      "products": [
+        "Neon"
+      ],
+      "owner": "Neon (Databricks)",
+      "file": "neon.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://neon.com/brand/neon-logomark-light-color.svg",
+      "taken": "2026-10-17",
+      "rules": "https://neon.com/brand",
+      "note": "neon-logomark-light-color.svg unchanged. Green #37C38F is about 2:1 on white, and the kit has a mono logomark, so ink. Dark-ground colour variant differs by one shade of green only, so not shipped.",
+      "box": [
+        0.0,
+        0.0,
+        63.0,
+        63.625
+      ],
+      "scale": 0.962
+    },
+    {
+      "id": "netlify",
+      "name": "Netlify",
+      "products": [
+        "Netlify"
+      ],
+      "owner": "Netlify, Inc.",
+      "file": "netlify.svg",
+      "dark": "netlify-dark.svg",
+      "ink": false,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://www.netlify.com/assets/logos/netlify-logo-monogram.zip",
+      "taken": "2026-10-17",
+      "rules": "https://www.netlify.com/press/",
+      "note": "Monogram kit: lightmode/logo-netlify-monogram-fullcolor-lightmode.svg and darkmode/logo-netlify-monogram-fullcolor-darkmode.svg, unchanged. Two-tone mark whose dark part turns white, so a dark file is shipped.",
+      "box": [
+        0.0,
+        0.0,
+        128.0,
+        112.75
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "newrelic",
+      "name": "New Relic",
+      "products": [
+        "New Relic"
+      ],
+      "owner": "New Relic, Inc.",
+      "file": "newrelic.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://newrelic.com/sites/default/files/2026-05/%20New-relic-emblem-green.svg",
+      "taken": "2026-10-17",
+      "rules": "https://newrelic.com/about/media-assets",
+      "note": "Media-assets page, New-relic-emblem-green.svg (emblem without wordmark). Converted the .cls-1 class to fill=#46b978 attributes, removed XML header and defs. Kit also ships black and white emblems, so ink.",
+      "companies": [
+        "New Relic"
+      ],
+      "box": [
+        10.583,
+        0.0,
+        138.195,
+        159.36
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "notion",
+      "name": "Notion",
+      "products": [
+        "Notion"
+      ],
+      "owner": "Notion Labs",
+      "file": "notion.svg",
+      "ink": false,
+      "surfaces": [
+        "app",
+        "callback",
+        "site"
+      ],
+      "source": "https://www.notion.com/",
+      "taken": "2026-10-17",
+      "rules": "https://www.notion.com/brand",
+      "note": "No downloadable kit reachable: notion.com/brand answers HTTP 401 to curl and WebFetch (app.notion.com/brand too). Taken from the inline SVG in the header of the live https://www.notion.com/ (class attribute and CSS variable removed; var(--notion-logo-fill) set to #000, its black value; two white paths are the cube's face as shipped). Not redrawn.",
+      "box": [
+        0.0,
+        0.0,
+        32.936,
+        33.967
+      ],
+      "scale": 0.826
+    },
+    {
+      "id": "paddle",
+      "name": "Paddle",
+      "products": [
+        "Paddle"
+      ],
+      "owner": "Paddle.com Market Ltd",
+      "file": "paddle.svg",
+      "ink": false,
+      "fill": true,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://www.paddle.com/icon4.png",
+      "taken": "2026-10-17",
+      "note": "Paddle's own app icon (the 310 px icon paddle.com links, PNG inside the SVG); Paddle publishes no kit, and its only vector is the wordmark, unreadable at a tile's size",
+      "box": [
+        0.0,
+        0.0,
+        310.0,
+        310.0
+      ],
+      "scale": 1
+    },
+    {
+      "id": "paypal",
+      "name": "PayPal",
+      "products": [
+        "PayPal"
+      ],
+      "owner": "PayPal Holdings, Inc.",
+      "file": "paypal.svg",
+      "ink": false,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://www.paypalobjects.com/marketing/web/logos/paypal-mark-color_new.svg",
+      "taken": "2026-10-17",
+      "rules": "https://newsroom.paypal-corp.com/media-resources",
+      "note": "paypal-mark-color_new.svg, the monogram paypal.com serves from its own CDN; it matches the newsroom's PayPal-Monogram-FullColor PNG (the newsroom kit has no SVG), unchanged.",
+      "box": [
+        7.031,
+        3.0,
+        37.406,
+        45.0
+      ],
+      "scale": 0.929
+    },
+    {
+      "id": "posthog",
+      "name": "PostHog",
+      "products": [
+        "PostHog"
+      ],
+      "owner": "PostHog Inc.",
+      "file": "posthog.svg",
+      "dark": "posthog-dark.svg",
+      "ink": false,
+      "surfaces": [
+        "app",
+        "site",
+        "callback"
+      ],
+      "source": "https://brand.posthog.com/logo/posthog-logomark.svg",
+      "taken": "2026-10-17",
+      "rules": "https://brand.posthog.com/logo.md",
+      "note": "posthog-logomark.svg (gradient hedgehog logomark) from brand.posthog.com, unchanged; dark = posthog-logomark-white.svg from the same kit. The brand site says the logomark alone is for small sizes such as favicons and app icons. The logomark has a #111 face part, so on dark use the white version, as the guidelines require.",
+      "companies": [
+        "PostHog"
+      ],
+      "box": [
+        0.0,
+        0.0,
+        51.695,
+        28.031
+      ],
+      "scale": 1.015
+    },
+    {
+      "id": "postman",
+      "name": "Postman",
+      "products": [
+        "Postman"
+      ],
+      "owner": "Postman, Inc.",
+      "file": "postman.svg",
+      "ink": false,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://voyager.postman.com/logo/postman-logo-icon-orange.svg",
+      "taken": "2026-10-17",
+      "rules": "https://www.postman.com/legal/logo-usage/",
+      "note": "Postman's own current logo icon (orange circle with white rocket details), as linked on the press page. Unchanged. Orange #ff6c37 is the primary logo and has contrast on both tiles.",
+      "box": [
+        0.0,
+        0.0,
+        32.0,
+        32.0
+      ],
+      "scale": 0.85
+    },
+    {
+      "id": "qdrant",
+      "name": "Qdrant",
+      "products": [
+        "Qdrant"
+      ],
+      "owner": "Qdrant Solutions GmbH",
+      "file": "qdrant.svg",
+      "ink": false,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://qdrant.tech/img/brand-resources-logos/qdrant-brandmark-red.svg",
+      "taken": "2026-10-17",
+      "rules": "https://qdrant.tech/brand-resources/",
+      "note": "qdrant-brandmark-red.svg (Logomark Full Color) from qdrant.tech/brand-resources; <style> classes converted to fill attributes (#9e0d38, #dc244c, #ff516b), ids removed, drawing unchanged. Black and white brandmarks also offered.",
+      "box": [
+        0.0,
+        0.0,
+        346.42,
+        399.872
+      ],
+      "scale": 0.957
+    },
+    {
+      "id": "ramp",
+      "name": "Ramp",
+      "products": [
+        "Ramp"
+      ],
+      "owner": "Ramp Business Corporation",
+      "file": "ramp.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://assets.ramp.com/nextjs/ramp_september_2026_media_kit.zip",
+      "taken": "2026-10-17",
+      "rules": "https://ramp.com/press",
+      "note": "Glyph cut out of logos/ramp-logo-black.svg in the Ramp media kit September 2026 (the kit has only the full wordmark-and-glyph lockup, no separate symbol): kept the glyph path byte-for-byte, dropped the wordmark path and clip, set the viewBox to the glyph. Black fill #0C0A08; kit also has a white lockup.",
+      "box": [
+        284.0,
+        0.0,
+        101.0,
+        86.205
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "resend",
+      "name": "Resend",
+      "products": [
+        "Resend"
+      ],
+      "owner": "Resend",
+      "file": "resend.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://cdn.resend.com/brand/resend-icon-black.svg",
+      "taken": "2026-10-17",
+      "rules": "https://resend.com/brand",
+      "note": "resend-icon-black.svg from the brand kit on resend.com/brand (resend-brand-assets.zip), unchanged. The kit also has resend-icon-white.svg (#FDFDFD), the version we had; black reads on white tiles, white on dark, and the page draws it in ink either way. Viewbox is 1800 with the R centred and padded; the generator measures the box.",
+      "box": [
+        450.0,
+        450.0,
+        900.0,
+        900.0
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "runway",
+      "name": "Runway",
+      "products": [
+        "Runway"
+      ],
+      "owner": "Runway (runway.team)",
+      "file": "runway.svg",
+      "ink": false,
+      "fill": true,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://cdn.prod.website-files.com/673c92fc0293a3095a860d4c/673c92fc0293a3095a860eb5_webclip-256.png",
+      "taken": "2026-10-17",
+      "note": "Runway's own app icon (the apple-touch-icon runway.team links, 256 px PNG inside the SVG); its only vector is the 6:1 wordmark, unreadable at a tile's size",
+      "box": [
+        0.0,
+        0.0,
+        256.0,
+        256.0
+      ],
+      "scale": 1
+    },
+    {
+      "id": "sanity",
+      "name": "Sanity",
+      "products": [
+        "Sanity"
+      ],
+      "owner": "Sanity Inc.",
+      "file": "sanity.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://www.sanity.io/",
+      "taken": "2026-10-17",
+      "note": "Sanity has no brand page (/press, /brand 404). Took the inline SVG from sanity.io's current header (the scribble mark, matches the site's safari-pinned-tab.svg). Only change: fill=currentColor replaced by #000000 and the Tailwind class removed. One colour, so ink.",
+      "box": [
+        0.0,
+        1.494,
+        14.912,
+        12.012
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "sentry",
+      "name": "Sentry",
+      "products": [
+        "Sentry"
+      ],
+      "owner": "Functional Software, Inc. (Sentry)",
+      "file": "sentry.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "site",
+        "callback"
+      ],
+      "source": "https://sentry.io/branding/",
+      "taken": "2026-10-17",
+      "rules": "https://sentry.io/branding/",
+      "note": "Sentry glyph from the logo generator on sentry.io/branding (the page's own LogoGenerator script holds the glyph path, viewBox 0 0 50 44). Path copied unchanged into a standalone SVG with fill #181225 (the generator's dark colour). No separate kit file is linked; the Wordmark style was not used.",
+      "companies": [
+        "Sentry"
+      ],
+      "box": [
+        0.0,
+        0.0,
+        50.0,
+        44.043
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "shortcut",
+      "name": "Shortcut",
+      "products": [
+        "Shortcut"
+      ],
+      "owner": "Shortcut Software Co.",
+      "file": "shortcut.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://www.shortcut.com/assets/branding/mark-default.svg",
+      "taken": "2026-10-17",
+      "rules": "https://www.shortcut.com/branding",
+      "note": "mark-default.svg from the Shortcut guidelines page, unchanged (current hourglass-diamond mark, #494BCB). The page also ships white, yellow and frame variants. #494BCB is weak on #1E1E1E, so ink.",
+      "box": [
+        0.0,
+        0.0,
+        53.684,
+        51.258
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "slack",
+      "name": "Slack",
+      "products": [
+        "Slack"
+      ],
+      "owner": "Slack Technologies (Salesforce)",
+      "file": "slack.svg",
+      "ink": false,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://a.slack-edge.com/9cc0056/marketing/img/nav/logo.svg",
+      "taken": "2026-10-17",
+      "rules": "https://slack.com/terms-of-service/slack-brand",
+      "note": "No downloadable kit reachable without a form: slack.com/media-kit lists no file URLs and brand.slackhq.com is 'under construction'. Taken from the SVG Slack's own website serves as its header logo (marketing/img/nav/logo.svg, 54x54, the four-colour octothorpe). File byte-for-byte.",
+      "box": [
+        0.0,
+        0.0,
+        53.895,
+        53.789
+      ],
+      "scale": 0.949
+    },
+    {
+      "id": "square",
+      "name": "Square",
+      "products": [
+        "Square"
+      ],
+      "owner": "Block, Inc.",
+      "file": "square.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://squareup.com/us/en/logo",
+      "taken": "2026-10-17",
+      "rules": "https://developer.squareup.com/docs/brand-guidelines",
+      "note": "the jewel (first three subpaths) cut out of Square_Logo_2025_Black.svg from the logo zip on squareup.com/us/en/logo, wordmark dropped, drawing unchanged. A White version is in the same zip.",
+      "box": [
+        0.0,
+        0.0,
+        501.43,
+        501.43
+      ],
+      "scale": 0.892
+    },
+    {
+      "id": "statsig",
+      "name": "Statsig",
+      "products": [
+        "Statsig"
+      ],
+      "owner": "Statsig, Inc.",
+      "file": "statsig.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://www.statsig.com/images/statsig_full.svg",
+      "taken": "2026-10-17",
+      "note": "statsig.com publishes no brand kit (/brand, /press, /press-kit all return 404). The symbol is cut from the site header's own logo, statsig_full.svg: only paths Vector_5 and Vector_6 (the diamond) kept, wordmark paths and clip dropped, fill #1B2528 as published, viewBox set to the symbol. The site's favicon SVG is a gradient circle holding the same symbol, not used.",
+      "box": [
+        0.0,
+        0.0,
+        22.775,
+        19.99
+      ],
+      "scale": 0.929
+    },
+    {
+      "id": "stripe",
+      "name": "Stripe",
+      "products": [
+        "Stripe"
+      ],
+      "owner": "Stripe, Inc.",
+      "file": "stripe.svg",
+      "ink": false,
+      "fill": true,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://images.stripeassets.com/fzn2n1nzq965/1hgcBNd12BfT9VLgbId7By/01d91920114b124fb4cf6d448f9f06eb/favicon.svg",
+      "taken": "2026-10-17",
+      "rules": "https://stripe.com/newsroom/brand-assets",
+      "note": "the app icon stripe.com serves as its SVG favicon, unchanged; Stripe's logo kit (stripe.com/newsroom/brand-assets) holds only the wordmark, which is unreadable at a tile's size",
+      "box": [
+        0.0,
+        0.0,
+        512.0,
+        512.0
+      ],
+      "scale": 1
+    },
+    {
+      "id": "supabase",
+      "name": "Supabase",
+      "products": [
+        "Supabase"
+      ],
+      "owner": "Supabase Inc.",
+      "file": "supabase.svg",
+      "ink": false,
+      "surfaces": [
+        "app",
+        "callback",
+        "site"
+      ],
+      "source": "https://supabase.com/brand-assets.zip",
+      "taken": "2026-10-17",
+      "rules": "https://supabase.com/brand-assets",
+      "note": "supabase-logo-icon.svg from brand-assets.zip on supabase.com/brand-assets, unchanged and re-checked against the live kit (2026-10-17).",
+      "box": [
+        0.0,
+        0.213,
+        109.0,
+        111.98
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "todoist",
+      "name": "Todoist",
+      "products": [
+        "Todoist"
+      ],
+      "owner": "Doist",
+      "file": "todoist.svg",
+      "ink": false,
+      "fill": true,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://www.todoist.com/brand-assets/todoist-logo.zip",
+      "taken": "2026-10-17",
+      "rules": "https://www.todoist.com/press",
+      "note": "Icon/Color.svg from todoist-logo.zip (linked on todoist.com/press): the logomark, a red rounded square with three white check lines, unchanged. The logomark is the mark itself; there is no free-standing symbol without the square. Guidelines PDF (Updated 01/2021) is in the zip.",
+      "box": [
+        0.0,
+        0.0,
+        32.0,
+        32.0
+      ],
+      "scale": 1
+    },
+    {
+      "id": "typefully",
+      "name": "Typefully",
+      "products": [
+        "Typefully"
+      ],
+      "owner": "Typefully",
+      "file": "typefully.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://typefully.com/",
+      "taken": "2026-10-17",
+      "note": "typefully.com/press is an empty page and no brand kit is published, so took the symbol inline in typefully.com's own header (the feather-t with a dot, viewBox 0 0 60 76) on 2026-10-17; it matches the pinned-tab icon at typefully.com/icon/safari-pinned-tab.svg. Only edits: dropped the class and width/height attributes and replaced fill=\"currentColor\" with fill=\"#000\" (the site draws it in its accent text colour).",
+      "box": [
+        0.0,
+        0.0,
+        60.0,
+        75.117
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "vimeo",
+      "name": "Vimeo",
+      "products": [
+        "Vimeo"
+      ],
+      "owner": "Vimeo.com, Inc.",
+      "file": "vimeo.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://f.vimeocdn.com/svg/legacy_view_support/iris_icon_v_64.svg",
+      "taken": "2026-10-17",
+      "rules": "https://vimeo.com/press/media-kit",
+      "note": "the stylized v, the one-path SVG vimeo.com serves as its mask-icon (same shape as the live favicon and apple icon, checked by eye). The media kit's own icon download sits in a Google Drive folder, so not taken. The mark ships with no fill (black); the kit presents Vimeo Black #141A20, Blue #17D5FF and White #FAFCFD.",
+      "box": [
+        0.0,
+        4.0,
+        64.0,
+        56.0
+      ],
+      "scale": 0.987
+    },
+    {
+      "id": "webflow",
+      "name": "Webflow",
+      "products": [
+        "Webflow"
+      ],
+      "owner": "Webflow, Inc.",
+      "file": "webflow.svg",
+      "ink": false,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://dhygzobemt712.cloudfront.net/Mark/Mark_Logo_Blue.svg",
+      "taken": "2026-10-17",
+      "rules": "https://brand-at.webflow.io/brand-assets",
+      "note": "Mark/Mark_Logo_Blue.svg from the Webflow brand assets page (brand-at.webflow.io/brand-assets), unchanged: the W mark (2023), blue #146EF5. Black and white marks also ship. Brand guidelines PDF: https://dhygzobemt712.cloudfront.net/WebflowBrandGuidelines.pdf",
+      "box": [
+        0.0,
+        0.0,
+        1080.0,
+        675.0
+      ],
+      "scale": 0.974
+    },
+    {
+      "id": "wix",
+      "name": "Wix",
+      "products": [
+        "Wix"
+      ],
+      "owner": "Wix.com Ltd.",
+      "file": "wix.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://9ab0d111-ec70-4f4c-900e-a9399b76d84c.usrfiles.com/archives/9ab0d1_a1c94e33202642618be2265c769c77b9.zip",
+      "taken": "2026-10-17",
+      "rules": "https://www.wix.com/about/design-assets",
+      "note": "WIXLogoNew/SVG/Wix logoB.svg from the logo zip behind the Download Logo button on wix.com/about/design-assets, unchanged. Wix's logo is its wordmark (the letters 'Wix'); no separate symbol exists, so the wordmark is the logo. A white version (Wix logoW.svg) ships too. It is wide (166x64), so it sits small on a square tile.",
+      "box": [
+        0.0,
+        0.0,
+        165.352,
+        63.871
+      ],
+      "scale": 1.234
+    },
+    {
+      "id": "wordpress",
+      "name": "WordPress",
+      "products": [
+        "WordPress"
+      ],
+      "owner": "WordPress Foundation",
+      "file": "wordpress.svg",
+      "ink": true,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://wordpress.org/",
+      "taken": "2026-10-17",
+      "rules": "https://wordpressfoundation.org/trademark-policy/",
+      "note": "wordpress.org/about/logos ships the W mark only as PDF/AI/PNG. Taken the W-in-circle SVG that wordpress.org's own header serves (inline), with <title> and role removed; its fill is currentColor, so the app must draw it in ink. The official base gray is #32373c.",
+      "box": [
+        0.055,
+        0.109,
+        27.07,
+        27.016
+      ],
+      "scale": 0.992
+    },
+    {
+      "id": "microsoft-365",
+      "name": "Microsoft 365",
+      "products": [
+        "Microsoft 365"
+      ],
+      "owner": "Microsoft Corporation",
+      "file": "microsoft-365.svg",
+      "ink": false,
+      "surfaces": [
+        "app",
+        "callback"
+      ],
+      "source": "https://res-1.cdn.office.net/files/fabric-cdn-prod_20240129.001/assets/brand-icons/product/svg/m365_48x1.svg",
+      "taken": "2026-10-17",
+      "rules": "https://www.microsoft.com/en-us/legal/intellectualproperty/trademarks/usage/general",
+      "note": "the Microsoft 365 product icon (m365_48x1.svg) from Microsoft's Office brand icons on its own CDN, the set Fluent UI publishes for apps that work with Microsoft 365 (developer.microsoft.com/fluentui, Office brand icons), unchanged; the same file since its 2022 redesign. The Microsoft 365 app itself became Microsoft 365 Copilot in 2025, with Copilot's icon, which names Copilot, not the suite this connector reads",
+      "box": [
+        3.938,
+        1.969,
+        40.125,
+        44.062
+      ],
+      "scale": 0.912
+    },
+    {
+      "id": "firebase",
+      "name": "Firebase",
+      "products": [
+        "Firebase",
+        "Firebase Test Lab"
+      ],
+      "owner": "Google",
+      "file": "firebase.svg",
+      "ink": false,
+      "surfaces": [
+        "site"
+      ],
+      "source": "https://firebase.google.com/static/downloads/brand-guidelines/firebase-brand-assets.zip",
+      "taken": "2026-10-18",
+      "rules": "https://firebase.google.com/brand-guidelines",
+      "note": "\"Logomark_Full Color.svg\" from the brand assets on Firebase's brand guidelines page, unchanged; the Firebase mark stands for Test Lab. A compared tool: named on its comparison page and that page's cover beside Mobster's own mark, never larger than it, with the page's \"not affiliated\" line",
+      "box": [
+        75.0,
+        19.922,
+        442.969,
+        556.641
+      ],
+      "scale": 0.948
+    },
+    {
+      "id": "browserstack",
+      "name": "BrowserStack",
+      "products": [
+        "BrowserStack"
+      ],
+      "owner": "BrowserStack",
+      "file": "browserstack.svg",
+      "ink": false,
+      "surfaces": [
+        "site"
+      ],
+      "source": "https://bstackprod.kinsta.cloud/wp-content/themes/browserstack/img/bstack-logo-global.svg",
+      "taken": "2026-10-18",
+      "note": "the logo in browserstack.com's header (BrowserStack publishes no brand page or press kit) with its white wordmark cut away from the eye symbol, nothing else changed. A compared tool: named on its comparison page and that page's cover beside Mobster's own mark, never larger than it, with the page's \"not affiliated\" line",
+      "box": [
+        0.0,
+        0.0,
+        31.034,
+        31.034
+      ],
+      "scale": 0.853
+    },
+    {
+      "id": "sauce-labs",
+      "name": "Sauce Labs",
+      "products": [
+        "Sauce Labs"
+      ],
+      "owner": "Sauce Labs",
+      "file": "sauce-labs.svg",
+      "ink": false,
+      "surfaces": [
+        "site"
+      ],
+      "source": "https://cdn.prod.website-files.com/6a23c6059a4ce400627c8a99/6a4f46b1173431cc952a40da_olive-logo.png",
+      "taken": "2026-10-18",
+      "note": "the 512 px icon saucelabs.com declares for itself (Sauce Labs publishes no brand page or press kit), the PNG inside the SVG unchanged. A compared tool: named on its comparison page and that page's cover beside Mobster's own mark, never larger than it, with the page's \"not affiliated\" line",
+      "box": [
+        0.0,
+        0.0,
+        512.0,
+        512.0
+      ],
+      "scale": 1.0
+    },
+    {
+      "id": "maestro",
+      "name": "Maestro",
+      "products": [
+        "Maestro"
+      ],
+      "owner": "mobile.dev",
+      "file": "maestro.svg",
+      "ink": true,
+      "surfaces": [
+        "site"
+      ],
+      "source": "https://maestro.dev/layout/maestro-logo.svg",
+      "taken": "2026-10-15",
+      "note": "the symbol from Maestro's own logo file (its lockup's first shape), as its favicon also uses it; the same file as site/public/logos/maestro.svg. A compared tool: named on its comparison page and that page's cover beside Mobster's own mark, never larger than it, with the page's \"not affiliated\" line",
+      "box": [
+        0.0,
+        0.158,
+        80.525,
+        80.684
+      ],
+      "scale": 0.843
+    },
+    {
+      "id": "appium",
+      "name": "Appium",
+      "products": [
+        "Appium"
+      ],
+      "owner": "the OpenJS Foundation",
+      "file": "appium.svg",
+      "ink": false,
+      "surfaces": [
+        "site"
+      ],
+      "source": "https://github.com/appium/appium/tree/master/packages/appium/docs/overrides/assets/images",
+      "taken": "2026-10-15",
+      "rules": "https://trademark-policy.openjsf.org/",
+      "note": "the Appium mark from the Appium repository's docs assets; the same file as site/public/agents/appium.svg. A compared tool: named on its comparison page and that page's cover beside Mobster's own mark, never larger than it, with the page's \"not affiliated\" line",
+      "box": [
+        0.0,
+        0.0,
+        24.0,
+        24.0
+      ],
+      "scale": 0.899
+    },
+    {
+      "id": "tapkit",
+      "name": "TapKit",
+      "products": [
+        "TapKit"
+      ],
+      "owner": "TapKit (Jootsing Research Inc.)",
+      "file": "tapkit.svg",
+      "ink": false,
+      "fill": true,
+      "surfaces": [
+        "site"
+      ],
+      "source": "https://www.tapkit.ai/tapkit-app-icon.png",
+      "taken": "2026-10-18",
+      "note": "TapKit's app icon, the 1024 px PNG its site header uses, scaled to 256 px inside the SVG (TapKit publishes no brand page). A compared tool: named on its comparison page and that page's cover beside Mobster's own mark, never larger than it, with the page's \"not affiliated\" line",
+      "box": [
+        0.0,
+        0.0,
+        256.0,
+        256.0
+      ],
+      "scale": 1
+    },
+    {
+      "id": "xcode",
+      "name": "Xcode",
+      "products": [
+        "Xcode",
+        "XCUITest"
+      ],
+      "owner": "Apple",
+      "file": "xcode.svg",
+      "ink": false,
+      "fill": true,
+      "surfaces": [
+        "site"
+      ],
+      "source": "https://developer.apple.com/xcode/",
+      "taken": "2026-10-18",
+      "note": "Xcode's app icon for XCUITest, rendered at 1024 px from the installed Xcode 26.4 (/Applications/Xcode.app, com.apple.dt.Xcode) with NSWorkspace and scaled to 256 px inside the SVG, on the owner's decision of 13 Oct 2026 (site/content/logos.ts). A compared tool: named on its comparison page and that page's cover beside Mobster's own mark, never larger than it, with the page's \"not affiliated\" line",
+      "box": [
+        17.5,
+        19.5,
+        221.0,
+        221.0
+      ],
+      "scale": 1,
+      "rules": "https://www.apple.com/legal/intellectual-property/guidelinesfor3rdparties.html"
+    }
+  ],
+  "aliases": {
+    "chatgpt": "openai",
+    "claude-code": "claude",
+    "claude-desktop": "claude",
+    "claude_code": "claude",
+    "dashscope": "alibaba-cloud",
+    "github-checks": "github",
+    "google": "gemini",
+    "lechat": "mistral",
+    "lm-studio": "lmstudio",
+    "minimax_api": "minimax",
+    "opencode_go": "opencode",
+    "qwen_token": "qwen",
+    "sheets": "google-sheets",
+    "vs-code": "vscode",
+    "zai_api": "zai"
+  }
+}

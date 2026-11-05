@@ -1,0 +1,100 @@
+---
+title: "Android"
+description: "Experimental app checks on Android emulators. USB phone checks through MCP require MOBSTER_EXPERIMENTAL_ANDROID=1."
+icon: "smartphone"
+---
+
+Mobster reads an Android screen through `adb` and `uiautomator`, maps it to the same accessibility tree an iPhone gives, and acts with `adb shell input`. Android checks are experimental. Set `MOBSTER_EXPERIMENTAL_ANDROID=1` to enable the Android commands and device discovery in MCP. `mobster test` runs checks that name an `.apk` or an Android runtime on an emulator without the flag.
+
+A check you wrote for iOS runs on Android with the same `expect` assertions. Android runs launch-only and key-less checks today; Smart steps on Android aren't measured yet.
+
+## Set up
+
+You need the Android SDK with platform-tools. For emulators you also need the Android Emulator and one virtual device (AVD). Android Studio installs all of it, about 3 GB. Mobster doesn't install the SDK.
+
+```sh
+export MOBSTER_EXPERIMENTAL_ANDROID=1
+mobster sim doctor
+```
+
+`mobster sim doctor` adds these rows when the flag is on: Android SDK, adb, Android emulator, Android virtual device, Hardware acceleration and Android devices. Each failing row prints the fix. Mobster finds the SDK at `$ANDROID_HOME`, `$ANDROID_SDK_ROOT`, then `~/Library/Android/sdk`.
+
+On a USB phone, turn on Developer options, then USB debugging, plug the phone in and accept the prompt on its screen. A phone that shows `unauthorized` in `adb devices -l` is never used.
+
+## Emulators
+
+```sh
+mobster sim android list              # emulators and USB phones
+mobster sim android boot Pixel_8      # boot headless and hold it for a run
+mobster sim android shutdown          # stop the emulators Mobster booted
+```
+
+Mobster boots an emulator with `-no-window -no-audio`, one run at a time per device. `MOBSTER_MAX_SIMS` (default 2) caps the emulators Mobster boots. `shutdown` stops only emulators Mobster booted that aren't running a check; emulators and phones you started yourself are never stopped.
+
+## Run a check
+
+```yaml
+name: settings opens
+app:
+  bundle: com.android.settings
+device: Pixel 8
+runtime: Android 14
+expect:
+  - text: Network & internet
+```
+
+```sh
+mobster test .mobster/checks --android          # any idle emulator, else the first AVD
+mobster test .mobster/checks --android Pixel_8  # an AVD name or an emulator's adb serial
+```
+
+`mobster test` runs Android checks on emulators only. A USB Android phone ends a `mobster test` check as couldn't-run before anything is launched, because Mobster can't yet tell your own builds from the other apps on a phone.
+
+A check also runs on Android without the flag when `app.path` ends in `.apk` or `runtime` starts with `Android`. `device: Pixel 9` and `runtime: Android 16` pick the AVD whose name starts with the device and whose system image is that release. `app.path` takes an `.apk` (Mobster reads its package name with `aapt2` from the SDK's build-tools); `app.bundle` takes an installed package. Apps that ship with Android (`com.android.*`, `com.google.android.*`) keep their data; others reset like on iOS: `reinstall` for an `.apk`, `data` (`pm clear`) otherwise.
+
+| `conditions` key | On Android |
+|---|---|
+| `appearance` | `cmd uimode night`, put back after the run |
+| `locale` | `cmd locale set-app-locales` for the app, Android 13 or later |
+| `permissions` | `pm grant` and `pm revoke` (`reset` revokes) on an emulator; `calendar`, `contacts`, `location`, `location-always`, `microphone`, `photos`. On a phone they are skipped, and the report says so |
+| `location` | `adb emu geo fix`, emulators only |
+| `push`, `content_size`, `increase_contrast`, `route`, `media`, `status_bar`, `network`, and `stubs` | The check is couldn't-run and names the key; it never runs in the wrong state |
+
+Fixtures that seed files, the keychain or the pasteboard, and `launch.args` and `launch.env`, make a check couldn't-run on Android.
+
+With the flag set, MCP `list_devices` includes Android devices with `"platform": "android"` (iOS devices say `"ios"`). For a USB Android phone, use `verify_start` with its `device` from that list, the installed app's package name as `bundle_id`, and `reset: "none"`. It refuses `app_path` and other resets on a phone. Mobster does not clear, reinstall or change the permissions of an app on it. Use `run_tests` with `android` for emulator checks. `--allow-device NAME` restricts which real phones the MCP server can use; its `--device` target is also allowed. With no allow-list, there is no device-name restriction. Direct `tap` and `screen` tools do not support Android.
+
+## What works
+
+| Does | Through |
+|---|---|
+| Read the screen as roles, labels, ids, values and frames | `uiautomator dump`, mapped to the iOS tree |
+| Tap, swipe, type ASCII text, Home, Back, volume | `adb shell input` |
+| Launch an app, open a link | `monkey`, `am start -a VIEW` |
+| Install an `.apk` | `adb install -r` |
+| Screenshot, logcat with secrets masked, crash and ANR detection | `screencap`, `logcat` |
+| Screen recording up to 3 minutes | `screenrecord` |
+
+The tree maps `resource-id` to the id, `text` and `content-desc` to the label, and sizes to dp, so `id:`, `label:` and `role:` selectors read the same on both platforms.
+
+## What doesn't
+
+- Typing takes plain ASCII without `%`. Accents and emoji are refused, not mangled.
+- No push notifications.
+- The tree comes from `uiautomator dump`, not the Appium UIAutomator2 server. A dump is slower and a screen that animates forever can't be dumped. The server's APKs need a pinned download, which `mobster sim doctor --fix` will do once they are pinned.
+- System permission dialogs aren't answered yet; grant the permission with `conditions.permissions`.
+- Crash evidence from `logcat` isn't attached to a report yet.
+- Video and the Mac app's device list aren't wired.
+- `mobster test` refuses a USB Android phone (decided 25 Oct 2026), and keeps refusing it until Mobster can tell your own builds from the other apps on a phone. With the flag set, use MCP `verify_start` to check an installed app on a USB Android phone, with `bundle_id` and `reset: "none"`. `tap` and `screen` on their own can't drive an Android device yet.
+
+## Measured
+
+24 Oct 2026, Apple silicon Mac under load 10, Android Studio's Pixel_8 emulator (API 34, arm64), Settings:
+
+| Step | Time |
+|---|---|
+| Boot headless | 12.3 and 14.3 s (two runs) |
+| Launch Settings, wait 2 s, read the screen | 9.3 and 10.4 s |
+| One `uiautomator dump` mapped to a tree | 2.1 and 2.6 s |
+
+The dump time is high because the Mac was busy; measure again on a quiet one before you plan around it.

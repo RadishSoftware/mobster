@@ -1,50 +1,31 @@
-"""The harness contract between the core and the SOTA tracks (seam S2). Frozen after the seams merge: a change goes
-through the integrator, with the affected owners' sign-off.
+"""The harness contract between the core and the SOTA tracks (seam S2)."""
 
-Tracks register here from their ``register(api)`` (tracks.py loads them); the core (server.py's ``run_smart``, the
-frontier) reads the registries. With nothing registered the core behaves exactly as before.
-
-This module is part of the engine: it imports nothing from the harness. What the engine reaches in the harness when
-the harness is there goes through the engine hooks at the end of this file (``hook``).
-
-Stable Runtime API for tracks (``RunContext.runtime``; nothing else on Runtime is stable):
-``create(app_id, goal, mode, ..., extras=, origin=)``, ``stop_run``, ``delete_run``, ``runs`` (read under
-``lock``), ``journal`` (via ``transaction()`` and ``add_expiry_listener`` only), ``fleet.lookup``/``fleet.public``,
-``resolve_device``, ``apps_for``, ``status``, ``settings``, ``config``, ``frames``, ``task_cap``,
-``device_busy(device_id) -> bool`` and ``allows_app(run_id, bundle) -> bool`` (the run's app choices, asking the
-first time).
-"""
-
-from contextlib import contextmanager
-from dataclasses import dataclass
 import importlib
 import logging
 import queue
 import re
 import threading
 import time
+from contextlib import contextmanager
+from dataclasses import dataclass, field
 from pathlib import Path
-from types import MappingProxyType
+from types import MappingProxyType, ModuleType
 from typing import Any, Callable, Mapping, Optional, Protocol, Sequence
+
+from .run_executor import RunExecutor
 
 log = logging.getLogger("mobster.harness_api")
 
 ORIGINS = ("app", "tui", "cli", "mcp", "workflow", "schedule", "api", "remote", "hook", "trigger", "console")
 INTERACTIVE = frozenset({"app", "tui", "cli"})          # a person is watching and can answer
-# Runs an agent outside Mobster started (MCP here, Mobster Remote from anywhere, a workflow's webhook URL, a team
-# member from the console): they use the apps the person lets outside agents use and always ask before acting
-# (permissions.policy.OUTSIDE_ORIGINS also holds "trigger": a notification trigger's task).
+# Outside agents' runs use the apps the person lets them use and always ask before acting.
 UNATTENDED_ORIGINS = frozenset({"mcp", "remote", "hook", "console"})
-# Runs that ask before acting whatever Ask before acting says, with the checks bypass off (Mobster Remote, a workflow
-# another tool started through its webhook URL: outlets/hooks.py, a task a notification trigger starts: its text
-# came from the person, but the moment it runs came from a notification, and a team member's run from the console).
+# Runs that ask before acting whatever Ask before acting says, with checks bypass off.
 FORCED_ASK_ORIGINS = frozenset({"remote", "hook", "trigger", "console"})
-# Origins only a track's own client may claim (register_origin): X-Mobster-Origin names one only with the proof the
-# track checks, and every run of one is admitted by the track. With no track registered for it, it is refused.
+# Origins only a track's own client may claim; with no track registered for one it is refused.
 CLAIMED_ORIGINS = frozenset({"console"})
-# Skills a run from these origins is never offered: a Remote run doesn't read Notification Center, where codes are,
-# and no outside agent's run uses the person's connected services (CALL_TOOL, track connectors). It applies to the
-# default skills and to every registered tool.
+# Skills never offered to these origins: Remote can't read Notification Center,
+# and no outside agent uses connected services.
 WITHHELD_SKILLS = MappingProxyType({"remote": frozenset({"READ_NOTIFICATIONS", "CALL_TOOL"}),
                                     "hook": frozenset({"READ_NOTIFICATIONS", "CALL_TOOL"}),
                                     "console": frozenset({"READ_NOTIFICATIONS", "CALL_TOOL"}),
@@ -53,8 +34,7 @@ WITHHELD_SKILLS = MappingProxyType({"remote": frozenset({"READ_NOTIFICATIONS", "
 
 
 def steer_sources(origin):
-    """Who may send a message to a run of ``origin`` (run.Run.steer, and threads' answers): a run an agent started
-    from outside the Mac app hears only that surface and the Mac app; any other run never hears MCP or Remote."""
+    """Who may send a message to a run of ``origin`` (run.Run.steer, and threads' answers)."""
     if origin == "mcp":
         return ("mcp", "app")
     if origin == "remote":
@@ -63,8 +43,6 @@ def steer_sources(origin):
         return ("app",)
     return ("app", "tui", "cli", "voice")
 
-
-# -- what a run looks like to a track -----------------------------------------------------------------------------
 
 @dataclass(frozen=True)
 class RunContext:
@@ -81,6 +59,8 @@ class RunContext:
     clarify: Callable[[dict], str]       # Run.request_approval limited to kind "clarify"; any other kind: ValueError
     cancelled: Callable[[], bool]
     runtime: Any                         # server.Runtime; only the methods in this module's docstring are stable
+    account_context: Any = field(default=None, repr=False)  # private, never journaled or logged via repr
+    workflow_id: Optional[str] = None      # trusted saved workflow identity, never caller run fields
 
     @property
     def interactive(self) -> bool:
@@ -150,12 +130,13 @@ class StepRecord:                              # one executed agent action, for 
     app: Optional[str]                         # bundle id in front before the action
     target: Optional[dict]                     # {"label","role","id","frame":[x,y,w,h]} of the resolved element
     text: Optional[str]                        # masked; typed ops' text, and the row a SCROLL_TO looked for
-    screen: str                                # structural signature of the screen before (replay.py's rule)
+    screen: str                                # structural signature of the screen before (state.signature's rule)
     changed: bool
     approval: Optional[str]                    # None | "approved" | "redirected": asked right before this action
     commit: Optional[str]                      # a contract_asks.ASK_ACTS act, or None (commit_act below)
     shape: tuple = ()                          # the screen before as hashed role/label pairs (replay_core.path
                                                # screen_shape): a partial match with no screen text kept
+    corpus: Optional[dict] = None              # the screen's corpus skeleton (corpus/skeleton.py); None unless opted in
 
 
 class RunListener(Protocol):                   # every method optional; exceptions are logged, never reach a run
@@ -164,12 +145,9 @@ class RunListener(Protocol):                   # every method optional; exceptio
     def on_step(self, run, record: StepRecord) -> None: ...
     def on_checkpoint(self, run, state: dict) -> None: ...                 # end of each Smart turn (S7)
     def on_finished(self, run, summary: dict, private: dict) -> None: ...
-        # private: {"notes","plan","contract","screen"} (contract: the task contract's items as dicts; screen:
-        # {"hash","shape","app"} of the screen the last action left, hashes with no text, or None), masked; core never
-        # journals it; a listener that stores any of it runs secret_filter.redact first (S2.1)
+        # private: notes, plan, contract, screen (hash/shape/app, no text), masked; a listener that stores any of it
+        # runs secret_filter.redact first.
 
-
-# -- registries (module-level; order ascending, then registration order) ------------------------------------------
 
 @dataclass(frozen=True)
 class _Entry:
@@ -196,7 +174,7 @@ _disabled: set = set()          # tracks whose registrations are off (a newer sc
 CORE_FIELDS = frozenset({"appId", "goal", "mode", "outputSchema", "outputFormat", "allowedBundles", "engine",
                          "device"})
 RUN_FIELD = re.compile(r"[a-z][A-Za-z0-9]{1,31}")
-# Widened for long tasks (track longform, DESIGN §3.3): a long run takes up to 600 turns and 2 hours.
+# Long tasks widen the caps to 600 turns and 2 hours.
 OPTION_CAPS = {"max_steps": 600, "max_seconds": 7200}
 
 
@@ -226,11 +204,8 @@ def register_tool(factory: Callable[[RunContext], Optional[Any]], *, order: int)
 
 def register_run_field(name: str, validate: Callable[[Any, Any], Any], *, public: bool = True,
                        model: bool = True) -> None:
-    """``name``: a camelCase body field of POST /api/runs (and Runtime.create(extras=)); ``validate(value,
-    runtime)`` -> the clean value, or raise ValueError(a sentence). Duplicates and core field names raise. Part of
-    the idempotency fingerprint. ``public=False`` keeps it out of Run.public() and the journal. ``model=False``: a
-    run with this field calls no model (its pre-run hook ends the run), so it needs no key, asks no plan question and
-    never goes to a coding-agent engine (``calls_no_model``)."""
+    """``name``: a camelCase body field of POST /api/runs; ``model`` False: a run with it calls no model, needs no key
+    and never goes to a coding-agent engine."""
     if not isinstance(name, str) or not RUN_FIELD.fullmatch(name):
         raise ValueError("A run field's name is camelCase, 2 to 32 characters")
     if name in CORE_FIELDS or name in _run_fields:
@@ -242,10 +217,7 @@ def register_run_field(name: str, validate: Callable[[Any, Any], Any], *, public
 
 @dataclass(frozen=True)
 class Admission:
-    """What a claimed origin's track allows one run (register_origin's ``admit``): ``apps``, the app bundles it may
-    use (intersected with the phone's own list; None: no further limit); ``cap_usd``, a lower spending stop;
-    ``ask_floor``, ``ask_all`` to make the run ask before every change; ``long_tasks`` False: never a long task;
-    ``queue`` False: refused, never queued, when the phone is busy (it is admitted again only as it starts now)."""
+    """What a claimed origin's track allows one run (register_origin's ``admit``)."""
     apps: Optional[frozenset] = None
     cap_usd: Optional[float] = None
     ask_floor: Optional[str] = None
@@ -255,11 +227,8 @@ class Admission:
 
 def register_origin(origin: str, *, verify: Callable[[Any], Optional[Mapping[str, Any]]],
                     admit: Callable[..., Admission], fields: Sequence[str]) -> None:
-    """``origin`` (one of CLAIMED_ORIGINS) is claimed only with this track's proof. ``verify(headers)`` -> the run
-    fields every run from that request carries (``fields``, run fields this track registered), or None to refuse the
-    request. ``admit(runtime, *, extras, phone, engine)`` -> an Admission for one run of that origin, or raises
-    APIError: Runtime.create asks it for every such run, after the phone is chosen. A request that names one of
-    ``fields`` itself is refused: only ``verify`` sets them."""
+    """``origin`` (one of CLAIMED_ORIGINS) is claimed only with this track's proof: ``verify(headers)`` sets ``fields``,
+    and a request that names one of them itself is refused."""
     if origin not in CLAIMED_ORIGINS:
         raise ValueError(f"{origin} isn't an origin a track may claim")
     if origin in _origins:
@@ -290,9 +259,7 @@ def register_run_listener(listener: RunListener) -> None:
 
 def register_pre_run(hook: Callable[[RunContext, Any, Optional[Callable[[dict], str]]], Optional[PreRun]], *,
                      order: int) -> None:
-    """Called with (ctx, driver, approve) after the phone is ready and before the first model call; ``approve`` is
-    the approver the frontier gets (None when Ask before acting is off); the first non-None PreRun wins.
-    Orders: harness pick-up 0, long-form pick-up 1, the front door 2, packs 3, long-form follow-up 5, learned 20 and up."""
+    """Called with (ctx, driver, approve) after the phone is ready and before the first model call."""
     if not callable(hook):
         raise ValueError("A pre-run hook is a function")
     _pre_runs.append(_next(order, hook))
@@ -306,8 +273,7 @@ def register_frontier_options(fn: Callable[[RunContext], Mapping[str, Any]]) -> 
 
 
 def register_service(start: Callable[[Any], None], close: Callable[[Any], None]) -> None:
-    """Runtime-wide background work: ``start(runtime)`` after the fleet exists, ``close(runtime)`` in
-    Runtime.close. Neither may block more than 2 s."""
+    """Runtime-wide background work: ``start(runtime)`` after the fleet exists, ``close(runtime)`` in Runtime.close."""
     if not callable(start) or not callable(close):
         raise ValueError("A service needs start(runtime) and close(runtime)")
     _services.append(_next(0, (start, close)))
@@ -352,8 +318,6 @@ def update_thread_item(thread_id: str, item_id: str, changes: dict) -> Optional[
         return None
 
 
-# -- what the core reads ------------------------------------------------------------------------------------------
-
 def context_providers(ctx: RunContext) -> list:
     """This run's providers, in order: each factory's provider, skipping None and factories that raise (logged)."""
     out = []
@@ -369,8 +333,7 @@ def context_providers(ctx: RunContext) -> list:
 
 
 def tools(ctx: RunContext) -> list:
-    """This run's tools (agent_hooks.Skill), in order. A tool whose op clashes with a frontier operation or an
-    earlier tool is skipped and logged; a factory that raises is skipped."""
+    """This run's tools (agent_hooks.Skill), in order."""
     from .frontier import OPERATIONS, default_skills
     taken = set(OPERATIONS) | {getattr(skill, "op", None) for skill in default_skills()}
     out = []
@@ -397,8 +360,7 @@ def pre_runs(ctx: RunContext, owner: Optional[str] = None) -> list:
 
 
 def frontier_options(ctx: RunContext) -> dict:
-    """Every registered function's options merged (later wins). ValueError for a key other than max_steps or
-    max_seconds, or a value outside 1..cap."""
+    """Every registered function's options merged (later wins)."""
     out = {}
     for entry in _active(_frontier_options):
         options = entry.value(ctx) or {}
@@ -418,16 +380,14 @@ def run_fields() -> dict:
 
 
 def calls_no_model(extras) -> bool:
-    """Whether a run with these validated fields calls no model: one of them is set and was registered with
-    ``model=False``."""
+    """Whether a run with these validated fields calls no model."""
     extras = extras or {}
     return any(extras.get(name) is not None for name, (_, _, owner, model) in _run_fields.items()
                if not model and owner not in _disabled)
 
 
 def clean_extras(extras, runtime) -> dict:
-    """``extras`` validated through each field's ``validate(value, runtime)``. ValueError for a name that isn't a
-    registered run field, or the field's own sentence."""
+    """``extras`` validated through each field's ``validate(value, runtime)``."""
     if extras is None:
         return {}
     if not isinstance(extras, Mapping):
@@ -441,14 +401,12 @@ def clean_extras(extras, runtime) -> dict:
     return clean
 
 
-# The run field a track gives a run that must stay on this Mac (Network X-ray's report): ``{STAY_ON_MAC: True}``.
+# The run field for a run that must stay on this Mac (Network X-ray's report).
 STAY_ON_MAC = "stayOnMac"
 
 
 def stays_on_mac(extras) -> bool:
-    """Whether a run with these run fields stays on this Mac: Mobster never uploads it (a share link, a destination,
-    a feedback report) and only the Mac app reads it. It reads the run's own field, not the registry, so a run made
-    before a restart, or by a track that is off now, still stays."""
+    """Whether a run with these run fields stays on this Mac."""
     return isinstance(extras, Mapping) and extras.get(STAY_ON_MAC) is True
 
 
@@ -479,8 +437,7 @@ def dispatch(method: str, *args) -> None:
 
 
 def clarify_only(request_approval: Callable[[dict], str]) -> Callable[[dict], str]:
-    """``request_approval`` limited to kind "clarify" (RunContext.clarify, SkillContext.clarify). Fills in
-    ``operation`` ("ASK_USER") and ``label`` (the question's first 80 characters) when missing."""
+    """``request_approval`` limited to kind "clarify" (RunContext.clarify, SkillContext.clarify)."""
     def clarify(request):
         if not isinstance(request, dict) or request.get("kind") != "clarify":
             raise ValueError("clarify only asks clarifying questions (kind clarify)")
@@ -491,14 +448,8 @@ def clarify_only(request_approval: Callable[[dict], str]) -> Callable[[dict], st
     return clarify
 
 
-# -- the listener queue: one dispatcher thread per Runtime (S6.4) ---------------------------------------------------
-
 class ListenerQueue:
-    """Hands listener calls to one thread, so a listener never slows the agent. ``on_created``, ``on_event``,
-    ``on_step``, ``on_finished`` and plain callables share one FIFO. Ordinary events are dropped when its pending
-    length reaches ``capacity`` (a recorder that sees an index gap discards that trajectory). Lifecycle calls and
-    plain callbacks always enqueue, preserving completion-before-publication order without waiting on a listener.
-    ``on_checkpoint`` is coalesced latest-wins per run."""
+    """Hands listener calls to one thread, so a listener never slows the agent."""
 
     def __init__(self, capacity=10_000):
         self._queue = queue.Queue()
@@ -507,18 +458,19 @@ class ListenerQueue:
         self._lock = threading.Lock()
         self.dropped = 0
         self._overflowing = False
-        self._thread = None
-        self._closed = False
+        self._workers = RunExecutor(max_workers=1)
+        self._dispatcher = None  # the dispatcher's Future, from the first call queued
+
+    @property
+    def _closed(self):
+        return self._workers.token.is_set()
 
     def _ensure(self):
-        if self._thread is None:
-            thread = threading.Thread(target=self._loop, name="mobster-listeners", daemon=True)
-            thread.start()
-            self._thread = thread
+        if self._dispatcher is None:
+            self._dispatcher = self._workers.submit("mobster-listeners", self._loop)
 
     def post(self, method, *args):
-        """Queue a listener call. Nothing is queued while no listener is registered, except ``on_finished`` and
-        plain callables (``call``), which keep their order with the bus's run_finished."""
+        """Queue a listener call."""
         if self._closed:
             return
         if method != "on_finished" and not _listeners:
@@ -581,7 +533,7 @@ class ListenerQueue:
 
     def flush(self, timeout=5.0):
         """Wait until everything queued so far ran (tests, Runtime.close). True when it did."""
-        if self._thread is None:
+        if self._dispatcher is None:
             return True
         done = threading.Event()
         if not self._put(("fn", done.set), required=True):
@@ -589,31 +541,19 @@ class ListenerQueue:
         return done.wait(timeout)
 
     def close(self, timeout=2.0):
-        """Stop accepting calls and drain required callbacks. True only once the dispatcher exits.
-
-        A timed-out close drops ordinary events; lifecycle calls and plain callbacks still drain.
-        Repeated close waits again, so their service and journal owners can safely outlive them.
-        """
+        """Stop accepting calls and drain required callbacks."""
         deadline = time.monotonic() + max(0.0, timeout)
         if not self._closed:
-            if self._thread is not threading.current_thread():
+            if not self._workers.in_worker():
                 self.flush(max(0.0, deadline - time.monotonic()))
             with self._lock:
                 if not self._closed:
-                    self._closed = True
+                    self._workers.cancel()
                     self._checkpoints.clear()
-                    if self._thread is not None:
+                    if self._dispatcher is not None:
                         self._queue.put_nowait(None)
-        thread = self._thread
-        if thread is None:
-            return True
-        if thread is threading.current_thread():
-            return False
-        thread.join(max(0.0, deadline - time.monotonic()))
-        return not thread.is_alive()
+        return self._workers.join(max(0.0, deadline - time.monotonic()))
 
-
-# -- staging for tracks.load (S1) ---------------------------------------------------------------------------------
 
 def _snapshot():
     return (list(_providers), list(_tools), dict(_run_fields), list(_listeners), list(_pre_runs),
@@ -656,16 +596,10 @@ def reset_for_tests() -> None:
     _owner[0] = None
 
 
-# -- safety helpers (seam-owned and frozen; a change may only widen them, through the integrator) --------------------
-
 def commit_act(op: str, label: Optional[str], recorded: Optional[str], app: Optional[str]) -> Optional[str]:
-    """The one commit test for code that acts without the frontier's contract (routine replay, cached test steps,
-    tools). Not None when: ``recorded`` is in contract_asks.ASK_ACTS; or ``op`` is SUBMIT or TYPE_SUBMIT; or ``label``
-    matches task_policy.COMMIT_CONTROL or any verb in contract.FAMILIES[a] for a in ASK_ACTS; or ``app`` is the
-    App Store. Returns the act ("other" when only the control's words or a submit say so). Harness may widen
-    COMMIT_CONTROL and FAMILIES, never narrow them."""
-    from . import contract_screen
-    from . import contract_asks
+    """The one commit test for code that acts without the frontier's contract; not None means ask."""
+    # The harness may widen COMMIT_CONTROL and FAMILIES, never narrow them.
+    from . import contract_asks, contract_screen
     from .task_policy import COMMIT_CONTROL
     if recorded in contract_asks.ASK_ACTS:
         return recorded
@@ -704,67 +638,50 @@ def frozen_mapping(value) -> Mapping[str, Any]:
     return MappingProxyType(dict(value or {}))
 
 
-# -- engine hooks: what the engine reaches in the harness, when the harness is there -------------------------------
-#
-# The engine (the loop, its drivers and models, the safety core) imports nothing from the harness. Where it needs what
-# only the full Mobster has, it asks for a hook by name. The harness's hook module (HOOKS_MODULE, engine_hooks.py) sets
-# them all the first time any is asked for, whichever entry point started the process. In a tree without that module
-# (the open-source engine) every hook is None, and each caller does what the engine alone does, said beside the call.
-
-HOOKS_MODULE = __package__ + ".engine_hooks"
-HOOKS = frozenset({
-    "model_routes",    # () -> the models of Settings › Models: split(model), get(id), client, model_id, credential
-    "key",             # (provider, env) -> (key, source) for "anthropic" or "openai": a key Settings saved too
-    "tool_policy",     # (skills, *, run_context, driver, guard) -> the skills a run is offered
-    "first_screen",    # (driver, run_context) -> (snapshot, age_seconds) prewarm read moments ago, or None
-    "private_rects",   # (elements, bundle_id) -> where a saved clip blurs text fields and messages
-    "long_report",     # () -> a long task's report helpers: proof(report, apps), partial_line(report, plan)
-    "wifi_attached",   # (udid) -> (True, attached) for a phone this process runs over Wi-Fi, else (False, None)
-    "wifi_lost",       # (udid) -> whether that phone's Wi-Fi link went down
-    "wifi_may_reach",  # (udid) -> whether an unplugged phone may still be reached over the Mac app's Wi-Fi relay
-    "usb_attached",    # (udid) -> True, False, or None when it can't be told
-    "devicectl_json",  # (args, timeout) -> CoreDevice's JSON for `xcrun devicectl ARGS`
-    "coredevice_locked",  # (udid) -> True or False from `devicectl device info lockState` (USB or Wi-Fi), None if unsure
-    "coredevice_apps",    # (udid, kind) -> the phone's "user" or "system" apps as installed_apps rows; raises on failure
-    "track_disabled",  # (track, reason) -> None: a track's journal schema turned it off
-    # The quality and speed modules Mobster for Mac ships and the open-source engine doesn't. Without them the engine
-    # sends each model call once, offers no skills, knows no app names and keeps no frame clock.
-    "hedge",           # () -> the hedge module: hedged model calls (HEDGERS, enabled(), transient(error))
-    "skills",          # () -> the skills offered to every run (skills.default_skills())
-    "app_catalog",     # () -> the known apps: [{"bundleId", "name"}, ...] (catalog.APPS)
-    "frame_clock",     # () -> the frame_clock module: scroll odometry on the MJPEG stream
-    "ios_slice",       # (snapshot, request, driver) -> a turn's section of the iOS guide about the screen, or ""
-    "screen_text",     # () -> the two-headed check's reader (screen_text.ScreenText), or None without its helper
-    "pixel_screen",    # () -> the pixel-screen reader (perception): wda_snapshot(image, *, size, bundle, source,
-                       #    started, ocr) -> a Snapshot of a screenshot's text, for an app whose tree is too slow
-})
-_hooks: dict = {}
-_hooks_loaded = [False]
-_hooks_lock = threading.RLock()
+class ModelRoutes(Protocol):
+    """Settings › Models (ai_plans/providers.py). Only a model ``split`` routes reaches the other four."""
+    def split(self, model: str) -> tuple[Optional[str], str]: ...
+    def get(self, provider_id: str) -> Any: ...
+    def client(self, model: str, reasoning: str) -> Any: ...
+    def model_id(self, provider: Any, env: Mapping[str, str]) -> str: ...
+    def credential(self, provider: Any, env: Mapping[str, str]) -> Optional[str]: ...
+    def plan_name(self, provider: Any) -> str: ...
 
 
-def hook(name: str) -> Optional[Callable]:
-    """The harness's ``name`` hook, or None in a tree without the harness."""
-    if name not in HOOKS:
-        raise KeyError(name)
-    if not _hooks_loaded[0]:
-        with _hooks_lock:
-            if not _hooks_loaded[0]:
-                try:
-                    module = importlib.import_module(HOOKS_MODULE)
-                except ModuleNotFoundError as error:
-                    if error.name != HOOKS_MODULE:
-                        raise
-                    module = None
-                _hooks_loaded[0] = True
-                if module is not None:
-                    for key, value in module.hooks().items():
-                        _hooks.setdefault(key, value)
-    return _hooks.get(name)
+class EngineHooks(Protocol):
+    """Everything the engine reaches outside itself: EngineAlone without the harness, engine_hooks.Harness with it.
+    The optional private package fills the first three in its ``register(hooks)``."""
+    target_driver: Optional[Callable[..., Any]]             # (expected_bundle=, **options) -> a Driver that is not WDA
+    cli: list                                               # add_arguments(subparsers, commands); run(args, output)
+    runtime_for: Optional[Callable[[Any], Optional[type]]]  # (config) -> a server.Runtime subclass, or None
+
+    def model_routes(self) -> ModelRoutes: ...
+    def key(self, provider: str, env: Mapping[str, str]) -> tuple[Optional[str], Optional[str]]: ...  # (key, source)
+    def tool_policy(self, skills: Sequence[Any], *, run_context: Optional[RunContext], driver: Any,
+                    guard: Any) -> Sequence[Any]: ...
+    def first_screen(self, driver: Any, run_context: RunContext) -> Optional[tuple[Any, float]]: ...  # (snapshot, age)
+    def private_rects(self, elements: Sequence[Any], bundle_id: Optional[str]) -> Optional[list]: ...
+    def long_report(self) -> Optional[ModuleType]: ...      # proof(report, apps), partial_line(report, plan)
+    def wifi_attached(self, udid: str) -> tuple[bool, Optional[bool]]: ...  # (False, None): not on Wi-Fi here
+    def wifi_lost(self, udid: str) -> bool: ...
+    def wifi_may_reach(self, udid: str) -> bool: ...        # over the Mac app's Wi-Fi relay, though unplugged
+    def usb_attached(self, udid: str) -> Optional[bool]: ...  # None: can't be told
+    def devicectl_json(self, args: Sequence[str], timeout: float) -> dict: ...
+    def coredevice_locked(self, udid: str) -> Optional[bool]: ...
+    def coredevice_apps(self, udid: str, kind: str) -> list: ...  # kind "user" or "system": installed_apps rows
+    def track_disabled(self, track: str, reason: str) -> None: ...
+    def hedge(self) -> Optional[ModuleType]: ...            # HEDGERS, enabled(), transient(error)
+    def skills(self) -> Sequence[Any]: ...                  # offered to every run
+    def app_catalog(self) -> Sequence[Mapping[str, str]]: ...  # [{"bundleId", "name"}, ...]
+    def image_policy(self) -> Optional[ModuleType]: ...     # screenshot selection: mode(), Turn, decide()
+    def frame_clock(self) -> Optional[ModuleType]: ...      # scroll odometry on the MJPEG stream
+    def ios_slice(self, snapshot: Any, request: str, driver: Any) -> str: ...
+    def screen_text(self) -> Optional[Callable[[Any, Any, Any], Optional[str]]]: ...  # (driver, element, snapshot)
+    def pixel_screen(self) -> Optional[ModuleType]: ...     # wda_snapshot(image, ...): a slow app's screen from pixels
 
 
 class _NoRoutes:
-    """The model routes of the engine alone: no model id is "<provider>:<model>"."""
+    """No model id is "<provider>:<model>"."""
 
     @staticmethod
     def split(model):
@@ -775,10 +692,124 @@ class _NoRoutes:
         return None
 
 
-NO_ROUTES = _NoRoutes()
+_NO_ROUTES = _NoRoutes()
 
 
-def model_routes():
-    """Settings › Models' routes (ai_plans/providers.py) when the harness is there, else NO_ROUTES."""
-    routes = hook("model_routes")
-    return routes() if routes is not None else NO_ROUTES
+class EngineAlone:
+    """EngineHooks with no harness: one send per model call, no skills, app names, frame clock, Wi-Fi or CoreDevice."""
+
+    def __init__(self):
+        self.target_driver, self.cli, self.runtime_for = None, [], None
+
+    def model_routes(self):
+        return _NO_ROUTES
+
+    def key(self, provider, env):
+        key = (env.get("ANTHROPIC_API_KEY" if provider == "anthropic" else "OPENAI_API_KEY") or "").strip()
+        return (key, "own") if key else (None, None)
+
+    def tool_policy(self, skills, *, run_context, driver, guard):
+        return skills
+
+    def first_screen(self, driver, run_context):
+        return None
+
+    def private_rects(self, elements, bundle_id):
+        return None
+
+    def long_report(self):
+        return None
+
+    def wifi_attached(self, udid):
+        return False, None
+
+    def wifi_lost(self, udid):
+        return False
+
+    def wifi_may_reach(self, udid):
+        return False
+
+    def usb_attached(self, udid):
+        return None
+
+    def devicectl_json(self, args, timeout):
+        raise RuntimeError("CoreDevice is not available")
+
+    def coredevice_locked(self, udid):
+        return None
+
+    def coredevice_apps(self, udid, kind):
+        raise RuntimeError("CoreDevice is not available")
+
+    def track_disabled(self, track, reason):
+        disable(track)
+
+    def hedge(self):
+        return None
+
+    def skills(self):
+        return ()
+
+    def app_catalog(self):
+        return ()
+
+    def image_policy(self):
+        return None
+
+    def frame_clock(self):
+        return None
+
+    def ios_slice(self, snapshot, request, driver):
+        return ""
+
+    def screen_text(self):
+        return None
+
+    def pixel_screen(self):
+        return None
+
+
+HOOKS_MODULE = __package__ + ".engine_hooks"
+PRIVATE_PACKAGE = __package__ + ".private"   # device targets, commands and runtimes outside the public distribution
+_loaded: list = []
+_load_error: list = []
+_load_lock = threading.Lock()
+
+
+def hooks() -> EngineHooks:
+    """The engine's hooks, loaded once: the harness's when it is there, else EngineAlone, with the private package
+    registered on the same object. A failed load raises on every call and never runs again: a registration may have
+    half run."""
+    if _loaded:
+        return _loaded[0]
+    with _load_lock:
+        if _load_error:
+            raise _load_error[0]
+        if not _loaded:
+            try:
+                _loaded.append(_load())
+            except Exception as error:
+                _load_error.append(error)
+                raise
+    return _loaded[0]
+
+
+def _load():
+    harness = _optional(HOOKS_MODULE)
+    loaded = harness.Harness() if harness is not None else EngineAlone()
+    # A folder left with no __init__.py, such as a stale __pycache__, imports as an empty namespace package.
+    register = getattr(_optional(PRIVATE_PACKAGE), "register", None)
+    if register is not None:
+        register(loaded)
+    from .corpus import install as install_corpus
+    install_corpus(loaded)
+    return loaded
+
+
+def _optional(name):
+    try:
+        return importlib.import_module(name)
+    except ModuleNotFoundError as error:
+        if error.name != name:
+            raise
+        return None

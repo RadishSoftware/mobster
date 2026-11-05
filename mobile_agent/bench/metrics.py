@@ -28,6 +28,17 @@ def percentile(values, q):
     return values[low] + (values[high] - values[low]) * (rank - low)
 
 
+def quantile(values, q):
+    """Linear-interpolated quantile (q in 0..1) of ``values``; None for no data."""
+    values = sorted(values)
+    if not values:
+        return None
+    k = (len(values) - 1) * q
+    lo = int(k)
+    hi = min(lo + 1, len(values) - 1)
+    return values[lo] + (values[hi] - values[lo]) * (k - lo)
+
+
 def bootstrap_ci(values, statistic=statistics.fmean, resamples=10000, seed=0, alpha=.05):
     """Percentile bootstrap CI of ``statistic`` over ``values`` (resampling units, e.g. tasks)."""
     values = [v for v in values if v is not None]
@@ -41,10 +52,7 @@ def bootstrap_ci(values, statistic=statistics.fmean, resamples=10000, seed=0, al
 
 
 def pass_hat_k(outcomes, k):
-    """tau-bench's pass^k: probability that k i.i.d. attempts of a task ALL pass, averaged over tasks.
-
-    ``outcomes`` maps task -> list of booleans. Unbiased per task: C(c, k) / C(n, k).
-    """
+    """tau-bench's pass^k over task -> [bool]: C(c, k) / C(n, k) per task, averaged."""
     scores = []
     for results in outcomes.values():
         n, c = len(results), sum(results)
@@ -56,13 +64,3 @@ def pass_hat_k(outcomes, k):
 def flaky_tasks(outcomes):
     """Tasks whose repeats disagree (some pass, some fail)."""
     return sorted(task for task, results in outcomes.items() if 0 < sum(results) < len(results))
-
-
-def sign_test(wins, losses):
-    """Two-sided exact sign test p-value (ties excluded)."""
-    n = wins + losses
-    if n == 0:
-        return 1.0
-    k = min(wins, losses)
-    tail = sum(math.comb(n, i) for i in range(k + 1)) / 2 ** n
-    return min(1.0, 2 * tail)

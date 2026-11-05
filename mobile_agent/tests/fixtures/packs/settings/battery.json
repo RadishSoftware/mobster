@@ -1,0 +1,197 @@
+{
+"note": "Recorded on the test device (iPhone 15 Pro, iOS 26.0.1), 11 Oct 2026: the rows the agent saw, scrubbed (the account's name, the phone's name; serial and model numbers dropped).",
+"rows": [
+{
+"role": "NavigationBar",
+"label": "Battery",
+"rect": [
+0.0,
+0.07,
+1.0,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "Settings",
+"rect": [
+0.04,
+0.07,
+0.11,
+0.05
+]
+},
+{
+"role": "StaticText",
+"label": "Battery",
+"rect": [
+0.42,
+0.08,
+0.16,
+0.02
+]
+},
+{
+"role": "Cell",
+"label": "CHARGING_MODULE_IDENTIFIER",
+"rect": [
+0.04,
+0.15,
+0.92,
+0.16
+]
+},
+{
+"role": "StaticText",
+"label": "81%",
+"rect": [
+0.08,
+0.17,
+0.14,
+0.05
+]
+},
+{
+"role": "Image",
+"label": "Flash",
+"rect": [
+0.08,
+0.23,
+0.03,
+0.02
+]
+},
+{
+"role": "StaticText",
+"label": "100%",
+"rect": [
+0.81,
+0.23,
+0.1,
+0.02
+]
+},
+{
+"role": "StaticText",
+"label": "1h 13m",
+"rect": [
+0.79,
+0.27,
+0.12,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "Info",
+"rect": [
+0.88,
+0.17,
+0.04,
+0.02
+]
+},
+{
+"role": "Cell",
+"label": "SpinnerSpecifier",
+"rect": [
+0.04,
+0.35,
+0.92,
+0.15
+]
+},
+{
+"role": "Cell",
+"label": "Battery Health",
+"rect": [
+0.04,
+0.55,
+0.92,
+0.06
+]
+},
+{
+"role": "StaticText",
+"label": "Service",
+"rect": [
+0.71,
+0.57,
+0.16,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "chevron",
+"rect": [
+0.9,
+0.57,
+0.02,
+0.02
+]
+},
+{
+"role": "Cell",
+"label": "Charging",
+"rect": [
+0.04,
+0.61,
+0.92,
+0.07
+]
+},
+{
+"role": "Button",
+"label": "chevron",
+"rect": [
+0.9,
+0.63,
+0.02,
+0.02
+]
+},
+{
+"role": "Cell",
+"label": "Power Mode",
+"rect": [
+0.04,
+0.67,
+0.92,
+0.07
+]
+},
+{
+"role": "Button",
+"label": "chevron",
+"rect": [
+0.9,
+0.69,
+0.02,
+0.02
+]
+},
+{
+"role": "Cell",
+"label": "Battery Percentage",
+"rect": [
+0.04,
+0.73,
+0.92,
+0.07
+],
+"value": "1"
+},
+{
+"role": "Switch",
+"label": "Battery Percentage",
+"rect": [
+0.75,
+0.75,
+0.16,
+0.03
+],
+"value": "on"
+}
+]
+}

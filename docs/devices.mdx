@@ -1,0 +1,278 @@
+---
+title: "Several phones"
+description: "How Mobster reaches each iPhone and simulator, keeps its helper running, and runs tasks and checks on several at once."
+icon: "smartphone"
+---
+
+Mobster can drive more than one device at a time: USB iPhones, Mobster's simulators, and any WebDriverAgent you give it by address. Each device runs one task at a time, and tasks on different devices run at once. With one phone, nothing changes: every command, request and tool works as before, on that phone.
+
+In the Mac app, you add, set up, rename and forget each device on the Devices page ([Devices and health](/phones)).
+
+## The devices
+
+`mobster devices` lists every device Mobster can drive, with its state. It reads the machine and changes nothing.
+
+```sh
+mobster devices
+```
+
+```text
+  Name                          Kind       State        Details
+  Work iPhone                   iPhone     Ready        iPhone XR, iOS 18.6
+  New iPhone                    iPhone     Needs setup  iPhone
+    Set it up once. Mobster walks you through it.
+  Mobster · iPhone 17 Pro · i…  Simulator  Shut down    iPhone 17 Pro, iOS 26.4
+    The simulator is shut down. Start it to use it.
+
+Give one a task: mobster --device "Work iPhone"
+```
+
+A name longer than 28 characters ends in "…". `mobster devices --json` gives each device's id, address and state in full.
+
+| kind | what it is | its id |
+| --- | --- | --- |
+| `usb` | an iPhone on this Mac's USB, set up in the Mac app (or `mobster serve --manage-device`), or plugged in and not set up yet | its UDID |
+| `simulator` | one of Mobster's simulators (`mobster sim`) | its UDID |
+| `wda` | a WebDriverAgent given by address: `MOBSTER_WDA_DEVICES`, or `serve --wda-url` | `wda-<port>` |
+| `android` | an Android emulator or USB phone, with `MOBSTER_EXPERIMENTAL_ANDROID=1` ([Android](/android)) | `android:<adb serial>` |
+
+Each device has one of five states:
+
+| state | meaning |
+| --- | --- |
+| `ready` | WebDriverAgent answers and reaches the screen; nothing is running on it |
+| `busy` | a task runs on it, here or in another Mobster app or command |
+| `connected` | it is there and set up, but its runner isn't answering yet, or the phone is locked |
+| `needs_setup` | it is plugged in, but Mobster can't drive it until it's set up: it doesn't trust this Mac yet, or its runner isn't built for it, or the runner's signature expired |
+| `disconnected` | an iPhone set up earlier that isn't plugged in, a simulator that is shut down, or an address where nothing answers |
+
+Every state but `ready` comes with a sentence that says what to do.
+
+## When the helper stops answering
+
+Mobster's helper on an iPhone can stop answering while its process still runs, for example when the phone is behind Control Center or Siri. Mobster checks it every 10 seconds with a read that has a 3-second limit. Every other request to the helper has a limit too, from 3 seconds for a status read to 30 seconds for a new session.
+
+After three missed checks in a row and 90 seconds, Mobster restarts the helper and its USB link. A check counts only while Mobster's own helper process runs and has had 120 seconds to start, so Mobster doesn't restart a helper you stopped or one that is still starting. It never restarts under an action that was sent and hasn't answered. While it restarts, no new action leaves, and Mobster refuses a task that starts then with "Mobster's helper on your iPhone is restarting. No action was taken. Try again in a moment." (HTTP 503, `device_unavailable`). With a task running, it restarts only between actions. If the helper has stopped for good with a task running, the task ends with "Mobster's helper on your iPhone stopped, so this task ended. No further action was taken." Restarts in a row wait 3 minutes, then 6, then 12, up to 30. A helper that exits on its own, and one Mobster resumes when it starts, come back under the same rules and the same waits. `GET /api/devices` shows `watchdog`: `state` (`ok`, `restarting` or `wedged`), `restarts` and `last_restart` in milliseconds.
+
+The helper's signature lasts 7 days on a free Apple Account. From day 5 Mobster rebuilds it when the phone is connected and unlocked, you are not using it and no task runs. If the phone is away or locked, the phone's `renewal` shows `due` with `deadline` in milliseconds and `hours_left`. Mobster tries a failed rebuild again after a quarter of the time left, at most 6 hours.
+
+Mobster also rebuilds the helper by itself when an update changed Mobster's patches to it, so a phone you set up once needs nothing pressed after an update. The phone reads "It needs a quick refresh after Mobster's update" until then. Both rebuilds need the phone plugged in and unlocked. While the helper can't run (stopped, expired or out of date), Mobster reads the lock through CoreDevice instead, at most every 30 seconds. A phone CoreDevice reports locked, or can't read, waits. Mobster tries a failed rebuild after an update again 6 hours later.
+
+## Connection types
+
+Mobster reaches an iPhone in one of three ways.
+
+| connection | what it needs | what Mobster reads |
+| --- | --- | --- |
+| WebDriverAgent (USB or Wi-Fi) | Setup once: a cable, Developer Mode and Mobster's helper on the phone | the phone's accessibility tree: every element's role, label, value and state, rows off screen, the app in front |
+| iPhone Mirroring (experimental) | macOS iPhone Mirroring paired with the phone, nothing on the phone, no Xcode | the Mirroring window: its text, read by Apple Vision on this Mac, and the screenshot |
+| Cable + Bluetooth (experimental) | a cable, the phone paired with this Mac as a Bluetooth keyboard and mouse, AssistiveTouch on, no Xcode | the phone's screen video over the cable: its text, read by Apple Vision on this Mac, and the frame |
+
+WebDriverAgent is the full connection. Every command, check and tool on this page uses it.
+
+### iPhone Mirroring (experimental)
+
+Turn it on with `MOBSTER_EXPERIMENTAL_MIRRORING=1` in your shell or your settings file. `mobster run`, the terminal UI and `mobster serve` then drive the iPhone this Mac mirrors, instead of a WebDriverAgent. `mobster serve --manage-device`, which the Mac app runs, keeps WebDriverAgent.
+
+```sh
+MOBSTER_EXPERIMENTAL_MIRRORING=1 mobster run "What's my battery at?" --execute
+```
+
+Before a task:
+
+1. Pair iPhone Mirroring with the phone in macOS's iPhone Mirroring app. The phone stays locked and nearby.
+2. In iPhone Mirroring's settings (`cmd+,`), set iPhone Mirroring Access to Authenticate Automatically. Mobster never types your Mac password.
+3. Give the app you run Mobster from Screen Recording and Accessibility in System Settings › Privacy & Security.
+
+How a task runs on it:
+
+- Mobster captures the Mirroring window with ScreenCaptureKit and reads its text with Apple Vision, on this Mac. Each line of text is an element the agent can tap. The agent sees the same frame as its screenshot, for icons and pictures.
+- Mobster finds icons drawn without words (a back arrow, a heart, a tab) in the frame. Claude Haiku 5.5 names each new one once, on your Claude key, from the screenshot with the icons marked. Mobster remembers the name for that app in `mirroring-icons.json` in its data folder. A named icon is an element like a labelled button: a heart named Like asks before it's tapped, as on any connection. An icon it can't name, or whose name doesn't say what it commits, is a tap on a point, which asks you first. Without a Claude key, every icon is a point tap.
+- Taps, long presses, swipes, scrolls and typing go to the Mirroring window itself, as mouse and keyboard events addressed to it. Mobster doesn't bring the window forward, doesn't move your cursor and doesn't type into the app you're using. Another window can cover the Mirroring window while a task runs. Mobster refuses a gesture, and sends nothing, when the window shows "iPhone in Use", a paused session or the login gate, or when macOS can't deliver the event to the window (error `background`). Mobster tries a gesture once and doesn't fall back to your cursor.
+- `MOBSTER_MIRRORING_INPUT=foreground` is the way back to the earlier path: Mobster brings the window forward for each gesture, moves your cursor, types through the keyboard, and gives the front back when the task ends. It refuses a gesture while another window covers the phone. Use it when `background` refuses on your macOS version. Any other value stops the task before it sends anything.
+- Home is `cmd+1`. An app opens by its name, the way you would: Spotlight (`cmd+3`) when Spotlight's Top Hit is that app, else the App Library's search, else the Home Screen's pages. An app with Settings › Search › **Show App in Search** off shows only web and dictionary results in Spotlight, so Mobster never presses Return there. It remembers the route that worked for each app, so the next task goes straight to it.
+- Files go to the phone by drag and drop. Mobster drags them from a small window beside iPhone Mirroring onto the phone, and the app in front takes them as a drop (Files, Photos, Notes, a message). Files come off the phone the same way: Mobster long-presses the item and drags it onto its window, then saves what iOS hands over. This needs macOS 15.1 or later. Mobster doesn't read a drop back, so the agent checks the screen for what arrived.
+- Text goes in as US key codes. Mobster pastes longer text, and text with characters that have no US key, through the Mac's pasteboard, where it stays after the task.
+- The live view in Mobster shows the phone's screen from the Mirroring window, captured with ScreenCaptureKit while the window is behind other windows, so you don't need to look at the Mirroring window. Your taps, swipes, typing and Home there go through the same helper as the agent's, and Mobster refuses them the same way while the window shows an interstitial.
+- Watching media reads the window's frames. Hearing works with no cable: iPhone Mirroring plays the phone's sound on the Mac, Mobster records the Mirroring app's audio with ScreenCaptureKit, and turns its speech into text on this Mac as it does over the cable.
+
+What it doesn't do:
+
+- It reads no accessibility tree: no switch states, values or rows off screen.
+- It can't tell which app is in front. It knows the app it opened or tapped on the Home Screen.
+- It has no volume keys, in a task or in the live view, and no picker wheels, and it can't read typed text back to check it.
+- Protected video (DRM) shows black in the window, so the agent can't read it.
+- It drives one phone: the one this Mac mirrors. Several phones at once need WebDriverAgent. The phone is locked while it's mirrored, and unlocking it ends the session.
+- Learned steps match no screen here, so the agent does each step itself.
+
+When iPhone Mirroring isn't ready, a task stops before its first model call and says what to do, such as:
+
+```text
+iPhone Mirroring isn't open. Open iPhone Mirroring on this Mac and connect your iPhone, then try again.
+```
+
+### Cable + Bluetooth (experimental)
+
+Turn it on with `MOBSTER_EXPERIMENTAL_CABLE_BT=1`. `mobster run`, the terminal UI and `mobster serve` then drive a USB iPhone without WebDriverAgent. `mobster serve --manage-device`, which the Mac app runs, keeps WebDriverAgent. When several iPhones are plugged in, `MOBSTER_CABLE_BT_UDID` names the one to drive. Run one `mobster serve` per phone, each with its own UDID and `--port`.
+
+```sh
+MOBSTER_EXPERIMENTAL_CABLE_BT=1 mobster run "What iOS version is this phone on?" --execute
+```
+
+Before the first task on a phone:
+
+1. Plug the iPhone into this Mac with a cable, unlock it, and tap Trust if it asks.
+2. On the iPhone, go to Settings › Accessibility › Touch › AssistiveTouch. Turn AssistiveTouch on and Always Show Menu off.
+3. Go to Settings › Accessibility › Pointer Control and turn Automatically Hide Pointer off.
+4. Pair the iPhone with this Mac. While a task waits for it, Mobster shows up as Mobster Keyboard under Other Devices in the iPhone's Settings › Bluetooth. Tap it, then tap Pair.
+5. Give the app you run Mobster from Camera and Bluetooth in System Settings › Privacy & Security. The iPhone's screen arrives as a camera, as it does in QuickTime Player.
+
+How a task runs on it:
+
+- Mobster watches the iPhone's screen over the cable at about 40 frames a second, and reads its text with Apple Vision on this Mac. Each line of text is an element the agent can tap. The agent sees the same frame as its screenshot.
+- Taps, long presses and swipes go in as a Bluetooth mouse, and AssistiveTouch turns them into touches. iOS only accepts a mouse that moves relative to where it is. So before each tap, Mobster pushes the pointer into the top-left corner, moves it to the target at a steady pace, and finds it in the video. It clicks only when it sees the pointer on the target, within 9 points. Otherwise it corrects the move at most twice, then refuses the tap and sends no click. Moving the pointer touches nothing.
+- The first tap measures how far the pointer moves for each step of the mouse. Mobster keeps the measurement in `cable_bt.json` in its data folder, with the phone's Bluetooth pairing.
+- Home is `cmd+H`. An app opens through Spotlight (`cmd+space`), by its name.
+- Text goes in as US key codes, and Mobster reads it back from the screen before it presses Return. A field the text doesn't show up in gets no Return.
+- One Mac serves several phones. Each phone is paired with the same Mac, and each mouse report goes to one phone only.
+- The Mac app's live view and the grid of phones show the cable video: the focused phone at the frame rate and detail chosen in Settings, and the other tiles small, a few times a second.
+- Teach, direct control and learned steps work as on iPhone Mirroring.
+
+What it doesn't do:
+
+- It reads no accessibility tree: no switch states, values or rows off screen. An unlabelled icon is a tap on a point, which asks you first, as on any connection.
+- It can't tell which app is in front. It knows the app it opened, or the one it tapped on the Home Screen.
+- It types only US keyboard characters, at most 80 at a time. There's no pasteboard on the phone's side. Mobster refuses other text before it presses a key.
+- It has no volume keys and no picker wheels.
+- While Mobster watches the screen, iOS shows a 9:41 status bar with a full battery, and plays the phone's sound on this Mac. Mobster blacks out the status bar and doesn't read it. Ask for the battery in Settings › Battery instead.
+- The cable video and WebDriverAgent can't share a phone. Opening the video stops WebDriverAgent's runner on that phone.
+- The phone stays unlocked, and Mobster never unlocks it. A task stops when the video shows the lock screen or a dark screen, the video stops, or the phone stops using this Mac as a keyboard:
+
+```text
+The iPhone is locked. Unlock your iPhone, then try again. Mobster never unlocks it.
+```
+
+## Locked phones and system sheets
+
+Before a task's first model call, Mobster checks the phone in code. A task you start in the Mac app, the terminal UI or `mobster chat` on a locked iPhone waits up to 2 minutes for you to unlock it ([What it can and can't do](/capabilities)). In a schedule, in `mobster run` and over MCP, a locked iPhone stops the task at once with "Your iPhone is locked. Unlock it and try again. No action was taken.", at no cost. The same check runs again when the task suspects the phone locked or a system sheet came up: a Face ID prompt, an app locked with Require Face ID, or the App Store's side-button confirmation each stop the task with a sentence that says what to do. A task you started yourself waits up to 2 minutes for a Face ID prompt to clear, reading only whether the phone is locked and what is on screen, and stops if the prompt stays, the phone locks, the screen can't be read or you press stop. Mobster never enters a passcode, never uses Face ID and never confirms a purchase.
+
+`mobster devices lock-probe [--device NAME] [--json]` prints what that check sees: whether the phone is locked, the app in front, and the labels SpringBoard shows. It taps and types nothing, and waits for no task: it refuses a phone a task is using as busy. When the phone's helper doesn't answer, the output adds `CoreDevice lock state: locked`, `unlocked` or `not readable`, read with `devicectl device info lockState`; only `locked` changes the state (to the lock screen).
+
+## Battery, heat and the Mac
+
+`mobster devices status` reads a device's battery and its thermal state, and whether this Mac is on battery. It taps nothing and needs no task.
+
+```sh
+mobster devices status --device "Work iPhone"
+```
+
+```text
+Work iPhone
+  Battery   100%, charged
+  Thermal   nominal
+  This Mac  on battery, battery 18%
+```
+
+| value | where it comes from |
+| --- | --- |
+| Battery | the percent, and `charging`, `charged`, `plugged in, not charging` or `not charging`: from lockdown for an iPhone on this Mac's USB, else from WebDriverAgent, in 5% steps |
+| Thermal | `nominal`, `fair`, `serious` or `critical`, from WebDriverAgent |
+| This Mac | on power or on battery, and its battery's percent, from `pmset` |
+
+A value the device doesn't report is left out, never guessed. Mobster doesn't report free storage or the phone's Wi-Fi or cellular signal: nothing it reads reports them reliably. Low Power Mode is read only with `MOBSTER_QUEUE_PREFLIGHT=1`, from a helper built with it: the phone's details then say "Low Power Mode on, so it locks after 30 seconds", and a phone that doesn't say leaves the line out. Free storage is the one it tried: on a phone whose Settings › General › iPhone Storage showed about 0.8 GB free, lockdown's `TotalDataAvailable` said 87 GB free, and no other key matched Settings either.
+
+The Mac app shows the battery under the phone's picture and the rest in the phone's details (click its name at the top of the pane). Over the API, `GET /api/device/status` or `GET /api/devices/{id}/status` answers `{phone, mac, warnings, phoneBatteryPause}`; MCP's `device_status` answers the same for a device.
+
+### While tasks run
+
+In the Mac app and `mobster serve`:
+
+- **The Mac stays awake.** While a task runs, or a scheduled task is due within 10 minutes, Mobster keeps the Mac from going to sleep on its own (`caffeinate -i`), and lets it go when the last one ends. A Mac still sleeps when its lid closes on battery or its battery runs out. `MOBSTER_KEEP_AWAKE=0` turns this off.
+- **The Mac's battery.** On battery at 20% or less while tasks run, each running task gets a `mac_battery_low` event, the phone's details say "This Mac is on battery at 18%. Plug it in: a Mac that runs out of battery sleeps and stops its tasks.", and the event topic `power` gets one `mac_battery_low`. `MOBSTER_MAC_BATTERY_WARN` sets the percent; `off` turns it off.
+- **Low Power Mode.** With `MOBSTER_QUEUE_PREFLIGHT=1`, a scheduled task on a phone in Low Power Mode gets one `phone_low_power` event as it starts, because the phone locks itself after 30 seconds. Mobster doesn't turn Low Power Mode off or keep the phone awake.
+- **The phone's battery.** A long task or a scheduled task on Mobster's agent pauses at its next step while its iPhone's battery is at 10% or less and not charging, and goes on once the phone charges. Nothing is read or done while it waits, and the wait doesn't count against the task's time. After 30 minutes without charging, the task ends `stopped`: pick it up once the phone has charged. Continue goes on at once, and Mobster doesn't pause that task for its battery again. `POST /api/settings` with `{"phoneBatteryPause": 15}`, or `MOBSTER_PHONE_BATTERY_PAUSE`, sets the percent; `null` or `off` turns it off. A battery Mobster can't read never pauses a task. Mobster checks every 30 seconds.
+
+## Naming a device
+
+`--device` takes a device's id, its UDID, or its name, in any case. For a name two devices share, give the id.
+
+| command | what `--device` does |
+| --- | --- |
+| `mobster run`, `mobster screen`, `mobster doctor`, `mobster` (the terminal UI) | drive or check that device: it stands for that device's WebDriverAgent address, so you can't combine it with `--wda-url` |
+| `mobster serve` | the device a task that names none runs on |
+| `mobster mcp`, `mobster verify` | the device a run uses when it names none; a value that names no device is a simulator device type |
+
+```sh
+mobster run "Turn on Dark Mode" --execute --device "Work iPhone"
+```
+
+A device that isn't set up yet, or isn't there, exits with code 3 and says why.
+
+## Ports
+
+Every device has its own WebDriverAgent port, its own video port and its own device lock, so two devices never meet.
+
+- The first iPhone you set up keeps `127.0.0.1:8100` for WebDriverAgent and `9100` for its video, where it always was. Its files stay where they were in the data folder (`device.json`, `wda-build/`, `logs/`).
+- Every other iPhone gets the next free pair from `8101`/`9101` up to `8199`/`9199`, and keeps it. Mobster skips a port another program listens on, and never takes it over. It keeps the pairs in `devices.json` in the data folder, and each such iPhone keeps its runner build, settings and logs in `devices/<UDID>/`.
+- Simulators keep the ports `mobster sim` gave them, from `8310` and `9310` up.
+
+On the phone itself WebDriverAgent always listens on 8100 and 9100. The USB relay maps this Mac's pair to it: `iproxy -s 127.0.0.1 -u <UDID> 8101:8100 9101:9100`.
+
+Mobster builds the runner once per iPhone, because a runner's signature has to include that phone. Builds run one at a time: a second iPhone's build waits for the first and says so.
+
+## In the Mac app and the API
+
+The server behind the Mac app (`mobster serve`) keeps the list, runs one task per device, and keeps each device's approvals, live view, history and setup apart. A task names its device with `device`; without one it runs on the default device: the one `serve --device` names, else the only device, else the one the last task ran on, else the first iPhone. When Mobster chooses automatically, a phone that needs setup gives way to a phone that is set up. An explicit device preference still wins. A saved task (a workflow) runs on the phone saved with it. With none, it runs on the one `serve --device` names, else the only device, else the first iPhone, never on whichever phone was used last, since a schedule runs while nobody watches. [Scripts and the API](/scripting#the-http-api) lists the requests.
+
+### The composer's phone
+
+The Mac app's composer runs the next task on the phone you chose last in its phone chip, the sidebar's device chip or the pane's switcher. Mobster keeps that choice on this Mac, in `devices.json` in its data folder, so it survives a relaunch and an update. While that phone is plugged in, the composer stays on it even when it's locked or busy, and says what to do. Mobster doesn't move your choice to another phone, with one exception: a phone that needs setup gives way to a phone that is set up, and comes back once it's set up.
+
+When the phone you chose isn't connected (unplugged, or Disconnected in Mobster), the composer opens on another phone. It picks a ready phone first, then a phone running a task, then one that's connected but not ready, then one that needs setup. Among equals it picks the default device, then the first iPhone. Mobster doesn't save that fallback: plug your phone in again and the composer is back on it.
+
+`GET /api/devices` answers `chosenDevices`, the phones the composer uses now, and `chosenSaved`, the choice kept on this Mac. `POST /api/devices/chosen` with `{"devices": ["<UDID>"]}` saves a choice, and `{"devices": []}` forgets it. Several ids are one task on each phone. The choice doesn't change where a task with no `device` runs: an agent over MCP or a script still gets the default device.
+
+## Sharing a phone
+
+A phone has one holder at a time. The Mac app says who it is above the phone's picture, in a plain sentence: "Claude Code is using this phone, started 4 min ago". Your own task in Mobster with nothing waiting behind it gets no sentence there: its conversation shows it running, with its Stop. The holder is a task you started in Mobster, an agent over MCP (named as the agent names itself, such as Claude Code), Mobster Remote, a workflow or a schedule, or your own hands when you teach a task or control the phone from the live view. A phone another Mobster process holds (`mobster run`, an agent's `mobster mcp` driving it directly) shows as "another Mobster process"; Mobster can't see whose task that is.
+
+A second request for a held phone waits in line instead of being refused. It is a task in your history that says "Number 2 in line for alex", and who it waits for. Nothing happens on the phone until its turn, and then it starts only if the phone passes the same checks a new task does: if the phone has gone away, is locked, or another Mobster process took it, or if its app is no longer on the phone's list or is now on your never-open list, the request ends with that reason and did nothing. Mobster reads the phone's Ask before acting again too, so turning it on while a request waits makes that request ask. Each phone has its own line of 10 requests, and Mobster refuses an 11th. A request that waits 30 minutes ends without starting and says so (`MOBSTER_QUEUE_MINUTES`, 1 to 1440, changes the wait). Stopping a waiting request takes it out of the line. Quitting or restarting Mobster ends every waiting request, and none starts later. A request that needs your approval still asks you when it runs.
+
+These don't wait, and Mobster refuses them: a schedule, a workflow step and a task on several phones, a request with `"queue": false` (MCP's `phone_task` takes `queue: false` too), and a phone another Mobster process holds.
+
+**Take it back** ends the holder's task so you can use the phone. Mobster asks it to stop after the step it is in: it never stops in the middle of an action. An action whose outcome is unknown stays in the task's steps as unknown, and Mobster never sends it again. The pane says "Stopping after this step" until the task ends. The line then waits for two minutes so you can use the phone, and **Resume queue** lets it go on at once. Take it back is the Mac app's: an agent holding the phone can't take it back from you.
+
+Over the API, `GET /api/devices` and `GET /api/devices/{id}` carry `holder` and `queue`:
+
+```json
+{"holder": {"kind": "mcp", "label": "Claude Code", "runId": "3f9c2a1b7d0e", "since": 1789850000000, "stopping": false},
+ "queue": [{"id": "a1b2c3d4e5f6", "kind": "task", "label": "a task in Mobster", "position": 1, "since": 1789850060000}],
+ "queuePausedUntil": null}
+```
+
+`kind` is `task`, `agent`, `mcp`, `schedule`, `remote` or `manual`; `since` is in epoch milliseconds; `holder` is `null` when nobody holds the phone. `POST /api/devices/{id}/take-back` and `POST /api/devices/{id}/resume-queue` take `{}` and answer `{device}`; `take-back` answers 409 `not_held` when nothing holds the phone, and both answer 403 `app_only` without the Mac app's session when the app runs the server.
+
+## One task on several phones
+
+Check several devices in the task box's device chip, or choose **All ready devices**, and one task runs on each, at once. It is one task: one row in the sidebar ("3 devices"), and in its conversation one card with a tab per device, each with that device's own steps, screen and result. Each device asks for its own approvals; when several wait, Review all shows every draft, and Approve all answers exactly those. When every device is done, the card merges what they found: each line once, with how many devices found it, and each device's own answer under it. The cost shown before it runs is the estimate times the number of devices.
+
+A phone that can't take the task (locked, busy, an app it may not use) doesn't start, says why, and the others go ahead. Nothing runs on it.
+
+Over the API, `POST /api/runs` with `"phones": ["<id>", "<id>", …]` (instead of `device`) starts it: `201` with `{groupId, group, runs, refused}`. `GET /api/groups/{id}` reads it, `POST /api/groups/{id}/stop` stops every phone, and `POST /api/groups/{id}/approvals` with `{"approve": true, "approvals": {"<run id>": "<approval id>"}}` answers the approvals you showed (approving needs the Mac app). In a conversation, a message's `phones` does the same, and MCP's `phone_task` takes `phones` ([Conversations](/conversations)). A task as a profile ([Profiles](/profiles)) runs on that profile's iPhone, so it takes `account` (MCP's `profile`) or `phones`, not both.
+
+## How many phones at once
+
+The ports allow 100 USB iPhones per Mac. What limits it in practice is the Mac and the cable:
+
+- each phone streams its screen while you watch it (about 30 frames a second at the default picture, medium detail) and sends a screenshot for each step a task takes;
+- the Mac relays each stream, keeps a runner per phone, and reads every screen;
+- a USB hub shares one link among the phones on it;
+- your model provider's rate limits apply to every task at once.
+
+Measured on 9 October 2026 on an 18-core Apple silicon Mac, Mobster's own process on the scripted phones (`scripts/measure_phone_load.py --world`) used about 6% of one core and 25 MB of memory per task running at once: 6 tasks used 34% of a core and 281 MB at their peak. That leaves out each phone's relay, runner and video, which `--phone` measures on a real iPhone (read-only; it refuses while a task or a live view uses the phone).
+
+Mobster warns when a task on several phones would make more than 10 run at once. While the Mac's CPU is above 85%, a new task on several phones waits, then starts phone by phone as the CPU drops; a phone still waiting after 5 minutes doesn't start, and says so. Mobster never holds a task on one phone.
+
+## In coding agents
+
+`mobster mcp` has a `list_devices` tool, and every phone tool takes `device`. Called with `device` and no `run_id`, `screen`, `tap`, `type_text`, `swipe`, `alert`, `open_url`, `launch_app` and `home` drive that device directly: Mobster takes the device's lock, and `stop` or 90 idle seconds release it (the next call takes it again). `verify_start` with a USB iPhone's `device` checks an app already installed on it (`bundle_id`), and never clears its data. A Smart check (`verify`) on an iPhone or a WebDriverAgent address declines every send, delete, post and purchase the agent asks to make: nobody is there to approve it, and the phone is someone's own. [MCP server](/mcp-server) has the details.

@@ -1,47 +1,69 @@
-"""Bounded HTTP transport with a shared per-operation deadline. No replay.
-
-``HTTP`` is one persistent ``http.client`` connection with a single in-flight request:
-absolute ``Deadline`` across status/headers/body, response size cap, and no automatic
-retry — an interrupted request's outcome is unknown.
-
-``Deadline`` is a monotonic budget shared by every phase of one operation.
-"""
+"""Bounded HTTP with one deadline per operation and no automatic retry: an interrupted request's outcome is unknown."""
 
 import http.client
 import json
 import math
+import select
 import socket
 import threading
 import time
 from urllib.parse import urlsplit
 
+from . import __version__
 from .errors import MobsterError
 
 
+def user_agent():
+    """The shared client identity used when calling Mobster services."""
+    import platform
+    return f"Mobster/{__version__} (macOS {platform.mac_ver()[0] or 'unknown'})"
+
+
 class TransportError(MobsterError):
+    """``status`` and ``wda_error``: a failed answer's HTTP status and WDA's error name, when there was an answer.
+    Not its message, which can hold app text."""
+
+    def __init__(self, *args, status=None, wda_error=None):
+        super().__init__(*args)
+        self.status, self.wda_error = status, wda_error
+
+
+# The request never left, so its outcome is known: nothing happened.
+class NotSent(TransportError):
     pass
 
 
-class NotSent(TransportError):
-    """The request never left: its outcome is known, nothing happened on the other end."""
-
-
+# WDA checks the session before it runs anything, so nothing ran.
 class StaleSession(NotSent):
-    """WebDriverAgent refused the request because its session is gone (the runner restarted: a cable pulled and
-    plugged back in, the watchdog's restart). WDA checks the session before it runs anything, so nothing ran."""
+    pass
 
 
-def invalid_session(raw):
-    """Whether a WDA error body says "invalid session id" (W3C WebDriver's code for a session that no longer exists)."""
+# Every error name WebDriverAgent v16.12.10 answers with, and the one HTTP status it pairs with each
+# (WebDriverAgentLib/Routing/FBCommandStatus.m). Anything else isn't WDA's name and is never kept: it could be app text.
+WDA_ERRORS = {
+    "unknown error": 500, "unable to capture screen": 500, "no such element": 404, "invalid element state": 400,
+    "invalid argument": 400, "stale element reference": 404, "invalid selector": 400, "no such alert": 404,
+    "unexpected alert open": 500, "unknown method": 405, "session not created": 500, "invalid coordinates": 400,
+    "unsupported operation": 500, "unknown command": 404, "timeout": 408, "element not visible": 400,
+    "invalid session id": 404,
+}
+
+
+def error_name(value):
+    """WDA's error name from an answer's ``value``, or None: only one of WDA_ERRORS' names, exactly."""
+    name = value.get("error") if isinstance(value, dict) else None
+    return name if isinstance(name, str) and name in WDA_ERRORS else None
+
+
+def answer_error(raw):
+    """Strictly decoded: a body with two ``error`` fields, say, names nothing."""
     try:
-        value = json.loads(raw).get("value")
+        return error_name(decode_json(raw).get("value"))
     except (ValueError, AttributeError, UnicodeDecodeError, RecursionError):
-        return False
-    return isinstance(value, dict) and value.get("error") == "invalid session id"
+        return None
 
 
 class Deadline:
-    """A single monotonic budget shared by every phase of one operation."""
     def __init__(self, timeout):
         if type(timeout) not in (int, float) or not math.isfinite(timeout) or timeout <= 0:
             raise ValueError("Timeout must be a finite positive number")
@@ -55,8 +77,7 @@ class Deadline:
 
 
 def _unique_object(pairs):
-    # dict(pairs) in C, then a length check, instead of a per-pair Python loop:
-    # same result and error, 4-6% faster on a 66 KB WDA tree (~400 us), 2026-09-24.
+    # dict(pairs) then a length check: 4-6% faster than a Python loop on a 66 KB WDA tree (~400 us), 2026-09-24.
     result = dict(pairs)
     if len(result) != len(pairs):
         raise ValueError("Duplicate JSON field")
@@ -75,7 +96,6 @@ def _finite_float(value):
 
 
 def decode_json(raw):
-    """Strict JSON: duplicate keys, NaN/Infinity and overflowing floats are errors."""
     return json.loads(raw, parse_constant=_invalid_constant, parse_float=_finite_float,
                       object_pairs_hook=_unique_object)
 
@@ -106,10 +126,10 @@ class HTTP:
             headers["Authorization"] = "Bearer " + self.key
         guard, finished = threading.Lock(), threading.Event()
         active_socket = {"value": None}
+        answered_in_full = False
 
         def expire():
-            # Socket timeouts alone restart on each received chunk. Interrupt a slow-drip
-            # status/header/body at the absolute deadline instead of extending the run.
+            # Socket timeouts restart on each chunk: cut a slow drip at the absolute deadline.
             with guard:
                 if finished.is_set():
                     return
@@ -125,6 +145,10 @@ class HTTP:
         timer.daemon = True
         timer.start()
         try:
+            if self.connection.sock is not None and peer_closed(self.connection.sock):
+                # A kept connection the server has closed since, as WDA's failClient does after a header-level 400
+                # with no Connection header. Nothing of this request is sent yet, so a new connection resends nothing.
+                self.connection.close()
             self.connection.timeout = deadline.remaining()
             if self.connection.sock:
                 self.connection.sock.settimeout(deadline.remaining())
@@ -135,24 +159,29 @@ class HTTP:
             raw = response.read(16_000_001)
             deadline.remaining()
             if len(raw) > 16_000_000:
-                raise TransportError("HTTP response exceeds limit")
+                raise TransportError("HTTP response exceeds limit; outcome unknown; not retried")
             if isinstance(getattr(response, "length", None), int) and response.length != 0:
                 raise TransportError("Incomplete HTTP response; outcome unknown; not retried")
             if response.status >= 300:
-                if response.status == 404 and invalid_session(raw):
+                # Read to its end, so the connection is ready for the next request. WebDriverAgent keeps a descriptor
+                # per connection until it restarts: routine 404s would each cost one.
+                answered_in_full = response.isclosed()
+                name = answer_error(raw)
+                if response.status == 404 and name == "invalid session id":
                     raise StaleSession("HTTP 404 StaleSession: invalid session id; nothing sent; not retried")
-                raise TransportError(f"HTTP {response.status}; request not retried")
+                raise TransportError(f"HTTP {response.status}; request not retried",
+                                     status=response.status, wda_error=name)
             result = decode_json(raw)
             deadline.remaining()
             if not isinstance(result, dict):
-                raise TransportError("HTTP response must be an object")
+                raise TransportError("HTTP response must be an object; outcome unknown; not retried")
             return result
         except TransportError:
-            self.connection.close()
+            if not answered_in_full:
+                self.connection.close()
             raise
         except (OSError, http.client.HTTPException, ValueError, RecursionError) as exc:
             self.connection.close()
-            # A refused connection never carried the request, so its outcome is known: nothing happened.
             if isinstance(exc, ConnectionRefusedError):
                 raise NotSent(f"HTTP {type(exc).__name__}; nothing sent; not retried") from None
             raise TransportError(f"HTTP {type(exc).__name__}; request outcome unknown; not retried") from None
@@ -166,9 +195,22 @@ class HTTP:
         self.connection.close()
 
 
+def peer_closed(sock):
+    """Whether an idle kept socket has anything to read, which on an idle HTTP connection means the server closed it
+    (or sent something unasked). Either way it can't carry the next request. A socket that can't be asked is closed."""
+    try:
+        if getattr(sock, "pending", lambda: 0)():
+            return True
+        # poll, not select: select refuses a descriptor numbered 1024 or more, which would read every socket as closed
+        # and bring back the per-request connections #2058 removed.
+        probe = select.poll()
+        probe.register(sock, select.POLLIN)
+        return bool(probe.poll(0))
+    except (OSError, ValueError):
+        return True
+
+
 def request_once(base_url, method, path, body=None, timeout=20):
-    """One request on a connection of its own, under the absolute deadline of ``timeout``; no retry. For the places
-    that ask a WebDriverAgent or its relay one thing (a status read, a session) and need no kept connection."""
     client = HTTP(base_url)
     try:
         return client.request(method, path, body, timeout=timeout)
@@ -176,22 +218,16 @@ def request_once(base_url, method, path, body=None, timeout=20):
         client.close()
 
 
-# The reads a helper is asked over and over (its /status, the probe's /wda/locked) go on one kept connection per address.
-# A connection of their own each time, about one a second for each Mobster, ran WebDriverAgent out of file descriptors in
-# about 14 minutes on Michelle's iPhone 16 (17 Oct: about 2,400 connections a runner, each ending "reset by peer").
+# A new connection per repeated read ran WebDriverAgent out of file descriptors in about 14 minutes (17 Oct).
 KEPT_MAX = 16
-# A kept connection the helper closed while idle fails like this on its next request; that read is asked again once.
 CLOSED_WHILE_KEPT = ("RemoteDisconnected", "BrokenPipeError", "ConnectionResetError", "ConnectionAbortedError",
                      "BadStatusLine")
-_kept = {}                        # base url -> (HTTP, lock), oldest first
+_kept = {}  # base url -> (HTTP, lock), oldest first
 _kept_lock = threading.Lock()
 
 
 def read_kept(base_url, path, timeout=2.0):
-    """GET ``path`` on the kept connection to ``base_url``, under the absolute deadline of ``timeout``. For reads only:
-    nothing that can act goes here. A kept connection the helper closed meanwhile is opened again and the read asked once
-    more (a read changes nothing); any other failure raises as request_once's does. A caller that finds the connection
-    busy, or every pool entry in use, asks on a connection of its own instead. Active reads are never evicted."""
+    # Reads only: a kept connection the helper closed while idle is asked once more, which is safe for a GET.
     base = base_url.rstrip("/")
     deadline = Deadline(timeout)
     with _kept_lock:
@@ -228,7 +264,6 @@ def read_kept(base_url, path, timeout=2.0):
 
 
 def wda_screenshot(wda_url, timeout=2):
-    """WDA's current screen as a data URL (sessionless GET /screenshot), or None."""
     try:
         value = request_once(wda_url, "GET", "/screenshot", timeout=timeout).get("value")
         return "data:image/png;base64," + value if isinstance(value, str) and value else None

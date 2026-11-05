@@ -1,0 +1,6 @@
+appId: com.example.shop
+name: Price is positive
+---
+- launchApp
+- tapOn: Cart
+- assertTrue: ${maestro.copiedText > 0}

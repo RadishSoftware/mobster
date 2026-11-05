@@ -1,0 +1,120 @@
+{
+"note": "Recorded on the test device (iPhone 15 Pro, iOS 26.0.1), 11 and 12 Oct 2026: the rows the agent saw, scrubbed (album names renamed; the photos map's places left out). The same screen read by Vision OCR (iPhone Mirroring's reading).",
+"rows": [
+{
+"text": "11:24 6",
+"confidence": 1,
+"rect": [
+0.0983,
+0.025,
+0.1695,
+0.0203
+]
+},
+{
+"text": "Library",
+"confidence": 1,
+"rect": [
+0.0395,
+0.0804,
+0.314,
+0.0358
+]
+},
+{
+"text": "1,878 Items",
+"confidence": 1,
+"rect": [
+0.0372,
+0.1234,
+0.2408,
+0.0207
+]
+},
+{
+"text": "•l/9",
+"confidence": 0.3,
+"rect": [
+0.7085,
+0.025,
+0.1186,
+0.0219
+]
+},
+{
+"text": "993-",
+"confidence": 1,
+"rect": [
+0.8475,
+0.0266,
+0.0712,
+0.0172
+]
+},
+{
+"text": "=",
+"confidence": 1,
+"rect": [
+0.6407,
+0.0814,
+0.0814,
+0.0297
+]
+},
+{
+"text": "Select",
+"confidence": 1,
+"rect": [
+0.7964,
+0.0873,
+0.1428,
+0.0194
+]
+},
+{
+"text": "0:01",
+"confidence": 1,
+"rect": [
+0.1119,
+0.4085,
+0.0746,
+0.0125
+]
+},
+{
+"text": "0:08",
+"confidence": 1,
+"rect": [
+0.105,
+0.6853,
+0.0816,
+0.0144
+]
+},
+{
+"text": "Library",
+"confidence": 1,
+"rect": [
+0.1356,
+0.9499,
+0.1051,
+0.0141
+]
+},
+{
+"text": "Collections",
+"confidence": 1,
+"rect": [
+0.3458,
+0.9499,
+0.1492,
+0.011
+]
+}
+],
+"hash": "library",
+"window": {
+"w": 589,
+"h": 1278
+}
+}

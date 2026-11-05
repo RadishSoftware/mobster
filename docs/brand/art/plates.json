@@ -1,0 +1,1012 @@
+{
+  "about": "Mobster's generated plates: the glaze and glass photographs every cover and card ground is made from (docs/brand/art/README.md, Plates). Each plate's master and the exact prompt that made it live in the brand team's folder (~/mobster-work), at `master` and `prompt`; `native` is the image tool's own size, which the 3840 x 2160 master enlarges once with Lanczos. A plate joins only after it passes review at 100% and 400% (no mush, seams or marks) and the neutral rule. `tone` (saturation, dim) quiets a plate whose colour is too loud beside Night and violet. `family` is the plate's shape (wet pools, panes, slabs, block edges and so on): two neighbours in an index never share one. site/content/covers.json names a plate by its id.",
+  "plates": {
+    "glass-amber-cast": {
+      "category": "events",
+      "material": "glass",
+      "family": "cast",
+      "made": "2026-10-17",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glass-amber-cast/prompt.md",
+      "master": "art/covers/plates/glass-amber-cast/plate-3840-lanczos.png",
+      "tone": {
+        "saturation": 0.85,
+        "dim": 0.92
+      }
+    },
+    "glass-amber-panes": {
+      "category": "events",
+      "material": "glass",
+      "family": "panes",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glass-amber-panes/prompt.md",
+      "master": "art/covers/plates/glass-amber-panes/plate-3840-lanczos.png",
+      "note": "cleared by the art lead on 18 Oct with one bright speck at a joint, left as it is; keep it outside a card's type"
+    },
+    "glass-cobalt-bevels": {
+      "category": "developers",
+      "material": "glass",
+      "family": "slabs",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glass-cobalt-bevels/prompt.md",
+      "master": "art/covers/plates/glass-cobalt-bevels/plate-3840-lanczos.png"
+    },
+    "glass-fluted-violet": {
+      "category": "phone-work",
+      "material": "glass",
+      "family": "reeded",
+      "made": "2026-10-17",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glass-fluted-violet/prompt.md",
+      "master": "art/covers/plates/glass-fluted-violet/plate-3840-lanczos.png"
+    },
+    "glass-frosted-blue": {
+      "category": "developers",
+      "material": "glass",
+      "family": "slabs",
+      "made": "2026-10-17",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glass-frosted-blue/prompt.md",
+      "master": "art/covers/plates/glass-frosted-blue/plate-3840-lanczos.png"
+    },
+    "glass-graphite-block": {
+      "category": "developers",
+      "material": "glass",
+      "family": "block",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glass-graphite-block/prompt.md",
+      "master": "art/covers/plates/glass-graphite-block/plate-3840-lanczos.png"
+    },
+    "glass-green-bevels": {
+      "category": "releases",
+      "material": "glass",
+      "family": "slabs",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glass-green-bevels/prompt.md",
+      "master": "art/covers/plates/glass-green-bevels/plate-3840-lanczos.png"
+    },
+    "glass-ice-panes": {
+      "category": "developers",
+      "material": "glass",
+      "family": "panes",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glass-ice-panes/prompt.md",
+      "master": "art/covers/plates/glass-ice-panes/plate-3840-lanczos.png"
+    },
+    "glass-indigo-bevels": {
+      "category": "phone-work",
+      "material": "glass",
+      "family": "slabs",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glass-indigo-bevels/prompt.md",
+      "master": "art/covers/plates/glass-indigo-bevels/plate-3840-lanczos.png"
+    },
+    "glass-jade-slabs": {
+      "category": "releases",
+      "material": "glass",
+      "family": "slabs",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glass-jade-slabs/prompt.md",
+      "master": "art/covers/plates/glass-jade-slabs/plate-3840-lanczos.png"
+    },
+    "glass-layered-blue": {
+      "category": "developers",
+      "material": "glass",
+      "family": "panes",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glass-layered-blue/prompt.md",
+      "master": "art/covers/plates/glass-layered-blue/plate-3840-lanczos.png"
+    },
+    "glass-layered-rose": {
+      "category": "profiles",
+      "material": "glass",
+      "family": "panes",
+      "made": "2026-10-17",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glass-layered-rose/prompt.md",
+      "master": "art/covers/plates/glass-layered-rose/plate-3840-lanczos.png"
+    },
+    "glass-reeded-blue": {
+      "category": "developers",
+      "material": "glass",
+      "family": "reeded",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glass-reeded-blue/prompt.md",
+      "master": "art/covers/plates/glass-reeded-blue/plate-3840-lanczos.png"
+    },
+    "glass-reeded-smoke": {
+      "category": "developers",
+      "material": "glass",
+      "family": "reeded",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glass-reeded-smoke/prompt.md",
+      "master": "art/covers/plates/glass-reeded-smoke/plate-3840-lanczos.png"
+    },
+    "glass-ripple-green": {
+      "category": "releases",
+      "material": "glass",
+      "family": "cast",
+      "made": "2026-10-17",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glass-ripple-green/prompt.md",
+      "master": "art/covers/plates/glass-ripple-green/plate-3840-lanczos.png"
+    },
+    "glass-rose-block-edge": {
+      "category": "profiles",
+      "material": "glass",
+      "family": "block",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glass-rose-block-edge/prompt.md",
+      "master": "art/covers/plates/glass-rose-block-edge/plate-3840-lanczos.png"
+    },
+    "glass-rose-slabs": {
+      "category": "profiles",
+      "material": "glass",
+      "family": "slabs",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        940
+      ],
+      "prompt": "art/covers/plates/glass-rose-slabs/prompt.md",
+      "master": "art/covers/plates/glass-rose-slabs/plate-3840-lanczos.png"
+    },
+    "glass-smoked-blue-panes": {
+      "category": "developers",
+      "material": "glass",
+      "family": "panes",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glass-smoked-blue-panes/prompt.md",
+      "master": "art/covers/plates/glass-smoked-blue-panes/plate-3840-lanczos.png"
+    },
+    "glass-smoked-night": {
+      "category": "developers",
+      "material": "glass",
+      "family": "panes",
+      "made": "2026-10-17",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glass-smoked-night/prompt.md",
+      "master": "art/covers/plates/glass-smoked-night/plate-3840-lanczos.png"
+    },
+    "glass-steel-corner": {
+      "category": "developers",
+      "material": "glass",
+      "family": "corner",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glass-steel-corner/prompt.md",
+      "master": "art/covers/plates/glass-steel-corner/plate-3840-lanczos.png"
+    },
+    "glass-steel-panes": {
+      "category": "developers",
+      "material": "glass",
+      "family": "panes",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glass-steel-panes/prompt.md",
+      "master": "art/covers/plates/glass-steel-panes/plate-3840-lanczos.png"
+    },
+    "glass-teal-panes": {
+      "category": "releases",
+      "material": "glass",
+      "family": "panes",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glass-teal-panes/prompt.md",
+      "master": "art/covers/plates/glass-teal-panes/plate-3840-lanczos.png"
+    },
+    "glass-terracotta-panes": {
+      "category": "connectors",
+      "material": "glass",
+      "family": "panes",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glass-terracotta-panes/prompt.md",
+      "master": "art/covers/plates/glass-terracotta-panes/plate-3840-lanczos.png"
+    },
+    "glass-violet-block-edge": {
+      "category": "phone-work",
+      "material": "glass",
+      "family": "block",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glass-violet-block-edge/prompt.md",
+      "master": "art/covers/plates/glass-violet-block-edge/plate-3840-lanczos.png"
+    },
+    "glass-violet-slabs": {
+      "category": "phone-work",
+      "material": "glass",
+      "family": "slabs",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glass-violet-slabs/prompt.md",
+      "master": "art/covers/plates/glass-violet-slabs/plate-3840-lanczos.png"
+    },
+    "glass-wine-panes": {
+      "category": "profiles",
+      "material": "glass",
+      "family": "panes",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glass-wine-panes/prompt.md",
+      "master": "art/covers/plates/glass-wine-panes/plate-3840-lanczos.png"
+    },
+    "glaze-blue-band": {
+      "category": "developers",
+      "material": "glaze",
+      "family": "band",
+      "made": "2026-10-17",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glaze-blue-band/prompt.md",
+      "master": "art/covers/plates/glaze-blue-band/plate-3840-lanczos.png"
+    },
+    "glaze-copper-crawl": {
+      "category": "connectors",
+      "material": "glaze",
+      "family": "crawl",
+      "made": "2026-10-17",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glaze-copper-crawl/prompt.md",
+      "master": "art/covers/plates/glaze-copper-crawl/plate-3840-lanczos.png",
+      "tone": {
+        "saturation": 0.7,
+        "dim": 0.9
+      }
+    },
+    "glaze-steel-gloss": {
+      "category": "developers",
+      "material": "glaze",
+      "family": "gloss",
+      "made": "2026-10-17",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glaze-steel-gloss/prompt.md",
+      "master": "art/covers/plates/glaze-steel-gloss/plate-3840-lanczos.png"
+    },
+    "glaze-violet-pool": {
+      "category": "phone-work",
+      "material": "glaze",
+      "family": "pool",
+      "made": "2026-10-17",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glaze-violet-pool/prompt.md",
+      "master": "art/covers/plates/glaze-violet-pool/plate-3840-lanczos.png"
+    },
+    "glaze-wet-cobalt-ribbons": {
+      "category": "developers",
+      "material": "glaze",
+      "family": "wet",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glaze-wet-cobalt-ribbons/prompt.md",
+      "master": "art/covers/plates/glaze-wet-cobalt-ribbons/plate-3840-lanczos.png"
+    },
+    "glaze-wet-indigo": {
+      "category": "developers",
+      "material": "glaze",
+      "family": "wet",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glaze-wet-indigo/prompt.md",
+      "master": "art/covers/plates/glaze-wet-indigo/plate-3840-lanczos.png"
+    },
+    "glaze-wet-jade-pool": {
+      "category": "releases",
+      "material": "glaze",
+      "family": "wet",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glaze-wet-jade-pool/prompt.md",
+      "master": "art/covers/plates/glaze-wet-jade-pool/plate-3840-lanczos.png"
+    },
+    "glaze-wet-lavender-pool": {
+      "category": "phone-work",
+      "material": "glaze",
+      "family": "wet",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glaze-wet-lavender-pool/prompt.md",
+      "master": "art/covers/plates/glaze-wet-lavender-pool/plate-3840-lanczos.png"
+    },
+    "glaze-wet-rose-pool": {
+      "category": "profiles",
+      "material": "glaze",
+      "family": "wet",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glaze-wet-rose-pool/prompt.md",
+      "master": "art/covers/plates/glaze-wet-rose-pool/plate-3840-lanczos.png"
+    },
+    "glaze-wet-sky-pool": {
+      "category": "developers",
+      "material": "glaze",
+      "family": "wet",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glaze-wet-sky-pool/prompt.md",
+      "master": "art/covers/plates/glaze-wet-sky-pool/plate-3840-lanczos.png"
+    },
+    "glaze-wet-teal": {
+      "category": "releases",
+      "material": "glaze",
+      "family": "wet",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glaze-wet-teal/prompt.md",
+      "master": "art/covers/plates/glaze-wet-teal/plate-3840-lanczos.png"
+    },
+    "glaze-wet-violet": {
+      "category": "phone-work",
+      "material": "glaze",
+      "family": "wet",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glaze-wet-violet/prompt.md",
+      "master": "art/covers/plates/glaze-wet-violet/plate-3840-lanczos.png"
+    },
+    "glaze-wet-violet-diagonal": {
+      "category": "phone-work",
+      "material": "glaze",
+      "family": "wet",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glaze-wet-violet-diagonal/prompt.md",
+      "master": "art/covers/plates/glaze-wet-violet-diagonal/plate-3840-lanczos.png"
+    },
+    "glaze-wet-wine-corner": {
+      "category": "profiles",
+      "material": "glaze",
+      "family": "wet",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glaze-wet-wine-corner/prompt.md",
+      "master": "art/covers/plates/glaze-wet-wine-corner/plate-3840-lanczos.png"
+    },
+    "pour-connectors": {
+      "category": "connectors",
+      "material": "glaze",
+      "family": "pour",
+      "made": "2026-10-16",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "brand/art/generated/hires-connectors/prompt.md",
+      "master": "brand/art/generated/hires-connectors/plate-3840-lanczos.png",
+      "note": "the approved connectors glaze plate the pour variant was approved on (16 Oct 2026)",
+      "tone": {
+        "saturation": 0.75
+      }
+    },
+    "glass-rose-corner": {
+      "category": "profiles",
+      "material": "glass",
+      "family": "corner",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glass-rose-corner/prompt.md",
+      "master": "art/covers/plates/glass-rose-corner/plate-3840-lanczos.png"
+    },
+    "glass-jade-corner": {
+      "category": "releases",
+      "material": "glass",
+      "family": "corner",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glass-jade-corner/prompt.md",
+      "master": "art/covers/plates/glass-jade-corner/plate-3840-lanczos.png"
+    },
+    "glass-nightblue-panes": {
+      "category": "developers",
+      "material": "glass",
+      "family": "panes",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glass-nightblue-panes/prompt.md",
+      "master": "art/covers/plates/glass-nightblue-panes/plate-3840-lanczos.png"
+    },
+    "glass-violet-corner": {
+      "category": "phone-work",
+      "material": "glass",
+      "family": "corner",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glass-violet-corner/prompt.md",
+      "master": "art/covers/plates/glass-violet-corner/plate-3840-lanczos.png"
+    },
+    "glass-blue-corner": {
+      "category": "developers",
+      "material": "glass",
+      "family": "corner",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glass-blue-corner/prompt.md",
+      "master": "art/covers/plates/glass-blue-corner/plate-3840-lanczos.png"
+    },
+    "glass-graphite-corner": {
+      "category": "developers",
+      "material": "glass",
+      "family": "corner",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glass-graphite-corner/prompt.md",
+      "master": "art/covers/plates/glass-graphite-corner/plate-3840-lanczos.png"
+    },
+    "glass-teal-corner": {
+      "category": "releases",
+      "material": "glass",
+      "family": "corner",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glass-teal-corner/prompt.md",
+      "master": "art/covers/plates/glass-teal-corner/plate-3840-lanczos.png"
+    },
+    "glass-terracotta-corner": {
+      "category": "connectors",
+      "material": "glass",
+      "family": "corner",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glass-terracotta-corner/prompt.md",
+      "master": "art/covers/plates/glass-terracotta-corner/plate-3840-lanczos.png"
+    },
+    "glass-amber-corner": {
+      "category": "events",
+      "material": "glass",
+      "family": "corner",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glass-amber-corner/prompt.md",
+      "master": "art/covers/plates/glass-amber-corner/plate-3840-lanczos.png"
+    },
+    "glaze-wet-jade-corner": {
+      "category": "releases",
+      "material": "glaze",
+      "family": "wet",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glaze-wet-jade-corner/prompt.md",
+      "master": "art/covers/plates/glaze-wet-jade-corner/plate-3840-lanczos.png"
+    },
+    "glaze-wet-amber-corner": {
+      "category": "events",
+      "material": "glaze",
+      "family": "wet",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glaze-wet-amber-corner/prompt.md",
+      "master": "art/covers/plates/glaze-wet-amber-corner/plate-3840-lanczos.png"
+    },
+    "glaze-wet-cobalt-corner": {
+      "category": "developers",
+      "material": "glaze",
+      "family": "wet",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glaze-wet-cobalt-corner/prompt.md",
+      "master": "art/covers/plates/glaze-wet-cobalt-corner/plate-3840-lanczos.png"
+    },
+    "glaze-wet-indigo-corner": {
+      "category": "phone-work",
+      "material": "glaze",
+      "family": "wet",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glaze-wet-indigo-corner/prompt.md",
+      "master": "art/covers/plates/glaze-wet-indigo-corner/plate-3840-lanczos.png"
+    },
+    "glaze-wet-slate-corner": {
+      "category": "developers",
+      "material": "glaze",
+      "family": "wet",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glaze-wet-slate-corner/prompt.md",
+      "master": "art/covers/plates/glaze-wet-slate-corner/plate-3840-lanczos.png"
+    },
+    "smooth-phone-work": {
+      "category": "phone-work",
+      "material": "glaze",
+      "family": "wet",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "brand/art/generated/smooth-phone-work/prompt.md",
+      "master": "brand/art/generated/smooth-phone-work/plate-3840-lanczos.png",
+      "note": "the phone-work category plate every variant's ground uses (docs/brand/art/variants.json), smooth wet glaze, from the art lead's re-plate of 18 Oct 2026"
+    },
+    "smooth-developers": {
+      "category": "developers",
+      "material": "glaze",
+      "family": "wet",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "brand/art/generated/smooth-developers/prompt.md",
+      "master": "brand/art/generated/smooth-developers/plate-3840-lanczos.png",
+      "note": "the developers category plate every variant's ground uses (docs/brand/art/variants.json), smooth wet glaze, from the art lead's re-plate of 18 Oct 2026"
+    },
+    "smooth-connectors": {
+      "category": "connectors",
+      "material": "glaze",
+      "family": "wet",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "brand/art/generated/smooth-connectors/prompt.md",
+      "master": "brand/art/generated/smooth-connectors/plate-3840-lanczos.png",
+      "note": "the connectors category plate every variant's ground uses (docs/brand/art/variants.json), smooth wet glaze, from the art lead's re-plate of 18 Oct 2026"
+    },
+    "smooth-profiles": {
+      "category": "profiles",
+      "material": "glaze",
+      "family": "wet",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "brand/art/generated/smooth-profiles/prompt.md",
+      "master": "brand/art/generated/smooth-profiles/plate-3840-lanczos.png",
+      "note": "the profiles category plate every variant's ground uses (docs/brand/art/variants.json), smooth wet glaze, from the art lead's re-plate of 18 Oct 2026"
+    },
+    "smooth-events": {
+      "category": "events",
+      "material": "glaze",
+      "family": "wet",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "brand/art/generated/smooth-events/prompt.md",
+      "master": "brand/art/generated/smooth-events/plate-3840-lanczos.png",
+      "note": "the events category plate every variant's ground uses (docs/brand/art/variants.json), smooth wet glaze, from the art lead's re-plate of 18 Oct 2026"
+    },
+    "smooth-releases": {
+      "category": "releases",
+      "material": "glaze",
+      "family": "wet",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "brand/art/generated/smooth-releases/prompt.md",
+      "master": "brand/art/generated/smooth-releases/plate-3840-lanczos.png",
+      "note": "the releases category plate every variant's ground uses (docs/brand/art/variants.json), smooth wet glaze, from the art lead's re-plate of 18 Oct 2026"
+    },
+    "glass-violet-disc": {
+      "category": "phone-work",
+      "material": "glass",
+      "family": "disc",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glass-violet-disc/prompt.md",
+      "master": "art/covers/plates/glass-violet-disc/plate-3840-lanczos.png"
+    },
+    "glass-cobalt-rods": {
+      "category": "developers",
+      "material": "glass",
+      "family": "rods",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glass-cobalt-rods/prompt.md",
+      "master": "art/covers/plates/glass-cobalt-rods/plate-3840-lanczos.png"
+    },
+    "glaze-wet-orange-band": {
+      "category": "connectors",
+      "material": "glaze",
+      "family": "wet",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glaze-wet-orange-band/prompt.md",
+      "master": "art/covers/plates/glaze-wet-orange-band/plate-3840-lanczos.png"
+    },
+    "glaze-wet-jade-well": {
+      "category": "releases",
+      "material": "glaze",
+      "family": "wet",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glaze-wet-jade-well/prompt.md",
+      "master": "art/covers/plates/glaze-wet-jade-well/plate-3840-lanczos.png"
+    },
+    "glass-graphite-edge": {
+      "category": "developers",
+      "material": "glass",
+      "family": "panes",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        940
+      ],
+      "prompt": "art/covers/plates/glass-graphite-edge/prompt.md",
+      "master": "art/covers/plates/glass-graphite-edge/plate-3840-lanczos.png"
+    },
+    "glaze-wet-honey-tides": {
+      "category": "events",
+      "material": "glaze",
+      "family": "wet",
+      "made": "2026-10-18",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glaze-wet-honey-tides/prompt.md",
+      "master": "art/covers/plates/glaze-wet-honey-tides/plate-3840-lanczos.png"
+    },
+    "glass-slate-fanned-panes": {
+      "category": "developers",
+      "material": "glass",
+      "family": "fanned",
+      "made": "2026-10-19",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        940
+      ],
+      "prompt": "art/covers/plates/glass-slate-fanned-panes/prompt.md",
+      "master": "art/covers/plates/glass-slate-fanned-panes/plate-3840-lanczos.png"
+    },
+    "glass-violet-prism": {
+      "category": "phone-work",
+      "material": "glass",
+      "family": "prism",
+      "made": "2026-10-19",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glass-violet-prism/prompt.md",
+      "master": "art/covers/plates/glass-violet-prism/plate-3840-lanczos.png"
+    },
+    "glaze-wet-teal-stripe": {
+      "category": "releases",
+      "material": "glaze",
+      "family": "stripe",
+      "made": "2026-10-19",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glaze-wet-teal-stripe/prompt.md",
+      "master": "art/covers/plates/glaze-wet-teal-stripe/plate-3840-lanczos.png"
+    },
+    "glass-jade-cylinder": {
+      "category": "releases",
+      "material": "glass",
+      "family": "cylinder",
+      "made": "2026-10-19",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glass-jade-cylinder/prompt.md",
+      "master": "art/covers/plates/glass-jade-cylinder/plate-3840-lanczos.png"
+    },
+    "glass-rose-bent-sheet": {
+      "category": "profiles",
+      "material": "glass",
+      "family": "sheet",
+      "made": "2026-10-19",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glass-rose-bent-sheet/prompt.md",
+      "master": "art/covers/plates/glass-rose-bent-sheet/plate-3840-lanczos.png"
+    },
+    "glass-terracotta-s-bevel": {
+      "category": "connectors",
+      "material": "glass",
+      "family": "bevel",
+      "made": "2026-10-19",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glass-terracotta-s-bevel/prompt.md",
+      "master": "art/covers/plates/glass-terracotta-s-bevel/plate-3840-lanczos.png"
+    },
+    "glass-cobalt-scoop": {
+      "category": "developers",
+      "material": "glass",
+      "family": "scoop",
+      "made": "2026-10-19",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glass-cobalt-scoop/prompt.md",
+      "master": "art/covers/plates/glass-cobalt-scoop/plate-3840-lanczos.png"
+    },
+    "glass-amber-ring": {
+      "category": "events",
+      "material": "glass",
+      "family": "ring",
+      "made": "2026-10-19",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glass-amber-ring/prompt.md",
+      "master": "art/covers/plates/glass-amber-ring/plate-3840-lanczos.png"
+    },
+    "glass-jade-standing-sheets": {
+      "category": "releases",
+      "material": "glass",
+      "family": "standing",
+      "made": "2026-10-19",
+      "generator": "local Codex CLI, built-in image tool",
+      "native": [
+        1672,
+        941
+      ],
+      "prompt": "art/covers/plates/glass-jade-standing-sheets/prompt.md",
+      "master": "art/covers/plates/glass-jade-standing-sheets/plate-3840-lanczos.png"
+    }
+  }
+}

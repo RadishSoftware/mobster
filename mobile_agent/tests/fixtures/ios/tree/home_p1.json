@@ -1,0 +1,401 @@
+{
+"name": "home_p1",
+"bundle": "com.apple.springboard",
+"keyboard": "",
+"w": 402.0,
+"h": 874.0,
+"elements": [
+{
+"role": "Icon",
+"label": "Maps",
+"value": "Widget",
+"rect": [
+0.0597,
+0.1007,
+0.4179,
+0.2197
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Image",
+"label": "Map",
+"value": "",
+"rect": [
+0.0,
+0.0,
+0.408,
+0.1876
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "Calendar",
+"value": "Widget, Stack",
+"rect": [
+0.5174,
+0.1007,
+0.4179,
+0.2197
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "StaticText",
+"label": "WEDNESDAY",
+"value": "WEDNESDAY",
+"rect": [
+0.0398,
+0.0183,
+0.1791,
+0.0183
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "StaticText",
+"label": "14",
+"value": "14",
+"rect": [
+0.0398,
+0.032,
+0.0995,
+0.0503
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "StaticText",
+"label": "No Events Today",
+"value": "No Events Today",
+"rect": [
+0.0398,
+0.1098,
+0.2886,
+0.0229
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "Calendar",
+"value": "Wednesday, October 14",
+"rect": [
+0.0597,
+0.3295,
+0.1791,
+0.1053
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "Photos",
+"value": "",
+"rect": [
+0.2985,
+0.3295,
+0.1692,
+0.1053
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "Reminders",
+"value": "",
+"rect": [
+0.5174,
+0.3295,
+0.199,
+0.1053
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "News",
+"value": "",
+"rect": [
+0.7562,
+0.3295,
+0.1791,
+0.1053
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "Maps",
+"value": "",
+"rect": [
+0.0697,
+0.4439,
+0.1692,
+0.1053
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "Health",
+"value": "",
+"rect": [
+0.2985,
+0.4439,
+0.1692,
+0.1053
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "Wallet",
+"value": "",
+"rect": [
+0.5274,
+0.4439,
+0.1692,
+0.1053
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "Settings",
+"value": "",
+"rect": [
+0.7562,
+0.4439,
+0.1791,
+0.1053
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "CloudSlides",
+"value": "",
+"rect": [
+0.0398,
+0.5584,
+0.2289,
+0.1053
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "TrailBlaze",
+"value": "",
+"rect": [
+0.2886,
+0.5584,
+0.1891,
+0.1053
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "Bluesky",
+"value": "",
+"rect": [
+0.5274,
+0.5584,
+0.1791,
+0.1053
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "FreshCart",
+"value": "",
+"rect": [
+0.7463,
+0.5584,
+0.199,
+0.1053
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "MegaMart",
+"value": "",
+"rect": [
+0.0597,
+0.6728,
+0.199,
+0.1053
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "LockedIn",
+"value": "",
+"rect": [
+0.2985,
+0.6728,
+0.1791,
+0.1053
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "Weather",
+"value": "",
+"rect": [
+0.5274,
+0.6728,
+0.1692,
+0.1053
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "StayFinder",
+"value": "",
+"rect": [
+0.7363,
+0.6728,
+0.2189,
+0.1053
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "PageIndicator",
+"label": "Page control",
+"value": "Page 1 of 3",
+"rect": [
+0.398,
+0.8055,
+0.199,
+0.0412
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Image",
+"label": "Search",
+"value": "",
+"rect": [
+0.4279,
+0.8146,
+0.0299,
+0.0137
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "StaticText",
+"label": "Search",
+"value": "Search",
+"rect": [
+0.4677,
+0.8146,
+0.0995,
+0.0183
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "Safari",
+"value": "",
+"rect": [
+0.3085,
+0.8833,
+0.1692,
+0.0778
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "Messages",
+"value": "",
+"rect": [
+0.5274,
+0.8833,
+0.1692,
+0.0778
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "StaticText",
+"label": "2:58\u202fPM",
+"value": "2:58\u202fPM",
+"rect": [
+0.1393,
+0.0275,
+0.0896,
+0.0229
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+}
+]
+}

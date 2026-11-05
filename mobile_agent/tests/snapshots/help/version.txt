@@ -1,0 +1,7 @@
+usage: mobster version [-h] [--json]
+
+Print the version of Mobster.
+
+options:
+  -h, --help  show this help and exit
+  --json      print the version, Python and platform as JSON

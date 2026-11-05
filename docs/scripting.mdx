@@ -1,0 +1,252 @@
+---
+title: "Scripts and the API"
+description: "Run tasks from shell scripts with mobster run, or from your own code with the local HTTP API."
+icon: "code"
+---
+
+There are two ways to run Mobster from code. `mobster run` runs one task per invocation and suits shell scripts and CI. The HTTP API from `mobster serve` suits long-running programs: it lets your code answer approvals and streams events. Both run the same agent, and both save each task in a private journal before it acts.
+
+## `mobster run` in scripts
+
+`mobster run --execute` runs one task on Mobster's agent, on your Claude or OpenAI key. It asks in the terminal before it sends, buys, posts or deletes, once per task before it opens apps you haven't allowed, and before it types a one-time code. The app card takes `y` (Allow, for this task), `a` (Always allow) or `n` (Not now). With no terminal to ask in (a script, CI), the answer is no: it doesn't take that action, open the app or type the code. Apps you allowed in Mobster for Mac count. For a script, list apps in `MOBSTER_APPS_ALLOWED`, or set `MOBSTER_APP_ACCESS=all` ([Configuration](/configuration)).
+
+```sh
+mobster run "Turn on Dark Mode" --execute            # act
+mobster run "Turn on Dark Mode" --execute --json     # act, and print JSON events
+```
+
+When stdout is a terminal it prints one line per step. When stdout is a pipe or a file, or with `--json`, it prints the agent's events as JSON lines. Scripts get the same output they always did.
+
+Each task is saved in the terminal UI's journal before it acts, so `mobster history` lists it, and a run killed mid-task shows as `interrupted` the next time `mobster run` or the terminal UI starts ([History and resume](/tui#history-and-resume)). One `mobster run` or terminal UI has that journal open at a time. Another `mobster run` prints a `result` with `error_type` `LeaseHeld` and exits 3 without reaching the phone. To run tasks on several phones at once, give each run its own journal with `--state-db PATH`.
+
+### JSON events
+
+Every line is one JSON object with an `event` field. The ones most scripts need:
+
+| event | when | useful fields |
+| --- | --- | --- |
+| `observation` | the screen was read | `step`, `bundle_id`, `elements` (id, label, role, rect, value) |
+| `decision` | the agent chose an action | `step`, `operation` (`TAP`, `TYPE`, `SWIPE_UP`, `DONE`…), `target`, `target_label`, `confidence`, `goal_probability`, `latency_ms` |
+| `action_check` | the action was checked against the request | `support`: `allowed`, `unclear` or `mismatch` |
+| `action_started`, `action_acknowledged` | the action was sent, and the phone accepted it | `operation`, `act_ms` |
+| `observation_after_action` | the screen after the action | `changed`, `settle_ms` |
+| `permission_decision` | the permission mode asked before an action | `decision` (`ask`), `kind`, `act` (`send`, `code`…), `mode`. No label and no text |
+| `result` | the run ended (always last) | `status`, `reason`, `data`, `data_status`, `actions`, `elapsed_ms`, `citations`, and `blocks` when the answer has result blocks ([Results](/results)) |
+
+A run that stops because it may not use an app ends with `status` `blocked` and says why in `reason`. Keep event output private: an `observation` lists each field's `value`, so text Mobster typed into a field appears there. An error before or around the run prints a `result` too: `{"event": "result", "status": "error", "ok": false, "error_type": "...", "error": "...", "exit_code": N}`. Stopped with `ctrl+c` or SIGTERM, the run ends at its next safe point with `status` `stopped`, and `mobster run` exits 130 (143 for SIGTERM). So the last line is always a `result`.
+
+The final status is in the `result` line:
+
+```sh
+mobster run "What's my battery level?" --execute --json \
+  | jq -c 'select(.event == "result") | {status, data, reason}'
+```
+
+| `status` | meaning | exit code |
+| --- | --- | --- |
+| `completed` | The agent finished the goal and the result is backed by what it saw on the screen. | 0 |
+| `completed_unverified` | The agent judged the goal met. Nothing checked it independently. | 0 |
+| `completion_not_confirmed`, `inconsistent_completion` | it looked done but could not be confirmed; `data_status` says why an answer is missing | 1 |
+| `blocked`, `no_progress`, `needs_clarification` | it could not go on | 1 |
+| `approval_denied`, `approval_timeout` | the answer to an approval was no, or nobody answered in 10 minutes | 1 |
+| `max_steps`, `timeout`, `spend_cap` | it hit a limit | 1 |
+| `stopped`, `error` | stopped, or failed; the reason says whether an action may have run | 1 (130 with `ctrl+c`, 143 with SIGTERM; 3 when no phone answered or another Mobster has the journal open) |
+
+Answers (`data`) quote text Mobster saw on the screen. When no such text exists, `data` is `null` and `data_status` is `insufficient_evidence`.
+
+## Alerts for scheduled tasks
+
+Set `MOBSTER_ALERT_WEBHOOK_URL` to an https webhook (in the Mac app's Settings or the env file) and Mobster posts there when a scheduled task fails, stops before it finishes, or waits a minute or more for your approval. Slack, Discord and ntfy addresses get their own format; any other address gets JSON:
+
+```json
+{"workflow": "Morning summary", "status": "max_steps", "reason": "It ran out of steps.", "runId": "3f2a9c1b7d4e", "at": "2026-10-05T07:01:12+00:00", "text": "Mobster: “Morning summary” didn't finish (max_steps). It ran out of steps. Open the Mobster app to see it."}
+```
+
+The post never holds the task's answer, a screenshot or anything it typed. Tasks you start yourself never alert. `mobster alerts test` sends a test post.
+
+## The phone outside tasks
+
+`mobster phone clipboard set TEXT` puts text on the phone's clipboard for a task to paste, `mobster phone clipboard get` prints the phone's clipboard, `mobster phone install PATH` installs a signed build, `mobster phone password --app BUNDLE --field NAME` types a password you enter at a hidden prompt into a focused secure field ([Type a password privately](/capabilities#type-a-password-privately)), and `mobster phone record --output FILE` saves a USB iPhone's screen to a new `.mov`. Each except `record` takes the device's lock while it works and prints JSON with `--json` ([CLI reference](/reference/cli#mobster-phone)).
+
+## The HTTP API
+
+`mobster serve` starts an HTTP server on `127.0.0.1:8765`. It is the same server the Mac app runs. Each launch makes a random API token and writes it to a private file, named in the first line the server prints. Send it as `Authorization: Bearer <token>` on every request.
+
+```sh
+mobster serve --wda-url http://127.0.0.1:8100 --enable-live --env-file "$MOBSTER_ENV_FILE" > /tmp/mobster-serve.log &
+TOKEN=$(cat "$(head -1 /tmp/mobster-serve.log | jq -r .tokenFile)")
+curl -s -H "Authorization: Bearer $TOKEN" http://127.0.0.1:8765/api/status | jq '{device_ready, live_enabled, limitations}'
+```
+
+| request | what it does |
+| --- | --- |
+| `GET /api/status` | version, whether the phone is ready, `app_session` (whether the Mac app holds approvals), configured models, what limits live tasks, and `engine`, the same state as `GET /api/engine` |
+| `GET /api/engine` | the engine's health in one state: `state`, `cause`, `message`, `next_step`, `since` and every other issue standing ([Engine health](#engine-health)) |
+| `GET /api/apps` | the apps a task can run in (the catalog plus the USB iPhone's installed apps, without the built-ins it deleted), and `inventory`: `{state, at}`, where `state` is `live` (read from the iPhone now), `cached` (its apps as of `at`, the last time it was plugged in), `none` (no iPhone read yet) or `unknown` (this Mobster can't read one) |
+| `POST /api/runs` | start a task: `{"appId": "settings", "goal": "Turn on Dark Mode"}`; optional `outputFormat`, `outputSchema`, `allowedBundles`, `permissionMode` (`ask_all`, `ask_important` or `dont_ask`: this task's own mode; asking less than Settings needs the Mac app) and `pinnedApps` (1 to 5 app ids: the task starts in the first and uses the others) and `queue` (default `true`: a held phone queues the task, which answers `queued` with its place in `run.queue`; `false` refuses it with 409 `run_active`; [Sharing a phone](/devices#sharing-a-phone)); send an `Idempotency-Key` header to make retries safe. `"dryRun": true` starts nothing and answers `{"dryRun": {apps, asks, cost, ...}}`: [Dry run](/safety#dry-run) |
+| `GET /api/runs`, `GET /api/runs/{id}` | the task list, and one task with its events and any pending `approval` |
+| `GET /api/runs/{id}/events` | the task's events as server-sent events, from the start; `Last-Event-ID` resumes |
+| `POST /api/runs/{id}/approval` | answer an approval: `{"id": "<approval id>", "approve": true}`. Drafts reviewed together (`kind: "proposals"`) also take `items` (the drafts this answer decides) and `text` (one draft's edited text) |
+| `POST /api/runs/{id}/stop` | stop at the next safe point |
+| `POST /api/runs/{id}/share/preview`, `POST /api/runs/{id}/share`, `POST /api/runs/{id}/share/{shareId}/revoke` | a share link of a finished task's result ([Share a result](/results#share-a-result)): the preview takes `people` (`mask` or `show`), `screens` and `title` and answers `{image}`, a PNG of the page; making a link adds `expiresDays` (1, 7, 30, 90 or `null`) and the account's `accessToken`, and answers `{share}` with its `url`. Making and turning off a link need the Mac app (`403 app_only`); the token is used for that one request. A task's `shares` lists its links |
+| `POST /api/runs/{id}/artifact` | save a finished task's result in `~/Downloads` and answer `{name, path, bytes}`: `{"format": "pdf"}` (the whole result, or `blocks`: the block ids to include), `"png"` (exactly one block in `blocks`, as its card) or `"md"`. `429 export_busy` while another file is being made; `503 artifact_unavailable` when this Mac can't make one (WebKit and Xcode's command line tools are needed outside the Mac app) ([Results](/results#save-a-result-as-a-file)) |
+| `POST /api/runs/{id}/blocks/{block}/items/{item}` | decide one item of a finished task's result block ([Results](/results#review-queues)): `{"decision": "skip"}`, `"reopen"`, or `"approve"` with an optional edited `text`. Approve answers `{state, runId, blockState}`: `runId` is the new task that sends it. Approving needs the Mac app (`403 app_only`); an item is approved once (`409 block_item_approved`), and a retried Approve answers the same `runId` |
+| `GET /api/inbox` | what needs you now, most urgent first, as the Mac app's **Needs you** lists it: `items`, each with `kind` (`approval`, `question`, `review`, `repair` or `draft`), `runId`, `goal`, `app` and `at`; an approval or question has the run's pending `approval` (with `actingAs`, `recipient`, `text` and `reason`), a review and a repair have `result` (`status`, `answer`, `reason`), a repair has `workflow`, and a draft has `draft` (`blockId`, `itemId`, `action`, `to`, `account`, `context`, `lastMessage`, `draft`): answer it with `POST /api/runs/{runId}/blocks/{blockId}/items/{itemId}`. A result a later run of the same task proved, a workflow failure a later run fixed and anything older than 7 days are left out |
+| `GET /api/usage` | usage since Mobster began tracking it, and `monthUsd`, this month's spend: `providers[]` (one row per provider, model and `billing`, `"plan"` or `"api_key"`, with tokens, `cache_read_tokens`, `cache_write_tokens` and `api_equivalent_usd`), `totals` (adds `plan_tokens`) and `limits` (per agent: `status`, `type`, `resetsAt`, `windows` with `utilization` and `resetsAt`, and `at`). Providers include `anthropic`, `claude_code`, `codex` and `gemini`. A plan row's `api_equivalent_usd` isn't spend |
+| `GET /api/home` | Home's summary ([See your workflows on Home](/capabilities#see-your-workflows-on-home)): `jobs` (up to 6 saved workflows, scheduled first, each with `cron`, `nextAt`, `running`, `needsYou`, `drafts`, `attention` and `last`: the last result's `runId`, `outcome`, `at`, `seconds`, `costUsd`, `answer`, `preview` (its first card, cut to a few items, with `total`) and `learned` with the first run's `first`), `jobCount`, `needsYou`, `week` (`from`, `jobs`, `items`, `kinds`, `needYou`, `spentUsd`, `planTokens`, `apiEquivalentUsd`, `partial`) and, with `?since=<ms>`, `since` (the same counts for jobs that finished since then) |
+| `POST /api/workflows/templates/morning-brief` | save the Morning brief: `{"niche": "home cooking", "time": "08:00", "timezone": "America/Los_Angeles"}` ([The Morning brief](/schedules#the-morning-brief)). Without Instagram on the iPhone it answers 400 and says so |
+| `GET /api/permissions` | Settings › Safety: `permissionMode`, `appAccess`, each app's standing (`allowed`, `why`: `asks` or `blocked`, `outside`), `approvedApps`, and `exceptions` (the "Don't ask again" rules) |
+| `POST /api/permissions` | change one of them: `{"permissionMode": "ask_all"}`, `{"allow": "<bundle id>"}` or `{"revoke": …}`, `{"block": …}` or `{"unblock": …}`, `{"outsideOn": …}` or `{"outsideOff": …}`, `{"forget": "<rule key>"}`. The Mac app only (`403 app_only`). `appAccess` takes only `ask` here |
+| `GET /api/approvals`, `GET /api/approvals/{id}` | the approvals agents outside Mobster raised (an MCP client's tap, a first use of an app, a one-time code); `?wait=` long-polls up to 20 seconds |
+| `POST /api/approvals`, `DELETE /api/approvals/{id}` | raise one (what `mobster mcp` does), or withdraw it |
+| `POST /api/approvals/{id}` | answer it: `{"approve": true}`, or `false` with an optional `instruction`. The Mac app only (`403 app_only`) |
+| `GET`, `POST /api/settings` | `askBeforeActing`, `taskCostLimitUsd` (0.05 to 100; `null` turns the per-task stop off), `monthlyLimitUsd` (1 to 10,000; `null` for none) and `phoneBatteryPause` (the iPhone battery percent, 1 to 50, at which a long or scheduled task pauses; `null` turns it off). When the Mac app runs the agent, changing `askBeforeActing` or either limit needs the Mac app (`403 app_only`) |
+| `GET /api/device/status`, `GET /api/devices/{id}/status` | the phone's `battery` (`level`, `state`, `source`) and `thermal`, the Mac's `power`, `battery`, `charging` and whether it is kept awake (`keptAwake`, `for`), `warnings`, and `phoneBatteryPause`. Readings are at most 30 seconds old ([Battery, heat and the Mac](/devices#battery-heat-and-the-mac)) |
+| `GET`, `POST /api/accounts` | your profiles, and adding one; `POST /api/runs` takes `account`, a profile ([Profiles](/profiles)) |
+| `GET /api/integrations/clients`, `POST`, `DELETE /api/integrations/clients/{client}` | Settings › Connectors › Use Mobster from…: each agent `mobster mcp install` knows, with `state` (`added`, `other`, `absent` or `error`), and adding or removing Mobster's MCP server in one (`claude-code`, `claude-desktop`, `cursor`, `codex` and the rest). The Mac app only (`403 app_only`), also under `mobster serve` ([Add it from the Mac app](/mcp-server#add-it-from-the-mac-app)) |
+| `GET`, `POST /api/workflows`, `POST /api/workflows/{id}/run` | saved workflows; a workflow's step cards are `steps`, `repeat` and `limits`, and a run of one takes `rows` and answers with its `batch` ([Build a workflow on its canvas](/workflows#the-format)); `GET` adds each workflow's `health`, its last verified run and what needs you ([What a workflow's row shows](/schedules#what-a-workflows-row-shows)) |
+| `GET /api/workflows/{id}/runs`, `POST /api/workflows/{id}/stop` | a workflow's newest runs of its steps, round by round; stop the one running (`409 not_running` when none is) |
+| `GET /api/outlets` | the destinations saved in Mobster for Mac; `POST /api/runs`, a conversation message and a workflow take `sendTo`, a destination's name or id, and the result is posted there when the task ends ([Send results to other tools](/webhooks)) |
+| `GET /api/connectors` | the connectors in Mobster for Mac, each with its tools and their settings (`read`, `ask` or `off`) and its `health` (`connected`, `idle`, `connecting`, `needs_sign_in` or `failed`); `POST /api/runs` takes `connectors`, up to 8 connector names or ids the task may use. Adding, changing, reconnecting, importing and removing one needs the Mac app ([Connectors](/connectors)) |
+| `GET /api/packs` | the app packs in Mobster for Mac (what Mobster knows about one app: its screens, how to reach them, how to read them; [Instagram and TikTok](/app-packs)), each with `verified` (the app version and date its screens were checked on), `installed` (the version on the iPhone), `screens`, and how its recent steps on this Mac went: `steps`, `landed`, `steppedAside`, `state` (`healthy`, `degraded` or `unknown`), `lastProblem`, `summary` ("Instagram pack: working on 448.0.0; 1 screen changed"), `changedScreens` and `learned` (variants by status: `proposed`, `confirmed`, `trusted`). `POST /api/runs` with `packCheck` (a pack's key) is that pack's health run: it visits the pack's tabs with no model call and ends with a checklist ([When an app changes](/app-packs#when-an-app-changes)) |
+| `GET /api/harness/hints` | everything Mobster knows about an app ahead of time, by app and source (`pack`, `replay` for saved programs, learned workflows and checks, `ios` for the iOS knowledge base): each source's `uses`, `landed`, `missed`, `state` (`healthy`, `degraded`, `stale` or `unknown`), the app `versions` seen, and `lastDrift` (the `key`, app `version`, screen `variant` and `why` of the last step that didn't land), plus `heals` (`checked` and `rejected` proposals). A source acts on what it knows only while it keeps landing: below 0.6 confidence, after 2 misses in a row in a task, or after its last 2 uses on this app version missed, Mobster's agent does the step instead |
+| `GET /api/plugins` | the plugins installed in Mobster for Mac, each with what it adds. Installing (`POST /api/plugins/preview`, then `POST /api/plugins/install`), turning one on or off and removing one need the Mac app ([Plugins](/plugins)) |
+| `GET /api/devices`, `GET /api/devices/{id}` | every device with its state, the task running on it, its pending approval, who holds it (`holder`) and the requests waiting for it (`queue`, `queuePausedUntil`) ([Several phones](/devices), [Sharing a phone](/devices#sharing-a-phone)). The list also has `chosenDevices` and `chosenSaved`, the composer's phones ([The composer's phone](/devices#the-composers-phone)) |
+| `POST /api/devices/chosen` | `{"devices": [ids]}`: the composer's phones, kept on this Mac through a relaunch and an update; `[]` forgets them. Answers the device list |
+| `POST /api/runs` with `device` | run on that device (its id, UDID or name); without it, on the default device. One task per device; tasks on different devices run at once |
+| `GET /api/runs?device={id}` | one device's history |
+| `POST /api/runs` with `phones` | one task on each of those devices at once, as one group: `{groupId, group, runs, refused}` ([Several phones](/devices#one-task-on-several-phones)). A team's console labels its share of a task on several Macs with `teamGroup`, which the group shows; any other caller that sends it gets 400 |
+| `GET /api/groups`, `GET /api/groups/{id}` | recent groups with each phone's state and, once all are done, the merged summary; the list adds `limits` (tasks running, the soft limit of 10, and whether the Mac's CPU holds new groups) |
+| `POST /api/groups/{id}/stop`, `POST /api/groups/{id}/approvals` | stop every phone; answer the approvals you showed, `{"approve": true, "approvals": {"<run id>": "<approval id>"}}` |
+| `POST /api/devices/{id}/take-back`, `/resume-queue` | `{}`: ask the phone's holder to stop after its step and hold the line for 2 minutes; let the line go on. The Mac app's session only; answers `{device}`, or 409 `not_held` ([Sharing a phone](/devices#sharing-a-phone)) |
+| `POST /api/devices/{id}`, `/disconnect`, `/connect`, `DELETE /api/devices/{id}` | a phone's name, default and own rules; stop using it, use it again, forget it ([Manage a device](/phones#manage-a-device)) |
+| `GET`, `POST /api/device/teach`, `/api/devices/{id}/teach` | teach a task on the live view ([Teach Mobster a task](/capabilities#teach-mobster-a-task)): `GET` is `{lesson}` or `{lesson: null}`; `POST` takes `{"action": "start"}`, `"stop"`, `"discard"`, or `{"action": "save", "request": "Log coffee in CalTrack", "name"?, "blanks": [{"step": 2, "name": "food"}], "workflow": true}`, which answers `{program, workflow}`. `"purposes": [{"step": 3, "purpose": "Open the newest DM"}]` rewrites what steps are for. `{"action": "questions"}` on a stopped lesson answers `{lesson}` with `lesson.questions`: at most 2 `{id, step, kind, question, choices: [{label, rule, eachRun}]}`, worded by one call to your model and asked once (`[]` when there is nothing to ask; `409 lesson_recording` while it records). Save with `"answers": [{"question": "q1", "choice": 1}]` to keep that choice's rule on its step. Saving the same words again, or words that fill a taught program's, merges into that program: `merged` is `{into, added, changed}` with the lesson's step numbers (`null` for a new program), and a lesson whose steps differ answers `400`. `POST /api/runs` with `"practice": "<program id>"` is **Try it now**: each step waits on an approval of kind `practice`, answered with `choice` `right`, `skip` or `model`, or with `answer` `"x,y"`, the spot the person tapped in screen fractions. While a lesson is on, `POST /api/runs` on that phone answers `409 device_busy`, and a lesson can't start while a task holds it. When the Mac app runs the agent, `POST` needs the Mac app (`403 app_only`); `mobster serve` takes the token alone |
+| `GET /api/replay/programs` | saved and taught programs, newest first: `id`, `name`, `template` (`{p1}` for each blank), `taught`, `status` (`provisional` or `trusted`), `steps`, `coordinateSteps`, `asks`, and `workflowIds`, the saved workflows whose words run it |
+| `POST /api/replay/programs/{id}/rename`, `/forget` | rename one (`{"name": "…"}`), or forget it and what its workflow learned |
+| `GET /api/teams`, `POST /api/teams/join`, `/trust`, `/leave`, `/switches` | On a Team plan, Settings › Team ([A team's Mac](/account#a-teams-mac)): `GET` answers `state` (`none`, `member`, `joining` or `station`), `orgs` (the teams your account is in, with your role), `org`, `role`, `station` (`id`, `name`, `state`: `joining`, `waiting`, `ready`, `stale`, `removed` or `no_plan`), `owners` (each with `email` and its keys' `fingerprint`), `genesis` (the member list's hash to trust), `pinned`, `fresh`, `checkedAt`, `plan`, `policy` (read only) and `switches` (`watch`, `act`, `approve`). `join` takes `{accessToken, org}` and, after `409 stations_full` (whose `details` carry the price of one more Mac), `confirmExtra`; it answers `stationToken`, which the Mac app hands to its account. `trust` takes `{genesis}`, `leave` an Admin's `{accessToken}`, `switches` any of `watch`, `act` and `approve`. The Mac app only (`403 app_only`); `404` while team features are off |
+| `GET /api/events?topics=runs` | events across tasks as server-sent events (`run_created`, `run_finished`, `run_reviewed`, `run_block_decided`, `run_deleted`), each with an id `<boot>-<seq>`; `Last-Event-ID` resumes, and after a restart the stream starts with `{"event": "reset"}`: fetch your lists again. The topic `power` has `mac_battery_low` (`percent`, `threshold`, `runs`) when tasks run on a Mac whose battery is low. On a Team plan, the topic `teams` has `teams_state` when what `GET /api/teams` answers changed |
+
+### Conversations
+
+The routes behind [Conversations](/conversations): the Mac app, `mobster chat` and MCP's `phone_task` all use them. JSON uses camelCase and milliseconds since the epoch.
+
+| Route | Body or query | Answer |
+| --- | --- | --- |
+| `GET /api/threads` | `?limit` (1–100, default 50), `before` (the previous page's `next`, or a thread's `updatedAt`), `device`, `q`, `archived` (`true`, `false` or `all`) | `{threads, next}`, newest first; `next` is the `before` for the next page |
+| `POST /api/threads` | `{title?, device?, message?}`, optional `Idempotency-Key` | 201 `{thread, item?, run?}`, plus `routed: "remember"` and `proposals` when the message only asks Mobster to remember something |
+| `GET /api/threads/{id}` | `?after=<seq>` | `{thread, items, runs}`: the items in order and the runs they name (without events) |
+| `POST /api/threads/{id}` | `{title?, archived?, pinned?}` | `{thread}` |
+| `DELETE /api/threads/{id}` | `?runs=delete` (default) or `keep` | `{deleted, runsDeleted}`; 409 `run_active` while its task runs |
+| `POST /api/threads/{id}/messages` | a message, optional `Idempotency-Key` | 201 `{item, run}` (a new task), 201 `{item, run: null, routed: "remember", proposals}` (a message from the Mac app, the terminal UI or `mobster chat` that only asks Mobster to remember something: nothing runs), 202 `{item, routed: "steer" or "answer"}`, or 409 |
+
+A message is `{text, attachmentIds?, appId?, engine?, outputFormat?, outputSchema?, device?, mode?, via?}`:
+
+- `text`: 1–4,000 characters to start a task, at most 2,000 to steer, at most 500 to answer a question.
+- `mode`: `auto` (what [Steer a task while it runs](/conversations#steer-a-task-while-it-runs) describes) or `new_task` (always a new task).
+- `device`: the phone; the conversation's phone when left out.
+- `via`: `voice` from the Mac app's microphone; otherwise the request's `X-Mobster-Origin` decides it.
+- It also takes `phones` (instead of `device`), `pinnedApps`, `permissionMode`, `account`, `sendTo`, `queue` and `longform`, as `POST /api/runs` does.
+
+A retried post with the same `Idempotency-Key` returns the first answer with `"replayed": true`; the same key with another body is 409 `idempotency_conflict`. Mobster saves the key before it starts anything on your iPhone. If it can't confirm what happened (it stopped after the task started, or a task for that key already exists), the retry is 409 `request_outcome_unknown` and nothing is sent again: check the conversation and your task history before you start another. A retry that failed with a known error returns that error again. An error that also has `"started": false` says Mobster recorded and sent nothing for that request, so a new request is safe. Mobster adds it only after it finds no task under the request's `Idempotency-Key`, on `POST /api/threads`, `POST /api/threads/{id}/messages` and a one-task `POST /api/workflows/{id}/run`, for example 503 `device_unavailable` while the iPhone's helper restarts or 503 `shutting_down`. A workflow of several steps has it only for `shutting_down` with a key Mobster hasn't seen, and a 409 for a task on several phones that none started never has it. Without the field, a 5xx start may have started a task, as 503 `start_failed`, `persistence_unavailable` and `unavailable` may have: a retry of a request that started gets the same errors. A deleted conversation answers 410 `thread_expired`. Unresolved keys are never evicted; a full request journal (10,000 keys) refuses new keyed requests.
+
+Errors are `{"error": <a sentence>, "code"}`:
+
+| Code | Status | When |
+| --- | --- | --- |
+| `thread_not_found` | 404 | No such conversation in this Mobster |
+| `approval_pending` | 409 | The task waits for an approval |
+| `steer_unsupported` | 409 | Codex, Claude Code or Gemini CLI is working. The run says so first: its `steerable` is `false` |
+| `steer_attachments` | 409 | Files go with a new task, not to a running one. Over Mobster Remote, files can't be sent at all |
+| `steer_not_allowed` | 403 | The task was started over MCP or Mobster Remote and the message (or the answer to its question) comes from elsewhere, or the reverse |
+| `group_running` | 409 | The conversation's phones are still working on its last task |
+| `thread_full` | 409 | 2,000 items or 8 MB: "This conversation is full. Start a new one." |
+| `thread_archived` | 409 | Restore it to continue |
+| `thread_expired` | 410 | The conversation was deleted; retrying its `Idempotency-Key` does not create another one |
+| `unavailable` | 503 | Conversations couldn't open their data |
+
+`items` hold the conversation in order (`seq`). Every item has `id`, `seq`, `at` and `kind`:
+
+| Kind | Fields |
+| --- | --- |
+| `user` | `text`, `via` (`composer`, `voice`, `cli`, `tui`, `mcp`, `remote`), `attachments`, `routed` (`new_run`, `steer`, `answer`, `unread`, `remember`), `runId`; a steer also has `messageId` and, once read, `readAt` |
+| `run` | `runId`, `goal`, `appName`, `engine`, `device`, and once it ends `result`: `{status, outcome, answer, facts, costUsd, elapsedMs}` |
+| `clarify` | `runId`, `approvalId`, `question`, `choices`, and once answered `answer` and `resolution` |
+| `remote_origin` | `app`: `{id, name, known}`. First in a conversation an app started through [Mobster Remote](/remote), shown as "Claude started this conversation through Mobster Remote." |
+| others | Added by other parts of Mobster (a memory to approve, a saved file) |
+
+A thread is `{id, title, createdAt, updatedAt, device, deviceName, archived, pinned, status, lastRunId, rules}`. `status` is `idle`, `running` or `waiting` (for you). A run item keeps its result after the journal's 100-task history lets the run go, so the conversation still has it.
+
+`GET /api/events?topics=threads,thread:<id>` streams:
+
+| Topic | Events |
+| --- | --- |
+| `threads` | `thread_created`, `thread_updated`, `thread_deleted`, each with `{thread}` |
+| `thread:<id>` | `thread_item` and `thread_item_updated` with `{item}`, and `run_event` with `{runId, data}`: each of the conversation's run events as the run's own stream sends it |
+
+The task's run fields are `threadId` (in `extras`) and `via` (kept off the API).
+
+### Engine health
+
+`GET /api/engine` answers with one state. The Mac app, `mobster serve` and `mobster mcp`'s `status` read the same one, so a surface can't say "ready" while another says "waiting".
+
+```sh
+curl -s -H "Authorization: Bearer $TOKEN" http://127.0.0.1:8765/api/engine | jq '{state, cause, message, next_step}'
+```
+
+```json
+{
+  "state": "waiting_for_phone",
+  "cause": "locked",
+  "message": "Work iPhone is locked.",
+  "next_step": "Unlock Work iPhone: the task goes on as soon as it's unlocked.",
+  "fix": { "kind": "yours" }
+}
+```
+
+`fix` is what to do about the state, so none ends in a dead end. Its `kind` is one of six:
+
+| `kind` | What it carries | Who does it |
+| --- | --- | --- |
+| `auto` | `action`: `start_helper` or `rebuild_helper` | Mobster, on its own: it touches only Mobster's own state, on a phone no other Mobster is running a task on |
+| `ask` | `action`: `free_port` or `restart_service` | Mobster, after it names the program it would stop and you say yes |
+| `guided` | `command`: `mobster login` or `mobster setup` | A guided flow that asks its own questions |
+| `yours` | `picture` (optional): the picture of the iPhone's screen that shows the taps | You, on the iPhone or with the cable. Mobster notices and goes on |
+| `run` | `command` | You. Mobster prints the command and doesn't run it (a runtime download, opening the app) |
+| `wait` | `why` | Nobody: it clears by itself |
+
+`mobster doctor` says the same states in the same words and runs the `auto` and `ask` fixes with `--fix` ([Device setup](/device-setup#fix-what-doctor-finds)). The [FAQ](/faq#when-something-stops) answers each state.
+
+| `state` | `cause` |
+| --- | --- |
+| `ready` | none |
+| `waiting_for_phone` | `locked`, `unplugged`, `wifi_lost`, `helper_restarting`, `developer_mode_off`, `trust_needed`, `ui_automation_off`, `not_responding` |
+| `helper_down` | `not_built`, `signature_expired`, `failing`, `stopped`, `exposed`, `not_answering` |
+| `no_phone` | `none_chosen`, `none_attached` |
+| `model_unavailable` | `no_key`, `no_credit`, `key_rejected` |
+| `live_off` | `disabled` |
+| `stopping` | `closing` |
+
+When several stand, `state` is the one that blocks most, and `issues` lists all of them, each with its `source` (`model`, `live`, `phone:<device>`, `task:<run>`). A task waiting on the phone adds `task`, `midrun` and `wait_seconds`. If an action was on its way when the phone went away, `action_unknown` is `true`: Mobster looks at the screen before it goes on and doesn't send that action again.
+
+Every issue has `since`, the time it began, in seconds since the epoch. Mobster names a cause within 10 seconds of it beginning: the helper is probed every 3 seconds, a pulled cable is read within 2, and the state is sampled every second. A cause on Wi-Fi is named at the probe's pace, not the link monitor's 10 seconds.
+
+`GET /api/events?topics=engine` sends an `engine_health` event, with the same fields, each time the state changes. A process that can't answer can't say so itself: ask `GET /api/engine` every 2 seconds, and treat no answer for 3 seconds as `slow`, 8 as `frozen`, a refused connection as `down` and a new `liveness.boot` as `restarting`. `liveness` carries those numbers.
+
+### Plans and drafts to review
+
+A task may show a plan before it starts, or put several drafts up for review together. Both are approvals: the task waits, Stop ends it, and nobody answering in 10 minutes ends the wait.
+
+| `approval.kind` | What it carries | How to answer |
+| --- | --- | --- |
+| `plan` | `plan`: `summary`, `apps` (`name`, `bundleId`, `does`), `steps`, `policy`; a long task's plan also has `long` (its budget, estimate, other budgets and the per-task limit) and `choices` (`default`, then the other budgets) | `approve: true` starts it, with `choice` for another budget and `"allowCost": true` for the raise its plan proposed; `false` skips it; `false` with `instruction` says what to change |
+| `proposals` | `items`: `id`, `app`, `act`, `to`, `title`, `text` (the draft), `context` (what it answers), `decision` | `{"approve": true, "items": ["sam"]}` sends that draft, with `"text"` to send it edited; `false` skips it; no `items` decides every draft still open |
+
+A task started with `X-Mobster-Origin: app` or `tui` shows its plan in the task and waits for it; any other task starts as planned, and a long task started with `longform` on `POST /api/runs` (`mobster run --long`) starts from that plan. A decision on a draft is final. Drafts nobody decided are skipped, and Stop skips them all. Sending needs the Mac app; skipping doesn't. Draft text is never in the task's events or its saved history. The events are `interpretation`, `proposal_decided`, `proposal_result`, `subrun_started` and the rest.
+
+Every `GET` answer carries an `ETag`. Send it back in `If-None-Match` and the answer is `304` with no body while nothing changed, which makes polling `/api/status` or `/api/runs` cheap.
+
+The server only listens on `127.0.0.1` and accepts requests only from local origins. It has one user, you, and no rate limits. At most 8 event streams can stay open at once; another gets `429 stream_limit`, so close streams you no longer read. Do not expose it on a network.
+
+When the Mac app runs the server, approving an action (`"approve": true`, or a `choice`), changing `askBeforeActing`, changing Settings › Safety (`POST /api/permissions`), answering an outside agent's approval (`POST /api/approvals/{id}`), starting a task with a `permissionMode` that asks less than Settings, putting a file on the phone and resetting the Wi-Fi link work only from the app: anything else that has the token gets `403` with the code `app_only`. Declining, stopping and reading stay open to the token. Starting a task from the Mac app's server also needs an active plan or free trial on this Mac's account, whatever the token: without one, `POST /api/runs`, `/v1/runs`, `POST /api/threads` and running a workflow answer `403` with the code `plan_required` ([What needs a plan](/account#what-needs-a-plan)). A server you start with `mobster serve` works as described above. A task's optional `X-Mobster-Origin` header (`app`, `tui`, `cli`, `mcp`, `remote` or `console`) labels where it came from. `remote` is [Mobster Remote](/remote)'s: such a task always asks before acting, approving it needs the app, and it must carry the app's `X-Mobster-Remote-Grant`. `console` is the Team plan console's, on a team's Mac only: it counts only with a live console session's `X-Mobster-Console-Session`, which Mobster sets itself, and anything else that names it gets `403` with the code `origin_refused`. A request that sets `consoleMember` or `consoleSession` itself gets `400`.
+
+A task with `projectEnv` resolves `${NAME}` from that project's secrets. `POST /api/runs` accepts this field only with the private Mac app session, including on `mobster serve`: otherwise it answers `403 app_only`. The origin label grants no access. Conversation messages do not accept `projectEnv`. Local terminal tasks and scheduled workflows resolve their registered project's secrets inside the runtime. HTTP workflow runs and workflow tools require the private app session to use project secrets, including `${NAME}` supplied through workflow inputs. `${NAME}` is a secret reference; `{name}` is an ordinary workflow blank.

@@ -1,0 +1,26 @@
+---
+title: "Timed out while enabling automation mode"
+sidebarTitle: "Timed out while enabling automation mode"
+description: "iOS asked for your passcode before it let Mobster's helper start, and nobody answered for 60 seconds. Turn on Enable UI Automation in Settings."
+icon: "triangle-alert"
+keywords: ["UI Automation", "automation mode", "WebDriverAgent", "xcodebuild"]
+"article:modified_time": "2026-10-26"
+---
+
+You see this: The helper's log on the iPhone ends with `Failed to initialize for UI testing: ... Timed out while enabling automation mode.` Mobster shows `On your iPhone, turn on Settings › Developer › Enable UI Automation` instead.
+
+## Why it happens
+
+Before it starts UI automation, iOS waits for the passcode unless **Enable UI Automation** is on. The wait ends after 60 seconds, and the helper doesn't start. In the run recorded for this page (14 Oct 2026), the failure came 60 seconds after `Running tests...`.
+
+## Fix
+
+1. On the iPhone, open **Settings › Developer** and turn on **Enable UI Automation**. If iOS asks for the passcode, enter it.
+2. Keep the phone unlocked while the helper starts.
+3. Start the helper again from Mobster for Mac, or run `mobster serve --manage-device`. It starts by itself about 2 seconds after iOS turns automation mode on.
+
+## Check it worked
+
+The helper answers at `http://127.0.0.1:8100`, and `mobster doctor` prints `✓ WebDriverAgent`. Once the switch is on, iOS stops asking.
+
+Checked 26 Oct 2026 against Mobster 0.4.0. Back to [Troubleshooting](/troubleshooting#iphone).

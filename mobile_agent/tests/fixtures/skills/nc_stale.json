@@ -1,0 +1,29 @@
+{
+ "note": "Only an old code: 25 minutes.",
+ "bundle": "com.apple.springboard",
+ "width": 402,
+ "height": 874,
+ "keyboard": "",
+ "elements": [
+  {
+   "label": "Messages, Chase, Your Chase verification code is 482913., 25m ago",
+   "role": "Cell",
+   "rect": [
+    0.04,
+    0.55,
+    0.92,
+    0.09
+   ]
+  },
+  {
+   "label": "Weather, Rain expected, Rain starting around 4 PM., 12m ago",
+   "role": "Cell",
+   "rect": [
+    0.04,
+    0.65,
+    0.92,
+    0.08
+   ]
+  }
+ ]
+}

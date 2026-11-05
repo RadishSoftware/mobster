@@ -1,0 +1,112 @@
+---
+title: "Notification triggers"
+"og:title": "Start a task when your iPhone gets a notification"
+sidebarTitle: "Notification triggers"
+description: "A trigger sends an iPhone notification to a destination, runs a workflow or starts a task in Mobster for Mac, when an app you choose notifies you."
+icon: "bell-ring"
+keywords: ["triggers", "notification triggers", "notifications", "when a notification arrives", "iphone mirroring", "full disk access", "doordash", "delivered", "automation", "if this then that", "ifttt", "workflow trigger"]
+---
+
+A trigger starts something when an app on your iPhone notifies you. "When DoorDash says delivered, send it to Slack." "When my bank notifies me, run the workflow that logs it." It works with apps that have no API, because the notification is the signal.
+
+Triggers are part of Mobster for Mac. They need no cable, no Xcode and nothing on the phone. The `mobster` command doesn't have them.
+
+## What you need
+
+- iPhone Mirroring on this Mac, with **Allow Notifications from iPhone** turned on. macOS puts your iPhone's notifications on your Mac through it, and that is where Mobster reads them. If iPhone Mirroring was never set up, **Settings › Triggers** says so and how to set it up, and the trigger starts watching once it is.
+- Full Disk Access for Mobster, which Mobster asks for the first time you turn on a trigger ([The Full Disk Access step](#the-full-disk-access-step)).
+- For **Send to a destination**, a destination you saved in **Settings › Connectors** ([Send results to other tools](/webhooks)). For **Run a workflow**, a saved workflow ([Workflows and schedules](/schedules)).
+
+## Add a trigger
+
+1. Open **Settings › Triggers** (⌘, then **Triggers**, or **Triggers** in ⌘K).
+2. Choose **Add a trigger**. Its form opens in place, under your triggers. Nothing opens over Settings.
+3. Choose the app. The list starts with the apps Mobster has seen notify on this Mac, then the apps your iPhone lists. Each has its icon.
+4. Optionally, type words or phrases to look for, separated by commas. A trigger fires when the notification's title, subtitle or body has any of them as whole words, ignoring case. `delivered` matches "Order Delivered." and not "undelivered". Leave it empty to fire on every notification from the app.
+5. Under **Then**, choose what it does:
+
+| Action | What happens |
+|---|---|
+| **Send to a destination** | Mobster sends the notification to one of your destinations. A webhook receives the fields in the next table. A Sheets row, a Notion page, a file line, an email or a Discord message says the same thing in that kind's own form. |
+| **Run a workflow** | Mobster runs the published workflow once. The notification reaches its steps as data: `app`, `title`, `body` and `receivedAt`. |
+| **Start a task** | Mobster starts a task you wrote. It is off for each trigger until you turn on **Allow this trigger to start a task**. |
+
+6. Optionally, change its name and where the notification comes from. Mobster suggests a name from the app and the first word, such as **DoorDash: delivered**. **Where from** is **Your iPhone** (the default), **This Mac** or **Either**.
+7. Choose **Save trigger**. A new trigger turns on at once when Full Disk Access is on. Without it, its row asks for Full Disk Access ([The Full Disk Access step](#the-full-disk-access-step)) and the trigger turns on when you allow it.
+
+To start a workflow, choose **Run a workflow** and the workflow. A workflow that is still a draft can't be started: publish it first. The Workflows list shows **On notification from Deliveries** under a workflow a trigger runs, as it shows a schedule.
+
+A workflow can also listen by itself. A published, turned-on workflow with a **Notification** trigger node starts for each notification its app and words take, with no rule here ([Build a workflow on its canvas](/workflows)). Mobster reads your notifications while a rule here or such a workflow is on, and both need Full Disk Access. A rule that names the workflow and the workflow's own node start it once for the same notification.
+
+## Change or remove a trigger
+
+- **Turn it off or on** with its switch. Turned on, it watches for new notifications only.
+- **Edit** opens its form in its row's place. **Save trigger** keeps the change. **Cancel** or `esc` puts the row back as it was.
+- **Remove…**, in the form, asks in the form's footer: "Remove “Delivered”? It stops watching. What it already did stays where it went." **Remove trigger** removes it, and **Cancel** keeps it.
+
+## What a destination receives
+
+A webhook gets a signed JSON `POST` ([Send results to other tools](/webhooks#webhooks)) with the event `notification.matched`:
+
+| Field | Value |
+|---|---|
+| `trigger` | The trigger's name |
+| `app` | The app's bundle id, such as `com.example.deliveries` |
+| `title` | The notification's title |
+| `body` | The notification's body, with one-time codes and card numbers masked as `••••••` |
+| `date` | When the notification arrived, in UTC |
+
+It also has the fields every destination gets (`text`, `answer`, `data`, `workflow`), so a Sheets, Notion, folder, email or Discord destination fills its columns the same way. `workflow.name` is the trigger's name.
+
+## What a workflow or a task gets
+
+A notification is data, never an instruction. A workflow gets it as the output of its `trigger.notification` node (`app`, `title`, `body`, `receivedAt`, masked and cut to 2,000 characters), or as the input of its manual trigger when it has no such node. Its blanks never take text from a notification. A task you write gets the notification as a fenced block after your words. Text in a notification can't change what the run does.
+
+A workflow starts at most 6 times an hour, whatever started it, and one that arrives while the workflow runs waits behind that run. A task a trigger starts, and each task of a workflow a trigger starts, says **Started by trigger: Delivered** in its run view and in its `extras.trigger` (`id`, `name`). A task a trigger starts has the origin `trigger`; a workflow's tasks keep the workflow's own.
+
+## Safety
+
+- **Starting a task is off by default.** You turn it on for each trigger, with the sentence "A notification starts this task when you're not watching." A task a trigger starts always asks before it acts, whatever **Settings › Safety** says, and it follows the apps you let outside agents use there. A change to the task's words turns the switch off again.
+- **Approvals don't change.** Every send, purchase, post and delete a triggered run reaches still waits for you.
+- **One try.** Mobster writes a firing to its journal before it sends anything. If Mobster quits during a send, the firing shows **Check it** and Mobster never sends it again. A destination that fails once isn't tried again.
+- **Removed targets stop the trigger.** A trigger whose destination or workflow was deleted skips the notification and says so on its row. It never becomes a task.
+- **Mobster's own notifications never fire a trigger**, and a trigger can't choose Mobster's own app.
+- **Limits.** A trigger runs at most 6 times an hour, and all triggers together at most 30. A skipped notification appears in **Recent** with the reason.
+- **No history.** Mobster starts from the moment watching begins. A notification already on your Mac doesn't fire when you add a trigger, turn one on or restart Mobster.
+- **Nothing runs while nothing listens.** Mobster reads notifications only while a trigger is on or a published workflow that's turned on has a notification trigger. Saving, publishing, turning off or deleting a workflow starts or stops the reading. With neither, it reads nothing and runs no watcher.
+
+## The Full Disk Access step
+
+macOS keeps notifications in files other apps own, so Mobster needs Full Disk Access to read them. Mobster asks the first time you turn on a trigger, never at setup and never when it opens.
+
+> Mobster reads your notifications on this Mac to check them against your triggers. They never leave your Mac, except what a trigger sends where you told it to.
+
+1. Turn on a trigger. Its row says **Allow Full Disk Access**, with **Open System Settings**. Mobster opens no window of its own: System Settings is the one you answer in.
+2. Choose **Open System Settings**, and turn on **Mobster** under **Privacy & Security › Full Disk Access**. If Mobster isn't listed, choose the plus button and add it from Applications.
+3. Come back to Mobster. The row notices within 2 seconds, and the trigger turns on. To stop waiting, turn its switch off again.
+
+Turn Mobster off in the same place to stop it. Mobster says "Mobster lost Full Disk Access, so it stopped reading notifications" at the top of **Settings › Triggers**, with **Open System Settings**, and watches again when the access comes back.
+
+Mobster reads two files, read-only: the folder macOS keeps your iPhone's forwarded notifications in, and the database macOS keeps this Mac's own. It reads them only while a trigger is on. It keeps the app list and your triggers; it keeps no notification's text, and **Recent** shows what happened, not what was said.
+
+## Limits
+
+- **About 6 seconds late.** macOS writes a Mac notification to its database about 5 seconds after it arrives. On 14 Oct 2026, 20 probes on one Mac took a median of 5.5 seconds (90th percentile 6.5 seconds) from the notification to Mobster's reading it. Notifications forwarded from an iPhone are read from a second store; Mobster hasn't measured their delay yet.
+- **Your Mac must be awake.** Mobster reads nothing while the Mac sleeps, and it doesn't replay what arrived meanwhile.
+- **Only what your iPhone forwards.** A notification that doesn't reach this Mac (Focus filters, an app you didn't allow in iPhone Mirroring's settings) can't fire a trigger. Mobster doesn't read a notification you already cleared, press its buttons or dismiss it.
+- **One try, no queue.** If a task is already running, a notification that would start another is skipped and says so.
+- **Words, not patterns.** A trigger matches words and phrases. It has no regular expressions and no conditions such as "over \$100".
+
+## API
+
+| Route | What it does |
+|---|---|
+| `GET /api/triggers` | Your triggers, and the watch's status (`off`, `needs_access`, `missing`, `watching`, `error`) |
+| `POST /api/triggers` | Adds a trigger. The Mac app's session is needed |
+| `POST /api/triggers/{id}` | Changes a trigger. The seam has no `PATCH` |
+| `DELETE /api/triggers/{id}` | Removes a trigger |
+| `GET /api/triggers/apps` | Bundle ids and names of apps to choose from. Never a notification |
+| `GET /api/triggers/recent` | The last 20 firings: trigger, app, time, action, outcome and a sentence |
+| `GET /api/access/full-disk?feature=triggers` | Whether Mobster can read the stores: `granted`, `needed` or `missing` |
+
+The events `trigger_fired` and `trigger_skipped` arrive on the `triggers` topic of `GET /api/events`.

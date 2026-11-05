@@ -1,0 +1,9 @@
+usage: mobster demo [-h] [--json]
+
+Run one task offline, "Search for coffee", on a scripted phone and model: the real
+runtime and agent loop, no iPhone, no keys and no model calls. The same as `mobster
+run "Search for coffee" --demo`. For the terminal UI on it, run `mobster --demo`.
+
+options:
+  -h, --help  show this help and exit
+  --json      print raw JSON events, even on a terminal

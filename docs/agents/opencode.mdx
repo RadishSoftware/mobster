@@ -1,0 +1,67 @@
+---
+title: "Use Mobster from opencode"
+sidebarTitle: "opencode"
+description: "Add Mobster's MCP server to opencode with one command. Only Claude Code and Codex are tested with the server."
+icon: "/images/marks/opencode.svg"
+keywords: ["opencode", "mcp", "mobster mcp install", "ios testing", "agent"]
+---
+
+Use Mobster's command below to add its MCP server to opencode's config. The server exposes Mobster's tools (`verify_start`, `screen`, `tap`, `run_tests` and the rest of [the MCP server](/mcp-server)).
+
+## Add it
+
+```sh
+mobster mcp install opencode
+```
+
+It prints what it changed:
+
+```text
+Mobster's MCP server: /Applications/Mobster.app/Contents/MacOS/mobster-agent mcp
+  opencode        added      ~/.config/opencode/opencode.json
+New sessions of the other clients pick it up. Check it with `mobster mcp doctor`.
+```
+
+Add `--dry-run` to see the change first and write nothing. Run the command again and nothing changes. `mobster mcp install --all` sets up every agent it finds, opencode included.
+
+## What it writes
+
+The entry goes in `~/.config/opencode/opencode.json`. Mobster edits `opencode.jsonc` instead when that file exists, and keeps its comments. `$XDG_CONFIG_HOME` moves the folder.
+
+```json
+{
+  "mcp": {
+    "mobster": {
+      "type": "local",
+      "command": ["/Applications/Mobster.app/Contents/MacOS/mobster-agent", "mcp"],
+      "enabled": true
+    }
+  }
+}
+```
+
+Mobster keeps the rest of the file as it is, with a copy of the old one beside it (`.mobster-backup`). It writes the full path to `mobster` because apps opened from the Dock don't see your shell's `PATH`, and it never writes a key. `--project DIR` writes `DIR/opencode.json`.
+
+## Check it
+
+```sh
+mobster mcp doctor
+```
+
+The doctor starts the server the way opencode does, lists its tools and calls `status`. Then it checks that the opencode entry runs a `mobster` that exists, and says which command to run if it doesn't. Start a new opencode session. `opencode mcp list` shows the server.
+
+## Add the skill
+
+```sh
+mobster mcp install opencode --with-skill
+```
+
+This copies the `mobster` skill into `~/.agents/skills`, so the agent also knows the verify loop and the rules for a real iPhone: ask before anything that sends, buys, posts or deletes, and never enter a passcode.
+
+## Take it out
+
+```sh
+mobster mcp install opencode --remove
+```
+
+This removes the `mobster` entry and leaves your other servers alone. opencode's own reference for the file is at https://opencode.ai/docs/mcp-servers/.

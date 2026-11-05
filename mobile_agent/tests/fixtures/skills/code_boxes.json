@@ -1,0 +1,85 @@
+{
+ "note": "Six one-character code boxes with no labels.",
+ "bundle": "com.example.signin",
+ "width": 402,
+ "height": 874,
+ "keyboard": "",
+ "elements": [
+  {
+   "label": "Enter the 6-digit code",
+   "role": "StaticText",
+   "rect": [
+    0.1,
+    0.2,
+    0.8,
+    0.04
+   ]
+  },
+  {
+   "label": "",
+   "role": "TextField",
+   "rect": [
+    0.08,
+    0.3,
+    0.12,
+    0.07
+   ],
+   "editable": true
+  },
+  {
+   "label": "",
+   "role": "TextField",
+   "rect": [
+    0.22499999999999998,
+    0.3,
+    0.12,
+    0.07
+   ],
+   "editable": true
+  },
+  {
+   "label": "",
+   "role": "TextField",
+   "rect": [
+    0.37,
+    0.3,
+    0.12,
+    0.07
+   ],
+   "editable": true
+  },
+  {
+   "label": "",
+   "role": "TextField",
+   "rect": [
+    0.5149999999999999,
+    0.3,
+    0.12,
+    0.07
+   ],
+   "editable": true
+  },
+  {
+   "label": "",
+   "role": "TextField",
+   "rect": [
+    0.6599999999999999,
+    0.3,
+    0.12,
+    0.07
+   ],
+   "editable": true
+  },
+  {
+   "label": "",
+   "role": "TextField",
+   "rect": [
+    0.8049999999999999,
+    0.3,
+    0.12,
+    0.07
+   ],
+   "editable": true
+  }
+ ]
+}

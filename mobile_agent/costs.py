@@ -1,6 +1,5 @@
 """Spend caps, the priced spend a run has observed (integer nanodollars until the public JSON boundary), the cost
-estimate before a Smart task and ``meter``, which puts every model call in the usage ledger. Model prices live with
-their clients (model_clients.cost_usd)."""
+estimate before a Smart task and ``meter``, which puts every model call in the usage ledger."""
 
 import math
 import re
@@ -23,12 +22,8 @@ def usd_to_nanodollars(value):
 
 
 class SpendLedger:
-    """Priced spend observed so far. Unpriced calls are counted, never zero-filled.
-
-    A ledger only knows what inference telemetry reported. Unknown usage stays
-    unknown, and the unpriced count is always visible next to the priced total
-    so it is never mistaken for a billing record.
-    """
+    """Priced spend observed so far. Unpriced calls are counted, never zero-filled, so the total is never mistaken for a
+    billing record."""
 
     def __init__(self):
         self.cost_nanodollars = 0
@@ -48,8 +43,6 @@ class SpendLedger:
         return True
 
 
-# -- the estimate and the metering -------------------------------------------------------------------
-
 # What a Smart task costs, fitted on recorded runs of this loop on gpt-5.6-sol at list prices (27 Sep): the 152
 # iOSWorld runs of sol-a/b, ab6 and ab7 (research/iosworld-runs) and 32 app runs on simulator 4, split by task,
 # 70% to fit (app runs weighted 3x: they are the product) and 30% held out.
@@ -63,7 +56,8 @@ SMART_MAX_APPS = 6
 # The range around the estimate: halved to doubled holds about 80% of the recorded runs (10th and 90th
 # percentiles of actual/estimate: 0.50 and 1.94).
 SMART_SPREAD = 2.0
-SMART_STRUCTURE_USD = 0.004  # the answer put into a structure (the user's schema, or an automatic format): one small call
+# the answer put into a structure (the user's schema, or an automatic format): one small call
+SMART_STRUCTURE_USD = 0.004
 # The fit is sol's (OPENAI_SMART_MODEL), not SMART_CONFIG.model's; another model's tasks cost this multiple of sol's
 # on the same tasks, both at list prices (sol at $4/$20). Paired iOSWorld A/B, 16 never-run tasks, 28 Sep: Sonnet 5.5
 # $0.197 against sol's $0.291 a task (32 runs and 21; 95% CI of the difference -$0.143 to -$0.044), Opus 5.5 $0.297
@@ -78,7 +72,8 @@ SMART_COST_RATIO = {OPENAI_SMART_MODEL: 1.0, "claude-sonnet-5-5": 0.68, "claude-
 def named_apps(goal, app_names=()):
     """How many of ``app_names`` the request names (whole words, any case)."""
     folded = " ".join(str(goal or "").split()).casefold()
-    return sum(1 for name in set(app_names) if len(name) > 2 and re.search(rf"\b{re.escape(name.casefold())}\b", folded))
+    return sum(1 for name in set(app_names) if len(name) > 2
+               and re.search(rf"\b{re.escape(name.casefold())}\b", folded))
 
 
 def smart_point(goal, app_names=()):
@@ -107,12 +102,8 @@ def midpoint(estimate):
 
 def meter(client, emit, *, provider=None, purpose=None):
     """Wrap ``client.complete`` so every model call emits inference_started / inference_finished with its
-    list-price cost (the usage ledger and the spend limits read those). The loop's own accounting
-    (client.usage, model_clients.cost_usd) is untouched. ``client.model_failed`` says whether the last call failed.
-    A client that hedges (model_clients.AnthropicChat) reports a losing twin's tokens through ``on_hedge_usage``
-    when it finishes: it is billed, so it is recorded as a call of its own (purpose "hedge"). ``purpose``: a label
-    for every call of this client (a long task's "extract", "digest", "synthesis" or "followup"), so the usage
-    ledger and History show where the money went; None reads it from the schema as before."""
+    list-price cost (the usage ledger and the spend limits read those). A hedging client's losing twin is billed, so it
+    is a call of its own."""
     from .model_clients import cost_usd
     inner = client.complete
     client.model_failed = False
@@ -125,7 +116,7 @@ def meter(client, emit, *, provider=None, purpose=None):
             schema.get("properties") or {}) else "decision")
         meta = {"provider": provider, "call_id": call_id, "model": model, "purpose": kind}
         if on_plan(model):
-            providers = harness_api.model_routes()
+            providers = harness_api.hooks().model_routes()
             meta["plan"] = providers.plan_name(providers.get(providers.split(model)[0]))  # "On your Kimi Code plan"
         emit({"event": "inference_started", **meta})
         started = time.monotonic()

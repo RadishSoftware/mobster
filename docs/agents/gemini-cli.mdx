@@ -1,0 +1,66 @@
+---
+title: "Use Mobster from Gemini CLI"
+sidebarTitle: "Gemini CLI"
+description: "Add Mobster's MCP server to Gemini CLI with one command. Only Claude Code and Codex are tested with the server."
+icon: "/images/marks-ink/gemini-cli.svg"
+keywords: ["gemini cli", "mcp", "mobster mcp install", "ios testing", "agent"]
+---
+
+Use Mobster's command below to add its MCP server to Gemini CLI's config. The server exposes Mobster's tools (`verify_start`, `screen`, `tap`, `run_tests` and the rest of [the MCP server](/mcp-server)).
+
+## Add it
+
+```sh
+mobster mcp install gemini-cli
+```
+
+It prints what it changed:
+
+```text
+Mobster's MCP server: /Applications/Mobster.app/Contents/MacOS/mobster-agent mcp
+  Gemini CLI      added      ~/.gemini/settings.json
+New sessions of the other clients pick it up. Check it with `mobster mcp doctor`.
+```
+
+Add `--dry-run` to see the change first and write nothing. Run the command again and nothing changes. `mobster mcp install --all` sets up every agent it finds, Gemini CLI included.
+
+## What it writes
+
+The entry goes in `~/.gemini/settings.json`. `$GEMINI_CLI_HOME` moves the folder. The file holds your other Gemini settings, and Mobster changes only `mcpServers.mobster`.
+
+```json
+{
+  "mcpServers": {
+    "mobster": {
+      "command": "/Applications/Mobster.app/Contents/MacOS/mobster-agent",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+Mobster keeps the rest of the file as it is, with a copy of the old one beside it (`.mobster-backup`). It writes the full path to `mobster` because apps opened from the Dock don't see your shell's `PATH`, and it never writes a key. `--project DIR` writes `DIR/.gemini/settings.json`.
+
+## Check it
+
+```sh
+mobster mcp doctor
+```
+
+The doctor starts the server the way Gemini CLI does, lists its tools and calls `status`. Then it checks that the Gemini CLI entry runs a `mobster` that exists, and says which command to run if it doesn't. Start a new Gemini CLI session. `/mcp` lists the server and its tools.
+
+## Add the skill
+
+```sh
+mobster mcp install gemini-cli --with-skill
+```
+
+This copies the `mobster` skill into `~/.agents/skills`, so the agent also knows the verify loop and the rules for a real iPhone: ask before anything that sends, buys, posts or deletes, and never enter a passcode.
+
+## Take it out
+
+```sh
+mobster mcp install gemini-cli --remove
+```
+
+This removes the `mobster` entry and leaves your other servers alone. Gemini CLI's own reference for the file is at https://geminicli.com/docs/tools/mcp-server/.

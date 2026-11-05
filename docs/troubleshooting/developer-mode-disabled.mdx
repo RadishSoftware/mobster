@@ -1,0 +1,27 @@
+---
+title: "Developer Mode disabled"
+sidebarTitle: "Developer Mode disabled"
+description: "Developer Mode is off on your iPhone, so Xcode and Mobster can't run their helper on it. Turn it on in Settings and restart the phone."
+icon: "triangle-alert"
+keywords: ["developer mode", "xcodebuild", "iPhone", "settings"]
+"article:modified_time": "2026-10-26"
+---
+
+You see this: Xcode prints `Developer Mode disabled To use … for development, enable Developer Mode in Settings → Privacy & Security.` as the reason for an ineligible destination. Mobster says it as `Developer Mode is off on` your iPhone, and `mobster doctor` prints the Developer Mode line with a `✗`.
+
+## Why it happens
+
+iOS refuses to run development builds, including Mobster's helper, until Developer Mode is on. Mobster never turns it on for you: it's a switch on the phone.
+
+## Fix
+
+1. On the iPhone, open **Settings › Privacy & Security › Developer Mode**.
+2. Turn **Developer Mode** on. The phone restarts.
+3. After the restart, unlock the phone and confirm **Turn On** when it asks.
+4. Plug the phone in, keep it unlocked and choose **Check again** in Mobster for Mac, or run `mobster doctor`.
+
+## Check it worked
+
+`mobster doctor` prints `✓ Developer Mode  on` once it's on.
+
+Checked 26 Oct 2026 against Mobster 0.4.0. Back to [Troubleshooting](/troubleshooting#iphone).

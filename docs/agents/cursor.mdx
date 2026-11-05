@@ -1,0 +1,97 @@
+---
+title: "Use Mobster from Cursor"
+sidebarTitle: "Cursor"
+description: "Add Mobster's MCP server to Cursor in one click or one command. Only Claude Code and Codex are tested with the server."
+icon: "/images/marks-ink/cursor.svg"
+keywords: ["cursor", "mcp", "cursor mcp", "mobster mcp install", "ios testing", "simulator", "cursor rules"]
+---
+
+Use Mobster's command below to add its MCP server to Cursor's config. The server exposes Mobster's tools, including `verify_start`, `screen`, `tap` and `run_tests`. See [the MCP server](/mcp-server) for the full list.
+
+To add the skill as well, see [Editors and Xcode](/agents/editors).
+
+## Add it
+
+With Mobster for Mac in Applications, open this link in Cursor and confirm:
+
+<div className="mob-actions">
+  <a className="mob-button" href="cursor://anysphere.cursor-deeplink/mcp/install?name=mobster&config=eyJjb21tYW5kIjoiL0FwcGxpY2F0aW9ucy9Nb2JzdGVyLmFwcC9Db250ZW50cy9NYWNPUy9tb2JzdGVyLWFnZW50IiwiYXJncyI6WyJtY3AiXX0=">Add Mobster to Cursor</a>
+</div>
+
+Or add it from the terminal:
+
+```sh
+mobster mcp install cursor
+```
+
+It prints what it changed:
+
+```text
+Mobster's MCP server: /Applications/Mobster.app/Contents/MacOS/mobster-agent mcp
+  Cursor          added      ~/.cursor/mcp.json
+Restart Cursor to load the change.
+New sessions of the other clients pick it up. Check it with `mobster mcp doctor`.
+```
+
+Add `--dry-run` to see the change first and write nothing. Run the command again and nothing changes. Mobster for Mac does the same from Settings › Connectors: **Add** beside Cursor, under **Use Mobster from…**.
+
+## What it writes
+
+The entry goes in `~/.cursor/mcp.json`, which Cursor reads in every project:
+
+```json ~/.cursor/mcp.json
+{
+  "mcpServers": {
+    "mobster": {
+      "type": "stdio",
+      "command": "/Applications/Mobster.app/Contents/MacOS/mobster-agent",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+Mobster keeps the rest of the file as it is, with a copy of the old one beside it (`.mobster-backup`). It writes the full path to `mobster` because apps opened from the Dock don't see your shell's `PATH`, and it never writes a key. `--project .` writes this repository's `.cursor/mcp.json` instead.
+
+## Check it
+
+```sh
+mobster mcp doctor
+```
+
+The doctor starts the server the way Cursor does, lists its tools and calls `status`. On 26 Oct 2026 (Mobster 0.4.0, no key set) its last lines were:
+
+```text
+OK in 1549 ms.
+  Cursor          set up     ~/.cursor/mcp.json
+```
+
+Restart Cursor. Its settings list `mobster` with its tools under MCP.
+
+## Check a screen
+
+Build your app for the simulator, then ask Cursor's agent in your project:
+
+```text
+Use Mobster to check that the app's first screen shows "Today".
+```
+
+Ask your agent to call `verify_start` with the app's path and the expectation. Ask it to drive the simulator with `screen` and `tap`. Ask it to finish with `verify_finish`. `verify_finish` checks the declared expectations. You get a verdict of `passed`, `failed`, `needs_review` or `couldnt_run`. You get the report path and an overlay frame when available. No model grades the outcome. Your agent supplies the model access for this loop. [The key-less loop](/mcp-server#the-key-less-loop)
+
+## Add the rules and the skill
+
+```sh
+mobster mcp install cursor --with-skill --rules .
+```
+
+`--rules .` writes `.cursor/rules/mobster.mdc` and a block in `AGENTS.md`, which tell Cursor's agent to check its UI changes with Mobster. `--with-skill` copies the skill into `~/.agents/skills/ios-testing`: the verify loop and the rules for a real iPhone, such as asking before anything that sends, buys, posts or deletes. Run it again and nothing changes.
+
+To see your checks and the simulator beside your code, add [Mobster's extension for Cursor and VS Code](/agents/editor-extension).
+
+## Remove the MCP server
+
+```sh
+mobster mcp install cursor --remove
+```
+
+This removes the `mobster` entry and leaves your other servers alone. Add `--rules .` to take the rules out too. Cursor's own reference for the file is at https://cursor.com/docs/context/mcp.

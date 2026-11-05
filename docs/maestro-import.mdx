@@ -1,0 +1,183 @@
+---
+title: "Moving from Maestro"
+sidebarTitle: "Moving from Maestro"
+keywords: ["maestro", "maestro import", "import maestro flows", "mobster import maestro", "mobster test import", "yaml flows", "migrate from maestro", "switch from maestro"]
+description: "Convert your Maestro YAML flows into Mobster checks with mobster import maestro, see what each command becomes, and run them on simulators and your iPhone."
+icon: "file-input"
+---
+
+`mobster import maestro` reads Maestro flows and writes Mobster checks that `mobster test`, `mobster verify --check` and the `run_tests` MCP tool run. It keeps each flow's name and the order of its commands. It reads the flows as data with a YAML parser, never runs a flow, and never sends a flow's text to a model as an instruction. (`mobster test import maestro` is the same command.)
+
+No command is dropped without a line in the output. A command Mobster can't run becomes a step marked `TODO` that Smart fills on the check's first run, and the summary table counts it under "Needs a first run". An assertion Mobster can't judge is never turned into a step, because a model never decides a Mobster verdict: the flow is refused and counted under "Unsupported".
+
+## A flow and its check
+
+A Maestro flow, `.maestro/checkout.yaml`:
+
+```yaml
+appId: com.example.shop
+name: Checkout with a promo code
+env:
+  PROMO: SPRING10
+---
+- launchApp
+- tapOn: Cart
+- tapOn:
+    id: promo_field
+- inputText: ${PROMO}
+- runScript: scripts/promo.js
+- takeScreenshot: cart
+- back
+- scroll
+- assertVisible: "Total: .*"
+- assertNotVisible: Cart is empty
+```
+
+The check `mobster import maestro .maestro` writes to `.mobster/checks/checkout.yaml`:
+
+```yaml
+# Imported from the Maestro flow checkout.yaml.
+# Run it with: mobster test <this file>
+version: 1
+name: Checkout with a promo code
+app:
+  bundle: com.example.shop
+reset: none
+tags:
+- maestro
+steps:
+- Tap "Cart"
+- Tap the element with accessibility id "promo_field"
+- Type "SPRING10" into the focused text field
+- 'TODO (Maestro runScript, not imported): runs JavaScript, which Mobster doesn''t run. Look at the screen
+  and do what this point in the flow needs, or nothing if it needs nothing'
+- 'TODO (Maestro takeScreenshot, not imported): Mobster records a frame for every step of every run. Look
+  at the screen and do what this point in the flow needs, or nothing if it needs nothing'
+- Go back one screen with the Back button on screen, or by swiping from the left edge
+- Scroll down
+expect:
+- visible:
+    label: '/^(?:Total: .*)$/i'
+  name: 'Total: .* is visible'
+- absent:
+    label: /^Cart is empty$/i
+  name: Cart is empty is not visible
+```
+
+The commands map one to one and keep their order. `${PROMO}` was filled from the flow's `env`. The two `TODO` steps are the commands Mobster doesn't run. The expectations come last, because Mobster judges them on the accessibility tree once the steps end.
+
+## Import a folder of flows
+
+From your project folder:
+
+```sh
+mobster import maestro .maestro --app build/Debug-iphonesimulator/YourApp.app
+```
+
+`PATH` is a flow file or a folder. A folder is read for its top-level `.yaml` and `.yml` files; a flow in a subfolder is imported when another flow runs it with `runFlow`. Checks go to `.mobster/checks`, or to the folder you give with `-o`.
+
+```text
+Imported 2 of 3 Maestro flows (3 checks) into .mobster/checks
+
+checkout.yaml
+  wrote .mobster/checks/checkout.yaml: 7 steps, 2 expectations
+  needs a first run, command 5 (runScript): runs JavaScript, which Mobster doesn't run
+  needs a first run, command 6 (takeScreenshot): Mobster records a frame for every step of every run
+  note: 2 commands became a step marked TODO: the first run (Smart) fills it, then replay keeps what it did; read that run's report before you trust the check
+
+login.yaml
+  wrote .mobster/checks/login-part-1.yaml: 7 steps, 2 expectations
+  wrote .mobster/checks/login-part-2.yaml: 9 steps, 1 expectation
+
+price-check.yaml
+  refused: it has commands Mobster can't run, so no check was written
+    command 3 (assertTrue): judges a JavaScript condition, which Mobster doesn't run
+      instead: write the condition as assertVisible or assertNotVisible on what the screen shows
+
+Flow              Converted  Needs a first run  Unsupported
+checkout.yaml             8                  2            0
+login.yaml               14                  0            0
+price-check.yaml          2                  0            1
+Total                    24                  2            1
+
+1 flow refused: Mobster won't write a check that covers less than the flow does. Fix the commands named above, or add --skip-unsupported to drop the ones that aren't assertions and list each.
+Run them with: mobster test .mobster/checks
+```
+
+The command exits 1 when it refused a flow and 0 otherwise. Each check starts with a comment that names the flow it came from. Converted counts the commands that became steps or expectations as written, including the commands of a `runFlow` subflow.
+
+Import twice and you get the same files: a check already on disk exactly as imported prints `unchanged`. A check that differs, such as one you edited, is kept and the output says so. Only `--force` replaces it.
+
+| Flag | Meaning |
+| --- | --- |
+| `--app PATH` | Write this `.app`, built for the iOS Simulator, into each check. Without it, a check names only the bundle ID and runs the app already installed on the simulator. |
+| `--bundle ID` | The bundle ID for a flow with no `appId`. It also wins over the `appId` of the others. |
+| `--skip-unsupported` | Drop the commands Mobster can't run instead of turning each into a `TODO` step, and list each. An assertion is never dropped: a flow with an unsupported assertion is still refused. |
+| `--dry-run` | Print what would be written and write nothing. |
+| `--force` | Replace checks that exist. Without it, an existing check is kept and the output says so. |
+| `-o PATH` | The folder to write the checks to. |
+
+## Run them
+
+```sh
+mobster test .mobster/checks
+```
+
+The steps are plain English, so Smart runs them the first time and records the path. After a pass, the next runs replay the recorded path with no model ([Replay and heals](/testing#replay-and-heals)). The expectations are judged on the accessibility tree and never by a model. A check run on a real iPhone uses the same license gate as any other check: `mobster test --device NAME`.
+
+## What converts
+
+| Maestro command | Becomes |
+| --- | --- |
+| `launchApp` | The check's `app`. `clearState: true` on the first `launchApp` sets `reset: data`. A later `launchApp` is a step that opens the app again. `arguments` and `permissions` are refused. |
+| `tapOn` | A step: `Tap "text"`. A selector can be text, `id`, `point`, `index`, `enabled`, `selected` and the relative filters `below`, `above`, `leftOf`, `rightOf`. `doubleTapOn` and `longPressOn` are steps too. |
+| `inputText` | A step: `Type "text"`. `eraseText` and `hideKeyboard` are steps. |
+| `assertVisible` | An expectation: `visible`. A selector with `index`, `point`, a relative filter or `optional` is refused, because the assertion can't carry it. Assert the text or the `id`. |
+| `assertNotVisible` | An expectation: `absent`, with the same selectors. |
+| `extendedWaitUntil` | The same expectation. Mobster judges after the steps, once the screen settles for up to `--assert-timeout` seconds, so a `timeout` over 5 s adds a note. |
+| `scroll`, `scrollUntilVisible`, `swipe` | A step in plain words, such as `Swipe up`. |
+| `back` | A step. iOS has no back key, so the step taps the Back button on screen or swipes from the left edge, and a note says so. |
+| `pressKey` | A step for `Home`, `Enter` and `Backspace`. Other keys are refused. |
+| `openLink` | A step that opens the URL. |
+| `waitForAnimationToEnd` | Nothing: Mobster waits for the screen to settle before every step and every expectation. A note says so. |
+| `runFlow` | The commands of the other flow, in place. `file:` and `commands:` work, with `env:`. The file must stay inside the folder you import, a flow that runs itself is refused, and nesting stops at 8 levels. |
+
+`${NAME}` is replaced from the flow's `env`, the `runFlow` `env` and the `appId`. A name with no value is refused.
+
+### How text matches
+
+Maestro matches `text` as a pattern against the whole text and ignores case. The check keeps that: `assertVisible: "get started"` becomes `/^get started$/i`, so it matches the label `GET STARTED`. A selector that is already a pattern, such as `"Order #[0-9]+"`, is anchored the same way. An `id` stays exact.
+
+The match is on the element's accessibility label. The Expo starter's documentation link has the label `Expo documentation, arrow.up.right.square`, so `assertVisible: "Expo documentation"` fails and `assertVisible: "Expo documentation.*"` passes. The failure names the closest label it found.
+
+### Assertions in the middle of a flow
+
+Mobster judges every expectation once, after the last step. A flow that asserts between actions would lose those assertions if it became one check. Mobster writes one check per group instead: `flow-part-1` holds the steps up to the first assertion and that assertion, `flow-part-2` holds the steps up to the second, and so on. Each part replays the steps from the start. No assertion is dropped.
+
+Steps after the last assertion come after everything a check can judge. The output lists them, because no expectation covers them.
+
+### What is ignored
+
+These options change timing or wording and are dropped, with no effect on what a check proves: `label`, `duration`, `speed`, `timeout`, `retryTapIfNoChange`, `waitToSettleTimeoutMs`, `delay`. `optional: true` on an assertion is refused, because an optional assertion judges nothing. On a tap it becomes a step that skips when the element isn't there.
+
+## What needs a first run, and what is refused
+
+Every row names the command and says what to do instead. A command that isn't an assertion becomes a `TODO` step. Run the check once with Smart and read its report: Smart does what the step needs at that point, or nothing, and replay keeps the path it took. An assertion is refused, and so is a command with a value Mobster can't read.
+
+| Maestro command | Instead |
+| --- | --- |
+| `runScript`, `evalScript`, `assertTrue` | Move the logic into the app or the launch environment, or write the condition as `assertVisible`. |
+| `assertWithAI`, `assertNoDefectsWithAI` | Write the assertion as `assertVisible` or `assertNotVisible`. A model never decides a Mobster verdict. |
+| `assertScreenshot` | Assert the text or element the screenshot proves. |
+| `repeat`, `retry` | Write the steps out, or use `scrollUntilVisible`. `mobster test --retries N` retries a whole check. |
+| `runFlow` with `when` | Split the flow into two files. |
+| `copyTextFrom`, `pasteText`, `${output.x}` | A check has no variables. |
+| `setLocation`, `setPermissions`, `travel`, `setAirplaneMode`, `setOrientation`, `addMedia` | Set it before the run with `xcrun simctl`. |
+| `stopApp`, `killApp`, `clearState`, `clearKeychain` | Use `reset:` in the check, or `launchApp` again. |
+| A command Mobster doesn't know | A `TODO` step, named in the output. An unknown `assert…` command refuses the flow. |
+
+The rows that name an assertion (`assertTrue`, `assertWithAI`, `assertNoDefectsWithAI`, `assertScreenshot`) refuse the flow. Every other row becomes a `TODO` step.
+
+## Check the result
+
+Read the imported checks before you commit them. The import can't tell whether a Maestro pattern matches the same label on iOS as it does in Maestro, and a flow written for Android may name text your iOS app doesn't show. Run `mobster test` once and read the first report ([Reports](/testing#reports)).

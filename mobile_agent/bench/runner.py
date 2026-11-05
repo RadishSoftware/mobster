@@ -1,32 +1,14 @@
-"""Runs the plan: health check, reset, agent, grade, record. Resumable, order-randomized.
+"""Runs the plan: health check, yield, reset, agent, grade, record. Resumable, order-randomized (bench README)."""
 
-Hygiene, in order, for every attempt:
-1. ``phone.health``: WDA answers, has a session, the phone is NOT locked. A
-   locked or unresponsive phone halts the run (resume later with ``--resume``).
-2. Yield (GET only) while the installed Mobster app has a queued/running task.
-3. Reset under the exclusive device lease: terminate + relaunch the start app,
-   pop to its root (or open the start URL), verified by the probe. Start-screen
-   values that change day to day are captured here (``truth.capture_from_reset``).
-4. The agent runs against the task's time and step budgets.
-5. Grading: the probe (own WDA connection) reads the device; checks compare
-   with ground truth fixed before the run.
-6. One JSON line per attempt, flushed and fsynced. ``--resume`` skips attempts
-   already recorded (infrastructure failures are retried).
-
-Order: for each repeat, tasks are shuffled and, per task, agents are shuffled,
-from a seed stored in the plan, so time-of-day drift and warm caches spread
-across agents instead of favouring whichever ran first.
-"""
-
-from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
 import json
-import re
 import os
-from pathlib import Path
 import random
+import re
 import subprocess
 import time
+from dataclasses import asdict, dataclass
+from datetime import datetime, timezone
+from pathlib import Path
 
 from .agents.base import AgentRun, Context
 from .checks import CheckContext, grade
@@ -148,7 +130,7 @@ def load_records(path):
 
 class Runner:
     def __init__(self, *, tasks, agents, out_dir, wda_url, device, truth, fixtures, repeats=3, seed=None,
-                 yield_to="http://127.0.0.1:8765", probe_factory=None, phone_factory=None, health=phone_health,
+                 yield_to="http://127.0.0.1:8765", probe_factory=None, health=phone_health,
                  fixture_verifier_factory=None, lease_factory=None, log=print, clock=time.monotonic,
                  halt_after_failures=2, sleep=time.sleep, order_mode="shuffle", monitor_factory=Monitor,
                  harness=None, spend_cap_usd=None, grade_fn=None):
@@ -163,7 +145,6 @@ class Runner:
         self.seed = seed if seed is not None else int(time.time())
         self.yield_to = yield_to
         self.probe_factory = probe_factory
-        self.phone_factory = phone_factory
         self.health = health
         self.fixture_verifier_factory = fixture_verifier_factory
         self.lease_factory = lease_factory
@@ -314,35 +295,18 @@ class Runner:
         self.sleep(0.5)  # let the relaunched app finish its first layout pass
 
         monitor = self.monitor_factory(task)
-        phone = None
-        try:
-            if getattr(agent, "kind", "") == "baseline":
-                phone = self.phone_factory(self.wda_url, health.session)
-        except Exception as error:
-            return {**base, "verdict": INFRA, "error": f"phone setup failed: {type(error).__name__}: {error}"}
         started = self.clock()
-        ctx = Context(phone=phone, wda_url=self.wda_url, monitor=monitor, deadline=started + task.max_seconds,
+        ctx = Context(wda_url=self.wda_url, monitor=monitor, deadline=started + task.max_seconds,
                       started=started, session=health.session or "",
                       artifacts=str(self.out / "artifacts" / re.sub(r"[^\w.-]", "_", attempt.key)))
         try:
-            if getattr(agent, "kind", "") == "baseline":
-                with self._lease():
-                    run = agent.run(task, ctx)
-            else:
-                run = agent.run(task, ctx)  # Mobster takes the device lease itself, as serve does.
+            run = agent.run(task, ctx)  # Mobster takes the device lease itself, as serve does.
         except Exception as error:
             run = AgentRun(status="error", reason=f"{type(error).__name__}: {error}")
-        finally:
-            if phone is not None:
-                try:
-                    phone.close()
-                except Exception:
-                    pass
         wall_ms = (self.clock() - started) * 1000
         run.wall_ms = round(wall_ms, 1)
         run.monitor_ms = round(monitor.monitor_ms, 1)
-        throttle_ms = (run.detail or {}).get("throttle_ms", 0)
-        run.agent_ms = round(wall_ms - monitor.monitor_ms - throttle_ms, 1)
+        run.agent_ms = round(wall_ms - monitor.monitor_ms, 1)
         run.unsafe = monitor.unsafe
         run.unintended = monitor.unintended
         if run.unsafe and run.status not in ("unsafe_stopped",):
@@ -484,7 +448,8 @@ def _safe_config(agent):
 def _line(record):
     verdict = record["verdict"].upper()
     if record["verdict"] in (INFRA, SKIPPED):
-        return f"  [{record['repeat'] + 1}] {verdict:8} {record['task']:28} {record['agent']:13} {record.get('error', '')[:90]}"
+        return (f"  [{record['repeat'] + 1}] {verdict:8} {record['task']:28} {record['agent']:13} "
+                f"{record.get('error', '')[:90]}")
     failing = "; ".join(f"{c['check']}: {c['detail']}" for c in record.get("checks", []) if c.get("ok") is False)
     return (f"  [{record['repeat'] + 1}] {verdict:8} {record['task']:28} {record['agent']:13} "
             f"{record.get('agent_ms', 0) / 1000:6.1f}s steps={record.get('decision_steps')} "

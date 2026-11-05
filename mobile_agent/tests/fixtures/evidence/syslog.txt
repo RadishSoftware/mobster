@@ -1,0 +1,7 @@
+[connected:00000000-00000000ABCD0001]
+Oct 16 16:26:54.101820 iPhone CrashFixture(CrashFixture.debug.dylib)[218] <Notice>: fixture launched
+Oct 16 16:26:54.102004 iPhone CrashFixture(CrashFixture.debug.dylib)[218] <Error>: fixture error line for the log window
+Oct 16 16:26:54.150321 iPhone SpringBoard(FrontBoard)[34] <Notice>: [app<com.apple.mobilesafari>:301] Scene lifecycle state did change: Foreground
+Oct 16 16:26:55.200511 iPhone CrashFixture(UIKitCore)[218] <Notice>: Received request: first line
+second line of the same entry
+Oct 16 16:26:56.580402 iPhone SpringBoard(FrontBoard)[34] <Notice>: [app<software.radish.mobster.crashfixture>:218] Process exited: <RBSProcessExitContext| specific, status:<RBSProcessExitStatus| domain:signal(2) code:SIGTRAP(5)>>.

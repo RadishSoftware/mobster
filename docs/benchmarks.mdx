@@ -1,0 +1,92 @@
+---
+title: "Benchmarks"
+description: "How Mobster is measured, the latest results, and how to run the same suites yourself."
+icon: "gauge"
+---
+
+Mobster is measured on a real iPhone, on a public simulator benchmark, and beside the tools people use instead. Each number below gives its date, device and task count. Graders never read the agent's own claims. The full method, commands and every run are in [mobile_agent/docs/benchmarks.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/benchmarks.md).
+
+## MobsterBench-iOS
+
+This project's pre-registered suite: 68 tasks on stock Apple apps and a few stable web pages, on one iPhone 15 Pro over USB, graded by oracles (`mobile_agent/bench/`). An oracle grades each task from its own WDA reads of the device or from ground truth fixed before the run. On 24 Sep 2026, Mobster's agent passed 54 of 66 graded tasks (82%, 95% CI 71 to 89), with a median of 7.7 s and \$0.0057 a task. Fixes went in between passes, so the tasks were not held out, and no other agent has run the suite. An accessibility read takes about 130–210 ms on that iPhone (22 Sep 2026).
+
+## iOSWorld
+
+[iOSWorld](https://github.com/ljang0/iOSWorld) is a published benchmark: 133 tasks over 26 SwiftUI apps on an iPhone simulator, scored by its own LLM judge. Mobster for Mac's simulator manager runs it with iOSWorld's own reset and judge; the runner isn't in the open-source tree.
+
+On 18 Oct 2026, Mobster's agent ran all 133 tasks once, cold, on one iPhone 17 Pro simulator (iOS 26.4), with Claude Sonnet 5.5 and iOSWorld's 50-step limit:
+
+| | Mobster, 18 Oct 2026 | Best paper entry (Opus 4.6, vision and accessibility tree) | Droidrun mobile-harness (community entry, read 18 Oct 2026) |
+|---|---|---|---|
+| All 133 tasks | 53.4% (51.1% and 55.6% on two judgings) | 51.9% | 92.5% (mixed judges; 89.5% with the official judge alone) |
+| Single-app (27) | 74.1% | 81.5% | not published |
+| Multi-app (60) | 52.5% | 36.7% | not published |
+| Memory (46) | 42.4% | 54.3% | not published |
+| Cost a task | \$0.14 at list price | not published | not published |
+| Agent time a task (median) | 94.5 s | not published | not published |
+
+- **The judge differs.** iOSWorld's own judge script ran unchanged, but its model call went to gpt-5.6-terra through the Codex CLI, because the official gpt-5.4-mini wasn't available to this run. The scores use different judges, so their gaps do not isolate differences in agent performance. The two independent judgings agree on 89.5% of tasks.
+- **Droidrun used a different setup.** Its [methodology](https://mobilerun.ai/benchmark/method/) describes app cards and memory refined from execution traces, 30 minutes per session, and corrected fixtures for three tasks. Its published 92.48% binary pass rate uses GPT-6.1 Sol to rejudge the 14 tasks GPT-5.4 mini scored below a full pass; GPT-5.4 mini alone gives 89.47%. Mobster ran cold and doesn't use iOSWorld data in its prompts or memory.
+- [The detailed notes](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/benchmarks.md#iosworld) have the earlier runs and the paired A/B protocol.
+
+## Everyday tasks on a real iPhone
+
+14 read-only tasks people ask a phone agent for (Settings, Clock, Safari, Instagram DMs, Calendar and Maps, Reminders, Messages and Gmail), on one iPhone 15 Pro (iOS 26.0.1), 14 Oct 2026, one run per task, graded blind:
+
+| Agent | Passed | Median time | Mean list price a task |
+|---|---|---|---|
+| Mobster's agent (Claude Sonnet 5.5) | 10 of 14 | 23 s | \$0.040 |
+| Claude Code (Sonnet 5.5) with Mobster's MCP | 9 of 14 | 25 s | \$0.065 |
+| Codex (gpt-6.1-sol) with Mobster's MCP | 9 of 14 | 34 s | \$0.072 |
+| Codex (gpt-6.1-sol) with phone-harness 0.3.2 | 7 of 14 | 78 s | \$0.120 |
+| Claude Code (Sonnet 5.5) with phone-harness 0.3.2 | 5 of 14 | 120 s | \$0.132 |
+
+One run per task, so one task moves a rate by 7 points. On both sides, voided runs were set aside. For phone-harness, the causes were the Mac's "XCTest - Authenticate" password prompt; the Mobster app updating and relaunching mid-run and iPhone Mirroring quitting; other windows covering iPhone Mirroring; our answer capture leaving Messages scrolled down; a rate limit; and earlier task 1 attempts while the Mac was busy. The window interference included Chrome or Orca covering Mirroring for most of a run while the Mac was busy, and all 10 runs of tasks 9 to 13 across both phone-harness arms in the set that ran between 15:36 and 18:08. During that set, the owner and other agents used the Mac: Orca, Chrome, Messages, Spotify, Discord and Mobster took the foreground, leaving Mirroring in front for 17 to 84% of each run. The whole set was set aside and rerun in a quiet window from 18:27. Claude Code with phone-harness and Codex with phone-harness each passed 1 of 5 in the busy set; in the quiet reruns, they passed 2 of 5 and 1 of 5, respectively. Setting the set aside did not favour Mobster. For Mobster, the causes were app permission cards declined under the bench rules before the owner allowed the nine apps; the WebDriverAgent helper being down; Mobster's MCP server hanging before a run was created; a read_screen call excluded by the bench's tool allow-list; the phone being unplugged mid-run; and an earlier declined navigation card. Most voided tasks ran once more. Six tasks had two attempts set aside and ran twice more: Mobster's agent task 8 had two declined app cards, and task 14 had the MCP hang, then a declined card; Claude Code with phone-harness task 10 had the rate limit, then the busy set, and task 13 had the busy set, then another window covering Mirroring; Codex with phone-harness tasks 11 and 12 each had the busy set, then another window covering Mirroring. The last valid run counts; Mobster's agent tasks 7 and 9 kept their existing valid runs. Mobster and the MCP arms ran over USB with the iPhone unlocked; phone-harness ran over iPhone Mirroring with it locked, as phone-harness requires. Every agent failed the TikTok feed task and the 20-Reels task.
+
+## Checks against Maestro
+
+The same check (open Settings, open a paywall, expect "Choose your plan" and three plans) in a test app on one simulator (iPhone 17 Pro, iOS 26.4), 17 Oct 2026:
+
+| | Mobster | Maestro 2.4.0 |
+|---|---|---|
+| Write the check: a coding agent (Codex, gpt-6.1-sol) from one English spec to a passing run, 3 runs each | 55.5 s median | 93.6 s median |
+| Run one check, one command, 6 interleaved pairs | 13.3 s median | 23.6 s median |
+| Run the same check 20 times, two interleaved batches of 10 | 166.6 s, replay with zero model calls | 190.8 s |
+| Runs that passed | all | all |
+| Model calls in a replay | 0 | 0 (a flow is a script) |
+
+Mobster's first run of a check calls Smart once to record the path; Maestro's flow names each tap by id instead. Maestro can't run a flow on a physical iPhone.
+
+## Reliability scorecard
+
+The scorecard lists Mobster's own numbers for each pack action and each starter workflow on one real iPhone: how many tries passed, and the p50 and p95 time and cost of the passes. It is re-run every week, keeps every run, and compares nothing with another product.
+
+{/* Public with the scorecard (site/content/gates.ts, scorecard): this paragraph and the badge go live in the change that opens the gate, and site/tests/scorecard.test.mjs fails until they do.
+The latest run, its history and a table for each audience, account management and testing, are on [the reliability scorecard](https://mobster.dev/scorecard).
+
+![Mobster reliability](https://mobster.dev/scorecard/badge.svg)
+*/}
+
+The method:
+
+| Part | What it is |
+|---|---|
+| The list | A fixed list for two audiences, account management and testing. Pack actions are the App API's readers, such as `instagram_dms` and `settings_about`. Starter workflows are the read-only tasks Mobster for Mac offers on first run, such as clearing a DM backlog into a review queue, with their words unchanged |
+| The tries | 10 of each pack action and 3 of each starter workflow, one at a time, interleaved, on one iPhone that is unlocked and ready, with Mobster for Mac running. No try is repeated |
+| Pass | A pack action passes when it returns rows (an action that can be empty, such as Safari tabs, passes with none). A starter workflow passes when the task finishes and the screen proved its answer |
+| Fail | Anything else that happens on the phone: a read that couldn't read, a task that ran out of time, asked for an approval or stopped short. The run never approves an approval card |
+| Skipped | A try that never reached Mobster: the phone was locked, unplugged or busy with another task. It is counted and shown beside the row, and it is left out of the rate |
+| Time and cost | Time runs from the request to the finished read or task. Cost is the list price of the task's model calls, and a read makes none, so it costs \$0. The p50 and p95 count passes only |
+| When a run is published | A run is published only when it names the phone's model and iOS version and the build's commit, when every number in it follows from its tries, and when at least 80% of the tries reached the phone. An app the phone doesn't have is listed as not measured |
+
+Every item only reads. None sends, posts, likes, follows, buys or deletes, and the run measures what Mobster does, not what a person would approve.
+
+## Run them yourself
+
+The offline checks need no phone:
+
+```sh
+python -m mobile_agent.bench dry-plan     # suite hash, ground-truth coverage, fixtures, time and cost estimate
+```
+
+The device runs need a USB iPhone set up as in [Device setup](/device-setup), with the benchmark's fixtures installed. The iOSWorld runs need simulators and an OpenAI key for iOSWorld's judge. [mobile_agent/bench/README.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/bench/README.md) has the commands and the decision rule.

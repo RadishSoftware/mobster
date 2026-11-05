@@ -1,0 +1,19 @@
+---
+title: "Requirements"
+description: "What you need for tasks on your iPhone, and for checks on a simulator."
+icon: "clipboard-list"
+keywords: ["system requirements", "macOS version", "Xcode version", "Apple silicon", "what do I need"]
+---
+
+import Requirements from '/snippets/requirements.mdx';
+
+<Requirements />
+
+## Why each one
+
+- **Xcode and Developer Mode.** Mobster drives the iPhone through WebDriverAgent, a test runner built on Apple's XCTest framework. iOS runs it only with Developer Mode on and an Apple signature, which Xcode makes with your Apple Account. Mobster for Mac builds and signs it for you; [Device setup](/device-setup) does it by hand.
+- **A cable.** WebDriverAgent listens on the phone's own loopback, and Mobster reaches it over USB. [Wi-Fi](/wifi) is a preview that's off unless you turn it on.
+- **A model provider.** Mobster's agent runs on your own key, billed by your provider, or on a plan you already pay for, such as Codex, Claude Code or Gemini CLI. Nothing goes through a Mobster account. [Models and keys](/models-and-keys) says which key does what.
+- **The first build.** The first install of Mobster's helper on an iPhone takes about 2 minutes: 115 seconds to build, sign and install, measured 17 Oct 2026 on an M5 Max Mac and an iPhone 15 Pro. Xcode itself is a large download.
+
+Mobster drives iPhones and iOS simulators. Experimental Android support runs launch-only and key-less checks on emulators. Enable it with `MOBSTER_EXPERIMENTAL_ANDROID=1` ([Android](/android)). Mobster doesn't drive hosted phones.

@@ -98,8 +98,8 @@ def load_cases(roots, n, seed=20261009, max_marks=120, min_rows=0):
 
 
 def question(case, framing):
-    from ..decision_provider import Question
     from ..decider_scope import TARGET, admit
+    from ..decision_provider import Question
     from ..marks import options
     admit(TARGET, op="TAP")
     request = section(case["text"], "Request: ")

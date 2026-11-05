@@ -1,0 +1,4 @@
+2026-09-26 10:12:03.412 xcodebuild[4121:88213] Error Domain=com.apple.dt.deviceprep Code=-3 "Unable to launch app.mobster.wda.runner.xctrunner because the device was not, or could not be, unlocked." UserInfo={NSLocalizedDescription=The device is locked.}
+Testing failed:
+	WebDriverAgentRunner-Runner encountered an error (Unable to launch app.mobster.wda.runner.xctrunner because the device was not, or could not be, unlocked.)
+** TEST EXECUTE FAILED **

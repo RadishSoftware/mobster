@@ -1,0 +1,103 @@
+---
+title: "Use Mobster from Claude Code"
+sidebarTitle: "Claude Code"
+description: "Add Mobster's MCP server to Claude Code with one command, so Claude checks your iOS app on a simulator and drives your iPhone."
+icon: "/images/marks/claude.svg"
+keywords: ["claude code", "claude", "mcp", "claude mcp add", "mobster mcp install", "ios testing", "simulator"]
+---
+
+Mobster adds its MCP server to Claude Code for every project on this Mac. Claude Code then lists Mobster's tools, including `verify_start`, `screen`, `tap` and `run_tests`. See [the MCP server](/mcp-server) for the full list.
+
+## Add it
+
+```sh
+mobster mcp install claude-code
+```
+
+It prints what it changed:
+
+```text
+Mobster's MCP server: /Applications/Mobster.app/Contents/MacOS/mobster-agent mcp
+  Claude Code     added      ~/.claude.json
+New sessions of the other clients pick it up. Check it with `mobster mcp doctor`.
+```
+
+Start a new Claude Code session to load it. Add `--dry-run` to see the change first and write nothing. Run the command again and nothing changes.
+
+Without the `mobster` command on your `PATH`, run Claude Code's own command with the agent inside Mobster for Mac:
+
+```sh
+claude mcp add --scope user mobster -- /Applications/Mobster.app/Contents/MacOS/mobster-agent mcp
+```
+
+`--scope user` adds it to every project. Without it, Claude Code adds the server to the current folder only. Mobster for Mac does the same from Settings › Connectors: **Add** beside Claude Code, under **Use Mobster from…**.
+
+## What it writes
+
+When the `claude` command is on your `PATH`, Mobster runs `claude mcp add --scope user`, as above. Otherwise it writes the same entry in `~/.claude.json`, or in `$CLAUDE_CONFIG_DIR/.claude.json` when that is set:
+
+```json ~/.claude.json
+{
+  "mcpServers": {
+    "mobster": {
+      "type": "stdio",
+      "command": "/Applications/Mobster.app/Contents/MacOS/mobster-agent",
+      "args": ["mcp"],
+      "env": {}
+    }
+  }
+}
+```
+
+It writes the full path to `mobster`, and it never writes a key. `--project DIR` writes `DIR/.mcp.json` instead, a file you commit so everyone on the project gets the server.
+
+## Check it
+
+```sh
+mobster mcp doctor
+```
+
+The doctor starts the server the way Claude Code does, lists its tools and calls `status`. It also checks that Claude Code's entry points to an existing `mobster` executable. On 26 Oct 2026 (Mobster 0.4.0, no key set) it printed:
+
+```text
+Server: /Applications/Mobster.app/Contents/MacOS/mobster-agent mcp
+  started with launchd's PATH (/usr/bin:/bin:/usr/sbin:/sbin), as an app from the Dock would start it
+  initialize             659 ms
+  tools/list              14 ms
+  tools/call status      799 ms
+  130 tools: status, verify_start, wait, screen, tap, type_text, swipe, ...
+  status: Mobster 0.4.0. Smart: off (no OpenAI or Anthropic key; set OPENAI_API_KEY or ANTHROPIC_API_KEY, or pass --env-file).
+  ...
+OK in 1549 ms.
+  Claude Code     set up     ~/.claude.json
+```
+
+In Claude Code, `/mcp` lists `mobster`.
+
+## Check a screen
+
+Build your app for the simulator, then ask Claude Code in your project's folder:
+
+```text
+Use Mobster to check that the app's first screen shows "Today".
+```
+
+Claude calls `verify_start` with the app's path and the expectation, drives the simulator with `screen` and `tap`, and calls `verify_finish`. `verify_finish` checks the declared expectations. You get a verdict of `passed`, `failed`, `needs_review` or `couldnt_run`. You get the report path and an overlay frame when available. No model grades the outcome. Claude drives with its own model, so Mobster needs no key. [The key-less loop](/mcp-server#the-key-less-loop)
+
+## Add the skill
+
+```sh
+mobster mcp install claude-code --with-skill
+```
+
+This copies the skill into `~/.claude/skills/ios-testing`, so Claude also knows the verify loop and the rules for a real iPhone: ask before anything that sends, buys, posts or deletes, and never enter a passcode. The [Claude Code plugin](/agents/plugin-and-skill) adds the skill too.
+
+`--with-xcode-tools` also adds Xcode's own MCP tools (`xcrun mcpbridge`, Xcode 26.3 or later) to Claude Code.
+
+## Remove the MCP server
+
+```sh
+mobster mcp install claude-code --remove
+```
+
+This removes the `mobster` entry and leaves your other servers alone. Claude Code's own reference for MCP servers is at https://code.claude.com/docs/en/mcp.

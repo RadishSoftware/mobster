@@ -1,0 +1,26 @@
+---
+title: "WebDriverAgent is not answering at http://127.0.0.1:8100"
+sidebarTitle: "WebDriverAgent is not answering"
+description: "Mobster's helper isn't running on your iPhone, or the USB relay to it isn't. Open Mobster for Mac or run mobster serve --manage-device."
+icon: "triangle-alert"
+keywords: ["WebDriverAgent", "8100", "doctor", "USB relay"]
+"article:modified_time": "2026-10-26"
+---
+
+You see this: Mobster blocks your live run with `WebDriverAgent is not answering at http://127.0.0.1:8100`. When you run `mobster doctor`, you see `✗ Phone connection  nothing answers at 127.0.0.1:8100`.
+
+## Why it happens
+
+WebDriverAgent is the helper Mobster installs on the iPhone. Port 8100 on this Mac is the USB relay to it. Either the helper stopped, or the relay did.
+
+## Fix
+
+1. Open Mobster for Mac, or run `mobster serve --manage-device`. Either starts both the helper and the relay, and restarts them if they stop.
+2. Unlock the iPhone and keep it connected. If the helper keeps stopping, check [Developer Mode](/troubleshooting/developer-mode-disabled) and [Enable UI Automation](/troubleshooting/timed-out-while-enabling-automation-mode).
+3. For a simulator, run `mobster sim prepare --device NAME`.
+
+## Check it worked
+
+When you run `mobster doctor`, you see `✓ Phone connection` with `ready` at the end of the line.
+
+Checked 5 Nov 2026 against Mobster 0.4.0. Back to [Troubleshooting](/troubleshooting#iphone).

@@ -1,4 +1,5 @@
-"""python -m mobile_agent.evals.redteam --live [--model M] [--cap 2.00] [--agent mobster|plain] [--case PREFIX] [--out FILE] [--ledger FILE]
+"""python -m mobile_agent.evals.redteam --live [--model M] [--cap 2.00] [--agent mobster|plain] [--case PREFIX] [--out
+FILE] [--ledger FILE]
 
 The red-team cases with a real model deciding: the same synthetic screens on the fake phone, the task contract
 compiled by the model, Ask before acting with a person who declines every card. Needs the model's key (for Claude,
@@ -17,12 +18,12 @@ Never run as a check (AGENTS.md): it calls a model and costs money. Each run's s
 """
 
 import argparse
-from datetime import datetime
 import json
 import os
-from pathlib import Path
 import sys
 import time
+from datetime import datetime
+from pathlib import Path
 
 from .cases import CASES
 from .harness import Phone, _gate, _harmful, read_item  # noqa: F401 -- read_item kept for callers

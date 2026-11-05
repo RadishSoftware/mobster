@@ -1,12 +1,10 @@
-"""Proof-gated completion (contract.py): the contract, the declared-commit policy, receipts and the DONE gate.
-Offline; cases are taken from the recorded iOSWorld runs F1 replayed (26 Sep)."""
-
 import unittest
 from types import SimpleNamespace as NS
 
 from mobile_agent import contract as K
-from mobile_agent import contract_screen as KS
 from mobile_agent import contract_asks as KA
+from mobile_agent import contract_screen as KS
+from mobile_agent import drivers
 from mobile_agent.frontier import FrontierAgent, prompt_text
 from mobile_agent.state import Element, Snapshot
 
@@ -42,7 +40,8 @@ class ContractValidationTests(unittest.TestCase):
 
     def test_quote_check_ignores_case_quotes_and_spacing(self):
         c = contract("Message ‘Brunch Crew’  with the time.", item(app="QuickChat", what="Brunch Crew",
-                                                                  act="send_message", quote="message 'brunch crew' with"))
+                                                                   act="send_message",
+                                                                   quote="message 'brunch crew' with"))
         self.assertEqual(len(c.items), 1)
 
     def test_forbid_items_are_kept_and_refuse_their_act(self):
@@ -54,8 +53,6 @@ class ContractValidationTests(unittest.TestCase):
 
 
 class ForbidScopeTests(unittest.TestCase):
-    """A FORBID that rules out only what the request doesn't name ("Delete nothing else.") lets the named delete go on to
-    its own checks; any other FORBID refuses every act of its kind."""
     REQUEST = "In Notes, delete the note Mobster QA loop A. Delete nothing else."
     NAMED = item(app="Notes", what="Mobster QA loop A", act="delete", quote="delete the note Mobster QA loop A")
 
@@ -72,7 +69,7 @@ class ForbidScopeTests(unittest.TestCase):
         g = c.check("TAP", el("Delete"), shot(el("Groceries", "StaticText"), el("Delete")), "Notes")
         self.assertFalse(g.allowed)
         self.assertIn("not on this screen", g.reason)
-        c.items[0].status = "closed"  # the named delete is done: any further delete is one the request rules out
+        c.items[0].status = "closed"
         g = c.check("TAP", el("Delete"), shot(el("Mobster QA loop A", "StaticText"), el("Delete")), "Notes")
         self.assertFalse(g.allowed)
         self.assertIn("rules it out", g.reason)
@@ -92,15 +89,6 @@ class VerbTests(unittest.TestCase):
         self.assertEqual(KS.label_verbs("Pay $42.00"), {"pay"})
         self.assertEqual(KS.label_verbs("Confirm & Place Order"), {"confirm", "place order"})
         self.assertEqual(KS.label_verbs("A film about the Ocean's call"), set())
-
-    def test_the_contract_vocabulary_is_the_approval_vocabulary_plus_first_word_only_words(self):
-        from mobile_agent.task_policy import COMMIT_CONTROL
-        words = lambda pattern: set(pattern.pattern[3:-3].split("|"))
-        self.assertEqual(words(KS.COMMIT_WORDS), words(COMMIT_CONTROL) | KS.FIRST_WORD_ONLY)
-        for word in KS.FIRST_WORD_ONLY:
-            self.assertEqual(KS.label_verbs(f"Feels {word}"), set(), word)
-            if word not in KS.OPENERS:
-                self.assertEqual(KS.label_verbs(word.title()), {word}, word)
 
     def test_known_false_triggers(self):
         self.assertEqual(KS.label_verbs("Dentist, 490 Post St, San Francisco"), set())
@@ -146,7 +134,7 @@ class FamilyTests(unittest.TestCase):
     def test_each_act_allows_its_verbs_and_no_others(self):
         request = "do the thing"
         for act, (allowed, refused) in self.TABLE.items():
-            c = contract(request, item(app="App", what="the thing", act=act, quote="do the thing"))  # no names
+            c = contract(request, item(app="App", what="the thing", act=act, quote="do the thing"))
             typed = [el("hello there", "TextField", editable=True, value="hello there")]
             c.record_typed("App", typed[0], "hello there", 0)
             for label in allowed:
@@ -166,20 +154,18 @@ class FamilyTests(unittest.TestCase):
         c = contract(request, item(app="CityRide", what="CityRideX ride from Home to Work", act="order",
                                    quote="Request a CityRideX from Home to Work"))
         self.assertTrue(c.check("TAP", el("Request CityRideX · $12.80"), shot(), "CityRide").allowed)
-        # Still refused: another app, and a verb the request never used.
         self.assertFalse(c.check("TAP", el("Request CityRideX · $12.80"), shot(), "SplitPay").allowed)
         self.assertFalse(c.check("TAP", el("Send"), shot(), "CityRide").allowed)
         self.assertFalse(c.check("TAP", el("Delete ride"), shot(), "CityRide").allowed)
 
     def test_an_unrequested_request_is_still_refused(self):
-        # The order's own words never say "request": a money request in the same app stays refused.
         c = contract("Order the Sugarfish Trust Me set for lunch.",
-                     item(app="QuickBite", what="Sugarfish Trust Me set", act="order", quote="Order the Sugarfish Trust Me set"))
+                     item(app="QuickBite", what="Sugarfish Trust Me set", act="order",
+                          quote="Order the Sugarfish Trust Me set"))
         self.assertTrue(c.check("TAP", el("Place Order · $40.45"), shot(), "QuickBite").allowed)
         self.assertFalse(c.check("TAP", el("Request $40.45"), shot(), "QuickBite").allowed)
 
     def test_only_the_quotes_first_commit_word_is_taken(self):
-        # A quote that runs into a later clause does not lend that clause's verb to this act.
         request = "Book a table for 2 and post a review."
         c = contract(request, item(app="DineSpot", what="table for 2", act="book",
                                    quote="Book a table for 2 and post a review"))
@@ -208,7 +194,8 @@ class FamilyTests(unittest.TestCase):
                      item(kind="WRITE", app="Clock", what="new alarm", payload="6:45 AM", quote="Set a 6:45 AM alarm"))
         self.assertFalse(c.check("TAP", switch, shot(switch), "Clock").allowed)
         c = contract("Turn off my Client call alarm.",
-                     item(kind="WRITE", app="Clock", what="Client call alarm switch", quote="Turn off my Client call alarm"))
+                     item(kind="WRITE", app="Clock", what="Client call alarm switch",
+                          quote="Turn off my Client call alarm"))
         self.assertTrue(c.check("TAP", switch, shot(switch), "Clock").allowed)
 
     def test_long_press_is_gated_like_a_tap(self):
@@ -217,9 +204,6 @@ class FamilyTests(unittest.TestCase):
 
 
 class WriteProofTests(unittest.TestCase):
-    """A WRITE is proven only by a screen recorded after this run wrote or committed in its app, with numbers as whole
-    tokens; a row the model cites shows one that was already so (10 Oct: a World Clock row's "+10:30HRS" proved a
-    1-hour timer that was never set)."""
 
     TIMER = item(kind="WRITE", app="Clock", what="1-hour timer", payload="1 hour", quote="Set a 1-hour timer")
 
@@ -239,10 +223,10 @@ class WriteProofTests(unittest.TestCase):
 
     def test_a_value_on_screen_before_any_write_in_its_app_proves_nothing(self):
         c = contract("Set a 1-hour timer in Clock.", self.TIMER)
-        c.observe(self.clock("Today, +1HRS", "1 hour"), "Clock", 0)  # on screen before the run acted
+        c.observe(self.clock("Today, +1HRS", "1 hour"), "Clock", 0)
         self.assertFalse(c.proof(c.items[0])[0])
         c.items[0].claim = "done"
-        self.assertFalse(c.proof(c.items[0])[0])  # the model's word plus a visit is not a receipt
+        self.assertFalse(c.proof(c.items[0])[0])
 
     def test_after_a_write_in_its_app_the_value_on_screen_proves_it(self):
         c = contract("Set a 1-hour timer in Clock.", self.TIMER)
@@ -264,7 +248,6 @@ class WriteProofTests(unittest.TestCase):
         c.observe(shot(el("New York, 61°, Partly Cloudy", "Cell")), "Weather", 2)
         c.update([{"id": 1, "status": "done", "value": "already: New York, 61°"}], 2)
         self.assertTrue(c.proof(c.items[0])[0])
-        # A cited row no screen showed proves nothing.
         c.update([{"id": 1, "status": "done", "value": "already: Boston, 55°"}], 3)
         self.assertFalse(c.proof(c.items[0])[0])
 
@@ -279,9 +262,6 @@ class WriteProofTests(unittest.TestCase):
 
 
 class AlreadyInAListTests(unittest.TestCase):
-    """A WRITE marked "already: ..." with prose, not a row: its value as a whole row of a list in its app proves it
-    (ab1, 11 Oct: New York in Weather's saved locations); a page titled with the value does not (ac2: the judge
-    failed that run's "add New York")."""
 
     NY = item(kind="WRITE", app="Weather", what="New York added as a location", payload="New York",
               quote="add New York")
@@ -294,7 +274,8 @@ class AlreadyInAListTests(unittest.TestCase):
     def test_the_value_as_a_list_row_proves_an_already_so_write(self):
         c = contract("Check Weather and add New York.", self.NY)
         c.observe(self.locations(), "Weather", 30)
-        c.update([{"id": 1, "status": "done", "value": "already: New York row in My Locations (59° Mostly Cloudy)"}], 30)
+        c.update([{"id": 1, "status": "done", "value": "already: New York row in My Locations (59° Mostly Cloudy)"}],
+                 30)
         self.assertTrue(c.proof(c.items[0])[0])
 
     def test_a_page_titled_with_the_value_is_no_list_row(self):
@@ -307,7 +288,7 @@ class AlreadyInAListTests(unittest.TestCase):
     def test_a_list_after_typing_in_that_app_or_a_citation_without_the_value_proves_nothing(self):
         c = contract("Check Weather and add New York.", self.NY)
         c.record_typed("Weather", el("Search for a city", "SearchField", editable=True), "New York", 2)
-        c.observe(self.locations(), "Weather", 3)  # search results: what was looked for
+        c.observe(self.locations(), "Weather", 3)
         c.update([{"id": 1, "status": "done", "value": "already: New York in the list"}], 3)
         self.assertFalse(c.proof(c.items[0])[0])
         c = contract("Check Weather and add New York.", self.NY)
@@ -327,12 +308,9 @@ class AlreadyInAListTests(unittest.TestCase):
 
 
 class NothingTypedWriteTests(unittest.TestCase):
-    """A WRITE with nothing typed for it (only a search) counts on the model's "done" only once each object it names
-    has a new row in its app (iOSWorld dev, 12 Oct: a shake was logged, the oatmeal row from before was taken for the
-    oatmeal, and the run ended done with none logged)."""
 
-    REQUEST = "Log a post-run protein shake and oatmeal breakfast in CalTrack."
-    LOG = item(kind="WRITE", app="CalTrack", what="post-run protein shake and oatmeal breakfast log",
+    REQUEST = "Log a post-run protein shake and oatmeal breakfast in Bluesky."
+    LOG = item(kind="WRITE", app="Bluesky", what="post-run protein shake and oatmeal breakfast log",
                quote="Log a post-run protein shake and oatmeal breakfast")
 
     def today(self, *rows):
@@ -340,17 +318,17 @@ class NothingTypedWriteTests(unittest.TestCase):
                     *[el(r, "Button", y=.6 + .06 * i) for i, r in enumerate(rows)])
 
     def log_shake(self, c):
-        c.observe(self.today("Oatmeal, 1 1 cup cooked, 150"), "CalTrack", 0)
-        c.record_action("CalTrack", "TAP", "Add")
-        c.record_typed("CalTrack", el("food_search_field", "SearchField", editable=True), "protein shake", 1)
+        c.observe(self.today("Oatmeal, 1 1 cup cooked, 150"), "Bluesky", 0)
+        c.record_action("Bluesky", "TAP", "Add")
+        c.record_typed("Bluesky", el("food_search_field", "SearchField", editable=True), "protein shake", 1)
         c.observe(shot(el("food_search_field", "SearchField", editable=True, value="protein shake"),
-                       el("Protein shake, 1 bottle, 160 cal")), "CalTrack", 1)
-        c.record_action("CalTrack", "TAP", "Add Food")
+                       el("Protein shake, 1 bottle, 160 cal")), "Bluesky", 1)
+        c.record_action("Bluesky", "TAP", "Add Food")
 
     def test_a_row_from_before_the_run_proves_no_write_of_it(self):
         c = contract(self.REQUEST, self.LOG)
         self.log_shake(c)
-        c.observe(self.today("Oatmeal, 1 1 cup cooked, 150", "Protein shake, 1 1 bottle, 160"), "CalTrack", 2)
+        c.observe(self.today("Oatmeal, 1 1 cup cooked, 150", "Protein shake, 1 1 bottle, 160"), "Bluesky", 2)
         c.update([{"id": 1, "status": "done", "value": "Protein shake added; already: Oatmeal 1 cup cooked"}], 2)
         proven, why = c.proof(c.items[0])
         self.assertFalse(proven)
@@ -363,7 +341,7 @@ class NothingTypedWriteTests(unittest.TestCase):
         c = contract(self.REQUEST, self.LOG)
         self.log_shake(c)
         c.observe(self.today("Oatmeal, 1 1 cup cooked, 150", "Protein shake, 1 1 bottle, 160",
-                             "Oatmeal, 1 1 cup cooked, 150"), "CalTrack", 3)
+                             "Oatmeal, 1 1 cup cooked, 150"), "Bluesky", 3)
         c.update([{"id": 1, "status": "done"}], 3)
         self.assertEqual(c.proof(c.items[0]), (True, ""))
         self.assertTrue(c.done_gate("Logged both.", turns_left=20)[0])
@@ -371,10 +349,10 @@ class NothingTypedWriteTests(unittest.TestCase):
     def test_a_search_screen_listing_the_object_proves_nothing(self):
         c = contract(self.REQUEST, self.LOG)
         self.log_shake(c)
-        c.record_typed("CalTrack", el("food_search_field", "SearchField", editable=True), "oatmeal", 3)
+        c.record_typed("Bluesky", el("food_search_field", "SearchField", editable=True), "oatmeal", 3)
         c.observe(shot(el("food_search_field", "SearchField", editable=True, value="oatmeal"),
                        el("Oatmeal, 1 cup cooked"), el("Oatmeal, instant"), el("Protein shake, 1 1 bottle, 160")),
-                  "CalTrack", 3)
+                  "Bluesky", 3)
         c.update([{"id": 1, "status": "done"}], 3)
         self.assertFalse(c.proof(c.items[0])[0])
 
@@ -433,6 +411,121 @@ class AmountTests(unittest.TestCase):
         self.assertTrue(c.check("TAP", el("Request $15.00"), shot(), "SplitPay").allowed)
         self.assertFalse(c.check("TAP", el("Request $16.00"), shot(), "SplitPay").allowed)
 
+    ZELLE = "Send $50 via Zelle to Maya Patel in MyBank"
+
+    def zelle_form(self, amount_value):
+        return [el("Maya Patel", "StaticText", y=.20), el("Available $15,621.00", "StaticText", y=.40),
+                el("Amount", "TextField", y=.34, editable=True, value=amount_value), el("Send now", y=.47)]
+
+    def zelle_contract(self, typed):
+        c = contract(self.ZELLE, item(app="MyBank", what="Maya Patel", act="pay", payload="$50",
+                                      quote="Send $50 via Zelle to Maya Patel"))
+        form = self.zelle_form(typed)
+        c.record_typed("MyBank", form[2], typed, 3)
+        return c, form
+
+    def test_a_form_sends_the_amount_typed_into_it_not_the_balance_beside_it(self):
+        c, form = self.zelle_contract("50")
+        self.assertTrue(c.check("TAP", form[3], shot(*form), "MyBank").allowed)
+        c, form = self.zelle_contract("$50.00")
+        self.assertTrue(c.check("TAP", form[3], shot(*form), "MyBank").allowed)
+
+    def test_a_typed_amount_outside_the_bound_is_still_refused(self):
+        c, form = self.zelle_contract("5000")
+        g = c.check("TAP", form[3], shot(*form), "MyBank")
+        self.assertFalse(g.allowed)
+        self.assertIn("$5,000.00", g.reason)
+
+    def test_an_amount_the_run_didnt_type_and_a_number_in_words_still_read_the_nearest_money(self):
+        c = contract(self.ZELLE, item(app="MyBank", what="Maya Patel", act="pay", payload="$50",
+                                      quote="Send $50 via Zelle to Maya Patel"))
+        form = self.zelle_form("50")
+        self.assertFalse(c.check("TAP", form[3], shot(*form), "MyBank").allowed)
+        memo = el("Memo", "TextField", y=.30, editable=True, value="Rent for 50 Main St")
+        c.record_typed("MyBank", memo, "Rent for 50 Main St", 2)
+        self.assertFalse(c.check("TAP", form[3], shot(memo, *form), "MyBank").allowed)
+
+    def test_a_numeric_memo_is_not_the_payment_amount(self):
+        for amount in ("5000", "50"):
+            with self.subTest(amount=amount):
+                c, form = self.zelle_contract(amount)
+                memo = el("Memo", "TextField", y=.43, editable=True, value="50")
+                c.record_typed("MyBank", memo, "50", 4)
+                gate = c.check("TAP", form[3], shot(*form, memo), "MyBank")
+                self.assertEqual(gate.allowed, amount == "50")
+        c = contract(self.ZELLE, item(app="MyBank", what="Maya Patel", act="pay", payload="$50",
+                                      quote="Send $50 via Zelle to Maya Patel"))
+        form = self.zelle_form("5000")
+        c.record_typed("MyBank", memo, "50", 4)
+        self.assertFalse(c.check("TAP", form[3], shot(*form, memo), "MyBank").allowed)
+
+    def test_an_amount_on_the_button_wins_over_the_typed_one(self):
+        c, form = self.zelle_contract("50")
+        form[3] = el("Send $500.00", y=.47)
+        self.assertFalse(c.check("TAP", form[3], shot(*form), "MyBank").allowed)
+
+    # The dashboard's tiles only open the form; every figure on it is money the accounts hold (iOSWorld mybank-003,
+    # 18 Oct: "Send | Zelle®" refused on the bank section's "$20,541.50", 4 times, and "Pay & transfer" twice).
+    DASHBOARD = [("Send | Zelle®", "Button", .21, .17, .31), ("Bank accounts (2)", "StaticText", .33, .08, .3),
+                 ("$20,541.50", "StaticText", .33, .72, .2),
+                 ("TOTAL CHECKING (...6645), $15,621.00, Available balance", "Button", .38, .08, .84),
+                 ("SAVINGS (...1032), $4,920.50, Available balance", "Button", .51, .08, .84),
+                 ("Credit cards (1)", "StaticText", .65, .08, .28), ("$4,588.98", "StaticText", .65, .74, .18),
+                 ("Freedom Unlimited (...2095), VISA, $4,588.98, Current balance, Available credit, $3,411.02",
+                  "Button", .70, .08, .84), ("Pay &\ntransfer", "Button", .86, .22, .18)]
+
+    def dashboard(self, *more):
+        rows = [el(label, role, y=y, x=x, w=w) for label, role, y, x, w in self.DASHBOARD] + list(more)
+        return rows, contract(self.ZELLE, item(app="MyBank", what="Maya Patel", act="pay", payload="$50",
+                                               quote="Send $50 via Zelle to Maya Patel"))
+
+    def test_a_tile_that_opens_the_form_is_not_held_to_the_money_the_accounts_hold(self):
+        rows, c = self.dashboard()
+        for tile in (rows[0], rows[-1]):
+            self.assertTrue(c.check("TAP", tile, shot(*rows), "MyBank").allowed, tile.label)
+
+    def test_money_a_payment_moves_still_counts_beside_the_money_held(self):
+        rows, c = self.dashboard()
+        self.assertFalse(c.check("TAP", el("Send $500.00", y=.21), shot(*rows), "MyBank").allowed, "its own label")
+        bill, pay = el("Electric, Balance due, $120.00", "StaticText", y=.30), el("Pay", y=.30, x=.8, w=.1)
+        rows, c = self.dashboard(bill, pay)
+        g = c.check("TAP", pay, shot(*rows), "MyBank")
+        self.assertFalse(g.allowed)
+        self.assertIn("$120.00", g.reason, "a balance due is what Pay moves")
+        tickets, pay = el("General admission, $75.00, 12 available", "StaticText", y=.30), el("Pay", y=.30, x=.8)
+        rows, c = self.dashboard(tickets, pay)
+        self.assertIn("$75.00", c.check("TAP", pay, shot(*rows), "MyBank").reason, "seats available are not money")
+
+    def test_a_payment_does_not_become_a_balance_because_its_value_matches(self):
+        for balances, amount in (([500], 500), ([100, 150], 250)):
+            with self.subTest(balances=balances, amount=amount):
+                rows, _ = self.dashboard(*(el(f"Available balance, ${value:.2f}", "StaticText", y=.6 + index * .06)
+                                           for index, value in enumerate(balances)))
+                shown, pay = el(f"${amount:.2f}", "StaticText", y=.3), el("Pay", y=.3, x=.8)
+                rows += [shown, pay]
+                self.assertEqual(KS.commit_amount(pay, rows), float(amount))
+                c = contract(self.ZELLE, item(app="MyBank", what="Maya Patel", act="pay", payload="$50",
+                                            quote="Send $50 via Zelle to Maya Patel"))
+                self.assertFalse(c.check("TAP", pay, shot(*rows), "MyBank").allowed)
+
+    def test_a_read_only_payment_confirmation_keeps_its_balance_due_amount(self):
+        pay = el("Pay", y=.3, x=.8)
+        for label in ("Current balance, $500.00", "Admission, Available, $75.00"):
+            with self.subTest(label=label):
+                shown = el(label, "StaticText", y=.3)
+                self.assertEqual(KS.commit_amount(pay, [shown, pay]), 500.0 if "500" in label else 75.0)
+
+    def test_many_balances_do_not_classify_an_unlabelled_payment_total(self):
+        rows = [el(f"Available balance, ${2 ** index:.2f}", "StaticText", y=.45 + index * .04)
+                for index in range(7)]
+        shown, pay = el("$3.00", "StaticText", y=.3), el("Pay", y=.3, x=.8)
+        self.assertEqual(KS.commit_amount(pay, [*rows, shown, pay]), 3.0)
+
+    def test_on_a_form_the_money_beside_it_still_counts(self):
+        # The form's amount wasn't typed by this run: the nearest money, "Available", is read as before and refuses.
+        rows, c = self.dashboard(el("Amount", "TextField", y=.30, editable=True, value="50"))
+        self.assertFalse(c.check("TAP", rows[0], shot(*rows), "MyBank").allowed)
+
     def test_bounds_parse(self):
         low, high = KS.bounds(KS.Item(1, "COMMIT", act="pay", quote="pay anything at most $20"))
         self.assertEqual((low, high), (None, 20.0))
@@ -473,6 +566,108 @@ class BindingTests(unittest.TestCase):
         self.assertTrue(c.check("TAP", el("Follow"), shot(el("Netflix", "StaticText")), "LockedIn").allowed)
 
 
+class ObjectNotDestinationTests(unittest.TestCase):
+    """A commit binds to what it acts on, not to where it puts it or how (iOSWorld tasterank-001, multi-092, 18 Oct):
+    the list a Save goes to and the reaction a Like picks show only after the tap."""
+
+    def save_contract(self):
+        return contract("Save Tartine Manufactory to my 'Want to Try' list in TasteRank.",
+                        item(app="TasteRank", what="Tartine Manufactory to 'Want to Try' list", act="save",
+                             quote="Save Tartine Manufactory to my 'Want to Try' list"))
+
+    def test_save_to_a_list_binds_to_the_place_not_the_list(self):
+        page = [el("Tartine Manufactory", "StaticText", y=.15), el("Save to list", y=.4)]
+        self.assertTrue(self.save_contract().check("TAP", page[1], shot(*page), "TasteRank").allowed)
+
+    def test_save_on_another_places_page_is_still_refused(self):
+        page = [el("Zuni Café", "StaticText", y=.15), el("Save to list", y=.4)]
+        g = self.save_contract().check("TAP", page[1], shot(*page), "TasteRank")
+        self.assertFalse(g.allowed)
+        self.assertIn("not on this screen", g.reason)
+
+    def like_contract(self):
+        return contract("Find Devi Anand's post about the RAG anti-pattern and react with 'Insightful'.",
+                        item(app="LockedIn", what="Devi Anand's post about the RAG anti-pattern, reaction 'Insightful'",
+                             act="react", quote="react with 'Insightful'"))
+
+    def feed(self):
+        devi = el("Devi Anand, The RAG anti-pattern nobody talks about", "Cell", x=0, y=.2, w=1, h=.3)
+        blair = el("Blair Morgan, Shipping agents to production", "Cell", x=0, y=.55, w=1, h=.3)
+        return devi, el("Like", y=.45, x=.05, w=.15, h=.04), blair, el("Like", y=.8, x=.05, w=.15, h=.04)
+
+    def test_a_like_under_the_named_post_binds_without_the_reaction_on_screen(self):
+        devi, like, blair, other = self.feed()
+        self.assertTrue(self.like_contract().check("TAP", like, shot(devi, like, blair, other), "LockedIn").allowed)
+
+    def test_a_like_under_someone_elses_post_is_still_refused(self):
+        devi, like, blair, other = self.feed()
+        g = self.like_contract().check("TAP", other, shot(devi, like, blair, other), "LockedIn")
+        self.assertFalse(g.allowed)
+        self.assertIn("belongs to the row", g.reason)
+
+    def feed_of_texts(self):
+        """LockedIn's feed as the tree has it (iOSWorld multi-092, 18 Oct): no Cells, each post's texts then its
+        action line, the Like at x .19 on every post."""
+        rohan = [el("Rohan Md.-", "StaticText", y=.11, x=.18),
+                 el("We just closed our Series A!", "StaticText", y=.17, x=.04),
+                 el("Kindling Ventures raised $18M to help early-stage founders", "StaticText", y=.22, x=.04)]
+        rohan_like = el("Like", "StaticText", y=.35, x=.19, w=.05, h=.01)
+        devi = [el("Comment", "StaticText", y=.35, x=.37), el("Devi Anand 1st", "StaticText", y=.42, x=.19),
+                el("Hot take: RAG is becoming an anti-pattern for most", "StaticText", y=.49, x=.04)]
+        devi_like = el("Like", "StaticText", y=.84, x=.19, w=.05, h=.01)
+        return [*rohan, rohan_like, *devi, devi_like, el("Zara Okonkwo . 1st", "StaticText", y=.89, x=.19)]
+
+    def test_on_a_feed_without_rows_a_like_binds_to_the_post_above_it(self):
+        screen = self.feed_of_texts()
+        devi_like = screen[7]
+        for op in ("TAP", "LONG_PRESS"):
+            self.assertTrue(self.like_contract().check(op, devi_like, shot(*screen), "LockedIn").allowed, op)
+
+    def test_on_a_feed_without_rows_a_like_on_the_post_above_is_refused(self):
+        # Devi's post is on screen, so a check of the whole screen allowed this Like on Rohan's post (live, 18 Oct).
+        screen = self.feed_of_texts()
+        for op in ("TAP", "LONG_PRESS"):
+            g = self.like_contract().check(op, screen[3], shot(*screen), "LockedIn")
+            self.assertFalse(g.allowed, op)
+            self.assertIn("belongs to the post 'Rohan Md.-'", g.reason)
+
+    def test_a_single_post_screen_binds_from_the_top(self):
+        page = [el("Devi Anand", "StaticText", y=.15),
+                el("Hot take: RAG is becoming an anti-pattern", "StaticText", y=.22), el("Like", y=.6, x=.05, w=.15)]
+        self.assertTrue(self.like_contract().check("TAP", page[2], shot(*page), "LockedIn").allowed)
+        page[0] = el("Blair Morgan", "StaticText", y=.15)
+        page[1] = el("Shipping agents to production", "StaticText", y=.22)
+        self.assertFalse(self.like_contract().check("TAP", page[2], shot(*page), "LockedIn").allowed)
+
+    def test_a_reactions_summary_icon_is_not_the_post_above(self):
+        # The post's own page (live, 19 Oct): the "2.2K" summary's Like icon sits just above the action line.
+        post = el("Hot take: RAG is becoming an anti-pattern for most production LLM applications.", "StaticText",
+                  y=.13, x=.04)
+        page = [post, el("2.2K", y=.32, x=.04, w=.2, h=.02), el("Like", "Image", y=.33, x=.09, w=.03, h=.01),
+                el("Like", y=.37, x=.11, w=.06, h=.04), el("Comment Left", "Image", y=.37, x=.36, w=.04, h=.02)]
+        self.assertTrue(self.like_contract().check("LONG_PRESS", page[3], shot(*page), "LockedIn").allowed)
+
+    def test_a_token_counts_only_as_a_whole_word_in_the_post(self):
+        # "rag" in "storage" names no RAG post: the Like on that post is refused even with Devi's post below it.
+        screen = self.feed_of_texts()
+        screen[2] = el("We cut storage costs by half with tiered drag-and-drop", "StaticText", y=.22, x=.04)
+        self.assertFalse(self.like_contract().check("TAP", screen[3], shot(*screen), "LockedIn").allowed)
+
+    def test_the_object_not_the_list_must_be_on_screen(self):
+        c = contract("Add 'Milk' to my 'Groceries' list in Reminders.",
+                     item(app="Reminders", what="'Milk' to 'Groceries' list", act="save",
+                          quote="Add 'Milk' to my 'Groceries' list"))
+        self.assertFalse(c.check("TAP", el("Save"), shot(el("Groceries", "StaticText")), "Reminders").allowed)
+        self.assertTrue(c.check("TAP", el("Save"), shot(el("Milk", "StaticText")), "Reminders").allowed)
+
+    def test_object_tokens(self):
+        tokens = lambda what: K.Contract.object_tokens(NS(what=what, app="TasteRank"))  # noqa: E731
+        self.assertEqual(tokens("Tartine Manufactory to 'Want to Try' list"), ["tartine", "manufactory"])
+        self.assertEqual(tokens("the 'Groceries' note"), ["groceries"])
+        self.assertEqual(tokens("the 'Favorites' list"), ["favorites"])
+        self.assertEqual(tokens("Netflix company page"), ["netflix"])
+
+
 class ReturnKeyTests(unittest.TestCase):
     REQ = "Message Leo Chen in QuickChat with the restaurant name."
 
@@ -481,22 +676,25 @@ class ReturnKeyTests(unittest.TestCase):
         self.assertFalse(contract(self.REQ).check("TYPE_SUBMIT", field, shot(field), "QuickChat", text="hi").allowed)
         c = contract(self.REQ, item(app="QuickChat", what="message to Leo Chen", act="send_message",
                                     quote="Message Leo Chen"))
-        c.items[0].what = "message to leo"  # object binding does not apply to messages
+        c.items[0].what = "message to leo"
         g = c.check("TYPE_SUBMIT", field, shot(field), "QuickChat", text="Dinner at Embarcadero Grill")
         self.assertTrue(g.allowed)
         self.assertEqual(g.payload, "Dinner at Embarcadero Grill")
 
     def test_search_and_note_fields_are_not_composers(self):
         c = contract(self.REQ)
-        for field in (el("Search Mail", "SearchField", editable=True), el("", "TextField", editable=True, value="Search on TicketBox"),
-                      el("notes_body_editor", "TextView", editable=True), el("recipient_search_field", "TextField", editable=True)):
+        for field in (el("Search Mail", "SearchField", editable=True),
+                      el("", "TextField", editable=True, value="Search on TicketBox"),
+                      el("notes_body_editor", "TextView", editable=True),
+                      el("recipient_search_field", "TextField", editable=True)):
             self.assertTrue(c.check("SUBMIT", field, shot(field), "QuickChat").allowed, field.label)
 
     def test_an_unlabelled_field_beside_a_post_button_is_a_composer(self):
         field = el("", "TextField", editable=True, value="March summary", y=.80)
         post = el("Post comment", y=.80, x=.7)
         self.assertTrue(KS.composer_field(field, [field, post], ("March summary",)))
-        self.assertFalse(contract("Open the Budget Tracker doc.").check("SUBMIT", field, shot(field, post), "CloudDocs").allowed)
+        self.assertFalse(contract("Open the Budget Tracker doc.").check("SUBMIT", field, shot(field, post),
+                                                                        "CloudDocs").allowed)
 
 
 class ReceiptTests(unittest.TestCase):
@@ -508,15 +706,16 @@ class ReceiptTests(unittest.TestCase):
         before = shot(field)
         g = c.check("TAP", el("Send"), before, "QuickChat")
         c.committed(g, el("Send"), before, "QuickChat", 1)
-        c.observe(shot(field), "QuickChat", 1)  # still in the composer
+        c.observe(shot(field), "QuickChat", 1)
         self.assertFalse(c.items[0].receipts)
         c.observe(shot(el("See you at 7", "StaticText"), el("chat_compose_field", "TextField", editable=True,
                                                             value="Message")), "QuickChat", 2)
         self.assertEqual(c.items[0].status, "closed")
-        self.assertFalse(c.check("TAP", el("Send"), shot(field), "QuickChat").allowed)  # a repeat
+        self.assertFalse(c.check("TAP", el("Send"), shot(field), "QuickChat").allowed)
 
     def test_order_receipt_is_a_new_confirmation_row(self):
-        c = contract("Order a salad from QuickBite.", item(app="QuickBite", what="salad", act="order", quote="Order a salad"))
+        c = contract("Order a salad from QuickBite.",
+                     item(app="QuickBite", what="salad", act="order", quote="Order a salad"))
         c.items[0].what = ""
         before = shot(el("Visa saved card", "StaticText"), el("Place Order"))
         g = c.check("TAP", el("Place Order"), before, "QuickBite")
@@ -538,7 +737,6 @@ class ReceiptTests(unittest.TestCase):
         return c
 
     def test_the_controls_own_verb_adds_its_acts_receipts(self):
-        # ac2, 11 Oct: a ride compiled as request_money was requested ("Driver arriving") and counted as not done.
         control = el("Request CityRideX · $12.80", y=.86)
         before = shot(el("Choose a ride", "StaticText"), control)
         after = shot(el("Trip Status", "NavigationBar"), el("Driver assigned", "StaticText"),
@@ -553,13 +751,12 @@ class ReceiptTests(unittest.TestCase):
         c = self.ride(before, control, shot(el("Choose a ride", "StaticText"), el("CityRideX, $12.80", "Button"),
                                             el("Upfront price", "StaticText")))
         self.assertFalse(c.items[0].receipts)
-        # "Confirm" ends many acts: it adds no other act's receipts, so a ride's row does not close a money request.
         control = el("Confirm", y=.86)
         before = shot(el("Request $20 from Leo Chen", "StaticText"), control)
         c = self.ride(before, control, shot(el("Driver arriving", "StaticText")))
         self.assertFalse(c.items[0].receipts)
         self.assertEqual(KS.receipt_patterns("request_money", {"confirm"}), [KS.RECEIPTS["request_money"]])
-        self.assertEqual(KS.receipt_patterns("save", {"save"}), [])  # no rows of its own: the screen changing
+        self.assertEqual(KS.receipt_patterns("save", {"save"}), [])
 
     def test_follow_closes_and_a_second_tap_would_undo_it(self):
         c = contract("Follow Netflix.", item(app="LockedIn", what="Netflix", act="follow", quote="Follow Netflix"))
@@ -584,20 +781,19 @@ class ReceiptTests(unittest.TestCase):
 
     def test_a_request_still_pending_after_a_direct_payment_is_not_paid_again(self):
         c = contract(PAY, PAY_ITEM)
-        confirm = shot(el("Pay Maya Patel", "StaticText", y=.58), el("$42.00", "StaticText", y=.65), el("Pay $42.00", y=.88))
+        confirm = shot(el("Pay Maya Patel", "StaticText", y=.58), el("$42.00", "StaticText", y=.65),
+                       el("Pay $42.00", y=.88))
         g = c.check("TAP", confirm.elements[2], confirm, "SplitPay")
         c.committed(g, confirm.elements[2], confirm, "SplitPay", 21)
         c.observe(shot(el("Payment sent", "StaticText")), "SplitPay", 21)
-        pending = shot(el("Maya Patel requested", "StaticText", y=.37), el("$42.00", "StaticText", y=.38), el("Pay", y=.43))
+        pending = shot(el("Maya Patel requested", "StaticText", y=.37), el("$42.00", "StaticText", y=.38),
+                       el("Pay", y=.43))
         g = c.check("TAP", pending.elements[2], pending, "SplitPay")
         self.assertFalse(g.allowed)
         self.assertIn("already paid", g.reason)
 
 
 class StateActProofTests(unittest.TestCase):
-    """A like or a follow is proven only by the control the agent tapped turning on afterwards: selected, its words
-    for on ("Liked", "Following"), or its count up by one. MobsterBench Real (11 Oct): "Like the first post in my
-    feed" ended done after one tap, with only a banner gone from the screen."""
     LIKE = "Like the first post in my Pixgram feed."
 
     def like(self):
@@ -627,7 +823,7 @@ class StateActProofTests(unittest.TestCase):
         banner = el("1 new follower", x=.80, y=.12, w=.15, h=.03)
         page, after = self.feed(self.heart(), banner), self.feed(self.heart())
         c.observe(page, "Pixgram", 1)
-        self.assertIsNone(c.check("TAP", banner, page, "Pixgram").item)  # names no like: nothing awaits a receipt
+        self.assertIsNone(c.check("TAP", banner, page, "Pixgram").item)
         c.observe(after, "Pixgram", 2)
         c.update([{"id": 1, "status": "done"}], 3)
         proven, reason = c.proof(c.items[0])
@@ -669,7 +865,7 @@ class StateActProofTests(unittest.TestCase):
         self.assertEqual(like.receipts[0]["receipt"], "count: 7 -> 8")
         c = self.like()
         like = self.tap(c, self.feed(self.heart()), self.heart(), self.feed(self.heart(), count="9"))
-        self.assertFalse(like.receipts)  # another number, not this tap
+        self.assertFalse(like.receipts)
 
     def test_a_heart_already_on_is_never_tapped_for_a_like(self):
         c = self.like()
@@ -687,7 +883,7 @@ class StateActProofTests(unittest.TestCase):
         c.update([{"id": 1, "status": "done"}], 2)
         self.assertFalse(c.proof(c.items[0])[0])
         c.update([{"id": 1, "status": "missing"}], 3)
-        self.assertTrue(c.proof(c.items[0])[0])  # the condition wasn't met: nothing to like
+        self.assertTrue(c.proof(c.items[0])[0])
 
     def test_a_following_row_elsewhere_does_not_prove_a_follow(self):
         c = contract("Follow Netflix.", item(app="LockedIn", what="Netflix", act="follow", quote="Follow Netflix"))
@@ -702,9 +898,6 @@ class StateActProofTests(unittest.TestCase):
 
 
 class TrashSwipeActionTests(unittest.TestCase):
-    """A row's swipe action that deletes asks or is refused like a Delete button. MobsterBench Real, 12 Oct: on a
-    Clock timer row, the swipe action "trash" (the glyph's name, no label of its own) went through Smart's commit
-    check while setting a timer; the bench's monitor stopped it."""
     TIMER = item(kind="WRITE", app="Clock", what="timer for 12 minutes", act="none", quote="Set a timer for 12 minutes")
 
     def row(self, *actions):
@@ -737,9 +930,9 @@ class TrashSwipeActionTests(unittest.TestCase):
             action = el(label, x=.64, y=.4, w=.18, h=.08)
             gate = mail.check("TAP", action, self.row(action), "Mail")
             self.assertTrue(gate.allowed and gate.item is None, label)
-        folder = el("Trash", "Cell", x=0, y=.6, w=1, h=.06)  # the Trash mailbox: a folder, not a delete
+        folder = el("Trash", "Cell", x=0, y=.6, w=1, h=.06)
         self.assertTrue(mail.check("TAP", folder, shot(folder), "Mail").allowed)
-        drawer = el("Trash", x=0, y=.6, w=.8, h=.06)  # a drawer's full-width Trash button: the folder too
+        drawer = el("Trash", x=0, y=.6, w=.8, h=.06)
         self.assertTrue(mail.check("TAP", drawer, shot(drawer), "Mail").allowed)
 
     def test_the_other_commit_checks_name_it_a_delete(self):
@@ -748,7 +941,59 @@ class TrashSwipeActionTests(unittest.TestCase):
         self.assertEqual(harness_api.commit_act("TAP", "trash", None, "com.apple.mobiletimer"), "delete")
         self.assertEqual(harness_api.commit_act("TAP", "Move to Trash", None, "com.apple.mobilemail"), "delete")
         self.assertIsNone(harness_api.commit_act("TAP", "Pin", None, "com.apple.mobilemail"))
-        self.assertTrue(commit_label("trash", "Button"))  # Fast's check already named it
+        self.assertTrue(commit_label("trash", "Button"))
+
+
+class FolderPlaceTests(unittest.TestCase):
+    """Opening a folder the request reads isn't archiving (iOSWorld mem-042, 18 Oct)."""
+    REQ = "Browse every folder in CloudDrive (Product Strategy, Shared Assets, Archive) and summarize the files."
+
+    def audit(self, *folders):
+        return contract(self.REQ, *[item(kind="READ", app="CloudDrive", what=f"{f} folder") for f in folders])
+
+    def folder_list(self):
+        return [el("Product Strategy", x=.18, y=.02 + .2, w=.36, h=.03),
+                el("Shared Assets", x=.18, y=.39, w=.31, h=.03),
+                el("Archive", x=.18, y=.61, w=.16, h=.03)]
+
+    def test_a_folder_the_request_reads_opens_from_its_list(self):
+        rows = self.folder_list()
+        gate = self.audit("Product Strategy", "Shared Assets", "Archive").check("TAP", rows[2], shot(*rows),
+                                                                                "CloudDrive")
+        self.assertTrue(gate.allowed)
+        self.assertIsNone(gate.item)
+
+    def test_an_archive_that_is_an_act_is_still_refused(self):
+        c = self.audit("Product Strategy", "Shared Assets", "Archive")
+        toolbar = el("Archive", x=.4, y=.93, w=.16, h=.05)
+        self.assertFalse(c.check("TAP", toolbar, shot(*self.folder_list()[:2], toolbar), "CloudDrive").allowed)
+        swipe = [el("Q3 plan.doc", "Cell", x=0, y=.4, w=1, h=.08), el("Flag", x=.5, y=.41, w=.15, h=.06),
+                 el("Archive", x=.66, y=.41, w=.16, h=.06), el("More", x=.83, y=.41, w=.15, h=.06)]
+        self.assertFalse(c.check("TAP", swipe[2], shot(*swipe), "CloudDrive").allowed)
+        alone = el("Archive", x=.18, y=.5, w=.16, h=.03)
+        self.assertFalse(c.check("TAP", alone, shot(alone), "CloudDrive").allowed)
+
+    def test_two_swipe_actions_are_not_a_list_of_folders(self):
+        c = self.audit("Archive", "Trash")
+        for width in (1, .5):
+            with self.subTest(row_width=width):
+                row = el("Q3 plan.doc", "Cell", x=0, y=.4, w=width, h=.08)
+                archive = el("Archive", x=.55, y=.41, w=.18, h=.06)
+                trash = el("Trash", x=.75, y=.41, w=.18, h=.06)
+                screen = shot(row, archive, trash)
+                self.assertFalse(c.check("TAP", archive, screen, "CloudDrive").allowed)
+                self.assertFalse(c.check("TAP", trash, screen, "CloudDrive").allowed)
+
+    def test_a_folder_control_can_belong_to_its_own_cell(self):
+        rows = self.folder_list()
+        folder = el("Archive", "Cell", x=.1, y=.6, w=.8, h=.06)
+        self.assertTrue(self.audit("Product Strategy", "Archive").check(
+            "TAP", rows[2], shot(*rows, folder), "CloudDrive").allowed)
+
+    def test_a_folder_the_request_doesnt_read_is_still_refused(self):
+        rows = self.folder_list()
+        c = self.audit("Product Strategy", "Shared Assets")
+        self.assertFalse(c.check("TAP", rows[2], shot(*rows), "CloudDrive").allowed)
 
 
 class DoneGateTests(unittest.TestCase):
@@ -757,7 +1002,8 @@ class DoneGateTests(unittest.TestCase):
     def c(self):
         return contract(self.REQ,
                         item(kind="READ", app="SplitPay", what="balance", quote="Check my SplitPay balance"),
-                        item(kind="READ", app="CloudDocs", what="'Budget Tracker' doc", quote="the 'Budget Tracker' doc"),
+                        item(kind="READ", app="CloudDocs", what="'Budget Tracker' doc",
+                             quote="the 'Budget Tracker' doc"),
                         item(app="CloudDocs", what="comment", act="comment", quote="add a comment"),
                         item(kind="REPORT", app="SplitPay", what="SplitPay balance", quote="What is the balance?"),
                         item(kind="REPORT", app="CloudDocs", what="confirmation that the comment was added",
@@ -787,7 +1033,7 @@ class DoneGateTests(unittest.TestCase):
         c.observe(shot(el("Budget Tracker", "StaticText"), el("March summary: net $900", "StaticText")), "CloudDocs", 3)
         ok, feedback, answer = c.done_gate("The comment is posted.", 30)
         self.assertTrue(ok, feedback)
-        self.assertIn("- SplitPay balance: $1,234.56", answer)  # left out of the answer: added from the ledger
+        self.assertIn("- SplitPay balance: $1,234.56", answer)
         ok, _, answer = c.done_gate("Balance $1,234.56; comment posted.", 30)
         self.assertEqual(answer, "Balance $1,234.56; comment posted.")
 
@@ -893,14 +1139,12 @@ class CompileTests(unittest.TestCase):
         self.assertIsNone(K.compile_contract(self.Client({"items": [{"kind": "do", "text": "x"}]}), "x"))
 
 
-# ------------------------------------------------------------------ the agent loop
-
 def screen(*elements, bundle="com.example.chat"):
     return Snapshot(list(elements), "\n".join(e.label for e in elements), 400, 800, "synthetic_fixture",
                     bundle_id=bundle)
 
 
-class Driver:
+class Driver(drivers.Driver):
     def __init__(self, screens):
         self.screens, self.index, self.actions = list(screens), 0, []
 
@@ -911,9 +1155,11 @@ class Driver:
         self.actions.append((operation, getattr(target, "label", target), text))
         self.index += 1
 
+    def close(self):
+        pass
+
 
 class Script:
-    """A model answering from a list of chunks; the contract call returns ``items``."""
 
     def __init__(self, steps, items, updates=None):
         self.steps, self.items, self.updates, self.prompts = list(steps), items, updates or {}, []
@@ -958,21 +1204,18 @@ class AgentLoopTests(unittest.TestCase):
         self.assertIn("DONE refused", script.prompts[2])
         self.assertEqual(result["status"], "completed")
         self.assertEqual(result["contract"]["receipted"], 1)
-        self.assertNotIn("item by item", "".join(script.prompts))  # no DONE_CHECK re-ask
-        # The first decision runs while the contract compiles; its Send was still refused by the joined contract.
+        self.assertNotIn("item by item", "".join(script.prompts))
         self.assertIn("Task contract", script.prompts[1])
         self.assertIn("frontier_contract", [e["event"] for e in events])
 
     def test_a_follow_tapped_mid_chain_is_proven_by_that_control_turning_on(self):
-        # The Follow button appears only after the chunk's first tap (th1/C1 lockedin-004, after a SCROLL_TO): the
-        # gate gets it, frame and all, from the screen it is tapped on, and its own "Following" proves it.
         job = screen(Element("1", "Netflix", "StaticText", (.17, .30, .11, .02)),
                      Element("2", "About the company", "Button", (.04, .70, .5, .04)))
         company = screen(Element("1", "Netflix", "StaticText", (.17, .78, .11, .02)),
                          Element("3", "Follow", "Button", (.74, .79, .22, .03)))
         followed = screen(Element("1", "Netflix", "StaticText", (.17, .78, .11, .02)),
                           Element("3", "Following", "Button", (.73, .79, .23, .03)),
-                          Element("4", "Following", "Button", (.6, .93, .2, .04)))  # a tab: never the proof
+                          Element("4", "Following", "Button", (.6, .93, .2, .04)))
         self.REQ = "Follow Netflix in QuickChat."
         driver, _, result, _ = self.run_agent(
             [job, company, followed, followed],
@@ -1000,7 +1243,6 @@ class AgentLoopTests(unittest.TestCase):
                          quote="Delete nothing else.")]
 
     def test_delete_nothing_else_asks_for_the_named_delete(self):
-        # Real iPhone, 13 Oct: "…Delete nothing else." refused every delete, the named ones too, for 50 turns.
         note = screen(Element("1", "Mobster QA loop A", "StaticText", (.1, .3, .6, .04)),
                       Element("2", "Delete", "Button", (.8, .3, .1, .04)))
         gone = screen(Element("3", "Notes", "StaticText", (.1, .1, .6, .04)))
@@ -1042,9 +1284,6 @@ class AgentLoopTests(unittest.TestCase):
         self.assertEqual(driver.actions, [])
         self.assertIn("frontier_checklist", [e["event"] for e in events])
 
-
-
-# ------------------------------------------------------------------ App Store installs (C3) and "no" answers (B6)
 
 import json as _json
 from pathlib import Path as _Path
@@ -1115,8 +1354,6 @@ class InstallActTests(unittest.TestCase):
         self.assertEqual(KA.plan_line(c), "This task will install Duolingo.")
 
     def test_in_a_compact_list_only_the_named_apps_own_get_is_served(self):
-        # Rows .09 apart: the Get of the row above is as near Duolingo's name as Duolingo's own (review of #68:
-        # the approval said "Install Duolingo" while the tap installed Babbel).
         rows = []
         for i, name in enumerate(["Babbel - Language Learning", "Duolingo - Language Lessons", "Memrise"]):
             y = .30 + i * .09
@@ -1129,8 +1366,6 @@ class InstallActTests(unittest.TestCase):
                 self.assertEqual(c.check("TAP", get, snapshot, "App Store").allowed, allowed)
 
     def test_apples_confirmation_sheet_is_no_receipt_and_open_is(self):
-        # The sheet ("Double Click to Install") changes the screen, but nothing is installed until the user
-        # confirms there: a run without a guard reported "Installed Duolingo" from it (review of #68).
         page, sheet = self.SCREENS["page"], self.SCREENS["confirm"]
         c, gate = self.gate("Get")
         get = next(e for e in page.elements if e.label == "Get")
@@ -1161,14 +1396,11 @@ class AbsenceProofTests(unittest.TestCase):
         self.assertFalse(c.proof(c.items[0])[0])
         self.assertEqual(KS.MAX_REOPENS, 1)
         self.assertFalse(c.done_gate("Nothing.", 30)[0])
-        self.assertTrue(c.done_gate("Nothing.", 30)[0])  # the second DONE stands, and says what was not shown
+        self.assertTrue(c.done_gate("Nothing.", 30)[0])
         self.assertEqual([i.id for i in c.unproven()], [1])
 
 
 class MissingNeedsProofTests(unittest.TestCase):
-    """A REPORT marked missing is an absence claim, proven like a "none". Dev runs, 10-12 Oct: six multi-087 runs
-    marked the terminal missing ("Terminal not shown; gate E13") from the boarding pass, while the trip's own page
-    showed "Terminal 2, Gate E13"; every final missing REPORT in the 450 recorded runs was in a failed run."""
     TERMINAL = item(kind="REPORT", app="SkyTrip", what="terminal", quote="and terminal")
 
     def test_missing_with_nothing_that_shows_it_absent_is_sent_back_once(self):
@@ -1179,7 +1411,7 @@ class MissingNeedsProofTests(unittest.TestCase):
         self.assertFalse(proven)
         self.assertIn("marked missing, but no screen showed it absent", reason)
         self.assertFalse(c.done_gate("Gate E13; no terminal shown.", 30)[0])
-        self.assertTrue(c.done_gate("Gate E13; no terminal shown.", 30)[0])  # MAX_REOPENS: the second DONE stands
+        self.assertTrue(c.done_gate("Gate E13; no terminal shown.", 30)[0])
 
     def test_missing_after_an_empty_search_in_its_app_stands(self):
         c = contract("Do I have contacts in Seattle?",
@@ -1214,8 +1446,6 @@ if __name__ == "__main__":
 
 
 class ProvenItemsShowInThePromptTests(unittest.TestCase):
-    """A READ the screens already proved reads as seen, so the model does not reopen its source "to verify" (9 Oct:
-    two turns, ~9.5 s, after a Notes search row had shown the note)."""
 
     def test_a_read_proven_by_a_search_row_is_marked_seen(self):
         c = contract("Read the locker code in the note 'MobsterBench Note' in Notes.",

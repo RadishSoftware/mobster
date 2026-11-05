@@ -1,0 +1,63 @@
+---
+title: "Team plan"
+sidebarTitle: "Team plan"
+description: "One Mobster for a group: members with roles, a pool of Macs, and a plan an Owner pays for. What the Team plan costs, who can do what, and what Mobster sees."
+icon: "users"
+keywords: ["team", "teams", "organization", "org", "members", "roles", "owner", "admin", "operator", "viewer", "seats", "stations", "extra macs", "passkey", "billing", "trial", "reports"]
+---
+
+The Team plan is Mobster for a group that shares phones and Macs. It's the same Mobster for Mac. An organization adds members with roles, a pool of Macs they run on, and one plan an Owner pays for. Every iPhone is included, as on every plan.
+
+The Team plan isn't open yet: Mobster 0.4.0 sells the Monthly, Yearly and Lifetime plans for one person ([Pricing](/pricing)). This page covers what is built for the Team plan. The console in the browser, approvals from it and live control are not part of it yet, and this page grows as each ships.
+
+## What it costs
+
+| Item | Price |
+|---|---|
+| Each paid member (Owner, Admin, Operator) | \$25 a month, or \$240 a year (\$20 a month) |
+| Macs | 1 Mac per paid member is included, shared across the organization |
+| Each extra Mac | \$12 a month, or \$99 a year |
+| Viewers | Free, as many as you like |
+| Free trial | 7 days, no card, up to 3 paid members and 3 Macs |
+
+Prices are in US dollars and exclude tax. A Lifetime plan gets no credit toward the Team plan, and a Lifetime holder in a paid role pays for the seat. If you create the organization and have a Monthly or Yearly plan, checkout offers to end it and credit what's left toward the first Team invoice. Nothing personal is cancelled automatically.
+
+## Roles
+
+| Role | Paid | Can |
+|---|---|---|
+| Owner | Yes | Everything an Admin can, plus billing, and changes to Owners and Admins |
+| Admin | Yes | Invite and remove members, change roles, sign policy, add Macs |
+| Operator | Yes | Run tasks and workflows on the phones the roster allows |
+| Viewer | No | Watch and read reports on the phones the roster allows |
+
+An organization always has at least one Owner. Two Owners are recommended, so the signed membership list has a backup if one loses a key.
+
+## Members, Macs and the bill
+
+Nothing is added or charged silently. An invite to a paid role, a role change from Viewer to a paid role, or a Mac joining shows the new total first, and happens only when an Owner or Admin confirms it. If the total changed meanwhile, the change is refused and you confirm again.
+
+- **Adding** a seat or Mac beyond what the period already pays for is charged at once, prorated.
+- **Removing** a member or Mac never refunds the current period. The seat count drops at the end of the period.
+- A Mac joins the organization at that Mac, by an Owner or Admin signed in there. It then stops using that person's personal seat, so their personal plan can run on another Mac.
+
+## Who decides what
+
+Each Mac checks every change itself. Members, roles and policy are documents signed with an Owner's or Admin's passkey, and a Mac acts on them only after it checks the signature against the membership list it pinned. Mobster's servers can't sign for you, and they can't make a Mac act. If every Owner loses every key, the organization starts a new membership list and each Mac rejoins at the Mac.
+
+## What Mobster sees
+
+| Mobster sees | Mobster doesn't see |
+|---|---|
+| Mac and phone names, phone states, battery, iOS version | Screens |
+| Which member watches which phone | Task words, drafts, answers and results |
+| When an approval was asked and answered | Connector tokens, model keys, sign-in codes |
+| The audit log: who did what, and when, kept for one year | The words of anything in the audit log |
+
+Screens and words travel end to end encrypted between the browser and your Mac. Hosted test reports are sealed on your Mac before upload, and the key lives only in the link's fragment, which browsers don't send to a server. A report opens for a signed-in member of the organization who also has the link. Mobster stores only ciphertext, each file under an opaque name, so the account service sees how many files a report has and their sizes, never their names.
+
+## Next
+
+- [Pricing](/pricing)
+- [Security](/security)
+- [Enterprise](/enterprise), for single sign-on, a signed DPA and an SLA

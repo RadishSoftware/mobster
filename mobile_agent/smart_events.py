@@ -7,21 +7,18 @@ import threading
 from . import harness_api
 from .task_policy import ROW_STATE
 
-
 # FrontierAgent events kept out of the run's history: the full prompt and screenshot of every turn is
 # for offline replay (bench/replay.py), 20-60 KB each; the loop's own result is replaced by the server's.
 DROPPED = frozenset({"frontier_prompt", "result"})
-# The result cards tools may add to one answer (the newest kept; result_blocks.MAX_BLOCKS bounds the answer).
 TOOL_BLOCKS = 6
 TYPING = frozenset({"TYPE", "TYPE_SUBMIT", "SET_TEXT"})
+# A press on a named control: the steps whose `commit` the engine can vouch for (frontier.safety.consequential).
+PRESSES = frozenset({"TAP", "LONG_PRESS"})
 
 
-# SF Symbol names iOS gives icon-only buttons as their label, and what the button does.
 SYMBOLS = {"circle": "the selection circle", "ellipsis": "More", "ellipsis.circle": "More", "checkmark": "Done",
            "trash": "Delete", "trash.fill": "Delete", "square.and.pencil": "Compose"}
 def readable(label):
-    """A control's label for people: an identifier ("chat_compose_field", "searchButton") in words, an SF
-    Symbol name ("ellipsis") as what it does, a row without its state ("Buy oat milk, Incomplete")."""
     label = ROW_STATE.sub("", " ".join(str(label or "").split()))
     if label in SYMBOLS:
         return SYMBOLS[label]
@@ -51,10 +48,6 @@ def written_kind(label):
 
 
 def step_text(op, label, apps=None, *, text=None, field=None, where=None, again=False):
-    """One step in plain words: "Tapped Send", "Opened Messages", "Typed “buy oat milk” in Title",
-    "Wrote the message", "Searched for “Zara”", "Scrolled to Zara Okonkwo", "Read the Reminders list".
-    ``text`` is what was typed (or scrolled to), ``field`` the kind of field typed into (search, composer or
-    field), ``where`` the screen or app a list was read in, ``again`` a composer written before."""
     label = readable(label) if op not in ("LAUNCH_APP",) else " ".join(str(label or "").split())
     short = shorten(label, 60)
     if op == "LAUNCH_APP":
@@ -73,7 +66,8 @@ def step_text(op, label, apps=None, *, text=None, field=None, where=None, again=
             return f"Searched for {in_quotes(text)}"
         if field == "composer":
             return f"{'Rewrote' if again else 'Wrote'} the {written_kind(label)}{submit}"
-        place = f" in {short}" if short and len(short) <= 30 and short.casefold() != " ".join(str(text).split()).casefold() else ""
+        place = (f" in {short}"
+                 if short and len(short) <= 30 and short.casefold() != " ".join(str(text).split()).casefold() else "")
         return f"Typed {in_quotes(text)}{place}{submit}"
     if op == "SCROLL_TO" and text:
         return f"Scrolled to {shorten(text, 60)}"
@@ -122,7 +116,6 @@ def item_state(contract, item):
     return "done" if contract.proof(item)[0] else "open"
 
 
-# How a checklist item reads to a person, by act: (the verb and object, whether it names the recipient).
 ITEM_ACTS = {
     "send_message": "Send the message", "reply": "Send the reply", "post": "Post it", "comment": "Post the comment",
     "react": "React", "pay": "Pay", "request_money": "Request money", "transfer": "Make the transfer",
@@ -132,8 +125,6 @@ ITEM_ACTS = {
 
 
 def item_text(item):
-    """A checklist item in plain words ("Send the message to Zara Okonkwo in QuickChat"), for any list a person
-    sees; ``label`` stays the contract's own wording, for Developer details."""
     from . import contract_screen as KS
     what = " ".join(str(item.what or "").split())
     where = f" in {item.app}" if item.app and not what.casefold().endswith(f" in {item.app}".casefold()) else ""
@@ -166,17 +157,6 @@ def item_text(item):
 
 
 class SmartEvents:
-    """FrontierAgent's ``emit``: passes its trace through (less the replay prompts) and adds the contract
-    events of docs/engine-contract.md: ``plan`` once before the first action, ``contract_item`` as items
-    change, ``receipt`` when the screen proves one, ``step`` per action in plain words with the screen as a
-    ``_frame`` (the server stores it and substitutes ``frameId``), and ``cost`` after each model call.
-
-    Typing the same field again right after is one step (the text it ends with); a typing step waits for
-    the next action or model call to know. Proof is the latest receipt per item: a message quotes the exact
-    text sent, a write is proven only when its text is read back outside the field it was typed in (a draft
-    in a compose box proves nothing), a value quotes its row as shown ("iOS Version 26.4").
-
-    Frames are the live stream's newest JPEG (frontier.video_frame): free, never a screenshot request."""
 
     def __init__(self, emit, driver=None, apps=None, frame=None, ledger=None):
         self.out, self.driver, self.apps = emit, driver, dict(apps or {})
@@ -190,16 +170,16 @@ class SmartEvents:
         self.states = {}
         self.receipts_seen = 0
         self.reports = {}
-        self.proof = {}          # itemId -> {itemId, kind, quote, app, screen, frameId}: the latest receipt
-        self.write_keys = {}     # WRITE itemId -> the text its receipt quotes (folded)
+        self.proof = {}
+        self.write_keys = {}
         self.stale = set()       # WRITE items whose quoted text was typed over and not read back again
         self.typed_at = {}       # index in contract.typed -> the first contract.screens index after it
-        self.held = None         # a typing step waiting to see whether the same field is typed again
-        self.ops = []            # the current model call's chain of operations
-        self.written = set()     # composers written in (a second write "Rewrote the message")
+        self.held = None
+        self.ops = []
+        self.written = set()
         self.declined = set()    # texts the user declined at an approval (folded): never proof
         self.cost_usd = None
-        self.watched = None      # WATCH's last ``watched`` event: its words, picture and timeline make its step
+        self.watched = None
         # A tool's own words for its next step (``tool_step`` {op, text}: "Opened your Instagram DMs"), by op.
         self.tool_steps = {}
         # Result cards tools built from what they read (``result_blocks`` {op, blocks}), newest last.
@@ -207,7 +187,7 @@ class SmartEvents:
         self.lock = threading.Lock()
 
     def _video_frame(self):
-        from .frontier import video_frame
+        from .frontier.screen import video_frame
         return video_frame(self.driver) if self.driver is not None else None
 
     def _grab(self):
@@ -224,14 +204,11 @@ class SmartEvents:
         return event
 
     def _private(self):
-        """Where the screen the last action left shows text fields and messages (normalized frames, never their
-        text), so a saved clip can blur them (run_gif); None when unknown."""
+        """Where the last action's screen shows fields and messages, as frames (never their text); None when unknown."""
         screen = getattr(self.agent, "last_screen", None)
         if screen is None:
             return None
-        private_rects = harness_api.hook("private_rects")
-        if private_rects is None:
-            return None
+        private_rects = harness_api.hooks().private_rects
         try:
             return private_rects(screen.elements, getattr(screen, "bundle_id", None))
         except Exception:
@@ -266,7 +243,7 @@ class SmartEvents:
                 # After out(): the server put the contact sheet beside the run and left its id here.
                 self.watched = {"text": event.get("text"), "frameId": event.get("frameId"), "media": media}
             elif kind == "connector_call":
-                self.connector_call = event  # its latest status names the CALL_TOOL step that follows
+                self.connector_call = event
                 if event.get("status") == "done" and event.get("excerpt"):
                     # What a connected service answered is proof as a screen is: quoted, with where it came from.
                     self.tool_proof = [*getattr(self, "tool_proof", [])[-2:], {
@@ -278,7 +255,7 @@ class SmartEvents:
                 self.dialog_frame = self._grab()  # the prompt itself, before anything is pressed
             elif kind == "system_dialog" and event.get("ok") and event.get("button"):
                 # iOS's own prompt, answered: a step in the thread, with the frame that shows the prompt.
-                from .system_dialogs import thread_text
+                from .wda.system_dialogs import thread_text
                 self._flush()
                 frame, self.dialog_frame = getattr(self, "dialog_frame", None), None
                 self._step(thread_text(event.get("kind"), event.get("app"), event["button"], event.get("by")),
@@ -288,10 +265,7 @@ class SmartEvents:
                 self._receipts(event.get("step"))
 
     def _thought(self, event):
-        """The turn's ``thought`` (docs/engine-contract.md): the model's own short sentence for this turn and how long
-        it took, for the run view's "Thought for 2s". A saved program's turn made no model call and has none. The text is
-        plain words: the loop masked the user's secrets in it, and ``secret_filter.redact`` masks anything else that
-        reads as a key, a card or a code. It is shown, never sent to a model again."""
+        """The turn's ``thought``: the model's own sentence, secrets masked, shown and never sent to a model again."""
         if event.get("source") == "program":
             return
         from .secret_filter import redact
@@ -311,8 +285,7 @@ class SmartEvents:
             self.out(event)
 
     def approving(self, approve):
-        """``approve`` for FrontierAgent: the step list is up to date (a held typing step shown) before the
-        user is asked."""
+        """``approve`` for FrontierAgent: a held typing step is shown before the user is asked."""
         def ask(request):
             from . import contract_screen as KS
             with self.lock:
@@ -324,11 +297,16 @@ class SmartEvents:
             return answer
         return ask
 
-    # -- steps
-
-    def _step(self, text, step, data=None, private=None):
+    def _step(self, text, step, data=None, private=None, focus=None, commit=None, changed=None):
         self.steps += 1
         event = self._with_frame({"event": "step", "n": self.steps, "step": step, "text": text}, data)
+        # Left out when unknown, which the app reads as "may commit" and "may not have changed".
+        if isinstance(commit, bool):
+            event["commit"] = commit
+        if isinstance(changed, bool):
+            event["changed"] = changed
+        if focus and "_frame" in event:
+            event["focus"] = focus  # where the element it acted on sits in that frame, as fractions: data only
         if "_frame" in event:
             private = private if private is not None else self._private()
             if private is not None:
@@ -343,11 +321,13 @@ class SmartEvents:
         if op in TYPING:
             if self.held is not None and self.held["label"] == label:
                 self.held.update(op=op, text=event.get("text"), step=event.get("step"), frame=self._grab(),
-                                 private=self._private(), field=event.get("field") or self.held["field"])
+                                 private=self._private(), field=event.get("field") or self.held["field"],
+                                 focus=event.get("element_rect"), changed=self.held["changed"] or event.get("changed"))
             else:
                 self._flush()
                 self.held = {"op": op, "label": label, "text": event.get("text"), "field": event.get("field"),
-                             "step": event.get("step"), "frame": self._grab(), "private": self._private()}
+                             "step": event.get("step"), "frame": self._grab(), "private": self._private(),
+                             "focus": event.get("element_rect"), "changed": event.get("changed")}
             index = event.get("index")
             following = self.ops[index + 1] if isinstance(index, int) and index + 1 < len(self.ops) else None
             if following is not None and following not in TYPING:
@@ -380,7 +360,9 @@ class SmartEvents:
         if op == "READ_LIST":
             shown = contract.shown[-1] if contract is not None and contract.shown else None
             where = (shown[2] if shown and shown[2] else None) or event.get("app_name")
-        self._step(step_text(op, label, self.apps, text=event.get("text"), where=where), event.get("step"))
+        self._step(step_text(op, label, self.apps, text=event.get("text"), where=where), event.get("step"),
+                   focus=event.get("element_rect"), commit=event.get("consequential") if op in PRESSES else None,
+                   changed=event.get("changed"))
 
     def _flush(self):
         held, self.held = self.held, None
@@ -390,9 +372,8 @@ class SmartEvents:
         if held["field"] == "composer":
             self.written.add(held["label"])
         self._step(step_text(held["op"], held["label"], self.apps, text=held["text"], field=held["field"],
-                             again=again), held["step"], held["frame"], held.get("private"))
-
-    # -- the plan, costs and checklist
+                             again=again), held["step"], held["frame"], held.get("private"), held.get("focus"),
+                   changed=held.get("changed"))
 
     def _plan(self):
         from . import contract_asks as proof_asks
@@ -423,8 +404,6 @@ class SmartEvents:
         self.cost_usd = usd
         self.out({"event": "cost", "usd": usd, "calls": usage.get("calls", 0)})
 
-    # -- proof
-
     def _receipts(self, step):
         from . import contract_screen as KS
         contract = self.contract
@@ -440,7 +419,8 @@ class SmartEvents:
             self._receipt(item, self._commit_quote(contract, item, entry), entry.get("step", step),
                           screen=entry.get("screen"))
         for item in contract.items:
-            if item.kind == "REPORT" and item.status == "found" and item.value and self.reports.get(item.id) != item.value:
+            if (item.kind == "REPORT" and item.status == "found" and item.value
+                    and self.reports.get(item.id) != item.value):
                 self.reports[item.id] = item.value
                 row, screen = self._report_row(contract, item)
                 label = None
@@ -457,8 +437,6 @@ class SmartEvents:
         self._states()
 
     def _commit_quote(self, contract, item, entry):
-        """A commit's proof as the user knows it: the exact message sent, the confirmation row as shown, or
-        (a save) the typed text the screen now shows."""
         from . import contract_screen as KS
         payload = " ".join(str(entry.get("payload") or "").split())
         if item.act in KS.MESSAGE_ACTS and payload:
@@ -479,8 +457,6 @@ class SmartEvents:
 
     @staticmethod
     def _report_row(contract, item):
-        """(the row that shows a found value, as shown, and its screen's title), latest first, before the
-        value was recorded; (None, None) when no short row holds it (a value worked out from several)."""
         from . import contract_screen as KS
         value = KS.plain(item.value)
         if not value:
@@ -497,8 +473,7 @@ class SmartEvents:
         return None, None
 
     def _writes(self, contract):
-        """WRITE receipts: the latest text typed for the item, once a screen after the typing shows it
-        outside the field it went into. A draft in a compose box, or text typed over, proves nothing."""
+        """WRITE receipts: the latest text typed, once shown outside its field; a compose-box draft proves nothing."""
         from . import contract_screen as KS
         for item in contract.items:
             if item.kind != "WRITE":
@@ -527,10 +502,6 @@ class SmartEvents:
 
     @staticmethod
     def _read_back(contract, item, typed, key, since):
-        """(quote, title) of the latest screen after ``typed`` that shows ``key`` where it is saved or sent,
-        in more rows than the screen before the typing did (the same text sent or saved before is not this
-        one): a row that is not a field, or with the keyboard down a field other than the one typed in (a
-        list's editable rows), never a compose box. None when no screen does."""
         from . import contract_screen as KS
         field = KS.plain(readable(typed.get("field") or ""))
         composer = bool(KS.COMPOSER.search(typed.get("field") or "") or KS.COMPOSER.search(field))
@@ -562,7 +533,7 @@ class SmartEvents:
             return
         event = self._with_frame({"event": "receipt", "itemId": item.id, "kind": item.kind.lower(), "quote": quote,
                                   "app": item.app or None, "screen": screen or None, "step": step}, data)
-        self.out(event)  # the server swaps the event's ``_frame`` for a ``frameId``
+        self.out(event)
         self.proof.pop(item.id, None)  # the latest receipt for an item replaces the one before
         self.proof[item.id] = {"itemId": item.id, "kind": item.kind, "quote": quote, "app": event["app"],
                                "screen": event["screen"], "frameId": event.get("frameId"),
@@ -570,9 +541,6 @@ class SmartEvents:
 
     @staticmethod
     def _commit_fields(item):
-        """A commit's receipt also says what it was: ``act`` (send_message, order...) and ``to``, the person it was
-        for when its words name one. The dashboard draws a sent message's proof as that message (a bubble to Sam);
-        anything else stays a quote."""
         from . import contract_screen as KS
         if item.kind != "COMMIT" or not item.act or item.act == "none":
             return {}
@@ -589,15 +557,13 @@ class SmartEvents:
                           "text": item_text(item), "state": state})
 
     def final_proof(self):
-        """The result's proof: one entry per item, the latest; a write that a sent message or a save in the
-        same app already quotes, and a write typed over since, are left out."""
         from . import contract_screen as KS
         entries = [e for e in self.proof.values() if e["quote"]]
         commits = [e for e in entries if e["kind"] == "COMMIT"]
         kept, quotes = [], set()
         for entry in entries:
             if KS.plain(entry["quote"]) in self.declined and entry["kind"] != "COMMIT":
-                continue  # a draft the user turned down, however it came to be on screen
+                continue  # a draft the user turned down
             if entry["kind"] == "WRITE" and (entry["itemId"] in self.stale or any(
                     (not c["app"] or not entry["app"] or KS.plain(c["app"]) == KS.plain(entry["app"]))
                     and KS.overlaps(c["quote"], entry["quote"]) for c in commits)):

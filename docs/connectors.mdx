@@ -1,0 +1,647 @@
+---
+title: "Use other services in a task"
+"og:title": "Use Notion, Linear, GitHub and other services in a task"
+sidebarTitle: "Connectors"
+description: "Mobster for Mac's agent calls tools of MCP servers you connect while it works on your iPhone: read a Notion page, create a Linear issue, then act on the phone."
+icon: "plug"
+keywords: ["connectors", "connector", "mcp", "mcp client", "mcp server", "notion", "linear", "github", "slack", "google drive", "sentry", "expo", "gitlab", "jira", "confluence", "atlassian", "airtable", "clickup", "zapier", "make", "monday", "bitrise", "tools", "call_tool", "oauth", "sign in", "import", "claude desktop", "cursor", "codex", "reconnect", "tool search", "posthog", "supabase", "stripe", "mixpanel", "vercel", "runway", "amplitude", "clerk", "statsig", "launchdarkly", "lokalise", "resend", "mobbin", "datadog", "new relic", "customer.io", "crowdin", "paddle", "neon", "postman", "contentful", "sanity", "shortcut", "netlify", "cloudflare", "buildkite", "honeycomb", "grafana", "axiom", "metricool", "typefully", "todoist", "intercom", "klaviyo", "attio", "webflow", "wix", "beehiiv", "vimeo", "help scout", "close", "basecamp", "coda", "miro", "cal.com", "granola", "fireflies", "jotform", "square", "paypal", "mercury", "ramp", "calendly"]
+---
+
+A connector is an MCP server Mobster's agent can use during a task. With Linear connected, "Find the login bug in Linear and text Sam its title" reads the issue from Linear and sends the text on your iPhone, in one task.
+
+Connectors are part of Mobster for Mac. The `mobster` command doesn't use them, and a task another agent starts over [MCP](/mcp-server) or [Mobster Remote](/remote) never gets them. One exception: [Mobster Checks](/ci/github-app) uses your GitHub connector's sign-in to confirm you can push to a repository before `mobster test pr` posts there.
+
+## The Connectors page
+
+**Connectors** is one page for every outside service Mobster works with. Open it with **Connectors** in ⌘K, **Connectors** in Settings (⌘,), or **Connect a tool** in the task box's **+** menu. It has no row in the sidebar. A service that connects through Mobster's own app, such as GitHub, needs your Mobster account: without it, **Connect** says so, with **Sign in to Mobster**, before any browser opens. A service Mobster doesn't offer yet, such as Slack while Mobster's own Slack app is in testing, is named under the directory, and searching for it says why. **Your connectors** lead it: each service you connected is one row, with what it can do: **Use in tasks** (tools Mobster's agent calls during a task, this page) and **Send results** (where a finished task's result goes, [Send results to other tools](/webhooks)). A service that does both, such as Notion, is one row with both. While its tools answer, the row has **Use in a task**, which opens a new task with the service's first example (or `Use Notion to `) for you to finish, and sends nothing. The directory follows, and the page ends with **Use Mobster from…** ([Use Mobster from Claude and ChatGPT](#use-mobster-from-claude-and-chatgpt)).
+
+Each connector's row says how its connection stands, in words and with a dot:
+
+| Row says | What it means | What to do |
+|---|---|---|
+| `23 tools. 2 run without asking.`, green dot | A session is open and answers now | Nothing |
+| `23 tools. Each asks you first.` | No session is open. Mobster connects when a task needs it | Nothing, or **Test** |
+| `Connecting…` | Testing or reconnecting | Wait |
+| `Finish in your browser. Mobster picks up here when you're done.` | The service's sign-in page is open in your browser | Sign in there, or **Open the page again** if you closed it. **Cancel** removes a connector that has never signed in |
+| `Not connected.`, or why the first sign-in didn't finish, such as `You didn't allow Mobster to connect.` | It has never signed in | **Connect**, or **Remove** |
+| `Signed out by the service. Connect to sign in again.`, amber dot | The service stopped taking your sign-in and Mobster couldn't refresh it | **Connect** |
+| Why it failed, such as `Nothing answered at 127.0.0.1:9. Check the address, and that the server is running.` or `Mobster couldn't find mcp.exmaple.com. Check the address.`, in coral | The last connect or call didn't work | **Reconnect** when the server is back, or **Edit** your own server's address |
+
+**Reconnect** closes the session, connects again, checks the server with an MCP `ping`, reads its tools and keeps the session open.
+
+On the Connectors page, **Details** on a row opens that service's page. While its sign-in is open in your browser, the page shows Mobster's icon and the service's joined by dots that pulse toward the service, with **Open the page again** and **Cancel**. When you're back from the browser, the dots meet at a green check, `Connected to Linear` shows in a notice, and the page lists the tools and what each may do. A sign-in that didn't finish breaks the line; one that worked before and now fails marks it in coral, with **Connect** or **Reconnect**.
+
+## Add a connector
+
+The directory is on the Connectors page, under your connectors. **Search**, beside the page's title, narrows the directory and your connectors by name. **Your own server**, and Import from Claude Code, Claude Desktop, Cursor or Codex, are rows under **Build and test apps**, and stay there after you connect every service it lists. Each service is a row with what it does. A check beside the name means Mobster made it and tests it with every release: Webhook, Folder, Email and [GitHub checks](/ci/github-app). A row says who makes the service when that isn't the service itself, such as **by Atlassian** under Jira, and has no check. Click **Connect** on its right to connect it: its page opens and the sign-in starts there. A service that can both be used in tasks and receive results asks which. The rows are in three sections: **Build and test apps**, **Plan content and client work**, and **Send results to**. Click a row to see how connecting works, what it can do, its access, who makes it, how you sign in and its server address before you connect. **Try asking** on that page lists tasks to try with it; clicking one opens a new task with those words, and sends nothing.
+
+The directory lists a gated connector only after it passes sign-in, a read, a write when supported, disconnect and reconnect. Slack, Google Drive, GitLab, Make, monday.com, Microsoft 365 and Bitrise stay hidden until they pass. A connector you already added keeps working.
+
+| Connector | Section | Server |
+|---|---|---|
+| Notion | Plan content and client work | `https://mcp.notion.com/mcp` |
+| Linear | Build and test apps | `https://mcp.linear.app/mcp` |
+| GitHub | Build and test apps | `https://api.githubcopilot.com/mcp/` |
+| Slack | Plan content and client work | `https://mcp.slack.com/mcp` |
+| Google Drive | Plan content and client work | `https://drivemcp.googleapis.com/mcp/v1` |
+| Sentry | Build and test apps | `https://mcp.sentry.dev/mcp` |
+| Expo | Build and test apps | `https://mcp.expo.dev/mcp` |
+| GitLab | Build and test apps | `https://gitlab.com/api/v4/mcp` |
+| Jira | Build and test apps | `https://mcp.atlassian.com/v2/mcp` |
+| Airtable | Plan content and client work | `https://mcp.airtable.com/mcp` |
+| ClickUp | Plan content and client work | `https://mcp.clickup.com/mcp` |
+| Zapier | Plan content and client work | `https://mcp.zapier.com/api/v1/connect` |
+| Make | Plan content and client work | `https://mcp.make.com` |
+| monday.com | Plan content and client work | `https://mcp.monday.com/mcp` |
+| Microsoft 365 | Plan content and client work | `https://graph.microsoft.com/v1.0` |
+| Bitrise | Build and test apps | `https://mcp.bitrise.io` |
+| Metricool | Plan content and client work | `https://ai.metricool.com/mcp` |
+| Typefully | Plan content and client work | `https://mcp.typefully.com/mcp` |
+| Todoist | Plan content and client work | `https://ai.todoist.net/mcp` |
+| Intercom | Plan content and client work | `https://mcp.intercom.com/mcp` |
+| Klaviyo | Plan content and client work | `https://mcp.klaviyo.com/mcp` |
+| Attio | Plan content and client work | `https://mcp.attio.com/mcp` |
+| Webflow | Plan content and client work | `https://mcp.webflow.com/mcp` |
+| Wix | Plan content and client work | `https://mcp.wix.com/mcp` |
+| beehiiv | Plan content and client work | `https://mcp.beehiiv.com/mcp` |
+| Vimeo | Plan content and client work | `https://mcp.vimeo.com/mcp` |
+| Help Scout | Plan content and client work | `https://mcp.helpscout.net/mcp` |
+| Close | Plan content and client work | `https://mcp.close.com/mcp` |
+| Basecamp | Plan content and client work | `https://mcp.basecamp.com/mcp` |
+| Coda | Plan content and client work | `https://coda.io/apis/mcp` |
+| Miro | Plan content and client work | `https://mcp.miro.com/` |
+| Cal.com | Plan content and client work | `https://mcp.cal.com/mcp` |
+| Granola | Plan content and client work | `https://mcp.granola.ai/mcp` |
+| Fireflies | Plan content and client work | `https://api.fireflies.ai/mcp` |
+| Jotform | Plan content and client work | `https://mcp.jotform.com` |
+| Square | Plan content and client work | `https://mcp.squareup.com/mcp` |
+| PayPal | Plan content and client work | `https://mcp.paypal.com/http` |
+| Mercury | Plan content and client work | `https://mcp.mercury.com/mcp` |
+| Ramp | Plan content and client work | `https://mcp.ramp.com/mcp` |
+| PostHog | Build and test apps | `https://mcp.posthog.com/mcp` |
+| Supabase | Build and test apps | `https://mcp.supabase.com/mcp` |
+| Stripe | Build and test apps | `https://mcp.stripe.com` |
+| Mixpanel | Build and test apps | `https://mcp.mixpanel.com/mcp` |
+| Vercel | Build and test apps | `https://mcp.vercel.com` |
+| Runway | Build and test apps | `https://mcp.runway.team` |
+| Amplitude | Build and test apps | `https://mcp.amplitude.com/mcp` |
+| Clerk | Build and test apps | `https://mcp.clerk.com/mcp` |
+| Statsig | Build and test apps | `https://api.statsig.com/v3/mcp` |
+| LaunchDarkly | Build and test apps | `https://mcp.launchdarkly.com/mcp/launchdarkly` |
+| Lokalise | Build and test apps | `https://mcp.lokalise.com/mcp/software-development` |
+| Resend | Build and test apps | `https://mcp.resend.com/mcp` |
+| Mobbin | Build and test apps | `https://api.mobbin.com/mcp` |
+| Datadog | Build and test apps | `https://mcp.datadoghq.com/api/unstable/mcp-server/mcp` |
+| New Relic | Build and test apps | `https://mcp.newrelic.com/mcp/` |
+| Customer.io | Build and test apps | `https://mcp.customer.io/mcp` |
+| Crowdin | Build and test apps | `https://mcp.crowdin.com/v2/mcp` |
+| Paddle | Build and test apps | `https://mcp.paddle.com/mcp` |
+| Neon | Build and test apps | `https://mcp.neon.tech/mcp` |
+| Postman | Build and test apps | `https://mcp.postman.com/mcp` |
+| Contentful | Build and test apps | `https://mcp.contentful.com/mcp` |
+| Sanity | Build and test apps | `https://mcp.sanity.io` |
+| Shortcut | Build and test apps | `https://mcp.shortcut.com/mcp` |
+| Netlify | Build and test apps | `https://netlify-mcp.netlify.app/mcp` |
+| Cloudflare | Build and test apps | `https://mcp.cloudflare.com/mcp` |
+| Buildkite | Build and test apps | `https://mcp.buildkite.com/mcp` |
+| Honeycomb | Build and test apps | `https://mcp.honeycomb.io/mcp` |
+| Grafana | Build and test apps | `https://mcp.grafana.com/mcp` |
+| Axiom | Build and test apps | `https://mcp.axiom.co/mcp` |
+| Calendly | Plan content and client work | `https://mcp.calendly.com` |
+
+The directory lists a service once Mobster has tested it for real: it connects, reads in a task, and writes where the service can. A service in this table that the directory doesn't show yet works under [Your own server](#add-your-own-server), with the address the table gives.
+
+Each server is its vendor's own, at the address the vendor publishes. For most, **+** opens the vendor's sign-in page in your browser, the vendor registers Mobster as a client there, and you allow it. Nothing is shared until you do. After you sign in, Mobster tests the connection and lists the server's tools, such as `Connected. 23 tools.`
+
+### Mobster's own Slack, Google and GitHub apps
+
+Slack, Google Drive and GitHub let no app register itself, so Mobster signs you in with an OAuth app of its own at each. The app's secret stays on Mobster's server, `api.mobster.dev`, which trades the sign-in code for your tokens and refreshes them. Your tokens go to your Mac's Keychain. The server keeps no code or token.
+
+Mobster's own apps work while your Mobster account has a plan or a trial: your Mac sends your account's token with each sign-in and refresh, and only to `api.mobster.dev`. Without a plan or trial, or on a Mobster from before this, the sign-in stops with `Mobster's own Slack app needs your Mobster account, with a plan or trial in force, on the latest Mobster. Update Mobster and sign in, then connect Slack again.` Your own app or token works without an account.
+
+Click **+**, allow Mobster on the service's page in your browser, and Mobster comes to the front with the connector connected. The browser tab shows Mobster's icon and Slack's joined by a dotted line with a check, says `Connected to Slack`, and that you can close it. Your browser may ask once whether it can open Mobster. If you don't allow it, the line is broken and the tab says `Slack isn’t connected`; when the sign-in fails, it says why.
+
+- Each service sends your browser back to `api.mobster.dev`, which passes the code straight to Mobster on your Mac. If you press **Cancel** on the service's page, Mobster says `You didn't allow Mobster to connect.` and **Connect** starts again.
+- Slack's tools run on Slack's Web API, with your sign-in: Slack's MCP server takes only apps listed in the Slack Marketplace, and the Web API takes any app your workspace installed.
+- Mobster's Google app asks Google for one scope, `drive.file`: Mobster sees only the Google Drive files you use with Mobster, not the rest of your Drive. The Google Drive connector and the Google Sheets destination use the same app.
+
+When Mobster's app can't sign you in, **+** opens a sheet that says why, such as `Mobster's own Google Drive app isn't set up yet.` **Use your own app** (for GitHub, **Use your own token**) shows the fields:
+
+- **Slack** and **Google Drive**: create an OAuth app at the vendor ([Slack's MCP docs](https://docs.slack.dev/ai/mcp-server/), [Google's setup](https://developers.google.com/workspace/drive/api/guides/configure-mcp-server), which needs Google's Workspace Developer Preview), add `http://127.0.0.1:47613/callback` to its redirect URLs, and paste its client ID and secret. Signing in with your own app needs port 47613 free on your Mac. Mobster asks your Google app for `drive.file` alone, so add that scope to its Data Access.
+- **GitHub**: paste a [personal access token](https://github.com/settings/personal-access-tokens).
+
+A connector that has your own app or token keeps using it.
+
+The Slack connector's sign-in is the only Slack sign-in in Mobster: a Slack destination under **Send results** posts with it, and signing out here stops that destination too. Discord, Notion and Google Sheets destinations sign in with Mobster's apps the same way ([Connect with one sign-in](/webhooks#connect-with-one-sign-in)).
+
+### Notion
+
+Searches and reads your pages and databases, and adds or updates pages. Click **+**, then sign in to Notion in your browser. On Enterprise, an admin who allows MCP clients **Only from approved list** blocks every client that isn't on it ([Notion MCP](https://www.notion.com/help/notion-mcp)).
+
+### Linear
+
+Finds, creates and updates issues, projects and comments. Click **+**, then sign in to Linear in your browser.
+
+### GitHub
+
+Reads repositories, issues and pull requests, and opens or comments on them. Click **+**, then sign in to GitHub in your browser, with Mobster's GitHub app. In a Copilot Business or Enterprise organization, an admin turns on the **MCP servers in Copilot** policy. An organization that restricts OAuth apps needs an admin to approve Mobster's GitHub app before its repositories show, and Enterprise Managed Users have personal access tokens off unless an admin allows them ([GitHub's setup](https://docs.github.com/en/copilot/how-tos/provide-context/use-mcp/set-up-the-github-mcp-server)).
+
+### Slack
+
+Searches your messages, lists your channels, reads a channel, a DM or a thread, and sends messages as you. Click **+**, then sign in to Slack in your browser, with Mobster's Slack app. A workspace that restricts apps needs an admin to approve Mobster's Slack app, or yours.
+
+Mobster answers Slack's five tools itself, on Slack's Web API with your sign-in, so they work with any app your workspace installed: Slack's MCP server takes only Marketplace and internal apps. Each tool needs the user scope Slack asked you to allow:
+
+| Tool | What it does | Slack's method | Scope |
+| --- | --- | --- | --- |
+| `search_messages` | Searches public and private channels, group DMs and DMs, newest first. Slack's search words work, such as `from:@sam in:#team after:2026-10-01` | `assistant.search.context` | `search:read.public`, `search:read.private`, `search:read.mpim`, `search:read.im` |
+| `list_channels` | The public and private channels you're in, with their ids | `users.conversations` | `channels:read`, `groups:read` |
+| `read_channel` | A channel's or DM's latest messages, by id or `#name` | `conversations.history` | `channels:history`, `groups:history`, `mpim:history`, `im:history` |
+| `read_thread` | A thread's messages, from its first message's `ts` | `conversations.replies` | the same history scopes |
+| `send_message` | Posts as you in a channel or DM, or replies in a thread. `&`, `<` and `>` are escaped, so text from a screen can't mention `@channel` or a person | `chat.postMessage` | `chat:write` |
+
+A post that went out and got no answer, or a `5xx`, says `The message may have posted: check Slack before you send it again.` and is never sent again. A sign-in without a tool's scope says which one, such as `Your Slack sign-in can't do this: it needs chat:write.` Sign in again and allow it.
+
+### Google Drive
+
+Searches and reads the Google Drive files you pick, and the files Mobster made. Click **+**, then sign in to Google in your browser, with Mobster's Google app ([Google's setup](https://developers.google.com/workspace/drive/api/guides/configure-mcp-server)). Google asks to let Mobster see, edit, create and delete only the Drive files you use with Mobster (`drive.file`). Mobster never sees your other files.
+
+After you allow Mobster, the same tab opens Google's file picker over a page titled `Choose files for Mobster`. Pick the files Mobster may open, then choose **Select**. The page says `Mobster can open 3 files` and hands you back to Mobster. To pick more later, choose **Details** on Google Drive's row, then **Choose files**. Mobster keeps no list of what you picked: Google does, and you take Mobster's access back in your Google Account at [myaccount.google.com/connections](https://myaccount.google.com/connections).
+
+- The picker is Google's own, on a page your Mac serves at `http://127.0.0.1`. Your Google sign-in goes from your Mac's Keychain to that page and from there to Google, never to Mobster's servers. The page opens once: to open it again, choose **Choose files** again.
+- A task that asks for a file you didn't pick gets `not found` from Google Drive, and Mobster's agent asks you to pick that file with **Choose files**.
+- **Choose files** needs Mobster's own Google app. With your own app it says `Choose files works with Mobster's own Google app, and this Google Drive signs in with yours. Remove Google Drive, then connect it again without your own app.`, and Mobster reads only the files it made.
+- Until Mobster's picker key is set up, **Choose files** says `Mobster's Google Drive file picker isn't set up yet, so Choose files can't open. Try again later.`, and the sign-in ends on the `Connected to Google Drive` tab.
+
+### Sentry
+
+Searches issues and errors, reads their events and stack traces, and updates issues. Click **+**, then sign in to Sentry and allow the scopes it lists: `org:read`, `project:write`, `team:write`, `event:write` and `alerts:write`. It reaches organizations on sentry.io, not a self-hosted Sentry ([Sentry MCP](https://mcp.sentry.dev/)).
+
+Try: `Find the newest crash in Sentry for my app and repeat its steps on my iPhone`.
+
+### Expo
+
+Lists and starts EAS builds and workflows, reads their logs, and reads TestFlight crashes and App Store reviews. Click **+**, then sign in to Expo. `search_documentation` needs an EAS paid plan, and `build_run` a GitHub repository connected to the project ([Expo MCP](https://docs.expo.dev/mcp/)). Expo's tools can also submit builds to the stores and reply to reviews; each asks you first until you allow it.
+
+Try: `Read the newest TestFlight crashes in Expo and repeat each one on my iPhone`.
+
+### GitLab
+
+Finds and creates issues and merge requests, comments on them, and checks pipelines. Click **+**, then sign in to GitLab.com with Mobster's own GitLab app; GitLab's consent page names Mobster and asks for the `mcp` scope. If Mobster's app isn't set up, **+** says so and offers **Use your own app**. First, an Owner of your top-level group turns on access to GitLab's MCP server for the group. The `duo_agent_platform` tools need a GitLab Duo seat ([GitLab's MCP server](https://docs.gitlab.com/user/model_context_protocol/mcp_server/)).
+
+For a self-managed GitLab, choose **Use your own GitLab** beside the server address on GitLab's page, type your server's address, such as `git.example.com`, and sign in there; your server registers Mobster itself, because Mobster's GitLab app lives on GitLab.com only. Mobster connects to `https://<your GitLab>/api/v4/mcp` and refuses an address that starts with `http://` or has a path. An administrator turns on **Allow access to the MCP server** for the instance first.
+
+Try: `Test the merge request's change on my iPhone and comment the result in GitLab`.
+
+### Jira
+
+Searches, creates and updates Jira issues and Confluence pages, and comments on them, through Atlassian's server. Click **+**, then sign in to Atlassian and choose your site. Mobster asks for every scope the server lists, and Atlassian's consent page shows them. Calls use your organization's Rovo credits ([Atlassian's guide](https://support.atlassian.com/atlassian-ai-gateway/docs/get-started-with-the-atlassian-remote-mcp-server/)).
+
+Try: `File a Jira bug with the steps that broke on my iPhone`.
+
+### Airtable
+
+Searches your bases, reads their records, and creates or updates records. Click **+**, then sign in to Airtable. It works on every Airtable plan, and calls count toward Airtable's API rate limits. On Enterprise, an admin who restricts third-party integrations allows Mobster under **Admin Panel › Settings › Integrations & development › Third party integration allowlist** ([Airtable's guide](https://support.airtable.com/articles/9897799762-using-the-airtable-mcp-server)).
+
+Try: `Read today's posts in my Airtable content calendar and post each one from my iPhone`.
+
+### ClickUp
+
+Finds, creates and updates tasks, searches docs and comments, and tracks time. Click **+**, then sign in to ClickUp. Without ClickUp's Everything AI add-on, each Workspace gets a number of calls per rolling 24 hours: 100 on Free Forever, 300 on Unlimited, 1,000 on Business, 2,500 on Business Plus and 5,000 on Enterprise (ClickUp, 15 Oct 2026, [ClickUp's guide](https://developer.clickup.com/docs/connect-an-ai-assistant-to-clickups-mcp-server)). ClickUp gives Mobster no refresh token, so when ClickUp ends the sign-in, the row says `Signed out by the service. Connect to sign in again.` Click **Connect**.
+
+Try: `Read my ClickUp tasks due today and reply to each client's DM on my iPhone`.
+
+### Zapier
+
+Runs actions in the apps your Zapier account connects, such as adding a spreadsheet row or a CRM contact. Click **+**, then sign in to Zapier. Zapier sets up your server as you sign in and turns on actions for the apps your Zapier already connects; turn on more at [mcp.zapier.com](https://mcp.zapier.com). Each call that works uses 2 tasks from your Zapier plan ([Zapier's guide](https://docs.zapier.com/mcp/get-started/quickstart)). To start a Zap with a finished task's result, use [Send results to other tools](/webhooks).
+
+Try: `Read the new DM on my iPhone and add the lead to my CRM through Zapier`.
+
+### Make
+
+Runs your Make scenarios with the inputs they ask for, and reads what they return. Click **+**, then sign in to Make and choose the scopes on its consent page. Make waits 25 seconds for a scenario's answer; a longer scenario keeps running in Make for up to 40 minutes, and the agent can read its output afterwards with `scenarios:read`. Running scenarios works on every Make plan; the tools that change scenarios need a paid plan ([Make's MCP server](https://developers.make.com/mcp-server)).
+
+Try: `Run my Make scenario New lead with the name and email from this DM on my iPhone`.
+
+### monday.com
+
+Reads your boards, creates and updates items and their columns, and posts updates. Click **+**, then sign in to monday.com with Mobster's own monday.com app; monday.com's consent page names Mobster and lists what it asks for: your profile, boards, workspaces, users and updates. Mobster lists monday.com only while its monday.com app is set up. If it isn't, **Connect** says `Mobster's own monday.com app isn't set up yet, so it isn't offered yet. Try again later`, and monday.com is hidden. Calls count toward your account's daily API limit ([monday.com's MCP](https://developer.monday.com/api-reference/docs/mondaycom-mcp)).
+
+Try: `Add each new client DM on my iPhone as an item on my monday.com board Leads`.
+
+### Microsoft 365
+
+Reads your Outlook mail, calendar, OneDrive files, contacts and Teams chats, and sends email and chat messages and adds calendar events. Click **+**, then sign in with a work, school or personal Microsoft account; Microsoft's consent page names Mobster and lists what it asks for: your profile, mail (read, write and send), calendars, files, contacts and chats. Microsoft 365 has no MCP server that Mobster's app can sign in to, so Mobster runs the tools itself on Microsoft Graph with your sign-in: `list_mail`, `read_message`, `list_events`, `search_files`, `list_contacts`, `list_chats` and `read_chat` read; `send_mail`, `send_chat_message` and `create_event` write.
+
+- The three writes always ask first. Whatever mode you choose for them under the connector's tools, and whatever the run's access, Mobster shows the recipients and the text on the approval card and acts only when you approve. Mobster sends plain text only. A send whose outcome Mobster doesn't know, such as an email Microsoft didn't answer, is never sent again: Mobster says so and you check Outlook.
+- A work or school account whose admin hasn't allowed the app stops at Microsoft's consent page. Ask your admin to allow Mobster, or use a personal account.
+- If Microsoft says a call is `refused` with a 403, your sign-in lacks that permission: **Connect** again and allow what Microsoft asks.
+- Mobster lists Microsoft 365 only while its Microsoft app is set up. If it isn't, **Connect** says `Mobster's own Microsoft 365 app isn't set up yet, so it isn't offered yet. Try again later`, and Microsoft 365 is hidden.
+
+Try: `Read the confirmation email in Outlook and add the trip to the Calendar on my iPhone`.
+
+### Bitrise
+
+Lists your apps and builds, reads build logs and artifacts, and starts builds. Click **+**, then sign in to Bitrise; Mobster asks for `openid offline_access`. Bitrise registers no clients, so Mobster signs in as the client its metadata document at `https://mobster.dev/oauth/client-metadata.json` describes, whose redirect is `http://127.0.0.1:47613/callback`. Signing in needs port 47613 free on your Mac ([Bitrise MCP](https://docs.bitrise.io/en/bitrise-platform/ai/bitrise-mcp)).
+
+Try: `Check my latest Bitrise build and test the app on my iPhone once it's green`.
+
+### PostHog
+
+Queries events and insights, reads errors and stack traces, and creates or changes feature flags and experiments. Click **+**, then sign in to PostHog. The same address serves US Cloud and EU Cloud, and PostHog routes you to the region of the account you sign in with. Connecting is free, but the tools that run an LLM inside PostHog bill as PostHog AI spend and need **AI data processing** turned on in your organization settings ([PostHog's MCP server](https://posthog.com/docs/model-context-protocol)).
+
+Try: `Tap through onboarding on my iPhone, then check in PostHog that each step's event arrived`.
+
+### Supabase
+
+Runs SQL and migrations, manages projects and branches, deploys Edge Functions, and reads logs. Click **+**, then sign in to Supabase and allow the scopes it lists, such as `projects:read`, `projects:write`, `database:read` and `database:write`. It reaches your whole account, so a write can change a production project. To keep it to read-only SQL on one project, [add your own server](#add-your-own-server) with `https://mcp.supabase.com/mcp?read_only=true&project_ref=<id>` instead ([Supabase MCP](https://supabase.com/docs/guides/getting-started/mcp)).
+
+Try: `Sign up in my app on my iPhone, then check in Supabase that the new user row exists`.
+
+### Stripe
+
+Searches Stripe data, creates and updates customers, products, prices and subscriptions, and calls any Stripe API method. Click **+**, then sign in to Stripe and choose the live accounts or sandboxes to grant, each with its own permissions. Grant a sandbox while you test your app: live mode moves real money. Stripe asks you to approve refunds and outbound payments on a Stripe page, and a request nobody approves expires after 24 hours (Stripe, 15 Oct 2026). A Stripe administrator turns MCP on or off per team, for live mode and sandboxes apart ([Stripe's MCP docs](https://docs.stripe.com/mcp)).
+
+Try: `Buy the subscription in my app on my iPhone with a Stripe test card, then check the subscription in Stripe`.
+
+### Mixpanel
+
+Runs insights, funnels, flows and retention queries, reads session replays, and creates or edits boards, Lexicon entries, experiments and feature flags. Click **+**, then sign in to Mixpanel. Accounts created after 1 Aug 2026 on Free and Growth have MCP on. On every other account, an organization admin turns it on under **Settings › Org › Overview**, and it takes up to 15 minutes. Each user gets 600 MCP requests an hour (Mixpanel, 15 Oct 2026). For data in the EU or India, [add your own server](#add-your-own-server) with `https://mcp-eu.mixpanel.com/mcp` or `https://mcp-in.mixpanel.com/mcp` ([Mixpanel MCP Server](https://docs.mixpanel.com/docs/mcp)).
+
+Try: `Tap through signup on my iPhone, then check in Mixpanel that the Sign Up event fired with the right properties`.
+
+### Vercel
+
+Searches Vercel's docs, manages teams, projects and deployments, reads deployment logs, and queries Web Analytics. Click **+**, then sign in to Vercel and approve the teams Mobster may reach; Vercel's page names Mobster **An MCP client**. It works on every Vercel plan and acts with the access your Vercel user has (Vercel, 15 Oct 2026, [Vercel MCP](https://vercel.com/docs/agent-resources/vercel-mcp)).
+
+Try: `Check in Vercel that the latest deployment of my API is ready, then run through login on my iPhone`.
+
+### Runway
+
+Checks apps, releases and rollouts, updates releases, creates hotfixes, and works with Build Distro builds and buckets. Click **+**, then sign in to Runway ([Runway's MCP server](https://docs.runway.team/api/mcp-server)).
+
+Try: `Check the Runway rollout for my latest iOS release, then open the App Store build on my iPhone and look for the new version`.
+
+### Amplitude
+
+Queries analytics, funnels and retention, reads session replays, manages the tracking plan, and creates charts, dashboards, notebooks, experiments and feature flags. Click **+**, then sign in to Amplitude. MCP is on for every organization, and an admin can limit it under **Settings › Content Access › MCP** or with the **Use MCP (read)** and **Use MCP (write)** role actions. It sends no events: your app's Amplitude SDK does. For EU data residency, [add your own server](#add-your-own-server) with `https://mcp.eu.amplitude.com/mcp` ([Amplitude MCP Server](https://amplitude.com/docs/amplitude-ai/amplitude-mcp)).
+
+Try: `Tap through checkout on my iPhone, then check in Amplitude that the Checkout Completed event arrived`.
+
+### Clerk
+
+Lists and creates users, creates applications, reads and changes instance configuration, checks domain DNS, and returns Clerk SDK snippets. Click **+**, then sign in to Clerk and allow the scopes it lists: `applications:read`, `applications:manage`, `users:read`, `users:manage` and `application_domains:read`. The user tools find and create users in an instance; they don't delete or edit users. Creating a production instance can't be undone ([Clerk's MCP server](https://clerk.com/docs/guides/ai/mcp/clerk-mcp-server)).
+
+Try: `Create a test user in Clerk, then sign in as that user in my app on my iPhone`.
+
+### Statsig
+
+Lists and inspects feature gates, experiments, dynamic configs, metrics and logs, and creates or updates gates, experiments and configs. Click **+**, then sign in to Statsig. Statsig's sign-in creates a Personal Console API Key, so your organization owner allows those keys for your role first. Read-only users get every read tool ([Statsig MCP](https://docs.statsig.com/integrations/mcp/manual-setup)).
+
+Try: `Turn on the Statsig gate new_onboarding for my test user and check the onboarding screens on my iPhone`.
+
+### LaunchDarkly
+
+Creates and updates feature flags and their targeting, manages AgentControl configs, and queries error groups, logs and traces. Click **+**, then sign in to LaunchDarkly. Your account needs a role that can create, update and delete flags in the project, such as the Writer base role or the Developer preset role. It doesn't reach LaunchDarkly's EU or federal instances ([LaunchDarkly hosted MCP server](https://launchdarkly.com/docs/home/getting-started/mcp-hosted)).
+
+Try: `Turn the LaunchDarkly flag new-checkout on for my test context and check checkout on my iPhone`.
+
+### Lokalise
+
+Lists and updates translation keys, downloads translated files, creates tasks, and manages screenshots. Click **+**, then sign in to Lokalise. Mobster uses Lokalise's software development tools; for file uploads, contributors, languages and glossary terms, [add your own server](#add-your-own-server) with `https://mcp.lokalise.com/mcp/project-management`. The server is in beta, works with Lokalise Expert (not Vantage) on a plan with API access, and its calls count toward Lokalise's API rate limits ([Lokalise MCP server](https://docs.lokalise.com/en/articles/13547066-setting-up-and-using-the-lokalise-mcp-server)).
+
+Try: `List the untranslated German keys in Lokalise, then open the German screen on my iPhone and check the text`.
+
+### Resend
+
+Sends and reads emails, manages domains, contacts, templates, broadcasts and webhooks, and triggers automations. Click **+**, then sign in to Resend. It sends from your verified domains and can create or remove API keys; each asks you first until you allow it ([Resend's MCP server](https://resend.com/docs/mcp-server)).
+
+Try: `Send a Resend test email to my address, then open the message in Mail on my iPhone and check the layout`.
+
+### Mobbin
+
+Searches screens, multi-step flows such as onboarding and checkout, and website sections in Mobbin's library, and returns images and links. Click **+**, then sign in to Mobbin and approve access on the consent page. It only reads. Mobbin MCP is available on Pro and Team plans, and each user is limited to 60 requests per 60 seconds (Mobbin, 15 Oct 2026). Image links expire after 30 days ([Mobbin MCP docs](https://docs.mobbin.com/mcp/features)).
+
+Try: `Search Mobbin for onboarding flows from banking apps, then compare them with my app's onboarding on my iPhone`.
+
+### Datadog
+
+Searches logs, metrics, monitors, RUM events and Error Tracking issues, and creates or updates monitors, dashboards, notebooks and cases. Click **+**, then sign in to Datadog. It reaches the US1 site; for another site, [add your own server](#add-your-own-server) with the address Datadog's setup page shows for it. An org admin turns on **MCP Access**, and **MCP Write Access** for the write tools, and you need the `mcp_read` or `mcp_write` permission. With the Datadog iOS SDK in your app, its RUM tools see your app's sessions, views, taps, requests and crashes. Datadog allows 50 requests per 10 seconds and 100,000 tool calls a month (Datadog, 15 Oct 2026, [Datadog's MCP server](https://docs.datadoghq.com/mcp_server/setup/)).
+
+Try: `Find the newest iOS crash in Datadog Error Tracking for my app and repeat its steps on my iPhone`.
+
+### New Relic
+
+Runs NRQL queries, searches errors and incidents, reads alert conditions, entities, logs and dashboards, and analyzes deployments and traces. Click **+**, then sign in to New Relic and allow `observability:read`. It only reads. For an EU account, [add your own server](#add-your-own-server) with `https://mcp.eu.newrelic.com/mcp/`. Your group needs an organization role such as Organization Read Only, and the trace tools need an admin to turn on **Preview Tools**. Data from New Relic's iOS agent, such as crashes and network requests, is reachable with NRQL ([New Relic's MCP docs](https://docs.newrelic.com/docs/agentic-ai/mcp/overview/)).
+
+Try: `Check New Relic for errors and slow transactions from my last run, then repeat the failing screen on my iPhone`.
+
+### Customer.io
+
+Reads workspace data and delivery metrics, and creates and edits automations, segments, one-time sends, templates and people. Click **+**, then sign in to Customer.io and choose the scopes: `read`, `write` for drafts, and `write:live`, `configure` and `read:sensitive` where your admin allows them. An account admin turns on MCP under AI settings first; until then every call answers 403. For an EU account, [add your own server](#add-your-own-server) with `https://mcp-eu.customer.io/mcp` ([Customer.io MCP](https://docs.customer.io/ai/mcp-server/)).
+
+Try: `Draft a welcome email in Customer.io, then check on my iPhone how it renders after I send it to myself`.
+
+### Crowdin
+
+Searches and edits source strings and translations, checks translation progress and QA status, creates and tracks tasks, and manages glossaries, translation memories and screenshots. Click **+**, then sign in to Crowdin and approve the scopes it lists. For Crowdin Enterprise, [add your own server](#add-your-own-server) with `https://<your organization>.mcp.crowdin.com/v2/mcp` ([Crowdin MCP Server](https://support.crowdin.com/developer/crowdin-mcp-server/)).
+
+Try: `Check Crowdin for untranslated Spanish strings in my app, then open the Spanish screen on my iPhone and look for English text`.
+
+### Paddle
+
+Searches the Paddle API and runs calls that read transactions, subscriptions and reports and change prices, subscriptions and webhooks. Click **+**, then sign in to Paddle. A live connection starts with read access to what your Paddle role allows; you grant write access under **Paddle › Connectors › MCP**. The server reaches your live account only: the sandbox server at `https://sandbox-mcp.paddle.com/mcp` needs an API key, which a connector can't send ([Paddle MCP server](https://developer.paddle.com/sdks/ai/paddle-mcp)).
+
+Try: `Buy the premium plan in my app on my iPhone, then check the transaction and subscription in Paddle`.
+
+### Neon
+
+Manages Neon projects, branches and computes, runs SQL and schema changes, and reads database diagnostics. Click **+**, then sign in to Neon and choose the access on Neon's page, read-only among them. To keep it to one project, [add your own server](#add-your-own-server) with `https://mcp.neon.tech/mcp?projectId=<id>`. A project with an IP Allow list needs Neon's two MCP addresses on it, or the server can't reach its database ([Neon MCP Server](https://neon.com/docs/ai/neon-mcp-server)).
+
+Try: `Run my app's migration on a Neon branch, then tap through the new screen on my iPhone`.
+
+### Postman
+
+Manages workspaces, collections, environments and API specs, and runs collections. Click **+**, then sign in to Postman. This is Postman's Full server, with more than 100 tools (Postman, 15 Oct 2026); Mobster lists the 30 that fit your request and searches the rest. Postman's EU server takes an API key only ([Postman MCP server](https://learning.postman.com/docs/developer/postman-api/postman-mcp-server/overview/)).
+
+Try: `Run my Postman collection against my staging API, then check the same data in my app on my iPhone`.
+
+### Contentful
+
+Searches spaces, reads and edits entries and content types, and manages assets. Click **+**, then sign in to Contentful. Install the Contentful MCP app in each space and environment it may reach. For an EU organization, [add your own server](#add-your-own-server) with `https://mcp.eu.contentful.com/mcp` ([Contentful's MCP server](https://www.contentful.com/developers/docs/mcp)).
+
+Try: `Read the newest entry in Contentful and check that it shows on the right screen on my iPhone`.
+
+### Sanity
+
+Queries documents with GROQ, creates, patches and publishes content, and manages schemas, datasets, releases and the Media Library. Click **+**, then sign in to Sanity. Tool calls run with your role in each project and dataset, and sessions typically last 7 days (Sanity, 15 Oct 2026). The image tools `generate_image` and `transform_image` use Sanity AI credits ([Sanity's MCP server](https://www.sanity.io/docs/ai/mcp-server)).
+
+Try: `Publish the draft banner document in Sanity, then check the banner on my iPhone`.
+
+### Shortcut
+
+Finds, creates and updates stories, creates epics and iterations, works with docs, and reads objectives, teams, members and workflows. Click **+**, then sign in to Shortcut and review the scopes it lists: `read`, `write`, `story-write`, `comment-write` and `admin`. Some actions also need the right workspace role ([Shortcut's MCP server](https://www.shortcut.com/help/integrations/mcp-server/)).
+
+Try: `Take the newest bug story in Shortcut, reproduce it on my iPhone, and add a comment with what I saw`.
+
+### Netlify
+
+Manages Netlify projects, deploys, access controls, extensions, form submissions, and environment variables and secrets. Click **+**, then sign in to Netlify ([Netlify MCP server](https://docs.netlify.com/build/build-with-ai/netlify-mcp-server/)).
+
+Try: `Deploy my branch to Netlify, then open the preview URL on my iPhone and check the sign-up page`.
+
+### Cloudflare
+
+Searches the Cloudflare API, calls its endpoints for products such as Workers, R2, DNS and Zero Trust, and searches Cloudflare's developer docs. Click **+**, then sign in to Cloudflare and choose the permissions Mobster gets. This is Cloudflare's API server, the one Cloudflare recommends over its older per-product servers ([Cloudflare's MCP servers](https://developers.cloudflare.com/agents/model-context-protocol/mcp-servers-for-cloudflare/)).
+
+Try: `Check in Cloudflare which Worker handles my app's API, then trigger a request from my iPhone and look for errors`.
+
+### Buildkite
+
+Reads builds, job logs, annotations and failed tests, waits for builds, retries failed jobs, and starts builds. Click **+**, then sign in to Buildkite. Its sign-in lasts 12 hours and refreshes for 7 days, and its calls have a rate limit of their own, apart from your organization's REST API limit (Buildkite, 15 Oct 2026, [Buildkite MCP server](https://buildkite.com/docs/apis/mcp-server)).
+
+Try: `Start a Buildkite build for my branch, then install the finished build on my iPhone and open it`.
+
+### Honeycomb
+
+Runs queries, reads traces, spans and the service map, checks SLOs and triggers, and creates or updates boards, triggers and SLOs. Click **+**, then sign in to Honeycomb and grant `mcp:read`, and `mcp:write` if it may change things. Your team turns on **Honeycomb Intelligence** first. For an EU team, [add your own server](#add-your-own-server) with `https://mcp.eu1.honeycomb.io/mcp`. It sees what your app sends through OpenTelemetry ([Honeycomb's MCP docs](https://docs.honeycomb.io/integrations/mcp/configuration-guide/)).
+
+Try: `Tap through checkout on my iPhone, then find that session's trace in Honeycomb and tell me the slowest span`.
+
+### Grafana
+
+Searches dashboards and folders, queries Prometheus, Loki, Tempo and Pyroscope, reads alerts, and updates dashboards or creates incidents. Click **+**, then sign in to Grafana and type your Grafana Cloud address; choose read-only there to leave out the write tools. It reaches Grafana Cloud, not a self-hosted Grafana. You need the Assistant Cloud MCP User role (Editor and above have it), and calls count toward your Grafana Assistant limits ([Grafana Cloud MCP](https://grafana.com/docs/grafana-cloud/ai-tools/mcp-servers/cloud-mcp/)).
+
+Try: `Check the Grafana dashboard for my app's API latency, then tap through the slow screen on my iPhone`.
+
+### Axiom
+
+Queries datasets and metrics, explores logs and traces, and manages dashboards, monitors and notifiers. Click **+**, then sign in to Axiom. It acts as your user, so your roles' query limits apply. It runs in the US, and Axiom publishes no EU address for it ([Axiom's MCP server](https://axiom.co/docs/console/intelligence/mcp-server)).
+
+Try: `Tap through signup on my iPhone, then query Axiom for errors logged from that session`.
+
+### Metricool
+
+Lists your brands, reads social and ad analytics and the Planner, and schedules, creates and edits posts. Click **+**, then sign in to Metricool. It works on every Metricool plan, Free among them, within your plan's limits (Metricool, 15 Oct 2026). It posts to Instagram, TikTok, LinkedIn, Facebook, X, YouTube, Pinterest, Threads, Bluesky and Twitch, and reads Meta Ads, Google Ads and TikTok Ads analytics without changing campaigns ([Metricool's guide](https://help.metricool.com/how-to-connect-metricools-mcp-eqp9h)).
+
+Try: `Read this week's scheduled posts in Metricool and check each one in its app on my iPhone`.
+
+### Typefully
+
+Reads your queue, published posts and connected accounts, and creates, edits, schedules and deletes drafts and threads for X, LinkedIn, Threads, Bluesky and Mastodon. Click **+**, then sign in to Typefully and approve access ([Typefully's guide](https://support.typefully.com/en/articles/13128440-typefully-mcp-server)).
+
+Try: `Read my next scheduled draft in Typefully and check how it looks in the X app on my iPhone`.
+
+### Todoist
+
+Reads, creates and updates your tasks and projects. Click **+**, then sign in to Todoist ([Todoist's MCP docs](https://developer.todoist.com/api/v1/#tag/Todoist-MCP)).
+
+Try: `Read my Todoist tasks due today and do each errand that fits on my iPhone`.
+
+### Intercom
+
+Searches conversations and contacts, reads companies and Help Center articles, adds internal notes to conversations, and creates or updates articles. Click **+**, then sign in to Intercom and approve the permissions it lists: read users and companies, read and write conversations, and read and write articles. It sends no customer-facing replies, and `add_internal_note` does not work on tickets. It reaches US and EU hosted workspaces, not AU hosted ones (Intercom, 15 Oct 2026, [Intercom's MCP guide](https://developers.intercom.com/docs/guides/mcp)).
+
+Try: `Read the newest open Intercom conversation and reproduce the customer's steps on my iPhone`.
+
+### Klaviyo
+
+Reads profiles, lists, segments, campaigns, flows and reports, and creates and updates them. Click **+**, then sign in to Klaviyo with the Owner, Admin or Manager role; other roles can't use it (Klaviyo, 15 Oct 2026, [Klaviyo's MCP guide](https://developers.klaviyo.com/en/docs/klaviyo_mcp_server)).
+
+Try: `Read my latest Klaviyo campaign and open the email on my iPhone to check how it renders`.
+
+### Attio
+
+Searches and reads records, lists, comments and tasks, runs reports, and creates, updates, merges or deletes records and notes. Click **+**, then sign in to Attio. It acts with your Attio permissions. Each workspace gets 100 reads and 25 writes a second and 300 searches a minute, and `query-particle-sql` isn't on every plan (Attio, 15 Oct 2026, [Attio's MCP guide](https://docs.attio.com/mcp/overview)).
+
+Try: `Read today's tasks in Attio and message each person on my iPhone`.
+
+### Webflow
+
+Reads and edits your sites, CMS items, pages, assets, styles, components, forms, SEO settings and comments. Click **+**, then sign in to Webflow and choose a workspace; each sign-in covers one workspace. The Designer API tools, which snapshot elements, upload images and read or change the selection, page and breakpoints, work only while the Webflow Designer is open with Webflow's companion app (the MCP Bridge App) running. Everything else works without it. It can't create new site projects, and page branches need Enterprise, while Analyze, Optimize and AEO are paid add-ons (Webflow, 15 Oct 2026, [Webflow's guide](https://developers.webflow.com/data/docs/ai-tools)).
+
+Try: `Publish the blog post I drafted in Webflow's CMS, then open the live page on my iPhone to check it`.
+
+### Wix
+
+Lists your sites, calls Wix's APIs on a site to read and change data such as Bookings, Stores and CMS, uploads images to the Media Manager, and creates, updates or publishes sites. Click **+**, then sign in to Wix. It reaches the sites your Wix account manages, not a site's visitor-level server at `/_api/mcp` ([Wix's guide](https://dev.wix.com/docs/sdk/articles/use-the-wix-mcp/about-the-wix-mcp.md)).
+
+Try: `Read today's bookings on my Wix site and add each one to Calendar on my iPhone`.
+
+### beehiiv
+
+Reads posts, subscribers, metrics, podcasts and website analytics, and creates and edits drafts, templates, tags, segments, surveys, forms and automations. Click **+**, then sign in to beehiiv. On a free plan it only reads; writing needs a paid plan (beehiiv, 15 Oct 2026). It can't publish, schedule or send posts, or turn on automations, and it follows your workspace role ([beehiiv's guide](https://www.beehiiv.com/support/article/39255979546263-getting-started-with-the-beehiiv-mcp)).
+
+Try: `Draft a post in beehiiv from the note I wrote on my iPhone, then check it in the beehiiv app`.
+
+### Vimeo
+
+Searches your videos, reads analytics, comments and transcripts, and manages showcases. Click **+**, then sign in to Vimeo. It needs a Pro plan or above and is in public beta, so its tools may change (Vimeo, 15 Oct 2026). It can't delete videos, and on a team plan an admin controls which data and features each member can reach ([Vimeo's guide](https://help.vimeo.com/hc/en-us/articles/49442010684689-How-to-connect-your-Vimeo-account-to-Claude-MCP-Server)). {/* copy: allow, Showcases is the name of Vimeo's feature */}
+
+Try: `Read the comments on my newest Vimeo video and reply to the top one in the Vimeo app on my iPhone`.
+
+### Help Scout
+
+Searches conversations, reads customers, inboxes, saved replies, users, teams and workflows, pulls reports, and reads Docs. Click **+**, then sign in to Help Scout. It is read-only for new connections and sees only what your Help Scout user can see. It needs a plan with API access (Standard, Plus or Pro), report tools need Plus or Pro, and Docs tools need a Docs API key (Help Scout, 15 Oct 2026, [Help Scout's guide](https://docs.helpscout.com/article/1779-connect-your-ai-agent-with-help-scout-to-search-conversations-and-pull-reports)).
+
+Try: `Read the newest Help Scout conversation about a bug and repeat the steps on my iPhone`.
+
+### Close
+
+Finds leads, contacts, opportunities, tasks, calls and emails, creates notes, tasks, leads and draft emails, and with the destructive scope updates and deletes records. Click **+**, then sign in to Close, choose the organization, and pick the scopes: `mcp.read`, `mcp.write_safe` or `mcp.write_destructive`. Each scope includes the one before it, and deletes are permanent ([Close's MCP guide](https://developer.close.com/mcp.md)).
+
+Try: `Read my Close tasks due today and call each lead from my iPhone`.
+
+### Basecamp
+
+Searches projects, to-dos, message boards and comments, card tables, calendar, docs and files, Campfire and check-ins, and runs reports. Click **+**, then sign in to Basecamp, choose **Read-only access** or **Full access**, and pick one Basecamp account. It acts as you, so it reaches only what you can see ([Basecamp's MCP page](https://basecamp.com/mcp)).
+
+Try: `Read my Basecamp to-dos due today and do each errand that fits on my iPhone`.
+
+### Coda
+
+Searches your docs, reads pages and tables, and creates or updates pages and rows. Click **+**, then sign in to Coda. OAuth grants read and write together, and the server is in public beta, so its tools may change ([Coda's MCP guide](https://help.superhuman.com/hc/en-us/articles/46210076980365-Connect-to-the-Coda-MCP)).
+
+Try: `Read the checklist in my Coda doc and complete each item on my iPhone`.
+
+### Miro
+
+Summarizes and searches boards, builds boards and diagrams, and acts on comments. Click **+**, then sign in to Miro and choose the team it may reach. It works on every Miro plan and respects board permissions. On Enterprise an admin enables it under **Admin settings › Apps & Integrations › MCP (Beta)** for the whole organization or selected teams, and may need to allow Mobster as a client ([Miro's MCP guide](https://developers.miro.com/docs/miro-mcp)).
+
+Try: `Read the checklist on my Miro board and test each screen on my iPhone`.
+
+### Cal.com
+
+Lists bookings, event types, schedules and availability, and creates, reschedules, cancels and confirms bookings, event types and schedules. Click **+**, then sign in to Cal.com and authorize Mobster. It also manages team and organization memberships, and `call_api_operation` can run any API v2 operation (72 tools, Cal.com, 15 Oct 2026, [Cal.com's MCP guide](https://cal.com/docs/mcp-server)).
+
+Try: `Read tomorrow's Cal.com bookings and add each one to Calendar on my iPhone`.
+
+### Granola
+
+Searches your meeting notes, reads their summaries, attachments and transcripts, and lists your folders. It only reads. Click **+**, then sign in to Granola. On Basic, the free plan, it reaches your own notes from the last 30 days, and the folder, search and transcript tools need a paid plan. On Enterprise, an admin chooses which notes members reach (Granola, 15 Oct 2026, [Granola's MCP guide](https://docs.granola.ai/help-center/sharing/integrations/mcp)).
+
+Try: `Read my Granola notes from this morning's call and add each action item to Reminders on my iPhone`.
+
+### Fireflies
+
+Searches your meeting transcripts, reads summaries and action items, and creates soundbite clips. Click **+**, then sign in to Fireflies; any Fireflies account works ([Fireflies' MCP guide](https://docs.fireflies.ai/getting-started/mcp-configuration)).
+
+Try: `Find the action items from my last Fireflies meeting and text each one from my iPhone`.
+
+### Jotform
+
+Lists your forms, creates and edits them, and creates and reads submissions. Click **+**, then sign in to Jotform. Your Jotform plan's limits apply, and Enterprise allows 600 requests a minute (Jotform, 15 Oct 2026). Health data under HIPAA is reachable only on a HIPAA-enabled plan and with the scopes that include it. Remove Mobster under **Account › Connected Apps › Jotform MCP › Clients** ([Jotform's MCP page](https://www.jotform.com/developers/mcp)).
+
+Try: `Read this week's Jotform submissions and text each person a thank-you from my iPhone`.
+
+### Square
+
+Calls Square's API through three tools, `get_service_info`, `get_type_info` and `make_api_request`, across 38 services such as customers, orders, catalog, invoices, bookings, payments, refunds and gift cards. Click **+**, then sign in to Square and allow only the scopes you need. Calls to `payments`, `refunds`, `payouts` and `invoices` can move money; each asks you first until you allow it. It reaches your live account: Square's Sandbox works only with its local server ([Square's MCP guide](https://developer.squareup.com/docs/mcp)).
+
+Try: `Check today's open Square orders and text each customer that theirs is ready from my iPhone`.
+
+### PayPal
+
+Lists, creates and sends invoices, manages orders, refunds and subscriptions, and reads transactions and disputes. Click **+**, then sign in to PayPal. Tools that create orders, send invoices or issue refunds move money; each asks you first until you allow it. It reaches your live account, not PayPal's sandbox ([PayPal's MCP guide](https://developer.paypal.com/ai-tools/mcp-server)).
+
+Try: `Create a PayPal invoice for $120 to the client in my latest iPhone text and send it`.
+
+### Mercury
+
+Reads your accounts, balances, transactions, cards, recipients and statements. Click **+**, then sign in to Mercury and choose what to allow. It starts read-only. Write access adds payment and transfer requests, which still need approval in Mercury, and transaction notes and categories, which apply at once; each asks you first until you allow it ([Mercury's guide](https://docs.mercury.com/docs/connecting-mercury-mcp)).
+
+Try: `Check Mercury for yesterday's transactions and add any missing receipts from Photos on my iPhone to my notes`.
+
+### Ramp
+
+Queries your company's spend, transactions and cards, and acts on Ramp as the user who signs in. Click **+**, then sign in to Ramp. It never goes past that user's role, and admin controls and scopes narrow it further. An answer holds up to 100 rows, and it can't upload or download files, so receipts go through the Ramp app (Ramp, 15 Oct 2026, [Ramp's MCP overview](https://agents.ramp.com/docs/mcp/overview)).
+
+Try: `Check Ramp for transactions missing receipts and open each receipt email in Mail on my iPhone`.
+### Calendly
+Finds open times and your meetings, creates single-use booking links, and books or cancels meetings. Click **+**, then sign in to Calendly. Calendly takes no `127.0.0.1` address, so your browser comes back to Mobster at `http://localhost`, on the same listener. Booking a meeting for someone needs a paid Calendly plan, and routing forms need Teams or higher (Calendly, 15 Oct 2026, [Calendly's MCP server](https://developer.calendly.com/calendly-mcp-server)).
+Try: `Send a single-use Calendly link to the client who just DMed me on my iPhone`.
+
+### Add your own server
+
+Choose **Add a server** under **Your own server**:
+
+- **URL**: a streamable HTTP MCP server. On the internet, the URL starts with `https://`. `http://` works for `localhost` and `127.0.0.1`. Paste a token if the server takes one; leave it empty to sign in with your browser, when the server supports OAuth.
+- **Command**: a server Mobster starts on this Mac, such as `npx -y @notionhq/notion-mcp-server`. Put its keys under **Environment**, one `NAME=value` a line. The server starts with `PATH`, `HOME`, `LANG`, `USER`, `TMPDIR` and those values only, never your model keys. A server that runs on `npx` needs Node.js from [nodejs.org](https://nodejs.org); without it, **Test** says `Mobster couldn't find npx`.
+
+Add starts the command and runs the MCP handshake before it saves anything. A command that isn't found, stops or answers in something else (`/bin/echo hello`) isn't saved: Mobster says what it saw and `Mobster saved nothing.` A command still starting after 9 seconds, such as a first `npx` download, is saved, and **Test** tries it again.
+
+Choose **Test** on the connector's row to connect again and read its tools.
+
+To fix your own server's address, choose **Edit** on its page. The form opens in place with its name and its URL or command, and **Save** connects to the new address. A token or environment values you type replace the saved ones; left empty, the saved ones stay. A URL on another host never gets the old server's token or OAuth sign-in: paste that server's token, or connect to sign in again. A command must answer MCP before it's saved, as when you add one. A connector from the directory or from a plugin keeps its address, so its page has no **Edit**.
+
+### Import servers from your other apps
+
+When Claude Desktop, Claude Code, Cursor or Codex on this Mac has MCP servers of its own, **Add a connector** shows a row such as **From Claude Desktop and Cursor**: `3 servers you already set up there.` Choose **Import**. The list opens under the row, and each server shows its command or URL. **Add** makes it a connector:
+
+- A command's environment values, and a URL's `Authorization: Bearer` token, go to your Mac's Keychain. The list shows their names only, such as `Keeps GITHUB_PERSONAL_ACCESS_TOKEN in your Keychain.`, and a command's arguments with secrets masked.
+- Mobster reads `~/Library/Application Support/Claude/claude_desktop_config.json`, the user-scope servers in `~/.claude.json`, `~/.cursor/mcp.json` and `~/.codex/config.toml`. It never writes to them, and a project's own servers stay with the project.
+- Mobster itself isn't listed.
+- A server that uses SSE, the older MCP transport, is listed with why it can't be added and no **Add**. Use the server's streamable HTTP URL, often ending in `/mcp`, with **Add a server** instead.
+- Every tool of an imported server asks first, like any other connector's.
+
+## Choose what each tool may do
+
+Choose **Details** on a connector's row. Its tools are listed read-only ones first, each with three settings:
+
+| Setting | What the agent does |
+|---|---|
+| **Allow** | Calls it without asking |
+| **Ask** | Shows the approval card with the tool and what it sends, such as `Use Linear: create_issue? {"title": "Fix login"}`, and calls it only after you approve. It asks with **Full access** too |
+| **Block** | Never sees it |
+
+Every tool starts at **Ask**, and so does a tool a server adds later. Some servers mark a tool read-only, and Settings lists those first; the label is the server's own, and the tool still asks until you choose **Allow**. A change applies at once, also to a task that's running.
+
+The switch on a connector's row turns the whole connector on or off.
+
+## What happens in a task
+
+When a task starts, the agent gets the list of tools it may use, with each tool's description, up to 30 tools. Tools of a service your request names come first, then the tools your request is most about: a word of your request in a tool's name counts more than one in its description. The agent calls one as `CALL_TOOL linear.search_issues {"query": "login"}`.
+
+With more than 30 tools, the list ends with `and 51 more tools not listed here`, and the agent searches the rest with `CALL_TOOL tools.search {"query": "create an invoice"}`. The search runs on your Mac and sends nothing to any server, so it never asks. It answers with the 8 best matches, and the task's steps show it as `Looked for a connected tool: create an invoice`. A tool it finds is called like a listed one, and asks the same way. Because of the search, a connector can't be named Tools.
+
+The list shows each tool's arguments one level deep, such as `pages?: array of object`. Before a call whose arguments hold objects, such as a Notion page or an Airtable record, the agent searches for the tool's exact name, `CALL_TOOL tools.search {"query": "notion.notion-create-pages"}`, and gets the tool's whole description and its arguments as JSON Schema. Mobster keeps a tool's schema whole up to 24,000 characters; a bigger one loses its descriptions first, and one still too big keeps only its top level.
+
+- The call is written to the task's history before it is sent, as a `connector_call` event with the connector, the tool and its arguments (secrets masked).
+- The task's steps show it as `Used Linear: search_issues`, and the live line as `Using Linear: search_issues`.
+- What the tool returns reaches the agent as data, never as instructions: a page that says "ignore your instructions" is read, never followed. Card numbers, codes and keys in it are masked, and it's cut at 6,000 characters. Images in an answer are left out.
+- A call times out after 60 seconds. Then the step says `Linear: search_issues didn't answer`, and Mobster never sends that call again in the task: it may or may not have happened, so the agent checks another way.
+- Mobster reconnects once, and sends the call once, when the session stopped answering before the call went out: a command that stopped, a server that restarted and forgot the session (HTTP `404`), or a `401` because a sign-in expired, after Mobster refreshes it. In each case nothing ran on the server. It never resends a call that went out without an answer, or one the server answered with an error.
+- A server that says its tools changed (`notifications/tools/list_changed`) has them read again before the next call.
+
+### The events a call writes
+
+Each call writes `connector_call` events to the task's history, which `GET /api/runs/{id}` and its event stream return:
+
+```json
+{"event": "connector_call", "connector": "Linear", "connectorId": "3f9a0c21b7de", "tool": "create_issue", "mode": "ask", "status": "sending", "arguments": "{\"title\": \"Fix login\"}"}
+{"event": "connector_call", "connector": "Linear", "connectorId": "3f9a0c21b7de", "tool": "create_issue", "mode": "ask", "status": "done", "ms": 412, "excerpt": "Created ENG-431: Fix login"}
+```
+
+`status` is `sending` before the call goes out, then `done`, `error` (the server said why, in `message`), `not_sent` (nothing reached the server) or `unknown` (no answer came). A call Mobster refused before sending has only `refused`. A tool search writes one event, `{"event": "connector_call", "connector": "Connected services", "tool": "search", "status": "searched", "arguments": "create an invoice", "excerpt": "books.create_invoice, books.list_customers"}`. `arguments` and `excerpt` are masked like everything else in the history. Slack's answers keep no `excerpt`: Slack asks the apps that read it to keep none of its data.
+
+A workflow's **Use a connector** step calls one tool by itself, with no model: an allowed tool runs, and a tool that asks or is blocked stops the workflow before anything is sent ([The graph](/workflows#the-graph)).
+
+A workflow or a task can name the connectors it may use with the `connectors` field of [`POST /api/runs`](/scripting), as names or ids. Without it, a task may use every connector that's on.
+
+## Use Mobster from Claude and ChatGPT
+
+**Use Mobster from…** ends the Connectors page. It connects the other way: your other assistants and automations hand tasks to your iPhone. It has two groups: **Through Mobster Remote** and **On this Mac**.
+
+- **Through Mobster Remote** says once whether Remote is on. With it off, the group's head has **Set up Remote**. **Claude** and **ChatGPT** each have a row. Once Claude is connected through [Mobster Remote](/remote), its row says `Connected. Ask Claude to use your iPhone, on the web, on your Mac and on your phone.` Otherwise the row says where to paste the URL, such as `In Claude, Customize › Connectors › Add custom connector, then paste the URL.`, and with Remote on it has **Copy URL** and **Steps** ([Assistants](/remote/assistants)).
+- **Zapier** has a row too. It signs in to Mobster from a Zap, so the row says where, `Accept Mobster’s Zapier invite, then in a Zap choose Mobster as a step’s app and Sign in.`, with **Add to Zapier** (Mobster's Zapier invite: the app is private until Zapier lists it) and **Steps**, and no URL to copy ([Zapier](/zapier)). Make has no row: Mobster's Make app is private to its makers until Make shares it. A scenario can start a workflow with its webhook URL instead ([Start a workflow from another tool](/webhooks#start-a-workflow-from-another-tool)).
+- **On this Mac**: **Claude Code**, **Claude Desktop**, **Cursor** and **Codex** each have **Add**, which writes Mobster's local MCP server into that app's settings, and **Remove** ([Add it from the Mac app](/mcp-server#add-it-from-the-mac-app)). Mobster's MCP server is tested with Claude Code and Codex. An agent set up with another Mobster install says `Uses another Mobster install. Switch to this one.`, with **Switch**. **Another agent** has the command for any other client, and **Siri and Shortcuts** links to its setup.
+
+## Where your sign-in is kept
+
+Signing in to a server with a URL uses OAuth 2.1 the way the MCP authorization spec says: Mobster reads the server's protected-resource metadata (from its `401`, else `/.well-known/oauth-protected-resource`), then its authorization server's metadata, registers itself as a client when the server allows that (else, when the server reads client metadata from a URL, uses `https://mobster.dev/oauth/client-metadata.json` as its client ID), and signs in with PKCE (`S256`) through your browser and a listener on `127.0.0.1`. It refreshes the token before it expires, and after a `401`.
+
+Tokens, OAuth sign-ins, client secrets and environment values are kept in your Mac's login Keychain, under `app.mobster.desktop.connectors`. Mobster shows a server's scheme, host and path only, and never writes a token in its logs, a task's history or an answer from its API. **Disconnect** and **Remove**, under **Details**, delete the Keychain item and cancel a pending sign-in, then ask the service to revoke the sign-in when its sign-in server offers revocation (RFC 7009), as Notion, Linear, Sentry, Expo, Jira, Zapier, GitLab, Make and Canva do. Mobster sends the token only to a revocation address on the same origin as the service's token address. A service that offers no revocation, or doesn't answer within 5 seconds, keeps the access you gave Mobster until you remove it in that service's own settings, such as Airtable's or ClickUp's list of connected apps. Mobster's own Slack, Google and GitHub apps don't revoke yet. Each of **Disconnect** and **Remove** asks first, where its button was (`Disconnect Linear?`, `Remove Linear?`), with **Cancel** beside it. A sign-in callback or token refresh already in progress cannot restore credentials after you disconnect, remove the connector or replace its token.
+
+## What is sent
+
+A tool call sends what the agent passes the tool, such as your search words or an issue's title, to that server, under that vendor's terms. Nothing else goes to it: never a screenshot, your conversation or your memory, unless the agent puts some of it in the call's arguments. [Privacy](/privacy) lists every place Mobster sends data.

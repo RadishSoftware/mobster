@@ -1,0 +1,288 @@
+---
+title: "Console and control plane"
+sidebarTitle: "Console"
+description: "How a team's Macs, phones and Profiles are listed in one place: what the registry holds, what Mobster sees, and how to read it from a script. Part of the Team plan, off until its release."
+icon: "layout-dashboard"
+keywords: ["console", "control plane", "registry", "queue", "jobs", "api key", "api keys", "pack pins", "usage", "counts", "webhook", "webhooks", "signature", "phones", "profiles", "macs", "stations", "health", "api", "org", "team"]
+---
+
+The console is where a team sees its Macs and phones together. Each Mac keeps its own connection to Mobster's relay and tells the team what it has: which phones are plugged in, which Profile is signed in on which phone, and what state each phone is in. The control plane is the part that keeps that list, so a teammate or a script can read it without asking each Mac.
+
+The control plane is part of the [Team plan](/team) and is off until the Team plan release. It decides nothing for a Mac. A Mac still checks every request itself ([Who decides what](/team#who-decides-what)).
+
+## Confirm or remove a Mac
+
+Open **Macs** in the team console. **Waiting for an Admin** lists Macs that joined from Settings › Team but are not yet on the signed member list. **Confirmed** lists the Macs that member list names.
+
+An Owner or Admin chooses **Confirm** and compares the displayed key fingerprint with the one on the Mac. Choose **It matches: confirm** only when they match. One passkey prompt signs the next member list. Operators and Viewers can read the page.
+
+**Remove** first signs a member list without the Mac, then removes the Mac from the team. If the second step fails, the signed removal stays. Retry finishes the removal without signing it again.
+
+## Watch a phone
+
+A console session receives a phone's screen only when your signed member list grants screen access, the phone is in your groups, and the Mac's policy allows watching. The Mac checks those permissions when subscriptions change and every 5 seconds.
+
+The Mac seals each frame before sending it. The relay forwards ciphertext and never receives the screen key in the clear. Keys rotate when a viewer leaves, when the member list changes, and every 10 minutes. A stream stops 10 seconds after its last viewer leaves.
+
+## The registry
+
+The registry lists three things for an organization.
+
+| List | Each entry |
+|---|---|
+| Macs | Name, online or not, when it was last seen, the Mobster version, and its alert codes |
+| Phones | Name, iOS version, battery, the groups it belongs to, the Mac it is on, whether a task is running on it, and its state with any alert codes |
+| Profiles | The handle (such as `@getmobster`), the app, the phone it is signed in on, and the Mac that holds it |
+
+A phone's state is one of `ready`, `busy`, `locked`, `unplugged`, `needs_setup` or `starting`. Alert codes are the ones Mobster shows on a phone, such as `unplugged`, `locked`, `signed_out`, `challenge`, `region_mismatch` and `owner_active` ([Keep the Mac and the iPhone ready](/remote#keep-the-mac-and-the-iphone-ready)).
+
+A Mac sends its list when it connects, when a phone changes (at most every 2 seconds) and every 5 minutes. A Mac that goes offline keeps its phones in the list with the state it last reported, and `online: false` on the Mac says how old to treat them.
+
+### What the registry never holds
+
+The registry has ids, names, states and times. A Mac has no field to send a screen, a task's words, a Profile's notes, signature, links or variables, so none can be stored. A phone's id and a Profile's id are hashes made on your Mac from a salt only your team's Macs share, never a UDID or the id the Mac uses locally.
+
+### Read it from a script
+
+A signed-in member reads the registry with their account's access token:
+
+```bash
+curl -s "https://api.mobster.dev/api/orgs/$ORG/registry" -H "Authorization: Bearer $ACCESS_TOKEN"
+```
+
+It prints:
+
+```json
+{
+  "at": 1760000000000,
+  "macs": [{"id": "…", "name": "Rack 2 mini", "online": true, "last_seen": 1760000000000, "app_version": "0.4.0", "health": {"codes": [], "wda_expires_at": null}}],
+  "phones": [{"id": "…", "mac": "…", "label": "iPhone 7", "ios": "26.1", "battery": 81, "groups": ["rack_2"], "run": null, "busy": false, "health": {"state": "ready", "codes": []}}],
+  "profiles": [{"id": "…", "label": "@getmobster", "app": "Instagram", "phone": "…", "mac": "…"}]
+}
+```
+
+A member sees the phones in their groups and the Profiles on those phones, as in the console. A person outside the organization gets `404`, and a request without a token gets `401`. While the control plane is off, every route here answers `404`.
+
+| Status | `error` | Why |
+|---|---|---|
+| `401` | `unauthorized` | No token, or one that has expired |
+| `404` | `org_not_found`, `not_found` | You are not in the organization, or the control plane is off |
+| `429` | `rate_limited` | Too many requests |
+| `503` | `control_plane_unavailable` | Mobster Remote didn't answer. The registry is not empty, it is unread: try again |
+
+## The queue
+
+A phone runs one task at a time. The queue holds a job for a phone while it is busy and sends it to the Mac that has the phone when the phone is free. It only orders. The Mac decides whether to run each job, as it decides every request ([Who decides what](/team#who-decides-what)).
+
+A job names a Mac, a phone and what to run. It is one of two kinds:
+
+| Kind | `phone` | `args` | What the Mac does |
+|---|---|---|---|
+| `run_workflow` | The phone's id from the [registry](#the-registry) | `{"workflow": "<id>", "values": {"person": "Sam"}}`: a saved workflow's id and a value for each blank | Starts the workflow on that phone |
+| `run_tests` | `sims` | `{"project": "<id>"}`: a project's id on that Mac | Builds the project's app and runs every check on the Mac's simulators, as **Run checks** on the project's page does. No phone is touched |
+
+Workflow jobs queue per phone. Checks queue per Mac, one suite at a time, whatever its phones are doing. A job for a project is refused while the project's checks are already running on the Mac, and the job goes back in line.
+
+### Put a job in line
+
+Operators, Admins and Owners put a job in line. A job acts as the member who asked, and cannot do more than that member can on that phone.
+
+```bash
+curl -s "https://api.mobster.dev/api/orgs/$ORG/jobs" -H "Authorization: Bearer $ACCESS_TOKEN" -H "Content-Type: application/json" \
+  -d '{"kind": "run_workflow", "mac": "'$MAC'", "phone": "'$PHONE'", "args": {"workflow": "abcdef012345", "values": {"person": "Sam"}}}'
+```
+
+It prints:
+
+```json
+{"job": {"id": "0123456789abcdef", "kind": "run_workflow", "state": "queued", "position": 1, "starts_in_s": 120, "mac": "…", "phone": "…", "by": "…", "run": null, "code": null}}
+```
+
+`mac` and `phone` are the ids in the [registry](#the-registry). `position` is the job's place among the jobs waiting for that phone. `starts_in_s` is Mobster's estimate of when it starts: the rest of the running job plus the middle of the phone's last 20 runs for each job ahead. With no runs to go on it uses 2 minutes.
+
+`GET /api/orgs/$ORG/jobs` lists the jobs you can see, and `GET /api/orgs/$ORG/jobs/$JOB` reads one. `DELETE /api/orgs/$ORG/jobs/$JOB` takes a waiting job out of line. You can cancel your own jobs, and an Admin can cancel anyone's. A job the Mac already has is the Mac's: stop its run in Mobster.
+
+### A job's states
+
+| State | Meaning |
+|---|---|
+| `queued` | Waiting for its turn. A job waits 30 minutes at most, then it is `expired` and never starts |
+| `sent` | With the Mac, which has not answered yet |
+| `running` | The Mac started it. `run` is the run's id |
+| `finished` | The run completed |
+| `failed` | It did not start, or its run did not complete. `code` says why |
+| `cancelled` | Taken out of line before it was sent |
+| `expired` | Waited 30 minutes |
+| `unknown` | The Mac did not answer in 45 seconds, or went quiet for 5 minutes while it ran. It may have started, so Mobster never sends it again |
+
+A phone has at most 10 jobs waiting, and a team at most 200. A phone gets its next job when the Mac says it is `ready` with no run on it. If the Mac says the phone is busy after all, the job goes back to the front of its line. After 5 such refusals it `failed` with the code `busy`.
+
+### When the Mac says no
+
+A refused job fails with the Mac's code, and nothing starts.
+
+| `code` | Why |
+|---|---|
+| `control_plane_off` | The control plane is not on for that Mac |
+| `stale`, `no_plan`, `waiting`, `not_trusted`, `not_joined`, `needs_app`, `removed`, `off` | The Mac can't act for the team now: it can't confirm the member list or plan, is not listed in it, is not (or no longer) one of the team's Macs, runs without Mobster for Mac, or the team's console is off for it |
+| `policy` | Your team's policy, or the Mac's switch "The console can run tasks on this Mac", does not let the console run tasks or other tools start workflows |
+| `forbidden`, `member_removed` | The member is not an Operator or above in the member list the Mac trusts, doesn't reach every phone (for `run_tests`), or is no longer in it |
+| `no_phone` | The phone is not on that Mac, or not in the member's groups |
+| `models_unenforced`, `spend_unenforced`, `ask_unenforced`, `apps_unenforced` | Your team's policy lists models, sets a daily spend cap, asks before every change or lists apps, and the Mac can't hold the job to that yet, so it starts none. The console refuses tasks under the same policies. Asking before every change refuses workflows only: a check changes nothing outside the simulators |
+| `project_gone`, `no_checks` | A `run_tests` job's project isn't on that Mac any more, or has no checks to run |
+| `workflow_gone`, `not_shared`, `phone_mismatch` | The workflow was removed, its owner has not chosen **Start from another tool** for it, or it is saved for another phone (a workflow saved for no phone runs on a Mac's primary phone, so it fits a job only on a Mac with one phone) |
+| `busy`, `not_ready`, `owner_active` | The phone was busy, not ready, or in use by its owner, or the project's checks were running already. The job is sent again, up to 5 times |
+| `blanks` | A value does not fit the workflow's blanks |
+
+A `run_tests` job that started ends `failed` with `checks_failed` when a check failed, `build_failed` when the app didn't build, `stopped` when someone stopped it on the Mac, or `usage` when the checks couldn't be planned.
+
+A workflow started this way asks before it sends, buys, posts or deletes, whatever **Ask before acting** says, uses only the apps outside agents may use, and its approvals wait in Mobster on the Mac, as for a [webhook](/webhooks#start-a-workflow-from-another-tool). A job sent twice starts once.
+
+### What the queue holds
+
+A job's blank values wait on Mobster Remote's relay until the phone is free, encrypted with the relay's key, so the relay can read them while they wait. They are deleted when the Mac starts the job, and when it ends, is cancelled, expires or goes unknown. They never wait more than 30 minutes. Everything else a job has is ids, a state, a code and times. The team's [audit log](/enterprise#audit-log-export) records `job.queued`, `job.started`, `job.finished`, `job.failed`, `job.cancelled`, `job.expired`, `job.unknown` and `job.refused` with the job, Mac, phone and member, never the values.
+
+## API keys
+
+An API key lets a script, a CI box or a coding agent use the registry, the queue and hosted reports without a person signing in. It is part of the Team plan, off with the rest of the control plane.
+
+An Owner or Admin makes a key. It has a name, one or more scopes, and the member it acts as.
+
+| Scope | Lets the key |
+|---|---|
+| `read_registry` | Read the registry, as the member it acts as sees it |
+| `run_workflow` | Put a workflow job in line, and read and cancel the jobs the key made |
+| `run_tests` | Put a project's checks in line on a Mac's simulators, and read and cancel the jobs the key made |
+| `read_reports` | List and open the team's hosted reports (sealed: the report's key is in its link) |
+
+```bash
+curl -s "https://api.mobster.dev/api/orgs/$ORG/api-keys" -H "Authorization: Bearer $ACCESS_TOKEN" -H "Content-Type: application/json" \
+  -d '{"name": "Nightly CI", "scopes": ["run_workflow", "read_registry"], "acts_as": "'$MEMBER'", "expires_days": 90}'
+```
+
+It prints the key once:
+
+```json
+{"key": {"id": "…", "name": "Nightly CI", "prefix": "mob_ok_a1b2c3", "scopes": ["run_workflow", "read_registry"], "acts_as": "…", "expires_at": "2027-01-17T…"}, "secret": "mob_ok_…"}
+```
+
+Mobster keeps only a hash of the secret, so copy it now. A key lasts 365 days unless `expires_days` (1 to 365) says less.
+
+### Use a key
+
+Send it as the Bearer on the same routes a member uses:
+
+```bash
+curl -s "https://api.mobster.dev/api/orgs/$ORG/registry" -H "Authorization: Bearer $MOBSTER_ORG_KEY"
+curl -s "https://api.mobster.dev/api/orgs/$ORG/jobs" -H "Authorization: Bearer $MOBSTER_ORG_KEY" -H "Content-Type: application/json" -d "$JOB"
+```
+
+A job put in line with a key acts as the member the key acts as, and the Mac checks that member against its own member list as for any job ([The queue](#the-queue)). `acts_as` is you unless you name another member whose role is no higher than yours. A key that runs tasks acts as an Operator, Admin or Owner. A key sees and cancels only the jobs it made. A key can't make, rotate or end keys.
+
+A call with a key is refused with `401 unauthorized` when the key is revoked, expired, unknown or another team's, all with the same words, so a refusal says nothing about which. Other refusals:
+
+| Status | `error` | Why |
+|---|---|---|
+| `403` | `scope_missing` | The key lacks the scope the call needs |
+| `403` | `key_member_gone` | The member the key acts as left the team. Make a new key |
+| `403` | `forbidden` | The member the key acts as can't run tasks any more |
+| `403` | `team_plan_inactive` | The team's plan isn't in force |
+| `429` | `rate_limited` | More than 60 calls in a burst, then 1 a second. `retry_after` says when |
+| `404` | `not_found` | The control plane is off |
+
+A team that requires single sign-on still accepts its keys: a key acts as a member, and removing that member (by hand or through SCIM) ends the key's use on its next call.
+
+### Rotate and revoke
+
+`POST /api/orgs/$ORG/api-keys/$KEY/rotate` makes a new key with the same name, scopes and member, and prints its secret once. The old key keeps working for `grace_hours` (0 to 168, default 24) so a pipeline can switch, then ends. `DELETE /api/orgs/$ORG/api-keys/$KEY` ends a key at once. `GET /api/orgs/$ORG/api-keys` lists the live keys with their prefix, scopes, dates and last use, never a secret. A team has up to 20 live keys.
+
+The team's [audit log](/enterprise#audit-log-export) records `apikey.created`, `apikey.rotated` and `apikey.revoked` with who and which key, and each job a key queues with its `job.queued` line.
+
+## Pack versions
+
+A team can pin each [app pack](/app-packs) to the app version it was checked on, or turn one off, so every Mac does the same thing. An Owner or Admin pins; any member reads.
+
+```bash
+curl -s -X PUT "https://api.mobster.dev/api/orgs/$ORG/pack-pins/instagram" -H "Authorization: Bearer $ACCESS_TOKEN" -H "Content-Type: application/json" -d '{"version": "448.0.0"}'
+```
+
+`version` is the version `GET /api/packs` shows as the one the pack was checked on (such as `448.0.0`, or `iOS 26.0.1` for an Apple app's pack), or `off`. `GET .../pack-pins` lists the pins and `DELETE .../pack-pins/$PACK` removes one. A team has up to 40.
+
+Each Mac reads the pins at its next check of the team (about every minute) and keeps the last ones if Mobster can't be reached. A pack whose version in that Mac's build doesn't match its pin, or is off, steps aside: its tools aren't offered to the agent, its MCP tools answer that your team pinned it, and a request the front door would answer by code goes to the general agent. A run that names the pack (a workflow's **Read an app** step, a health run) ends saying why, before anything is tapped. A pin never lets a pack do more: packs only move around and read. `GET /api/packs` shows `pin` on each pack, and the registry shows each Mac's pack versions and which step aside, in `health.packs`. A Mac applies pins only with `MOBSTER_CONTROL_PLANE=1`, and leaving the team clears them.
+
+## Usage
+
+The console counts what each Mac and phone did: runs that finished, the steps those runs took, and how many replayed a saved program with no model. These are counts. Mobster does not show or keep what a run cost, what it said or what it was asked.
+
+```bash
+curl -s "https://api.mobster.dev/api/orgs/$ORG/usage?days=7" -H "Authorization: Bearer $ACCESS_TOKEN"
+```
+
+It prints, for the last 7 UTC days including today (`days` is 1 to 30, default 30):
+
+```json
+{"from": "2026-10-13", "to": "2026-10-19",
+ "macs": [{"mac": "…", "name": "Rack 2 mini", "runs": 41, "steps": 612, "replays": 9}],
+ "phones": [{"mac": "…", "phone": "…", "label": "iPhone 7", "runs": 30, "steps": 480, "replays": 9}, {"mac": "…", "phone": "sims", "label": null, "runs": 11, "steps": 0, "replays": 0}],
+ "daily": [{"day": "2026-10-19", "runs": 6, "steps": 91, "replays": 2}]}
+```
+
+`phone: "sims"` is a Mac's simulators: each project's checks that ran there count as one run. Only an Owner or Admin reads usage, with their sign-in or an API key with the `read_registry` scope that acts as one.
+
+A Mac counts a run when it finishes on one of the team's phones and sends its last two days' totals with its other news, so a repeat or a late message never counts a run twice, and a Mac that lost its counts never lowers them. A run started in the Mac app counts too. Counts are kept for 30 days on Mobster Remote's relay and 40 on the Mac. A Mac counts only with `MOBSTER_CONTROL_PLANE=1`.
+
+## Webhooks
+
+A team can have up to 10 webhook endpoints. Mobster posts to each when a job ends or an approval is waiting, so a CI pipeline or a chat tool needn't poll. An Owner or Admin makes them, with their own sign-in (an API key can't).
+
+```bash
+curl -s "https://api.mobster.dev/api/orgs/$ORG/webhooks" -H "Authorization: Bearer $ACCESS_TOKEN" -H "Content-Type: application/json" \
+  -d '{"url": "https://ci.example.com/mobster", "events": ["run.finished", "run.failed", "approval.needed"]}'
+```
+
+It prints the endpoint and its signing secret once:
+
+```json
+{"webhook": {"id": "…", "url": "https://ci.example.com/…", "events": ["run.finished", "run.failed", "approval.needed"], "created_at": "…"}, "secret": "whsec_…"}
+```
+
+The address is an `https` address on a public host: no `user:password@`, no port but 443, no IP address or local name. `events` defaults to all three. Lists show only the address's host, because the rest can hold a secret. Mobster keeps the signing secret so it can sign each post, and the address with it, as it keeps a notification channel's address.
+
+`POST /api/orgs/$ORG/webhooks/$HOOK/rotate` gives the endpoint a new secret, shown once; the old one stops signing at once. `DELETE .../webhooks/$HOOK` removes it, and any post still waiting for it is dropped. `POST .../webhooks/$HOOK/test` sends one signed `test` post now (5 a burst) and prints its delivery: `{"delivery": {"id": "…", "event": "test", "state": "sent", "status": 200}}`. `GET .../webhooks/$HOOK/deliveries` lists the newest posts: event, state, tries and the last status.
+
+### Events
+
+| Event | When |
+|---|---|
+| `run.finished` | A job's run completed |
+| `run.failed` | A job failed, expired without starting, or went `unknown`. `status` and `code` say which, and `reason` is one of Mobster's fixed sentences |
+| `approval.needed` | A run on one of the team's Macs is waiting for someone to approve a send, post, buy or delete |
+| `test` | You asked for a test post |
+
+A post is JSON with the same headers and signature as the posts the Mac app sends ([Webhooks](/webhooks#what-mobster-sends)):
+
+| Header | Value |
+|---|---|
+| `Mobster-Event` | The event |
+| `Mobster-Delivery` | The delivery's id. The same on every try of one post, so your server can skip one it already has |
+| `Mobster-Timestamp` | When this try was sent, in Unix seconds |
+| `Mobster-Signature` | `t=<timestamp>,v1=<signature>` |
+| `User-Agent` | `Mobster-Webhooks/1` |
+
+[Check the signature](/webhooks#check-the-signature) as you do for the Mac app's posts: `v1` is HMAC-SHA256 with the secret over `t`, a period and the body exactly as it arrived, and a post whose `t` is more than 5 minutes from your clock is a replay. A post with a wrong signature, a changed body or an old `t` is not from Mobster.
+
+`run.finished` and `run.failed` carry `type`, `org`, `job`, `runId`, `mac`, `phone`, `macName`, `phoneName`, `startedAt`, `finishedAt`, `status`, `code`, `reason` and `text`. `approval.needed` carries `type`, `org`, `approval`, `runId`, `kind` (such as `send`), `group`, `mac`, `phone`, `macName`, `phoneName`, `askedAt` and `text`. There is no `answer`: the relay never has a task's words or answer, so those stay on your Mac. Read the run in Mobster on that Mac.
+
+### When a post fails
+
+Mobster tries again after a network error, no answer within 10 seconds, a `408`, `425`, `429` or any `5xx`: about 10 seconds later, then 1 minute, 5 minutes and 15 minutes, each pause 20% longer or shorter at random. That is 5 tries. Any other answer, including a redirect (Mobster doesn't follow one), is final. A post that fails never changes the job. Delivery is at least once and in no promised order, so use `Mobster-Delivery` to skip repeats. The log keeps a post for 7 days.
+
+## Turn it on for a Mac
+
+A Mac sends its Profiles to the registry, and takes jobs from the queue, only when the control plane is on for it. Set `MOBSTER_CONTROL_PLANE=1` in the Mac's environment. Without it, the Mac sends its phones as before, refuses every job with `off` and nothing more.
+
+## Next
+
+- [Team plan](/team)
+- [Mobster Remote](/remote)
+- [Enterprise](/enterprise)

@@ -1,0 +1,190 @@
+{
+"note": "Recorded on the test device (iPhone 15 Pro, iOS 26.0.1), 11 Oct 2026: the rows the agent saw, scrubbed (the account's name, the phone's name; serial and model numbers dropped).",
+"rows": [
+{
+"role": "NavigationBar",
+"label": "Settings",
+"rect": [
+0.0,
+0.07,
+1.0,
+0.12
+]
+},
+{
+"role": "StaticText",
+"label": "Settings",
+"rect": [
+0.04,
+0.14,
+0.37,
+0.05
+]
+},
+{
+"role": "Button",
+"label": "Sam Lee, Apple Account, iCloud, and more",
+"rect": [
+0.04,
+0.19,
+0.92,
+0.11
+]
+},
+{
+"role": "Button",
+"label": "Family",
+"rect": [
+0.04,
+0.3,
+0.92,
+0.08
+]
+},
+{
+"role": "Button",
+"label": "iCloud Storage Full",
+"rect": [
+0.04,
+0.38,
+0.92,
+0.06
+],
+"value": "1"
+},
+{
+"role": "StaticText",
+"label": "1",
+"rect": [
+0.79,
+0.39,
+0.07,
+0.03
+]
+},
+{
+"role": "Button",
+"label": "3 Months of Apple Music Included",
+"rect": [
+0.04,
+0.48,
+0.92,
+0.06
+],
+"value": "1"
+},
+{
+"role": "StaticText",
+"label": "1",
+"rect": [
+0.79,
+0.5,
+0.07,
+0.03
+]
+},
+{
+"role": "Button",
+"label": "Finish Setting Up Your iPhone",
+"rect": [
+0.04,
+0.58,
+0.92,
+0.07
+],
+"value": "1"
+},
+{
+"role": "StaticText",
+"label": "1",
+"rect": [
+0.79,
+0.6,
+0.07,
+0.03
+]
+},
+{
+"role": "Button",
+"label": "Update to iOS 27.0.1",
+"rect": [
+0.04,
+0.65,
+0.92,
+0.06
+],
+"value": "1"
+},
+{
+"role": "Button",
+"label": "Add AppleCare Coverage",
+"rect": [
+0.04,
+0.75,
+0.92,
+0.06
+]
+},
+{
+"role": "StaticText",
+"label": "There are 19 days left to add coverage for your Mac. Cover multiple devices with AppleCare One.",
+"rect": [
+0.04,
+0.81,
+0.92,
+0.05
+]
+},
+{
+"role": "Toolbar",
+"label": "Toolbar",
+"rect": [
+0.0,
+0.91,
+1.0,
+0.09
+]
+},
+{
+"role": "SearchField",
+"label": "Search",
+"rect": [
+0.08,
+0.92,
+0.83,
+0.05
+],
+"editable": true
+},
+{
+"role": "Button",
+"label": "Dictate",
+"rect": [
+0.82,
+0.92,
+0.05,
+0.03
+]
+},
+{
+"role": "Image",
+"label": "Search",
+"rect": [
+0.11,
+0.93,
+0.06,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "Dictate",
+"rect": [
+0.82,
+0.92,
+0.05,
+0.03
+]
+}
+]
+}

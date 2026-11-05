@@ -1,0 +1,26 @@
+---
+title: "Unable to launch app.mobster.wda.runner.xctrunner because the device was not, or could not be, unlocked."
+sidebarTitle: "The device could not be unlocked"
+description: "Your iPhone was locked when Xcode tried to start Mobster's helper. Unlock it and keep it unlocked. Mobster tries again by itself."
+icon: "triangle-alert"
+keywords: ["locked", "unlock", "deviceprep", "xctrunner"]
+"article:modified_time": "2026-10-26"
+---
+
+You see this: `xcodebuild` prints this (`com.apple.dt.deviceprep` code -3) when the phone is locked while Mobster starts its helper. Mobster shows `Unlock your iPhone. Mobster's helper starts as soon as it is unlocked.`
+
+## Why it happens
+
+iOS won't start UI automation on a locked phone. Mobster never enters your passcode and never unlocks the phone.
+
+## Fix
+
+1. Unlock the iPhone and keep it unlocked.
+2. Wait. Mobster builds again by itself once the phone reads unlocked, and the helper starts about 2 seconds later.
+3. For a phone that locks during unattended tasks, lengthen **Settings › Display & Brightness › Auto-Lock**.
+
+## Check it worked
+
+`mobster doctor` prints `✓ WebDriverAgent`. See also [the helper waits for unlock](/troubleshooting#helper-waits-for-unlock).
+
+Checked 26 Oct 2026 against Mobster 0.4.0. Back to [Troubleshooting](/troubleshooting#iphone).

@@ -3,24 +3,22 @@
 import json
 import tempfile
 import unittest
-from unittest import mock
 from contextlib import contextmanager
 from pathlib import Path
+from unittest import mock
 
 from mobile_agent.bench.agents.base import AgentRun
 from mobile_agent.bench.fixtures import Fixtures
 from mobile_agent.bench.phone import Health
 from mobile_agent.bench.runner import INFRA, SKIPPED, RunHalted, Runner, load_records, make_plan
 from mobile_agent.bench.suite import build_suite
-from mobile_agent.bench.tests.fakes import FakePhone, FakeProbe, element, snapshot
+from mobile_agent.bench.tests.fakes import FakeProbe, element, snapshot
 from mobile_agent.bench.truth import TruthStore
 
 TASKS = {task.id: task for task in build_suite()}
 
 
 class ScriptedAgent:
-    kind = "baseline"
-
     def __init__(self, name, status="completed", answer=None, available=(True, "ok"), sleep=0):
         self.name, self.status, self.answer, self._available = name, status, answer, available
         self.runs = []
@@ -47,8 +45,7 @@ def runner(tmp, agents, tasks, *, health=None, probe=None, repeats=2, truth=None
                                final=snapshot(title="Accessibility"))
     return Runner(tasks=tasks, agents=agents, out_dir=Path(tmp) / "run", wda_url="http://127.0.0.1:8100",
                   device="iphone15pro", truth=truth or TruthStore("iphone15pro", Path(tmp) / "truth.json"),
-                  fixtures=Fixtures(), repeats=repeats, seed=7, yield_to=None,
-                  probe_factory=lambda url: probe, phone_factory=lambda url, session: FakePhone(),
+                  fixtures=Fixtures(), repeats=repeats, seed=7, yield_to=None, probe_factory=lambda url: probe,
                   health=health or (lambda url: Health(True, False, "s")), lease_factory=no_lease,
                   log=lambda *a: None, sleep=lambda s: None)
 

@@ -1,29 +1,11 @@
-"""Device fixtures the operator sets up once, with ground truth frozen in code.
+"""Device fixtures the operator sets up once (image sets and app records), with ground truth frozen in code."""
 
-Two kinds:
-
-* **Image sets** for the visual-condition (dry-run) tasks. Images come from the
-  labelled, CC0/public-domain set in ``evals/vision`` (Wikimedia Commons,
-  single-rater labels, see its manifest). Selection and order are deterministic
-  (seeded), files are renamed to neutral names so a filename never leaks its
-  label, and every source file's SHA-256 is part of the suite hash.
-  ``python -m mobile_agent.bench fixtures --out DIR`` writes the folders to copy
-  onto the phone (Files > On My iPhone > MobsterBench) and to import as Photos
-  albums. Labels are written OUTSIDE the folder that goes on the phone.
-
-* **App records** (a note, a contact, a reminders list, a calendar event) the
-  operator types in by hand. Their content is fixed below and verified by the
-  harness (read-only) before a run.
-
-Nothing here touches the phone.
-"""
-
-from dataclasses import dataclass
 import hashlib
 import json
-from pathlib import Path
 import random
 import shutil
+from dataclasses import dataclass
+from pathlib import Path
 
 VISION_DIR = Path(__file__).resolve().parent.parent / "evals" / "vision"
 ROOT_FOLDER = "MobsterBench"
@@ -96,10 +78,6 @@ def _vision_manifest():
     return json.loads((VISION_DIR / "manifest.json").read_text())
 
 
-def _sha256(path):
-    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
-
-
 def select(spec, manifest=None):
     """Deterministic pick + order for one set. Items sharing an entity are avoided."""
     manifest = manifest or _vision_manifest()
@@ -115,9 +93,10 @@ def select(spec, manifest=None):
     random.Random(f"mobsterbench-v1:{spec.key}").shuffle(chosen)
     rows = []
     for index, item in enumerate(chosen, 1):
+        # A neutral file name, so the name on the phone never gives its label away.
         rows.append({"file": f"{spec.folder}-{index:02d}.jpg", "source_id": item["id"],
                      "source_file": item["file"], "label": item["label"], "accept": list(item["accept"]),
-                     "sha256": _sha256(VISION_DIR / item["file"])})
+                     "sha256": hashlib.sha256((VISION_DIR / item["file"]).read_bytes()).hexdigest()})
     return rows
 
 

@@ -1,0 +1,140 @@
+{
+"note": "Recorded on the test device (iPhone 15 Pro, iOS 26.0.1), 11 Oct 2026: the rows the agent saw, scrubbed (the account's name, the phone's name; serial and model numbers dropped). The same screen read by Vision OCR (iPhone Mirroring's reading).",
+"rows": [
+{
+"text": "10:08C",
+"confidence": 1,
+"rect": [
+0.0949,
+0.025,
+0.1763,
+0.0188
+]
+},
+{
+"text": "•1l=",
+"confidence": 0.3,
+"rect": [
+0.7119,
+0.0266,
+0.1119,
+0.0188
+]
+},
+{
+"text": "814",
+"confidence": 1,
+"rect": [
+0.8508,
+0.0282,
+0.0746,
+0.0156
+]
+},
+{
+"text": "Battery",
+"confidence": 1,
+"rect": [
+0.4196,
+0.0874,
+0.1678,
+0.0194
+]
+},
+{
+"text": "81%",
+"confidence": 1,
+"rect": [
+0.0814,
+0.1784,
+0.1593,
+0.0391
+]
+},
+{
+"text": "Charging",
+"confidence": 1,
+"rect": [
+0.1253,
+0.2299,
+0.1595,
+0.0191
+]
+},
+{
+"text": "100%",
+"confidence": 1,
+"rect": [
+0.8169,
+0.2269,
+0.1119,
+0.0189
+]
+},
+{
+"text": "1h 13m",
+"confidence": 1,
+"rect": [
+0.7966,
+0.2723,
+0.1254,
+0.0156
+]
+},
+{
+"text": "Battery Health",
+"confidence": 1,
+"rect": [
+0.0814,
+0.5712,
+0.2983,
+0.0219
+]
+},
+{
+"text": "Service >",
+"confidence": 1,
+"rect": [
+0.7186,
+0.5711,
+0.2035,
+0.019
+]
+},
+{
+"text": "Charging",
+"confidence": 1,
+"rect": [
+0.0814,
+0.6322,
+0.1898,
+0.0235
+]
+},
+{
+"text": "Power Mode",
+"confidence": 1,
+"rect": [
+0.0814,
+0.6948,
+0.2576,
+0.0203
+]
+},
+{
+"text": "Battery Percentage",
+"confidence": 1,
+"rect": [
+0.0814,
+0.7574,
+0.3966,
+0.0219
+]
+}
+],
+"hash": "battery",
+"window": {
+"w": 589,
+"h": 1278
+}
+}

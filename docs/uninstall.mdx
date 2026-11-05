@@ -1,0 +1,162 @@
+---
+title: "Uninstall Mobster"
+sidebarTitle: "Uninstall"
+description: "Remove Mobster for Mac and everything it added: the MCP entries in your coding agents, its scheduled runs, its simulators, its Keychain items, its data folders and its helper on your iPhone."
+icon: "trash-2"
+keywords: ["uninstall", "remove mobster", "delete mobster", "clean up", "keychain", "launchagent", "mcp remove", "webdriveragent"]
+---
+
+Run the `mobster` steps first, in this order. The command lives inside Mobster for Mac, so it goes when the app does.
+
+Uninstalling doesn't cancel a plan or delete your account. Each takes its own step, [below](#cancel-your-plan-and-sign-out).
+
+## Cancel your plan and sign out
+
+- A Monthly or Yearly plan renews until you cancel it. Cancel in Settings › Billing › **Manage subscription**, or at [mobster.dev/manage](https://mobster.dev/manage). [Refunds and cancelling](/pricing#refunds-and-cancelling)
+- Settings › Account › **Sign out** frees this Mac on your account and removes the sign-in from the Keychain. Apps connected through [Mobster Remote](/remote) lose access to this Mac.
+- To delete the account itself, write to [support@radish.software](mailto:support@radish.software). [Delete your account](/account#delete-your-account)
+
+## Take Mobster out of your coding agents
+
+```sh
+mobster mcp install --all --remove --with-skill
+```
+
+This removes the `mobster` entry from every client on this Mac, and the skill folders `--with-skill` copied. Your other servers stay as they are. It prints one line per client, such as `Cursor          removed    ~/.cursor/mcp.json`. Add `--dry-run` to see the change first. There is no separate `mobster mcp uninstall`.
+
+In each project where you added Mobster with `--project` or `--rules`, run this from the project's folder:
+
+```sh
+mobster mcp install --all --remove --project . --rules .
+```
+
+It removes the project's entries (`.mcp.json`, `.cursor/mcp.json`, `.vscode/mcp.json` and the rest), Mobster's block in `AGENTS.md`, and `.cursor/rules/mobster.mdc`.
+
+If `mobster` is already gone, remove the entries by hand. Each one is named `mobster`:
+
+| Client | Where the entry is |
+|---|---|
+| Claude Code | `claude mcp remove --scope user mobster`, or `mcpServers` in `~/.claude.json` |
+| Codex CLI | `codex mcp remove mobster`, or `[mcp_servers.mobster]` in `~/.codex/config.toml` |
+| Cursor | `mcpServers` in `~/.cursor/mcp.json` |
+| VS Code | `servers` in `~/Library/Application Support/Code/User/mcp.json` |
+| Claude Desktop | `mcpServers` in `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| Xcode | `mcpServers` in `~/Library/Developer/Xcode/CodingAssistant/ClaudeAgentConfig/.claude.json` |
+| Gemini CLI | `mcpServers` in `~/.gemini/settings.json` |
+| Windsurf | `mcpServers` in `~/.config/devin/mcp_config.json`, and in `~/.codeium/windsurf/mcp_config.json` if Mobster 0.4.0 or earlier wrote it |
+| Copilot CLI | `mcpServers` in `~/.copilot/mcp-config.json` |
+| Zed | `context_servers` in `~/.config/zed/settings.json` |
+| opencode | `mcp` in `~/.config/opencode/opencode.json` |
+| Goose | `extensions` in `~/.config/goose/config.yaml` |
+| Amp | `amp.mcpServers` in `~/.config/amp/settings.json` |
+| Cline | `mcpServers` in `~/.cline/data/settings/cline_mcp_settings.json` |
+| oh-my-pi | `mcpServers` in `~/.omp/agent/mcp.json` |
+
+The skill folders are `~/.claude/skills/ios-testing`, `~/.codeium/windsurf/skills/ios-testing` and `~/.agents/skills/ios-testing`. Mobster left a copy of each file it edited beside it, ending in `.mobster-backup`: delete those too.
+
+In Claude Code, `/plugin uninstall mobster@mobster` removes the Claude Code plugin, and `claude mcp remove mobster-docs` removes these docs' search server if you added it.
+
+## Stop scheduled runs
+
+In each project where you turned on nightly runs:
+
+```sh
+mobster test nightly off
+```
+
+It removes that project's LaunchAgent, `~/Library/LaunchAgents/dev.mobster.nightly.<project>.plist`.
+
+Turn off **Open at login** in Settings › General. It removes `~/Library/LaunchAgents/Mobster.plist`. If the app is already gone, delete that file.
+
+## Delete Mobster's simulators
+
+```sh
+mobster sim delete --all
+```
+
+It shuts down and deletes every simulator Mobster created, the ones named `Mobster · …`. Your own simulators stay.
+
+## Quit and delete the app
+
+Quit Mobster with ⌘Q. Closing its window leaves it running.
+
+If you installed it with Homebrew:
+
+```sh
+brew uninstall --zap --cask radishsoftware/tap/mobster-app
+```
+
+`--zap` also deletes the data folders in [Delete Mobster's data](#delete-mobsters-data). Without Homebrew, drag `Mobster.app` from Applications to the Trash.
+
+Then remove the `mobster` link, and the `PATH` line if you added it for Mobster only:
+
+```sh
+rm -f ~/.local/bin/mobster
+```
+
+The line is `export PATH="$HOME/.local/bin:$PATH"` in `~/.zshrc`.
+
+## Remove Mobster's Keychain items
+
+Open Keychain Access, search for `mobster`, select the items and delete them. Or, in a terminal:
+
+```sh
+services=(
+  app.mobster.desktop.account
+  app.mobster.desktop.settings
+  app.mobster.desktop.connectors
+  app.mobster.desktop.outlets
+  app.mobster.desktop.remote
+  app.mobster.desktop.teams
+  app.mobster.project-env
+  "Mobster AI"
+  "Mobster App Store Connect"
+  "Mobster Team Signing"
+)
+for s in "${services[@]}"; do
+  while security delete-generic-password -s "$s" \
+    >/dev/null 2>&1; do :; done
+done
+```
+
+macOS may ask for your login password. The items are:
+
+| Service | What it holds |
+|---|---|
+| `app.mobster.desktop.account` | Your Mobster account's sign-in |
+| `app.mobster.desktop.settings` | Model keys from Settings and `mobster login`, and the alert webhook's address |
+| `app.mobster.desktop.connectors` | Connectors' tokens |
+| `app.mobster.desktop.outlets` | Destinations' secrets |
+| `app.mobster.desktop.remote` | Mobster Remote's device key |
+| `app.mobster.desktop.teams` | A team station's key |
+| `app.mobster.project-env` | Test credentials from `mobster env set` |
+| `Mobster AI` | AI plan sign-ins and provider keys from Settings › Models |
+| `Mobster App Store Connect` | Your App Store Connect API key, for TestFlight builds and crashes |
+| `Mobster Team Signing` | The signing identity for installing the helper without Xcode |
+
+## Delete Mobster's data
+
+```sh
+rm -rf ~/Library/Application\ Support/app.mobster.desktop \
+  ~/Library/Caches/app.mobster.desktop \
+  ~/Library/Logs/app.mobster.desktop \
+  ~/Library/WebKit/app.mobster.desktop \
+  ~/Library/Saved\ Application\ State/app.mobster.desktop.savedState
+defaults delete app.mobster.desktop
+```
+
+`app.mobster.desktop` holds your conversations, history, memory, settings, profiles, workflows, the queue, logs and the WebDriverAgent builds. Once you delete it, Mobster can't bring them back.
+
+These stay unless you delete them:
+
+- `~/.config/mobster`, if you made an env file there for your key.
+- `~/Mobster/Projects`, the repositories you cloned from **Projects**. They are your code.
+- `.mobster` in each of your projects: your checks, fixtures, workflows and runs.
+
+## Remove the helper from your iPhone
+
+1. On the iPhone, touch and hold **WebDriverAgentRunner-Runner**, tap **Remove App**, then **Delete App**. This is Mobster's helper.
+2. To turn Developer Mode off, open Settings › Privacy & Security › Developer Mode, turn it off, and restart. Leave it on if you build apps on this iPhone with Xcode.
+3. To make the iPhone forget this Mac, open Settings › General › Transfer or Reset iPhone › Reset › **Reset Location & Privacy**. This also resets every app's location and privacy permissions.
+
+Before you delete the app, **Forget this device…** on the [Devices page](/phones) removes the iPhone from Mobster on the Mac. It changes nothing on the phone.

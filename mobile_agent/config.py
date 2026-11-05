@@ -1,18 +1,11 @@
-"""Typed run budgets. One validated place for every loop bound.
-
-``Agent`` keeps its keyword arguments and its ``ValueError`` contract; it
-validates through this module so the CLI, the server, and the agent can share
-one definition instead of re-checking magic numbers at each layer.
-"""
+"""Typed run budgets."""
 
 from pathlib import Path
 from typing import NamedTuple
 
 
-
 class EnvFile(NamedTuple):
-    """What ``load_env_file`` did: the names it set (never the values) and one warning per
-    line it skipped (by line number, never the line's text)."""
+    """What ``load_env_file`` did."""
 
     loaded: list
     warnings: list
@@ -28,22 +21,9 @@ def missing_env_file(path):
 
 
 def load_env_file(path, missing_ok=False):
-    """Load KEY=VALUE lines into the environment. Variables already set win.
-
-    Explicit, never implicit: the desktop app passes its private env file, and
-    developers can pass mobile_agent/.env. Blank lines and # comments are
-    skipped; surrounding single or double quotes are removed. A missing file
-    loads nothing and, unless ``missing_ok``, says so in ``warnings``: a
-    mistyped --env-file would otherwise look like a missing key. `serve`
-    passes ``missing_ok``: the Mac app's setup flow creates the file when the
-    first value is saved.
-
-    One bad line never stops the agent: people edit this file by hand, and the
-    Mac app's Setup and Settings, which could fix it, need the agent running. A
-    line that is not KEY=VALUE, has an invalid name or is not UTF-8 is skipped
-    and reported in ``warnings``; so is a file that cannot be read.
-    """
+    """Load KEY=VALUE lines into the environment. Variables already set win; a bad line is a warning, never a stop."""
     import os
+
     from . import env_secrets
     values, warnings = _parse_env_file(path, missing_ok)
     loaded = []
@@ -120,9 +100,7 @@ def app_env_file():
 
 
 def load_env_layers(env_file=None):
-    """Load an explicit --env-file (or $MOBSTER_ENV_FILE), then the keys Mobster for Mac saved, without overriding
-    anything already set. Precedence, highest first: the process environment, ``env_file``, the app's agent.env.
-    Returns the warnings (a missing or unreadable --env-file, bad lines), never a value."""
+    """Load an explicit --env-file, then the keys Mobster for Mac saved, never over a variable already set."""
     warnings = []
     if env_file:
         loaded = load_env_file(env_file)

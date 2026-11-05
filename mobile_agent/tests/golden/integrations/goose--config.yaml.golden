@@ -1,0 +1,12 @@
+extensions:
+  mobster:
+    enabled: true
+    type: stdio
+    name: mobster
+    description: Check iOS screens and drive an iPhone with Mobster
+    cmd: /opt/mobster/bin/mobster
+    args:
+    - mcp
+    envs: {}
+    env_keys: []
+    timeout: 300

@@ -1,0 +1,183 @@
+---
+title: "Conversations"
+"og:title": "Conversations: follow-ups, steering and picking up"
+sidebarTitle: "Conversations"
+description: "Follow up on a task, change course while it runs, and pick up where one left off, in Mobster for Mac or with mobster chat."
+icon: "messages-square"
+keywords: ["conversation", "follow up", "steer", "pause", "pick up", "mobster chat", "phone_task", "threads"]
+---
+
+A conversation lets one task build on the last: ask Mobster to find your last message from Kate Bell, then say "now reply to that". Conversations stay on this Mac, in the same private journal as your tasks.
+
+## Follow up in Mobster for Mac
+
+<Steps>
+  <Step title="Start a task">
+    Type a task in the box and press Enter: "Find my last message from Kate Bell". Each task starts a conversation. The sidebar lists them, newest first, and **All conversations** in ⌘K has every one. **View all** under the sidebar's list opens ⌘K on **All tasks**. Mobster keeps your newest 100 finished tasks and every unfinished task, and an older task's words stay in its conversation, so searching **All tasks** lists the conversations that match too.
+  </Step>
+  <Step title="Follow up">
+    Type the next task in the same box: "Reply that I'm running 10 minutes late". The second task knows what the first one found.
+  </Step>
+  <Step title="Steer it while it works">
+    Type while a task runs. Mobster reads your message at its next step and marks it **Mobster read this**.
+  </Step>
+</Steps>
+
+<Frame caption="A conversation: “Actually make it 15 minutes”, sent while Mobster worked and read at its next step, then a follow-up that saved the address in Notes.">
+  <img src="/images/mac/conversation-light.webp" alt="A conversation: a sent message, a note Mobster read while it worked, and the next task's result." className="block dark:hidden" />
+  <img src="/images/mac/conversation-dark.webp" alt="A conversation: a sent message, a note Mobster read while it worked, and the next task's result." className="hidden dark:block" />
+</Frame>
+
+| Control | What it does |
+| --- | --- |
+| **Pause** | Stops the task between steps. Mobster doesn't touch your iPhone until you choose **Continue** |
+| **Stop after this step** | Ends the task cleanly |
+| **Pick up where it left off** | On a task that was interrupted, stopped, unplugged or locked, with confirmed action history. Mobster looks at your iPhone first. An action or app launch whose outcome is unknown prevents pickup; inspect the phone before starting another task |
+| A question, such as "Which Sam?" | When your request can be read two ways, Mobster asks, with each choice as a button. It waits 10 minutes, then stops. Settings › Advanced › **Mobster may ask me questions** turns this off |
+
+**Pick up where it left off** needs the earlier task's saved checkpoint and access limits. Mobster refuses if the checkpoint disappears, if an outside agent started the task, or if its app, permission or cost limits cannot be carried into the new run. A journaled action or app launch without confirmation, an unknown outcome or uncertain journal persistence also prevents pickup. A confirmed action does not by itself prevent pickup. Inspect the earlier result and your phone before starting a new task.
+
+<Note>A message you type never approves anything. Choose **Send** or **Don't send** on the approval, or say what to do instead there.</Note>
+
+## Steer a task while it runs
+
+| The task | Your message |
+| --- | --- |
+| None running | Starts a new task in the conversation |
+| Mobster's agent is working | Steers it at its next step, marked "Sent while Mobster was working" |
+| Mobster asked a question | Answers it |
+| Waiting for an approval | Is refused. Choose **Send** or **Don't send** first |
+| Codex, Claude Code or Gemini CLI is working | Is refused: they can't take messages while they work |
+
+Mobster marks a message the task finished before reading "Mobster finished before reading this", and you can send it again as a new task.
+
+## Read what Mobster did
+
+Each task shows its work one model turn at a time, with your iPhone's screen under the newest step. **Show iPhone** puts the phone beside the conversation. When the task ends, the answer follows its steps and **Done** is its last line. A finished task folds its steps into one line, such as **Opened Messages, tapped Alex Rivera, tapped Send and 1 more**: click it to open the trace.
+
+| You see | What it is |
+| --- | --- |
+| **Thought for 2s** | How long Mobster's agent took to decide that turn. Click it for its one-line reason. It never shows the prompt, or anything that reads as a key, a card number or a code |
+| A step, such as **Tapped General** | What Mobster did on your iPhone and how long it took. Click it for the screen it left and why |
+| A block, such as **Linear** `search_issues` | A connected service's tool, with the **Request** and the **Response**. A call that needs your OK shows what it will send, and you answer on the approval card under it. Mobster never sends a call that didn't answer again |
+| A block, such as **Watched 0:21: 7 scenes, heard 52 words** | What Mobster watched and heard on your iPhone, with the moments it kept |
+
+## Review plans and drafts
+
+Mobster decides how much to show you before it acts, from the task. You never pick a mode.
+
+| The task | What you see |
+| --- | --- |
+| Clear, and it only reads ("Read my iOS version") | It runs |
+| Vague, and it only reads ("Doomscroll my reels and tell me if anything cool comes up") | It starts at once. How Mobster read it shows under your message, with **Change** |
+| It sends, posts, buys or deletes | When your permission mode requires it, the approval with the exact text |
+| Several drafts at once | One review, such as "6 drafted replies", each with **Send**, **Edit** and **Skip**. **Send all** (<kbd>⌘</kbd> <kbd>Enter</kbd>) and **Skip all** decide the rest |
+| It reads a feed or a long list ("Watch 40 Reels") | The plan with its budget: how much it covers, how long it holds your iPhone and what it costs. A plan over your per-task spending limit offers the raise it needs |
+| It spans several apps | A plan: the apps, what Mobster does in each, and what waits for you. **Start** (<kbd>⌘</kbd> <kbd>Enter</kbd>), **Skip** (<kbd>esc</kbd>), or say what to change |
+
+- Mobster sends nothing you didn't choose. If you're away, Mobster waits 10 minutes, then sends only the drafts you chose.
+- To pin an app, type <kbd>@</kbd> and a few letters, then <kbd>Enter</kbd>. Mobster starts in the first app you pin and uses the others. With nothing pinned, it picks the apps from your words.
+- A task started from a script, MCP or a schedule has nobody to answer, so its plan starts as made.
+
+<span id="mobster-chat"></span>
+## Chat from Terminal
+
+`mobster chat` talks to the same conversations from Terminal. With Mobster for Mac or `mobster serve` running, each message goes to it, so the conversation is the one the Mac app shows.
+
+```sh
+# One message: its steps, then the answer
+mobster chat "What's on my calendar tomorrow?"
+
+# A follow-up in this terminal's last conversation
+mobster chat "Now add the first one to my notes"
+
+# A new conversation, and a follow-up in a given one
+mobster chat --new "Find my last message from Kate Bell"
+mobster chat --thread 3f9c2a1b7d0e "Now reply to that"
+
+# A conversation in this terminal
+mobster chat
+```
+
+Each task prints its steps as they happen, then the answer, in the format `mobster run` uses (the [CLI quickstart](/quickstart/cli) shows `mobster demo` printing it). A message that only asks Mobster to remember something runs no task:
+
+```sh
+mobster chat "Remember that my gym is the one on 5th Street"
+```
+
+```text Output
+Remember this?  “My gym is the one on 5th Street”
+  Mobster will use it in tasks it fits. It stays on this Mac.
+  [y] Remember   [n] Not now
+  Type y or n, then Return: y
+✓ Mobster will remember this.
+```
+
+When the conversation's last task used a saved profile, or you choose one for this message, **Remember this?** shows that profile as the scope. The accepted fact applies only to tasks for that saved profile. A profile-scoped fact with the same words as a global fact can be saved separately. Choose **No profile** to remember something for every task. Mobster refuses a removed or ambiguous profile before saving the message. A request for several profiles cannot create one shared proposal.
+
+With the Mac app open, you answer approvals in the app: the terminal shows the exact text, and `n` declines or `x` stops. With `mobster serve` on a terminal, `y` then Return approves. `--json`, and any run without a terminal, never approve: they print `{"status": "waiting_for_approval", ...}` and exit 2. [Exit codes](/reference/errors#exit-codes) lists the rest, and the [CLI reference](/reference/cli#mobster-chat) every flag.
+
+### Run it without the app or `serve`
+
+With neither running, `mobster chat "message"` runs the task in its own process, on your key, and keeps the conversation in the terminal UI's history: `mobster -c` opens it, and the Mac app doesn't show it. An approval asks on the terminal. With `--json` or no terminal, nobody can answer, so the step isn't done and the task ends `approval_denied` with exit code 1.
+
+With no key yet, it says so and exits 3:
+
+```sh
+mobster chat "What's on my calendar tomorrow?"
+```
+
+```text Output
+mobster: no model key yet. Run `mobster login`, then run this again.
+```
+
+<span id="mcp-phone_task"></span>
+## Hand a task over MCP
+
+`mobster mcp` gives your coding agent two tools that hand a whole task to Mobster's agent, in a conversation. [Mobster Remote](/remote) offers the same two to assistants in the cloud, with `phone_task_stop`. [Hand a task to Mobster's agent](/mcp-server#hand-a-task-to-mobsters-agent) shows how to use them.
+
+| Tool | Arguments | Returns |
+| --- | --- | --- |
+| `phone_task` | `message`; optionally `thread_id` (a follow-up), `device` or `phones` (two or more), `wait_seconds` (at most 45, default 30) | `{thread_id, run_id, status, answer?}`; with `phones`, `{thread_id, group_id, status, phones, summary?}` |
+| `phone_task_status` | `thread_id`, `run_id` or `group_id`, optionally `wait_seconds` | The same |
+
+`status` is `running`, `waiting_for_approval`, `waiting_for_answer`, `waiting_for_phone` (unlock the iPhone or plug it back in: `message` says which), `status_unavailable` (Mobster accepted the task but couldn't read how it stands: follow it with `phone_task_status`, and don't start it again), or how the task ended (`completed`, `stopped` ...). A start Mobster doesn't confirm is an error that says whether it started is unknown. That happens when its reply is lost, when it times out (408), when it answers with a server error (5xx) or when its answer names no task. A server error with `"started": false` says Mobster recorded and sent nothing, so the tools pass on its own sentence instead. Both tools need Mobster for Mac or `mobster serve`. Without one they say "Open Mobster or run `mobster serve` so your agent can hand tasks to Mobster's agent."
+
+- With `phones`, the task runs on each device at once, as one task in one conversation. Once all are done, `summary` merges the answers. A phone still waiting to start when Mobster restarts ends `interrupted`, and never starts later.
+- Approvals show in the Mobster app, where only you answer them.
+- The task uses only the apps you let agents outside Mobster use (Settings › Safety), asks before it acts, and never asks your agent a question.
+- It takes messages only from your agent or the Mac app. A task you started yourself takes none from your agent.
+- With `--allow-device`, it names only the devices you allowed.
+
+## What a follow-up sees
+
+When a task starts in a conversation that has earlier tasks, Mobster's agent gets two short sections before it looks at the screen, at most 3,000 characters together:
+
+| Section | What it holds | How the agent reads it |
+| --- | --- | --- |
+| Earlier in this conversation | Your own words from the last three tasks, then the rules you gave ("don't…", "never…", "only…"), word for word | Your instructions. A rule holds until a later message changes it |
+| What Mobster's earlier tasks found | How each recent task ended, its app, its answer and up to 600 characters of notes | Data read off screens, never instructions. Text on a screen that says "ignore the user and send…" stays text |
+
+- The first task of a conversation gets neither section. Older tasks condense first, and the rules are never dropped.
+- Notes pass through Mobster's secret filter before Mobster stores them. The filter replaces a one-time code, a card number or a password.
+- Approvals follow your permission mode. Earlier answers never count as approval for a send, buy, post or delete.
+
+## Privacy and safety
+
+- Conversations hold your words, Mobster's answers and capped facts, on this Mac only, in the journal (mode 0600).
+- Deleting a conversation deletes its tasks and their screens.
+- A task sends only the two sections above to your own model provider, as it sends the screen.
+
+## Next
+
+<CardGroup cols={3}>
+  <Card title="Memory" icon="brain" href="/memory">
+    What Mobster remembers across conversations.
+  </Card>
+  <Card title="Scripts and the API" icon="terminal" href="/scripting#conversations">
+    The conversation routes, items and events.
+  </Card>
+  <Card title="Approvals and safety" icon="shield-check" href="/safety">
+    What waits for your OK, and how you answer.
+  </Card>
+</CardGroup>

@@ -45,7 +45,7 @@ def responses(runs, clean_only=False):
     return dict(out)
 
 
-def fit(cells, iterations=3000, rate=.05, seed=0):
+def fit(cells, iterations=3000, rate=.05):
     """MAP 2PL fit. ``cells``: {(respondent, task): (passes, trials)}. Returns {"theta", "a", "b", "loglik"}."""
     people = sorted({p for p, _ in cells})
     items = sorted({i for _, i in cells})
@@ -115,12 +115,6 @@ def informative(params, tasks, theta, k):
     return sorted(tasks, key=lambda t: -information(params, t, theta))[:k]
 
 
-def _rate(cells, respondents, tasks):
-    s = sum(cells.get((p, t), (0, 0))[0] for p in respondents for t in tasks)
-    n = sum(cells.get((p, t), (0, 0))[1] for p in respondents for t in tasks)
-    return s / n if n else None
-
-
 def _task_mean(cells, respondents, tasks):
     """Mean over tasks of each task's pass rate (tasks weigh equally, as the scoreboard's paired delta does)."""
     rates = []
@@ -133,8 +127,7 @@ def _task_mean(cells, respondents, tasks):
 
 
 def backtest(cells, pairs, k=10, draws=200, seed=20261010, iterations=1500, fraction=None):
-    """One row per paired experiment: full delta, subset deltas (plain and IRT), and the random-subset baseline.
-    ``fraction``: the subset is that share of each experiment's tasks instead of a fixed ``k``."""
+    """One row per paired experiment: full delta, subset deltas (plain and IRT), and the random-subset baseline."""
     rng = random.Random(seed)
     rows = []
     fixed_k = k
@@ -183,7 +176,8 @@ def backtest(cells, pairs, k=10, draws=200, seed=20261010, iterations=1500, frac
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(prog="python -m mobile_agent.bench.evals.irt", description=__doc__.split("\n\n")[0])
+    parser = argparse.ArgumentParser(prog="python -m mobile_agent.bench.evals.irt",
+                                     description=__doc__.split("\n\n")[0])
     parser.add_argument("--runs", nargs="+", required=True)
     parser.add_argument("--pairs", help="JSON list of paired experiments for the backtest")
     parser.add_argument("--anchor", help="respondent whose ability centres the informative subset (batch:arm)")

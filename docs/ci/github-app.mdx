@@ -1,0 +1,87 @@
+---
+title: "Checks on pull requests"
+"og:title": "Checks on every pull request with Mobster Checks"
+sidebarTitle: "GitHub checks"
+keywords: ["github app", "mobster checks", "check run", "pull request", "pr checks", "status check", "branch protection", "pr comment", "mobster test pr"]
+description: "Install Mobster Checks on a repository, and the verdict of each pull request Mobster tests appears on it as a check."
+icon: "/images/marks-ink/github.svg"
+---
+
+Mobster Checks is Mobster's GitHub App. Install it on a repository, and each time Mobster tests a pull request, the verdict appears on the pull request as the check `Mobster`. It works wherever Mobster runs the checks: [`mobster test pr`](/testing#test-a-pull-request) on your Mac, a coding agent's `test_pr`, and [`mobster ci`](/ci) or the Mobster test action on your runner.
+
+The check holds what passed, what failed, what each check expected and found, and the command that runs a failure again. You can also have Mobster keep one comment on the pull request.
+
+## Set it up
+
+1. Install Mobster Checks on your repositories: [github.com/apps/mobster-checks](https://github.com/apps/mobster-checks/installations/new). In Mobster, the **GitHub checks** card under **Send results to** in Connectors opens the same page.
+2. In Mobster, connect **GitHub** ([Connectors](/connectors)). Mobster uses that sign-in to confirm you can push to the repository.
+3. Keep Mobster open, signed in, with your plan or free trial.
+
+Then test a pull request from its branch, with the branch pushed:
+
+```sh
+mobster test pr
+```
+
+```text
+Mobster Checks: in progress on radish/habits at a6d8d39
+mobster test pr: 2 changed screens, 3 saved checks cover them
+Mobster Checks: posted “2 passed, 1 failed” on radish/habits at a6d8d39
+Changed screens: PaywallView, SettingsView
+✗ failed  The paywall shows three plans  on iPhone 17 Pro, iOS 26.4
+    text “Choose your plan”: not on screen; closest: "Choose a plan"
+✓ passed  Today lists the three habits  on iPhone 17 Pro, iOS 26.4
+✓ passed  Settings shows the plan  on iPhone 17 Pro, iOS 26.4
+
+Mobster checks: 2 passed, 1 failed
+```
+
+The pull request shows `Mobster` as in progress while the checks run, then the verdict.
+
+## The check
+
+| Verdict | Check |
+| --- | --- |
+| Every check passed | Success |
+| A check failed, needs review or couldn't run | Failure |
+| No saved check covers the pull request | Neutral |
+| The run stopped before a verdict, such as with `ctrl+c` | Cancelled |
+
+Its summary is the [pull request comment](/ci#the-comment): a row per check with what it expected and found, and a repro for each failure. In CI, each frame, GIF and video links to the job's report. On your Mac, they stay in `.mobster/test-results/` and the summary names them.
+
+To block merging on a failure, add `Mobster` as a required check in the branch's protection rules.
+
+## Keep one comment
+
+`--github comment` also keeps one comment on the pull request, updated in place on every run:
+
+```sh
+mobster test pr --github comment
+```
+
+`--github off` posts nothing. A coding agent passes the same choice to `run_tests` with `pr` as `github`. In a GitHub Actions job, the workflow's own step keeps the comment ([CI](/ci#the-comment)), so Mobster Checks posts only the check there.
+
+## When nothing is posted
+
+Mobster says why in one line, and the verdict stays on your Mac:
+
+| Line says | What to do |
+| --- | --- |
+| `Mobster Checks isn't installed on radish/habits.` | Install it on that repository, at the link the line ends with. |
+| `Connect GitHub in Mobster (Connectors)…` | Connect GitHub in Mobster. |
+| `Your GitHub account can't push to radish/habits…` | Ask the repository's owner for write access. An organization that restricts OAuth apps needs an admin to approve Mobster's GitHub app first. |
+| `…these checks run on uncommitted changes…` | Commit and push, then run them again. |
+| `GitHub doesn't have a6d8d39 yet.` | Push the branch, then run them again. |
+| `Open Mobster, so it can post the verdict on GitHub.` | Open Mobster, then run them again. |
+| `Mobster Checks needs a Mobster plan or trial in force on this Mac.` | Open Mobster to check your plan. |
+| `Mobster Checks didn't get a token for radish/habits…` | Choose Allow on the **Let Mobster Checks post on GitHub?** card in Mobster, then run them again. |
+
+A repository that isn't on github.com posts nothing and says nothing.
+
+## What it can do
+
+Mobster Checks asks GitHub for three permissions: checks (read and write), pull requests (read and write, for the comment) and metadata (read). It reads no code and has no webhook, so it never starts a run by itself.
+
+Its private key stays on Mobster's server, `api.mobster.dev`. Each time Mobster posts, the server checks that your Mobster account has a plan or trial in force and that your GitHub sign-in can push to the repository. Then it gives your Mac a token for that one repository, good for an hour, which writes only checks and pull request comments. Your Mac posts to GitHub with it. The server keeps no token, and your GitHub sign-in stays in your Mac's Keychain.
+
+The first time `mobster test pr` or the `test_pr` tool posts to a repository while Mobster is open, Mobster asks you on a card: **Let Mobster Checks post on GitHub?** It asks once per repository until Mobster quits. Without your answer within 25 seconds, nothing is posted. So another program on your Mac that reads Mobster's API token can't get a GitHub token without you seeing it.

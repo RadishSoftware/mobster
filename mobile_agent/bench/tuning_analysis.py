@@ -21,8 +21,18 @@ import pathlib
 import re
 import statistics
 
-from .iosworld_stats import (CATEGORIES, FULL_MIX, SCREEN_ROW, bootstrap_mean_ci, by_task, compare, load_runs,
-                             load_task, mean, percentile)
+from .iosworld_stats import (
+    CATEGORIES,
+    FULL_MIX,
+    SCREEN_ROW,
+    bootstrap_mean_ci,
+    by_task,
+    compare,
+    load_runs,
+    load_task,
+    mean,
+)
+from .metrics import quantile
 
 TAXONOMY = {
     "perception_grounding": "misread the screen or acted on the wrong element (wrong target, missed a visible item)",
@@ -39,8 +49,6 @@ TAXONOMY = {
 }
 CAUSES = tuple(TAXONOMY)
 
-
-# -- traces ----------------------------------------------------------------------------------------
 
 def _screen_hash(text):
     at = (text or "").find("Screen elements:")
@@ -160,8 +168,6 @@ def arm_of(run_folder_name):
     return (m.group(1), int(m.group(2))) if m else (run_folder_name, 1)
 
 
-# -- the scoreboard ------------------------------------------------------------------------------------
-
 def turn_stats(folders):
     """Per-turn medians over task folders' traces: output tokens, latency, ttft, generation."""
     out_tokens, latency, ttft, gen, cached_share = [], [], [], [], []
@@ -181,13 +187,14 @@ def turn_stats(folders):
                 gen.append(r["gen_ms"])
 
     def p(xs, q):
-        return percentile(sorted(xs), q) if xs else None
+        return quantile(xs, q)
     return {"turns": len(out_tokens), "out_tokens_p50": p(out_tokens, .5), "out_tokens_mean": mean(out_tokens),
             "latency_ms_p50": p(latency, .5), "latency_ms_p90": p(latency, .9), "ttft_ms_p50": p(ttft, .5),
             "gen_ms_p50": p(gen, .5), "cached_share": mean(cached_share)}
 
 
-BUCKETS = ("model", "exec", "settle", "refresh", "observe", "prep", "verify", "source_seconds", "source_reads")
+COUNTS = ("verified", "verify_changed")
+BUCKETS = ("model", "exec", "settle", "refresh", "observe", "prep", "verify", "source_seconds", "source_reads") + COUNTS
 
 
 def time_buckets(folders):
@@ -204,6 +211,98 @@ def time_buckets(folders):
         for key in BUCKETS:
             sums[key] += float(timing.get(key) or 0)
     return {key: sums[key] / n for key in BUCKETS} if n else {}
+
+
+NEXT_READ_SECONDS = 1.0   # a next read this soon after a settle is its verify read; later ones follow another action
+
+
+def frame_log_stats(folders):
+    """What the FrameClock logged (frameclock.jsonl in each run folder), per task: settles, their seconds and reads, by
+    the rule that ended them; observe_ready calls ("ready"), their seconds and reads, by rule; and the next reads
+    within NEXT_READ_SECONDS of a settle, how many disagreed with the screen the settle accepted (a false settle),
+    split by whether the stream showed no changed byte from the accepted read to the next one (stream_still). {}
+    when no folder logged."""
+    paths = collections.defaultdict(lambda: {"n": 0, "ms": 0.0, "reads": 0, "next": 0, "off": 0})
+    rules = collections.defaultdict(lambda: {"n": 0, "ms": 0.0, "reads": 0})
+    misses = collections.defaultdict(lambda: {"n": 0, "ms": 0.0, "reads": 0})
+    rest = [0, 0]   # calls the stream showed at rest but that read on: how many, and how many first reads held
+    still = {True: [0, 0], False: [0, 0]}
+    logged = 0
+    for folder in folders:
+        log = pathlib.Path(folder) / "frameclock.jsonl"
+        if not log.exists():
+            continue
+        logged += 1
+        for entry in read_jsonl(log):
+            kind = entry.get("kind")
+            if kind == "settle":
+                row = paths[entry.get("path")]
+                row["n"] += 1
+                row["ms"] += entry.get("settle_ms") or 0
+                row["reads"] += entry.get("reads") or 0
+                if entry.get("miss"):
+                    miss = misses[entry["miss"]]
+                    miss["n"] += 1
+                    miss["ms"] += entry.get("settle_ms") or 0
+                    miss["reads"] += entry.get("reads") or 0
+            elif kind == "ready":
+                row = rules[entry.get("rule")]
+                row["n"] += 1
+                row["ms"] += entry.get("ms") or 0
+                row["reads"] += entry.get("reads") or 0
+                if entry.get("would_rest") and entry.get("rule") != "rest":
+                    rest[0] += 1
+                    rest[1] += bool(entry.get("first_held"))
+            elif kind == "next_read" and (entry.get("age_ms") or 0) < NEXT_READ_SECONDS * 1000:
+                disagreed = not entry.get("matches_result")
+                paths[entry.get("path")]["next"] += 1
+                paths[entry.get("path")]["off"] += disagreed
+                if "stream_still" in entry:
+                    still[bool(entry["stream_still"])][0] += 1
+                    still[bool(entry["stream_still"])][1] += disagreed
+    if not logged:
+        return {}
+    return {"runs": logged, "paths": dict(paths), "rules": dict(rules), "misses": dict(misses), "rest": rest,
+            "still": still}
+
+
+def frame_log_lines(stats_by_arm):
+    """Markdown tables for frame_log_stats of each arm: per task, then by rule, with the false-settle shares."""
+    def share(off, n):
+        return f"{100 * off / n:.1f}% ({off}/{n})" if n else "-"
+    lines = ["| arm | logged runs | settles/task | settle s/task | settle reads/task | ready calls/task | ready s/task "
+             "| ready reads/task | next reads disagreeing | ... stream still | ... stream moved |",
+             "|---|---|---|---|---|---|---|---|---|---|---|"]
+    detail = ["| arm | settle rule | settles/task | ms | reads | next reads disagreeing |", "|---|---|---|---|---|---|"]
+    ready = ["| arm | ready rule | calls/task | ms | reads |", "|---|---|---|---|---|"]
+    held = ["| arm | ready calls the stream showed at rest, then read on | first read held |", "|---|---|---|"]
+    missed = ["| arm | why a settle did not end on one read | settles/task | ms | reads |", "|---|---|---|---|---|"]
+    for arm, stats in stats_by_arm.items():
+        if not stats:
+            lines.append(f"| {arm} | 0 | - | - | - | - | - | - | - | - | - |")
+            continue
+        runs, paths, rules = stats["runs"], stats["paths"], stats["rules"]
+        settles = sum(r["n"] for r in paths.values())
+        nxt, off = sum(r["next"] for r in paths.values()), sum(r["off"] for r in paths.values())
+        lines.append(f"| {arm} | {runs} | {settles / runs:.1f} | "
+                     f"{sum(r['ms'] for r in paths.values()) / 1000 / runs:.1f} | "
+                     f"{sum(r['reads'] for r in paths.values()) / runs:.1f} | "
+                     f"{sum(r['n'] for r in rules.values()) / runs:.1f} | "
+                     f"{sum(r['ms'] for r in rules.values()) / 1000 / runs:.2f} | "
+                     f"{sum(r['reads'] for r in rules.values()) / runs:.1f} | {share(off, nxt)} | "
+                     f"{share(stats['still'][True][1], stats['still'][True][0])} | "
+                     f"{share(stats['still'][False][1], stats['still'][False][0])} |")
+        for name, r in sorted(paths.items(), key=lambda item: -item[1]["n"]):
+            detail.append(f"| {arm} | {name} | {r['n'] / runs:.1f} | {r['ms'] / max(r['n'], 1):.0f} | "
+                          f"{r['reads'] / max(r['n'], 1):.2f} | {share(r['off'], r['next'])} |")
+        for name, r in sorted(rules.items(), key=lambda item: -item[1]["n"]):
+            ready.append(f"| {arm} | {name} | {r['n'] / runs:.1f} | {r['ms'] / max(r['n'], 1):.0f} | "
+                         f"{r['reads'] / max(r['n'], 1):.2f} |")
+        held.append(f"| {arm} | {stats['rest'][0]} | {share(stats['rest'][1], stats['rest'][0])} |")
+        for name, r in sorted(stats["misses"].items(), key=lambda item: -item[1]["n"]):
+            missed.append(f"| {arm} | {name} | {r['n'] / runs:.1f} | {r['ms'] / max(r['n'], 1):.0f} | "
+                          f"{r['reads'] / max(r['n'], 1):.2f} |")
+    return lines + [""] + detail + [""] + missed + [""] + ready + [""] + held
 
 
 def arm_board(runs, folders):
@@ -226,10 +325,11 @@ def arm_board(runs, folders):
     return {"runs": len(runs), "judged": len(judged), "official": sum(r.official for r in judged),
             "success": (sum(r.official for r in judged) / len(judged)) if judged else None,
             "reweighted": reweighted, "rubric": mean(r.score for r in judged),
-            "s_p50": percentile(secs, .5), "s_p90": percentile(secs, .9),
+            "s_p50": quantile(secs, .5), "s_p90": quantile(secs, .9),
             "calls": mean(r.calls for r in runs), "usd": mean(costs), "usd_total": sum(costs),
             "false_claims": sum(r.false_claim for r in runs), "wda_crashes": sum(r.wda_crash for r in runs),
-            "categories": cats, "turn": turn_stats(folders), "buckets": time_buckets(folders)}
+            "categories": cats, "turn": turn_stats(folders), "buckets": time_buckets(folders),
+            "frame_log": frame_log_stats(folders)}
 
 
 def category_diffs(a_runs, b_runs, n_boot=10000, seed=20261010):
@@ -294,10 +394,17 @@ def scoreboard(batch, labels_path=None, ledger_path=None):
             c = b["categories"].get(cat)
             cells.append(f"{c['official']}/{c['runs']}, {c['rubric']:.3f}" if c else "-")
         lines.append(f"| {arm} | " + " | ".join(cells) + " |")
-    lines += ["", "Where a task's time goes (per-task means, s; buckets overlap; source reads a count):", "",
+    lines += ["", "Where a task's time goes (per-task means, s; buckets overlap; source reads, verified and "
+              "verify_changed counts: a verify read is a one-read settle's proof, and a "
+              "changed one is a false settle):", "",
               "| arm | " + " | ".join(BUCKETS) + " |", "|---|" + "---|" * len(BUCKETS)]
     for arm, b in boards.items():
-        lines.append(f"| {arm} | " + " | ".join(f(b["buckets"].get(k)) for k in BUCKETS) + " |")
+        lines.append(f"| {arm} | " + " | ".join(f(b["buckets"].get(k), 2 if k in COUNTS else 1)
+                                                for k in BUCKETS) + " |")
+    if any(b["frame_log"] for b in boards.values()):
+        lines += ["", "What the FrameClock logged (settles, observe_ready calls; a next read within 1 s of a settle "
+                  "that disagrees with the accepted screen is a false settle):", ""]
+        lines += frame_log_lines({arm: b["frame_log"] for arm, b in boards.items()})
     names = list(arms)
     if len(names) == 2:
         a, b = names
@@ -308,15 +415,16 @@ def scoreboard(batch, labels_path=None, ledger_path=None):
                   "|---|---|---|---|---|---|---|---|"]
         for cat, d in diffs.items():
             pc, rc = d["pass_ci"], d["rubric_ci"]
-            lines.append(f"| {cat} | {d['tasks']} | {100 * d['pass_diff']:+.1f} | [{100 * pc[0]:+.1f}, {100 * pc[1]:+.1f}] | "
-                         f"{100 * half_width(pc):.1f} | {d['rubric_diff']:+.3f} | [{rc[0]:+.3f}, {rc[1]:+.3f}] | "
-                         f"{half_width(rc):.3f} |")
+            lines.append(f"| {cat} | {d['tasks']} | {100 * d['pass_diff']:+.1f} | [{100 * pc[0]:+.1f}, "
+                         f"{100 * pc[1]:+.1f}] | {100 * half_width(pc):.1f} | {d['rubric_diff']:+.3f} | [{rc[0]:+.3f}, "
+                         f"{rc[1]:+.3f}] | {half_width(rc):.3f} |")
         lines.append(f"\nTasks paired: {result['paired_tasks']}.")
     labels = read_jsonl(labels_path) if labels_path else []
     if labels:
         lines += ["", "## Failure map", ""] + failure_map_lines(labels)
     if ledger_path:
-        lines += ["", "## Trend across builds (judged attempts in the ledger)", ""] + trend_lines(read_jsonl(ledger_path))
+        lines += (["", "## Trend across builds (judged attempts in the ledger)", ""]
+                  + trend_lines(read_jsonl(ledger_path)))
     return lines
 
 
@@ -327,7 +435,8 @@ def failure_map_lines(labels):
     for l in labels:
         by[l.get("cause")][l.get("category")] += 1
     for cause, n in count.most_common():
-        lines.append(f"| {cause} | {n} | {by[cause]['single_app']} | {by[cause]['multi_app']} | {by[cause]['memory']} |")
+        lines.append(f"| {cause} | {n} | {by[cause]['single_app']} | {by[cause]['multi_app']} "
+                     f"| {by[cause]['memory']} |")
     apps = collections.Counter()
     for l in labels:
         for app in l.get("apps") or ():
@@ -346,11 +455,10 @@ def trend_lines(ledger):
     for (batch, arm, build), rs in groups.items():
         splits = ",".join(sorted({str(r.get("split")) for r in rs}))
         lines.append(f"| {batch} | {arm} | {build} | {splits} | {len(rs)} | {sum(bool(r['official']) for r in rs)} "
-                     f"({100 * mean(bool(r['official']) for r in rs):.1f}%) | {mean(r.get('rubric') or 0 for r in rs):.3f} |")
+                     f"({100 * mean(bool(r['official']) for r in rs):.1f}%) | "
+                     f"{mean(r.get('rubric') or 0 for r in rs):.3f} |")
     return lines
 
-
-# -- the failure labeller --------------------------------------------------------------------------------
 
 LABEL_SYSTEM = """You diagnose why a phone agent failed a task. You get the task, the judge's rubric verdicts, and \
 the agent's trace: each model turn's screen summary, its reasoning, the actions it took and what happened. \
@@ -407,7 +515,8 @@ def trace_text(folder, max_chars=60000):
              f"MODEL CALLS: {task_row.get('calls')}, SECONDS: {task_row.get('agent_s')}", "JUDGE RUBRIC:"]
     for c in evaluation.get("rubric_results") or ():
         lines.append(f"  [{'x' if c.get('satisfied') else ' '}] {c.get('criterion')}"
-                     + (f" -- {str(c.get('reasoning') or c.get('explanation') or '')[:300]}" if not c.get("satisfied") else ""))
+                     + (f" -- {str(c.get('reasoning') or c.get('explanation') or '')[:300]}" if not c.get("satisfied")
+                        else ""))
     if evaluation.get("reasoning"):
         lines.append(f"JUDGE REASONING: {str(evaluation['reasoning'])[:1200]}")
     lines.append("TRACE:")
@@ -470,8 +579,6 @@ def label_failures(batch, client, out_path, only_failed=True, skip=()):
     return spent
 
 
-# -- offline counterfactuals --------------------------------------------------------------------------
-
 def load_variant(spec):
     """``pkg.module:function``: fn(messages, schema, turn) -> (messages, schema), the change to test."""
     import importlib
@@ -513,6 +620,7 @@ def first_action(out):
 def counterfactual(turns, client, variant=identity):
     """Re-ask each recorded turn under ``variant``; rows and a summary (agreement, output tokens, latency)."""
     import time
+
     from .. import frontier, model_clients
     from .llm_units import messages as recorded_messages
     rows = []
@@ -530,7 +638,8 @@ def counterfactual(turns, client, variant=identity):
         want, got = first_action(turn.get("out")), first_action(out)
         rows.append({"folder": str(folder), "step": turn.get("step"), "passed_run": passed, "error": error,
                      "s": round(time.monotonic() - started, 3), "out_tokens": usage.get("completion_tokens"),
-                     "ttft_ms": usage.get("ttft_ms"), "usd": model_clients.cost_usd(client.model, usage) if usage else None,
+                     "ttft_ms": usage.get("ttft_ms"),
+                     "usd": model_clients.cost_usd(client.model, usage) if usage else None,
                      "want": want, "got": got, "op_agree": want[0] == got[0], "agree": want == got})
     ok = [r for r in rows if not r["error"]]
 

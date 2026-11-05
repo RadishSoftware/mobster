@@ -1,0 +1,9 @@
+# The freezer for the standalone CLI (build.sh), pinned so every release is
+# built by the same PyInstaller. Bump deliberately and rebuild: a new PyInstaller or
+# hooks release changes what the frozen agent contains.
+pyinstaller==6.22.3
+pyinstaller-hooks-contrib==2026.7
+altgraph==0.17.5
+macholib==1.16.4
+packaging==26.3
+setuptools==84.0.0

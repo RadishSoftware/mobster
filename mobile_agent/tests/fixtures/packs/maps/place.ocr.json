@@ -1,0 +1,110 @@
+{
+"note": "Recorded on the test device (iPhone 15 Pro, iOS 26.0.1), 11 and 12 Oct 2026: the rows the agent saw, scrubbed (a recent place renamed; the map's street names left out). The same screen read by Vision OCR (iPhone Mirroring's reading).",
+"rows": [
+{
+"text": "11:301",
+"confidence": 1,
+"rect": [
+0.0948,
+0.0248,
+0.1698,
+0.0209
+]
+},
+{
+"text": "•ll9",
+"confidence": 0.3,
+"rect": [
+0.7119,
+0.0266,
+0.1153,
+0.0188
+]
+},
+{
+"text": "100",
+"confidence": 1,
+"rect": [
+0.8475,
+0.0266,
+0.0814,
+0.0172
+]
+},
+{
+"text": "Apple Park",
+"confidence": 1,
+"rect": [
+0.3661,
+0.5806,
+0.278,
+0.0235
+]
+},
+{
+"text": "Corporate Headquarters",
+"confidence": 1,
+"rect": [
+0.2949,
+0.6088,
+0.4136,
+0.0156
+]
+},
+{
+"text": "45 min",
+"confidence": 1,
+"rect": [
+0.1321,
+0.6836,
+0.1257,
+0.0177
+]
+},
+{
+"text": "Call",
+"confidence": 1,
+"rect": [
+0.4644,
+0.687,
+0.0746,
+0.0141
+]
+},
+{
+"text": "Website",
+"confidence": 1,
+"rect": [
+0.7355,
+0.6853,
+0.1426,
+0.016
+]
+},
+{
+"text": "+",
+"confidence": 1,
+"rect": [
+0.3119,
+0.9139,
+0.0949,
+0.0438
+]
+},
+{
+"text": "•••",
+"confidence": 1,
+"rect": [
+0.6136,
+0.9311,
+0.0576,
+0.0078
+]
+}
+],
+"hash": "place",
+"window": {
+"w": 589,
+"h": 1278
+}
+}

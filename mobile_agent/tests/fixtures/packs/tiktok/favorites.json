@@ -1,0 +1,147 @@
+{
+"note": "Synthetic and inferred: TikTok's usual iOS labels, every name, handle and text made up; waiting for a recorded tree (REAL-QA-QUEUE.md, PRIORITY: app packs, list B).",
+"rows": [
+{
+"role": "StaticText",
+"label": "@me.test",
+"rect": [
+0.3,
+0.24,
+0.4,
+0.02
+]
+},
+{
+"role": "StaticText",
+"label": "180",
+"rect": [
+0.15,
+0.28,
+0.15,
+0.03
+]
+},
+{
+"role": "StaticText",
+"label": "Following",
+"rect": [
+0.15,
+0.31,
+0.15,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "Videos",
+"rect": [
+0.0,
+0.44,
+0.25,
+0.03
+]
+},
+{
+"role": "Button",
+"label": "Favorites",
+"rect": [
+0.5,
+0.44,
+0.25,
+0.03
+],
+"selected": true
+},
+{
+"role": "Button",
+"label": "Posts",
+"rect": [
+0.0,
+0.48,
+0.25,
+0.03
+]
+},
+{
+"role": "Button",
+"label": "Sounds",
+"rect": [
+0.25,
+0.48,
+0.25,
+0.03
+]
+},
+{
+"role": "Button",
+"label": "Video by street.chef, 1.2M views",
+"rect": [
+0.0,
+0.52,
+0.33,
+0.18
+]
+},
+{
+"role": "Button",
+"label": "Video by desk.setup, 330K views",
+"rect": [
+0.33,
+0.52,
+0.33,
+0.18
+]
+},
+{
+"role": "Button",
+"label": "Home",
+"rect": [
+0.0,
+0.92,
+0.2,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "Friends",
+"rect": [
+0.2,
+0.92,
+0.2,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "Create",
+"rect": [
+0.4,
+0.92,
+0.2,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "Inbox",
+"rect": [
+0.6,
+0.92,
+0.2,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "Profile",
+"rect": [
+0.8,
+0.92,
+0.2,
+0.06
+],
+"selected": true
+}
+]
+}

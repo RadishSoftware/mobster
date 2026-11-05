@@ -1,0 +1,204 @@
+---
+title: "Quickstart: test your app"
+sidebarTitle: "Test your app"
+description: "Install Mobster, prepare a simulator, then write, save and run your first check of your own app. On a simulator it's free: no iPhone, plan, sign-in or API key."
+icon: "circle-check"
+keywords: ["mobster verify", "first check", "ios ui test", "simulator", "assertions", "save a check", "free"]
+"og:image": "https://mobster.dev/og/docs/developers.jpg"
+"og:image:alt": "Test your app, beside three cobalt glass rods"
+"twitter:image": "https://mobster.dev/og/docs/developers.jpg"
+---
+
+`mobster verify` opens an app on a simulator and checks what's on the screen. Mobster checks declared assertions. No model grades the outcome. By the end of this page you have a check saved in your project and a passing run.
+
+You need a Mac with Apple silicon, and Xcode with an iOS Simulator runtime. The doctor in step 2 says if the runtime is missing, and `xcodebuild -downloadPlatform iOS` gets it: Mobster never downloads one itself.
+
+## Set up
+
+<Steps>
+  <Step title="Install Mobster">
+    <Tabs>
+      <Tab title="Homebrew">
+        ```sh
+        brew install --cask radishsoftware/tap/mobster-app
+        ```
+
+        This puts `Mobster.app` in Applications.
+      </Tab>
+      <Tab title="Download">
+        [Download Mobster for Mac](https://mobster.dev/download) and drag it to Applications.
+      </Tab>
+    </Tabs>
+
+    The `mobster` command ships inside the app. Link it into `~/.local/bin`, add that folder to your `PATH`, and open a new terminal window:
+
+    ```sh
+    mkdir -p ~/.local/bin
+    ln -sf /Applications/Mobster.app/Contents/MacOS/mobster-agent \
+      ~/.local/bin/mobster
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
+    ```
+
+    Check the version:
+
+    ```sh
+    mobster version
+    ```
+
+    ```text Output
+    mobster 0.4.0
+    ```
+  </Step>
+  <Step title="Prepare the simulator">
+    ```sh
+    mobster sim doctor --fix
+    ```
+
+    Mobster creates its own simulator and boots it headless, so Simulator.app never opens. It builds WebDriverAgent, the open-source test runner it drives the simulator with, once per Xcode version. Each row is one check. If a row has `!` or `✗`, its fix appears below it, after `→`:
+
+    ```text Output
+    Mobster sim doctor
+
+      ✓ Xcode             Xcode 26.4 (17E192) at /Applications/Xcode.app
+      ✓ iOS runtime       iOS 26.4
+      ✓ Prepare           Mobster · iPhone 17 Pro · iOS 26.4 · 3 is booted, with WebDriverAgent on 127.0.0.1:8310 (96.9 s)
+      ...
+      – Smart key         not set: launch-only and key-less checks need none; Smart needs your OpenAI or Anthropic key
+
+    Ready for `mobster verify`.
+    ```
+
+    The last row is about Smart, Mobster's own agent, which runs a check's steps on your key. This page doesn't use it.
+
+    On an M5 Max with a sample SwiftUI app (28 Sep 2026), a first `mobster verify` that did all of this took 77.7 s and 103.6 s (n = 2), and warm runs took 6.8 s and 8.6 s. Mobster waits up to 240 s for each of the boot and WebDriverAgent's start before it ends `couldnt_run`.
+  </Step>
+  <Step title="Run a launch-only check">
+    A launch-only check opens an app and checks its first screen. It has no steps and calls no model. Try one on Settings, which every simulator has:
+
+    ```sh
+    mobster verify --bundle com.apple.Preferences --text General
+    ```
+
+    ```text Output
+    Simulator: Mobster · iPhone 17 Pro · iOS 26.4 · 3
+    ✓ passed  Launch check  (18.6 s)
+      ✓ text "General"
+      Report  .mobster/runs/20261018-095905-3b7c/report.html
+      Rerun   mobster verify --check .mobster/runs/20261018-095905-3b7c/check.yaml
+    ```
+  </Step>
+</Steps>
+
+## Check your own app
+
+<Steps>
+  <Step title="Build it for the simulator">
+    Go to your project's folder, the one with the `.xcodeproj`. Mobster keeps its builds, runs and checks under `.mobster` there.
+
+    ```sh
+    cd ~/Code/YourApp
+    xcodebuild -scheme YourApp -configuration Debug \
+      -destination 'generic/platform=iOS Simulator' \
+      -derivedDataPath .mobster/build \
+      CODE_SIGNING_ALLOWED=NO build
+    ```
+
+    Put your scheme's name after `-scheme`. A project with a `.xcworkspace`, such as one that uses CocoaPods, also needs `-workspace YourApp.xcworkspace`. A simulator build needs no signing team. xcodebuild ends with `** BUILD SUCCEEDED **`.
+
+    The app is named after its product, which can differ from the scheme. List the folder to see it:
+
+    ```sh
+    ls .mobster/build/Build/Products/Debug-iphonesimulator
+    ```
+
+    ```text Output
+    YourApp.app
+    ```
+  </Step>
+  <Step title="Check it and save the check">
+    Pick a word your first screen always shows, such as a tab's title, and name the check:
+
+    ```sh
+    mobster verify \
+      --app .mobster/build/Build/Products/Debug-iphonesimulator/YourApp.app \
+      --text "Today" \
+      --name "First screen shows Today" \
+      --save first-screen
+    ```
+
+    Mobster installs the app fresh before each run, opens it and looks for `Today`, so the check sees what a new user sees. If your app opens on onboarding, check a word on that screen, or skip it with a launch argument your app reads (`--launch-arg`). A text match ignores case and can be part of a longer label. Mobster prints `Saved .mobster/checks/first-screen.yaml`, then the verdict in the same lines as the Settings check. A `--save` name contains 1 to 60 characters from a-z, 0-9 and `-`.
+
+    The saved check is plain YAML you can edit and commit:
+
+    ```yaml .mobster/checks/first-screen.yaml
+    # yaml-language-server: $schema=https://mobster.dev/schema/check.json
+    # A Mobster check. Run it with: mobster verify --check <this file>
+    version: 1
+    name: First screen shows Today
+    app:
+      path: .mobster/build/Build/Products/Debug-iphonesimulator/YourApp.app
+    expect:
+    - text: Today
+    ```
+
+    To check a deeper screen, add a deep link with `--open-url`. [Checks](/checks) lists every expectation.
+  </Step>
+  <Step title="Run every saved check">
+    After a change, build again, then run:
+
+    ```sh
+    mobster test
+    ```
+
+    `mobster test` runs every check in `.mobster/checks`. It prints one line per check, as `mobster verify` does, then the totals and the paths of an HTML report and a JUnit file for CI. `mobster verify --check .mobster/checks/first-screen.yaml` runs one file.
+  </Step>
+</Steps>
+
+## Read the verdict
+
+When a check fails, its line says what Mobster found instead. This check also expects `Dark Mode`, which is one screen deeper in Settings:
+
+```sh
+mobster verify --bundle com.apple.Preferences --text General --text "Dark Mode"
+```
+
+```text Output
+Simulator: Mobster · iPhone 17 Pro · iOS 26.4 · 3
+✗ failed  Launch check  (21.1 s)
+  ✓ text "General"
+  ✗ text "Dark Mode": not on screen; closest: "Screen Time", "Dictate"
+  Report  .mobster/runs/20261018-095925-1d42/report.html
+  Rerun   mobster verify --check .mobster/runs/20261018-095925-1d42/check.yaml
+```
+
+The exit code is the verdict:
+
+| Exit | Verdict | Means |
+|---|---|---|
+| 0 | `passed` | Every expectation held on one settled screen |
+| 1 | `failed` | An expectation didn't hold, or the app wasn't in front |
+| 2 | `needs_review` | The result is undecided, for example because the check has no expectations |
+| 3 | `couldnt_run` | The check is invalid, or this Mac couldn't run it. The line says why and what to do |
+
+Every run writes `.mobster/runs/<run_id>/`. Its `report.html` shows each expectation beside the screen it was checked on:
+
+<Frame caption="A failed check in a report: the expectation, what was there instead, and the screen it was checked on.">
+  <img src="/images/test/report-light.webp" alt="A failed check in a mobster test report, open: value id=streak_days == 4 was 3 days, beside the lesson's last screen with the streak outlined in red and numbered 3." className="block dark:hidden" />
+  <img src="/images/test/report-dark.webp" alt="A failed check in a mobster test report, open: value id=streak_days == 4 was 3 days, beside the lesson's last screen with the streak outlined in red and numbered 3." className="hidden dark:block" />
+</Frame>
+
+With `--json`, the result is one object on stdout. [Checks](/checks#the-result-json) lists every field.
+
+## Next
+
+<CardGroup cols={3}>
+  <Card title="Add steps" icon="footprints" href="/test/steps">
+    Run steps written in plain English with Mobster's agent and your key. Use the exit code in scripts.
+  </Card>
+  <Card title="Run every check" icon="list-checks" href="/testing">
+    `mobster test`: several simulators, your iPhone, retries, flaky checks and reports for CI.
+  </Card>
+  <Card title="Let your coding agent test" icon="bot" href="/agents">
+    Give Claude Code or Codex the simulator over MCP, with no key.
+  </Card>
+</CardGroup>

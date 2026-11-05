@@ -1,13 +1,8 @@
-"""A one-time code asks first in every mode ("Enter this code?"), and only a code does. MobsterBench Real, 11 Oct, on a
-real iPhone: a Clock timer's wheel (one digit, no label) asked in 2 of 3 timer tasks, and a locker code read from the
-person's own note, typed into a message, asked too. A code is a field that names one or that the app marks as one,
-digits on a screen asking for one, or digits from a row that reads like a code sent to the person. Offline."""
-
 import os
 import unittest
 from unittest.mock import patch
 
-from mobile_agent import permissions
+from mobile_agent import drivers, permissions
 from mobile_agent.frontier import FrontierAgent, prompt_text
 from mobile_agent.permissions.rules import Action, code_entry, looks_like_otp
 from mobile_agent.state import Element, Snapshot
@@ -29,13 +24,12 @@ class CodeEntryRuleTests(unittest.TestCase):
     def test_a_locker_code_from_the_persons_note_typed_into_a_message_does_not_ask(self):
         note = ("MobsterBench Note, modified September 24, 2026, Locker code: 4817, In folder Notes",)
         self.assertFalse(code_entry(typing("4817", label=COMPOSER, screen="New Message", origins=note)))
-        self.assertFalse(code_entry(typing("4817", label=COMPOSER, origins=())))  # from the request itself
+        self.assertFalse(code_entry(typing("4817", label=COMPOSER, origins=())))
 
     def test_a_code_a_message_sent_still_asks_wherever_it_is_typed(self):
         for row in ("4817 is your Pixgram verification code", "Your Pixgram code: 4817. Do not share it.",
                     "G-4817 is your Google verification code", "Use 4817 to sign in to Pixgram"):
             self.assertTrue(code_entry(typing("4817", label=COMPOSER, origins=(row,))), row)
-        # One box of six, the digits from that message.
         self.assertTrue(code_entry(typing("4", origins=("481723 is your Pixgram code",))))
 
     def test_a_verification_field_or_screen_asks_whatever_the_digits_came_from(self):
@@ -47,8 +41,8 @@ class CodeEntryRuleTests(unittest.TestCase):
         self.assertTrue(code_entry(typing("482913", label="Code", origins=())))
 
     def test_where_the_digits_came_from_is_unknown_it_fails_closed_as_before(self):
-        self.assertTrue(code_entry(typing("4817", label=COMPOSER)))  # origins None: Fast, AI plans, MCP
-        self.assertTrue(code_entry(typing("4")))  # a bare box
+        self.assertTrue(code_entry(typing("4817", label=COMPOSER)))
+        self.assertTrue(code_entry(typing("4")))
         self.assertFalse(code_entry(typing("4817", label="Quantity")))
         self.assertFalse(code_entry(typing("4817", role="SearchField")))
 
@@ -60,7 +54,9 @@ class CodeEntryRuleTests(unittest.TestCase):
         self.assertFalse(looks_like_otp("Gym opens at 0600, door 4817"))
 
 
-class Phone:
+class Phone(drivers.Driver):
+    capabilities = frozenset({"write_text"})
+
     def __init__(self, screens):
         self.screens, self.index, self.actions = list(screens), 0, []
 
@@ -75,6 +71,9 @@ class Phone:
         self.actions.append(("TYPE", element.label, text))
         self.index += 1
         return None
+
+    def close(self):
+        pass
 
 
 class Model:
@@ -102,10 +101,10 @@ def screen(*elements, bundle="com.apple.MobileSMS"):
 
 
 class FrontierCodeCardTests(unittest.TestCase):
-    """Smart's loop: where the digits came from, read from the screens the run saw."""
 
     REQUEST = "Text Jordan Lee the locker code from my note."
-    ITEMS = [{"kind": "COMMIT", "app": "Messages", "what": "message to Jordan Lee", "payload": "", "act": "send_message",
+    ITEMS = [{"kind": "COMMIT", "app": "Messages", "what": "message to Jordan Lee", "payload": "",
+              "act": "send_message",
               "count": "1", "condition": "", "quote": "Text Jordan Lee"}]
 
     def run_with(self, source_row):

@@ -1,6 +1,8 @@
 """Replay recorded runs on today's code: every action the same, or the first one that isn't. $0, no simulator.
 
     python -m mobile_agent.bench.tape_replay research/iosworld-runs/RUN ...     every tape.jsonl under each folder
+    python -m mobile_agent.bench.tape_replay mobster-trace-3f9c2a1b7d10.zip  a trace bundle (mobster export ID --trace)
+    python -m mobile_agent.bench.tape_replay DIR --steps                          each recorded action, same or differs
     python -m mobile_agent.bench.tape_replay DIR --json                           one JSON report per tape
 
 Each recorded run (bench/iosworld.py writes tape.jsonl beside prompts.jsonl) is run again through FrontierAgent with
@@ -30,7 +32,8 @@ def tapes(paths):
             found.append(next(path / name for name in names if (path / name).is_file()))
         else:
             # Run folders hold tape.jsonl(.gz); a folder of saved tapes (tests/fixtures/tapes) holds NAME.jsonl.gz.
-            found.extend(sorted(p for name in names for p in path.rglob(name)) or sorted(path.glob("*.jsonl.gz")))
+            found.extend(sorted(p for name in names for p in path.rglob(name))
+                         or sorted([*path.glob("*.jsonl.gz"), *path.glob("*.zip")]))
     return found
 
 
@@ -52,9 +55,12 @@ def line(report):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(prog="python -m mobile_agent.bench.tape_replay", description=__doc__.split("\n")[0])
-    parser.add_argument("paths", nargs="+", help="tape.jsonl files, or folders to search for them")
+    parser = argparse.ArgumentParser(prog="python -m mobile_agent.bench.tape_replay",
+                                     description=__doc__.split("\n")[0])
+    parser.add_argument("paths", nargs="+",
+                        help="tape.jsonl files, trace bundles (.zip), or folders to search for them")
     parser.add_argument("--json", action="store_true", help="one JSON report a line")
+    parser.add_argument("--steps", action="store_true", help="under each run, every recorded action: same, or differs")
     args = parser.parse_args(argv)
     found = tapes(args.paths)
     if not found:
@@ -63,6 +69,11 @@ def main(argv=None):
     reports = [tape.replay(path) for path in found]
     for report in reports:
         print(json.dumps(report.public(), ensure_ascii=False) if args.json else line(report))
+        if args.steps and not args.json:
+            if report.hooks:
+                print(f"    the live run also had {', '.join(report.hooks)}; a replay has none of them")
+            for step in report.steps:
+                print(f"    {step['index'] + 1:3}. turn {step['turn'] or '?':>3}  {step['act'][:70]:70}  {step['now']}")
     same = sum(r.identical for r in reports)
     acts = sum(r.recorded_acts for r in reports)
     replayed = sum(min(r.replayed_acts, r.recorded_acts) for r in reports)

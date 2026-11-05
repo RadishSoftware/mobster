@@ -14,7 +14,7 @@ from mobile_agent.bench.agents.smart import SmartAgent, SmartGuardedDriver, map_
 from mobile_agent.bench.runner import make_plan
 from mobile_agent.bench.safety import Monitor
 from mobile_agent.bench.tests.fakes import context, element, snapshot
-from mobile_agent.driver_guards import DriverRejection
+from mobile_agent.wda.guards import DriverRejection
 
 FORBIDDEN = r"\b(send|buy|purchase|pay|post|delete|like|follow|call|message|install|turn (on|off))\b"
 
@@ -42,7 +42,7 @@ class HeldoutTranche(unittest.TestCase):
             goal = re.sub(r"(do not|don't|never)[^.]*\.", "", task.goal, flags=re.I)
             with self.subTest(task=task.id):
                 self.assertIsNone(re.search(FORBIDDEN, goal, re.I), goal)
-                self.assertIn(task.safety, H.READ_ONLY_CLASSES)
+                self.assertIn(task.safety, (S.READ_ONLY, S.READ_ONLY_HISTORY, S.REVERSIBLE_RESET))
                 self.assertGreater(task.max_steps, 0)
 
     def test_every_training_sibling_shares_an_app_with_a_heldout_task(self):
@@ -113,7 +113,7 @@ class _Driver:
 
 class SmartGuard(unittest.TestCase):
     def guarded(self, task):
-        ctx = Context(phone=None, wda_url="", monitor=Monitor(task), deadline=1e12)
+        ctx = Context(wda_url="", monitor=Monitor(task), deadline=1e12)
         driver = _Driver()
         return SmartGuardedDriver(driver, ctx.monitor, Recorder(ctx)), driver, ctx.monitor
 

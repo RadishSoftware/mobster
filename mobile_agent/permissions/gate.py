@@ -1,37 +1,15 @@
-"""The permission gate: one per run. It applies the run's mode to an action and says allow or ask, with the card's
-title, and whether the card may offer "Don't ask again".
+"""The permission gate: one per run; applies the run's mode to an action and says allow or ask."""
 
-Like a coding harness's permission modes. The apps a person allowed are the boundary (``PermissionGuard``): in them,
-reading and moving around never ask. What asks is decided by today's rules, which the agent passes in as
-``existing_act`` (Smart's declared commit, Fast's commit control, a coding agent's tool call):
-
-- ask_important (the default): anything with an effect outside the phone asks: a message, a post, a reaction, a share,
-  a follow, a call, an order, a booking, a deletion.
-- ask_all: also a change that stays on the phone (``rules.changes``: a switch, Save, Add, Mark as read).
-- dont_ask (full access): nothing asks.
-- In every mode, typing a one-time code asks first (``rules.code_entry``).
-
-"Don't ask again" is an allow rule for one kind of action in one app ("sending messages in Messages",
-``rules.rememberable``), kept in the person's store (``exceptions``). Never near money (an amount, a price, a bank or
-payment app), never for a word that undoes something, never on the Home Screen or iOS's sheets, never for a code, and
-never for an ask that is forced (``decide(forced=True)``: a step the agent's check isn't sure of, a long run's acts). A
-run an agent outside Mobster started never uses one: it asks.
-
-- ``decide(action, existing_act=None)``: the answer for one action.
-- ``remember(decision, app, app_name)``: what the card's "Don't ask again" remembers, or None.
-- ``PermissionGuard``: which apps a run may open: one card per task for the apps it needs, and Always allow keeps them.
-"""
-
-from dataclasses import dataclass, replace
 import re
 import threading
 import time
+from dataclasses import dataclass, replace
 
-from . import consequence
-from . import policy as P
 from ..state import icon_glyph, pixel_read
-from .rules import (RULE_OP, Action, changes, code_entry, norm, outside_act, rememberable, rule_words,
-                    screen_context)
+from ..task_policy import approval_title
+from . import consequence, project_policy
+from . import policy as P
+from .rules import RULE_OP, Action, changes, code_entry, norm, outside_act, rememberable, rule_words, screen_context
 
 TITLES = {"code": "Enter this code?", "setting": "Change this setting?", "save": "Save this?",
           "submit": "Submit this?", "change": "Make this change?", "react": "Add this reaction?",
@@ -54,6 +32,8 @@ class Decision:
     # The approval card may offer "Don't ask again" (an allow rule for ``rule`` in this app).
     rememberable: bool = False
     rule: str | None = None
+    # The ask is the project policy's (project_policy.py): the mode and the guards would have let it go ahead.
+    by_policy: bool = False
 
     @property
     def asks(self):
@@ -77,12 +57,12 @@ _COMPOSE = re.compile(r"\b(message|imessage|text message|reply|comment|write|cha
 
 
 def composer_text(elements):
-    """The text waiting in the screen's composer (a message box with a value), "" for an empty one, None when the
-    screen has no composer."""
+    """The text waiting in the screen's composer, "" for an empty one, None when the screen has no composer."""
     found = None
     for element in elements or ():
         label, placeholder = getattr(element, "label", "") or "", getattr(element, "placeholder", "") or ""
-        if getattr(element, "role", None) not in ("TextView", "TextField") or not _COMPOSE.search(norm(label or placeholder)):
+        if (getattr(element, "role", None) not in ("TextView", "TextField")
+                or not _COMPOSE.search(norm(label or placeholder))):
             continue
         value = getattr(element, "value", "") or ""
         if placeholder and value == placeholder or value == label:
@@ -94,8 +74,7 @@ def composer_text(elements):
 
 
 def action_from(op, element, snapshot, *, text=None, typed=None, app_name="", goal="", title=None, origins=None):
-    """The gate's Action for ``op`` on ``element`` (a state.Element, or None) in ``snapshot``. ``origins``: the rows the
-    run has seen that hold the digits typed (rules.code_entry), or None when it can't say."""
+    """The gate's Action for ``op`` on ``element`` (a state.Element, or None) in ``snapshot``."""
     elements = getattr(snapshot, "elements", ()) or ()
     if title is None:
         try:
@@ -115,13 +94,22 @@ def action_from(op, element, snapshot, *, text=None, typed=None, app_name="", go
 
 
 class PermissionGate:
-    def __init__(self, mode=P.DEFAULT_MODE, *, apps=None, emit=None, goal="", origin=None, exceptions=None):
+    def __init__(self, mode=P.DEFAULT_MODE, *, apps=None, emit=None, goal="", origin=None, exceptions=None,
+                 policy=None, profile=None):
         self.mode = mode if mode in P.MODES else P.DEFAULT_MODE
         self.apps = apps if apps is not None else P.AppPolicy()
         self.emit = emit
         self.goal = goal
         self.origin = origin
         self.exceptions = exceptions
+        # The project's policy and the profile (accounts' ``{id, handle...}``) the task acts as: they only add asks.
+        self.policy = policy
+        self.profile = profile
+
+    @property
+    def narrowed(self):
+        """Whether the project policy can ask here, so a run asks (or refuses, with nobody to answer) in Full access."""
+        return self.policy is not None and self.policy.narrows
 
     def reading(self, action, existing_act=None):
         """(kind, act, reason) for ``action`` by today's rules."""
@@ -143,8 +131,28 @@ class PermissionGate:
         return ("input" if op in ("TYPE", "SET_TEXT") else "navigate"), None, ""
 
     def decide(self, action, existing_act=None, forced=False):
-        """The answer for ``action``. ``forced``: the run must ask here whatever the mode or a rule says (a step the
-        agent's check isn't sure of, a long run's commit): it asks, and no "Don't ask again" rule is offered or used."""
+        """The answer for ``action``; ``forced`` asks whatever the mode says and offers or uses no allow rule. The
+        project policy, when there is one, can turn an allow into an ask and nothing else."""
+        decision = self._decide(action, existing_act, forced)
+        if self.policy is not None and decision.kind in ("commit", "change"):
+            decision = self._narrow(decision, action)
+        return self._record(decision)
+
+    def _narrow(self, decision, action):
+        """``decision`` or, when the project policy asks where the mode and the guards would not, an ask. An ask the
+        mode already made stays as it is, without an offer of "Don't ask again" if the policy asks too."""
+        kinds = project_policy.kinds_of(decision.kind, decision.act)
+        why = self.policy.asks(kinds, action.app, self.profile)
+        if decision.asks:
+            return replace(decision, rememberable=False, rule=None) if why and decision.rememberable else decision
+        why = why or self.policy.take(kinds, action.app, self.profile)
+        if why is None:
+            return decision
+        act = decision.act
+        title = consequence.TITLES.get(act or "") or TITLES.get(act or "") or approval_title(act)
+        return Decision("ask", decision.kind, act, why, decision.ms, title, by_policy=True)
+
+    def _decide(self, action, existing_act, forced):
         started = time.perf_counter()
         kind, act, reason = self.reading(action, existing_act)
         verdict = decision_for(kind, self.mode, existing=bool(existing_act))
@@ -159,21 +167,20 @@ class PermissionGate:
             except Exception:  # noqa: BLE001 -- an unreadable store asks
                 remembered = False
             if remembered:
-                return self._record(Decision("allow", kind, act, "You said not to ask again for this",
-                                             (time.perf_counter() - started) * 1000, rule=rule))
+                return Decision("allow", kind, act, "You said not to ask again for this",
+                                (time.perf_counter() - started) * 1000, rule=rule)
         title = None
         if verdict == "ask":
             title = (consequence.REASON_TITLES.get(reason) or TITLES.get(act or "")
                      or consequence.TITLES.get(act or "")) if kind in ("floor", "change") or (
                 kind == "commit" and not existing_act) else None
-        return self._record(Decision(verdict, kind, act, reason if verdict != "allow" else "",
-                                     (time.perf_counter() - started) * 1000, title,
-                                     rememberable=rule is not None and not outside, rule=rule))
+        return Decision(verdict, kind, act, reason if verdict != "allow" else "",
+                        (time.perf_counter() - started) * 1000, title,
+                        rememberable=rule is not None and not outside, rule=rule)
 
     @staticmethod
     def remember(decision, app, app_name=""):
-        """The approval request's ``remember`` for ``decision`` (run.Run keeps it until the answer): the allow
-        rule "Don't ask again" adds, or None when the card doesn't offer it."""
+        """The approval request's ``remember`` for ``decision`` (run.Run keeps it until the answer)."""
         if decision is None or not decision.rememberable or not decision.rule or not app:
             return None
         return {"app": app, "label": decision.rule, "op": RULE_OP, "app_name": app_name or "",
@@ -184,33 +191,22 @@ class PermissionGate:
             try:
                 # No label, no text: what the gate said, and why.
                 self.emit({"event": "permission_decision", "decision": decision.decision, "kind": decision.kind,
-                           "act": decision.act, "ms": round(decision.ms, 2), "mode": self.mode})
+                           "act": decision.act, "ms": round(decision.ms, 2), "mode": self.mode,
+                           **({"policy": True} if decision.by_policy else {})})
             except Exception:
                 pass
         return decision
 
 
 class PermissionGuard:
-    """A phone guard that applies the person's app choices (agent_hooks.safe_allows): an app on the never-open list
-    (or turned off for agents outside Mobster) is never opened; apps not approved yet are asked about once per task,
-    together, "Allow Mobster to use Things and Notes?" (``request``). Allow covers them for this run; Always allow (the
-    card's ``remember``, kept by the run as it answers) keeps them in ``grants`` (the "Don't ask again" store) until the
-    person switches one off. In a conversation (``conversation``, the set its runs share) Allow also covers its
-    follow-ups, as a chat's permission does; a new conversation asks again. An app the run needs later that wasn't on the card asks then. With nobody to answer
-    (``ask`` None), or after Not now, Smart never launches the app, and finding itself in one it goes Home and stops.
-    Everything else is the inner guard's. Fails closed.
-
-    Read live: ``apps`` may be a callable returning the current AppPolicy, and approvals are read from ``grants`` at
-    every check, so switching an app off in Settings takes effect mid-run. An answer that says what to do instead
-    ("Say what to do instead") is kept in ``instruction`` for the run (``take_instruction``)."""
+    """A phone guard for the person's app choices; the rest is the inner guard's. Fails closed: no answer, no app."""
 
     def __init__(self, inner, apps, names=None, outside=False, ask=None, grants=None, conversation=None):
         self.inner, self.names, self.outside = inner, dict(names or {}), outside
         self._apps = apps
         self.ask, self.grants = ask, grants
         self.declined = set()  # apps the person said Not now to in this run: not asked again in it
-        # Allow on a card: approved for this run, or for the conversation's later runs when it passes their shared set
-        # (``conversation``). Never past the never-open list or an app switched off: ``request`` checks those first.
+        # Allow covers this run, or its conversation's runs; never an app that is refused or switched off.
         self._conversation = conversation is not None
         self._granted = conversation if conversation is not None else set()
         self.instruction = None
@@ -259,13 +255,10 @@ class PermissionGuard:
         return self.names.get(bundle) or bundle
 
     def request(self, bundles):
-        """Whether every app in ``bundles`` may be used now: those not approved yet are asked about together, once
-        ("Allow Mobster to use Things and Notes?"). Allow covers them for this run (and its conversation); Always allow is the card's
-        ``remember`` (every app on it), which the run keeps in ``grants`` before it answers. False when one is refused,
-        declined, or nobody can answer."""
+        """Whether every app in ``bundles`` may be used now: False if one is refused, declined, or nobody answers."""
         apps = self.apps
         wanted = [b for b in dict.fromkeys(bundles) if b and b != P.SPRINGBOARD]
-        if any(not apps.allows(b, self._name(b), outside=self.outside) for b in wanted):
+        if any(not apps.allows(b, outside=self.outside) for b in wanted):
             return False
         with self._lock:
             missing = [b for b in wanted if not self._approved(apps, b)]
@@ -291,8 +284,7 @@ class PermissionGuard:
                 if isinstance(answer, str) and answer.startswith("redirected:"):
                     self.instruction = " ".join(answer.split(":", 1)[1].split())[:500] or None
                 return False
-            # Allow: this run only. An app Always allow kept is read from the store at each check instead, so
-            # switching it off in Settings › Safety takes effect mid-run.
+            # Allow: this run only; Always allow is read from the store at each check, so it can be off mid-run.
             self._granted.update(b for b in missing if not apps.approved(b, self.grants))
             return True
 
@@ -306,18 +298,17 @@ class PermissionGuard:
             return False
 
     def refusal(self, bundles):
-        """Why ``request(bundles)`` said no, without asking again: an app never opened (or off for agents outside
-        Mobster) first, else the first one still waiting for an OK. None when none of them is refused."""
+        """Why ``request(bundles)`` said no, without asking again."""
         apps = self.apps
         wanted = [b for b in dict.fromkeys(bundles) if b and b != P.SPRINGBOARD]
-        refused = [b for b in wanted if not apps.allows(b, self._name(b), outside=self.outside)]
+        refused = [b for b in wanted if not apps.allows(b, outside=self.outside)]
         waiting = [b for b in wanted if not self._approved(apps, b)]
         return next((self.blocked_message(b) for b in refused + waiting), None)
 
     def blocked_message(self, bundle_id, name=None):
         name = name or self._name(bundle_id)
         apps = self.apps
-        if not apps.allows(bundle_id, name, outside=self.outside):
+        if not apps.allows(bundle_id, outside=self.outside):
             return apps.blocked_message(name, outside=self.outside)
         if not self._approved(apps, bundle_id):
             return apps.unapproved_message(name)

@@ -1,0 +1,227 @@
+# Mobster
+
+> Test and automate apps on real iPhones. Run tasks in your apps, signed in as you, over USB from your Mac.
+
+- Who it's for: iOS developers testing their apps, and people automating tasks in their iPhone apps, such as messages, posts and settings.
+- The product: Mobster for Mac includes guided iPhone setup, a live view, approval controls, task history and schedules. It comes with an agent, the `mobster` command and an MCP server.
+- Price: $12 a month, $99 a year or $149 once, with every iPhone included. Use a supported AI plan, an API key or a model on your Mac. ChatGPT Plus through Codex and Claude Pro through Claude Code are two options. Any AI provider charges are separate. The 7-day free trial needs no card.
+- Start: download Mobster for Mac from https://mobster.dev/download, then follow https://docs.mobster.dev/quickstart/mac.md. To connect your coding agent, follow https://docs.mobster.dev/mcp-server.md.
+- Open source: Mobster's engine and research are under MIT at https://github.com/RadishSoftware/mobster.
+- Every page below is Markdown at its link. The whole site in one file is https://docs.mobster.dev/llms-full.txt.
+
+## Fact sheet
+
+Measured numbers, each with its date and the page that holds the measurement.
+
+- On 18 Oct 2026 Mobster's agent passed 53.4% of iOSWorld's 133 tasks in one cold run (iPhone 17 Pro simulator, iOS 26.4, Claude Sonnet 5.5, 50-step limit; 51.1% and 55.6% on two judgings). Multi-app tasks passed 52.5%. A task cost $0.14 at list price and took a median 94.5 s of agent time. The judge was not iOSWorld's official one, so scores against other entries differ by more than the agent. Source: https://docs.mobster.dev/benchmarks.md
+- On 14 Oct 2026, on an iPhone 15 Pro (iOS 26.0.1), Mobster's agent passed 10 of 14 read-only everyday tasks in a median 23 s at a mean list price of $0.040 a task (one run per task, graded blind). Source: https://docs.mobster.dev/benchmarks.md
+- On 17 Oct 2026, on an iPhone 15 Pro (iOS 26.0.1, USB, Claude Sonnet 5.5, 5 runs each), a two-step check took 17.7 s median with 4 model calls and $0.017 a run the first time, and 10.3 s median with no model call and $0 when replayed. Source: https://docs.mobster.dev/testing.md
+- On 11 Oct 2026, on an iPhone 15 Pro, "Open Settings › General › About" took 3.91 s on a repeat instead of 7.87 s. Source: https://docs.mobster.dev/changelog.md
+- An accessibility read takes about 130–210 ms on an iPhone 15 Pro (22 Sep 2026). Source: https://docs.mobster.dev/benchmarks.md
+- The first install of Mobster's helper on an iPhone takes about 115 seconds to build, sign and install (17 Oct 2026, M5 Max Mac, iPhone 15 Pro). Source: https://docs.mobster.dev/requirements.md
+- On 28 Sep 2026, on an M5 Max with a sample SwiftUI app, a first `mobster verify` took 77.7 s and 103.6 s (n = 2), and warm runs took 6.8 s and 8.6 s. Source: https://docs.mobster.dev/quickstart/test.md
+
+What Mobster doesn't do:
+
+- It never enters your passcode and never unlocks the iPhone; a locked phone waits for you.
+- It never confirms an App Store download or purchase, and it can't use Face ID.
+- In the default mode it asks you before anything that sends, buys, posts or deletes.
+- It drives iPhones and iOS simulators from a Mac. Android emulators run launch-only and key-less checks as an experiment, off until `MOBSTER_EXPERIMENTAL_ANDROID=1`. It doesn't drive hosted phones.
+- Wi-Fi for iPhones is a preview, off by default.
+- On iOSWorld it scored below the best published paper entry on single-app tasks (74.1% against 81.5%) and memory tasks (42.4% against 54.3%).
+- No result for Mobster's agent on MobsterBench-iOS has been published yet.
+
+## Operational index
+
+Deep links Mobster opened on a real iPhone, by app. The `open_url` MCP tool lists the rest with its `app` and `query` arguments, and `mobster links` lists and checks your own app's links (https://docs.mobster.dev/deep-links.md).
+
+- Instagram: `instagram://user?username={username}` an Instagram profile (opens; opened 2026-10-14 iPhone 15 Pro, iOS 26.0.1)
+- Instagram: `instagram://direct-inbox` the Instagram DM inbox (opens; opened 2026-10-14 iPhone 15 Pro, iOS 26.0.1)
+- Instagram: `instagram://reels_home` the Instagram Reels viewer (opens; opened 2026-10-14 iPhone 15 Pro, iOS 26.0.1)
+
+30 more links in Mobster's atlas are not yet verified on a phone; the agent navigates by tapping when one doesn't land. Mobster reads Instagram, TikTok, X, YouTube, Threads, LinkedIn, Reddit, Messages, Settings, Calendar, Notes, Maps, Photos and Safari by code, with the `<app>_open` and `<app>_read` MCP tools (https://docs.mobster.dev/reference/mcp-tools.md).
+
+## Get started: Start
+
+- [Test and automate apps on real iPhones](https://docs.mobster.dev/index.md): Set up Mobster, test your app, or connect your coding agent to your iPhone.
+- [Quickstart: Mobster for Mac](https://docs.mobster.dev/quickstart/mac.md): Install Mobster for Mac, connect your iPhone and run your first task.
+- [Quickstart: test your app](https://docs.mobster.dev/quickstart/test.md): Install Mobster, prepare a simulator, then write, save and run your first check of your own app. On a simulator it's free: no iPhone, plan, sign-in or API key.
+- [Quickstart: the mobster command](https://docs.mobster.dev/quickstart/cli.md): Put the mobster command from Mobster for Mac on your PATH, run the demo, then run a task on your iPhone from the terminal.
+
+## Get started: Concepts
+
+- [How Mobster works](https://docs.mobster.dev/how-it-works.md): How Mobster reads your iPhone's screen and acts on it, one step at a time.
+- [Approvals and safety](https://docs.mobster.dev/safety.md): When Mobster stops to ask you, and what it never does.
+- [Models, keys and costs](https://docs.mobster.dev/models-and-keys.md): The plan or API key Mobster's agent runs on, the key each command needs, spend caps and what a task costs.
+- [Privacy and your data](https://docs.mobster.dev/privacy.md): What leaves your Mac when Mobster works, and where it goes.
+- [Security](https://docs.mobster.dev/security.md): How Mobster protects its connections, its local servers and what it keeps on your Mac.
+- [Requirements](https://docs.mobster.dev/requirements.md): What you need for tasks on your iPhone, and for checks on a simulator.
+
+## Get started: Plans and help
+
+- [Your Mobster account](https://docs.mobster.dev/account.md): Sign in to Mobster for Mac with Apple, Google, GitHub or an email code. Your plan lives in your account: buy in the app, and run it on one Mac at a time, moved to another Mac in one click.
+- [Pricing and plans](https://docs.mobster.dev/pricing.md): Mobster for Mac is $12 a month, $99 a year, or $149 once. Every phone included, with 7 days free and no card first, on one Mac at a time, moved in one click. Mobster's engine and research are open source under MIT.
+- [Team plan](https://docs.mobster.dev/team.md): One Mobster for a group: members with roles, a pool of Macs, and a plan an Owner pays for. What the Team plan costs, who can do what, and what Mobster sees.
+- [Console and control plane](https://docs.mobster.dev/console.md): How a team's Macs, phones and Profiles are listed in one place: what the registry holds, what Mobster sees, and how to read it from a script. Part of the Team plan, off until its release.
+- [Enterprise](https://docs.mobster.dev/enterprise.md): Mobster for your company: single sign-on, a signed DPA and MSA, invoices against your purchase order, an uptime SLA and a named contact. What's in it, how to buy it, and the security review.
+- [Questions and answers](https://docs.mobster.dev/faq.md): Short answers about what Mobster does, your iPhone, costs, safety and your plan.
+- [Troubleshooting](https://docs.mobster.dev/troubleshooting.md): Find the message you see, why it happens and the fix. Start with mobster doctor or mobster sim doctor.
+- [Send feedback](https://docs.mobster.dev/feedback.md): Report a bug, ask for a feature or get help from inside Mobster for Mac. Add a screenshot with your iPhone screens hidden, and diagnostics you read before they go.
+- [Uninstall Mobster](https://docs.mobster.dev/uninstall.md): Remove Mobster for Mac and everything it added: the MCP entries in your coding agents, its scheduled runs, its simulators, its Keychain items, its data folders and its helper on your iPhone.
+
+## Get started: Plans and help: Error messages
+
+- [Unable to find a destination matching the provided destination specifier](https://docs.mobster.dev/troubleshooting/unable-to-find-a-destination.md): Xcode printed this while building Mobster's helper for your iPhone. It names why Xcode can't use the phone. Here is each cause and its fix.
+- [Developer Mode disabled](https://docs.mobster.dev/troubleshooting/developer-mode-disabled.md): Developer Mode is off on your iPhone, so Xcode and Mobster can't run their helper on it. Turn it on in Settings and restart the phone.
+- [Timed out while enabling automation mode](https://docs.mobster.dev/troubleshooting/timed-out-while-enabling-automation-mode.md): iOS asked for your passcode before it let Mobster's helper start, and nobody answered for 60 seconds. Turn on Enable UI Automation in Settings.
+- [Could not connect to lockdownd: Pairing dialog response pending (-19)](https://docs.mobster.dev/troubleshooting/pairing-dialog-response-pending.md): Your iPhone is waiting for you to tap Trust. Unlock it, tap Trust and enter your passcode.
+- [Could not connect to lockdownd: Invalid HostID (-21)](https://docs.mobster.dev/troubleshooting/invalid-hostid.md): Your iPhone no longer recognises this Mac's pairing. Unplug it, plug it back in and tap Trust.
+- [Unable to launch app.mobster.wda.runner.xctrunner because it has an invalid code signature, inadequate entitlements or its profile has not been explicitly trusted by the user.](https://docs.mobster.dev/troubleshooting/invalid-code-signature.md): iOS refused to start Mobster's helper because you haven't trusted the developer app, or its 7-day signature expired. Trust it, or refresh it.
+- [Unable to launch app.mobster.wda.runner.xctrunner because the device was not, or could not be, unlocked.](https://docs.mobster.dev/troubleshooting/device-was-not-unlocked.md): Your iPhone was locked when Xcode tried to start Mobster's helper. Unlock it and keep it unlocked. Mobster tries again by itself.
+- [The maximum number of apps for free development profiles has been reached.](https://docs.mobster.dev/troubleshooting/maximum-number-of-apps-for-free-development.md): A free Apple Account allows 3 apps signed with Xcode on an iPhone. Delete one and install Mobster's helper again.
+- [Your maximum App ID limit has been reached. You may create up to 10 App IDs every 7 days.](https://docs.mobster.dev/troubleshooting/maximum-app-id-limit.md): Apple lets a free account make 10 App IDs a week. Wait a few days, or build Mobster's helper with a paid developer team.
+- [Failed Registering Bundle Identifier](https://docs.mobster.dev/troubleshooting/failed-registering-bundle-identifier.md): Another team already owns the helper's app ID. Build again and Mobster gives the helper an ID of your own.
+- [Signing for "WebDriverAgentRunner" requires a development team.](https://docs.mobster.dev/troubleshooting/signing-requires-a-development-team.md): Xcode has no Apple team to sign Mobster's helper with. Choose your Apple Account in Mobster's setup and build again.
+- [No Account for Team](https://docs.mobster.dev/troubleshooting/no-account-for-team.md): Xcode's sign-in for your Apple team lapsed. Sign in again in Xcode and build again.
+- [No space left on device](https://docs.mobster.dev/troubleshooting/no-space-left-on-device.md): Your Mac's disk is full, so Xcode couldn't write Mobster's helper. Free up space and build again.
+- [Could not resolve host](https://docs.mobster.dev/troubleshooting/could-not-resolve-host.md): Xcode couldn't download WebDriverAgent because this Mac has no internet. Check the connection and build again.
+- [WebDriverAgent is not answering at http://127.0.0.1:8100](https://docs.mobster.dev/troubleshooting/webdriveragent-is-not-answering.md): Mobster's helper isn't running on your iPhone, or the USB relay to it isn't. Open Mobster for Mac or run mobster serve --manage-device.
+- [The encrypted link isn't up yet](https://docs.mobster.dev/troubleshooting/the-encrypted-link-isnt-up-yet.md): Your iPhone is on the network, but the encrypted Wi-Fi link to it isn't up. Unlock it and keep it on the same Wi-Fi as this Mac.
+
+## Test your app: Run checks
+
+- [Projects](https://docs.mobster.dev/projects.md): A project is your app's folder in Mobster for Mac: its Xcode or Expo app, its checks, its simulators and its branch, read from the folder each time you look.
+- [Run every check](https://docs.mobster.dev/testing.md): Run every check in your project on simulators and your iPhone, with reports for CI.
+- [Checks, assertions and verdicts](https://docs.mobster.dev/checks.md): The check file, every assertion, and how Mobster decides a verdict.
+- [Accessibility audit](https://docs.mobster.dev/accessibility.md): Audit observed accessibility XML for missing labels, small tap targets and clipped text, and let CI fail only on new findings.
+- [Add steps, save checks and script them](https://docs.mobster.dev/test/steps.md): Add steps to a check, save it to your project, and use its exit code in scripts.
+- [Fixtures](https://docs.mobster.dev/fixtures.md): Name the state a check starts from once, in .mobster/fixtures/, and use it in every check: a reset, launch arguments, seed files, the keychain, the pasteboard and a sign-in.
+- [Deep links](https://docs.mobster.dev/deep-links.md): List your app's deep links and check that each one still lands on its screen, and open them by name in a check's steps.
+- [Simulators](https://docs.mobster.dev/simulators.md): The simulators Mobster creates for your checks, and the mobster sim commands.
+- [Android](https://docs.mobster.dev/android.md): Experimental app checks on Android emulators. USB phone checks through MCP require MOBSTER_EXPERIMENTAL_ANDROID=1.
+- [Moving from Maestro](https://docs.mobster.dev/maestro-import.md): Convert your Maestro YAML flows into Mobster checks with mobster import maestro, see what each command becomes, and run them on simulators and your iPhone.
+
+## Test your app: Run them on every change
+
+- [Running checks in CI](https://docs.mobster.dev/ci.md): Run your checks on every pull request, on your own Mac, with one comment containing the verdict, the video and the repro steps.
+- [Checks on pull requests](https://docs.mobster.dev/ci/github-app.md): Install Mobster Checks on a repository, and the verdict of each pull request Mobster tests appears on it as a check.
+- [Running checks in GitLab CI](https://docs.mobster.dev/ci/gitlab.md): Run your checks on every merge request, on a Mac of yours as a GitLab runner, with one MR comment and JUnit in the merge request.
+- [A Mac as your CI runner](https://docs.mobster.dev/ci/mac-runner.md): Set up a Mac mini, or any Mac of yours, to run Mobster's checks for GitHub Actions or GitLab CI, with simulators and a plugged-in iPhone.
+
+## Test your app: Your stack
+
+- [Expo and React Native](https://docs.mobster.dev/dev/expo.md): Open your Expo app on a simulator or your iPhone from Metro, check a screen, reload after a change, and build it for checks and CI.
+- [Checks after every Xcode build](https://docs.mobster.dev/dev/xcode.md): Add one post-action to your Xcode scheme, and your checks run on each simulator build in the background, with the verdict as a notification.
+- [Checks for TestFlight, purchases and push](https://docs.mobster.dev/dev/recipes.md): Check a TestFlight build on your iPhone, a paywall with its prices, and the screen a push notification opens, with mobster test.
+- [App Review pre-check](https://docs.mobster.dev/dev/app-review.md): Find what App Review rejects before you submit: missing usage descriptions, no privacy manifest, no Restore Purchases, no account deletion, placeholder text.
+
+## Test your app: App Store
+
+- [App Store Connect and TestFlight](https://docs.mobster.dev/dev/app-store-connect.md): Use your own App Store Connect API key to list builds, read TestFlight feedback and crashes, and install a TestFlight build on your iPhone. Read-only.
+- [Crash to repro](https://docs.mobster.dev/dev/crashes.md): Turn a crash report from Sentry, Crashlytics, TestFlight or Xcode into a check that reproduces it on a simulator, with the screen recorded, then hand it to your coding agent.
+- [App Store screenshots](https://docs.mobster.dev/dev/screenshots.md): Make App Store screenshots from your real flows: every required display size and every language your app has, at 9:41, as PNGs fastlane deliver reads.
+
+## Run tasks on your phone: Run a task
+
+- [A tour of Mobster for Mac](https://docs.mobster.dev/mac/tour.md): Where everything is in Mobster for Mac.
+- [Conversations](https://docs.mobster.dev/conversations.md): Follow up on a task, change course while it runs, and pick up where one left off, in Mobster for Mac or with mobster chat.
+- [Results](https://docs.mobster.dev/results.md): How a task's answer shows as cards you can sort, export and approve, and what each card holds.
+- [Who's waiting on me](https://docs.mobster.dev/waiting.md): Mobster reads the Messages history on your Mac, lists the people you left on read, and drafts a reply for each with Apple's on-device model. You approve each one before it sends.
+- [Memory: what Mobster remembers](https://docs.mobster.dev/memory.md): Tell Mobster what to remember. It keeps it on your Mac and uses it only in the tasks it fits.
+- [Files, photos and videos](https://docs.mobster.dev/files.md): Attach a file to a task, and move files between your Mac and your iPhone.
+- [X-ray an app](https://docs.mobster.dev/xray.md): App X-ray taps through an app on your iPhone with no model and maps its screens, links and paywalls. Network X-ray records your iPhone's traffic and shows which companies each app contacts. Both stay on your Mac.
+- [Keyboard shortcuts and voice](https://docs.mobster.dev/mac/shortcuts.md): Every keyboard shortcut in Mobster for Mac, and how to say a task instead of typing it.
+
+## Run tasks on your phone: Repeat it
+
+- [Build a workflow on its canvas](https://docs.mobster.dev/workflows.md): Lay out a workflow as a graph: triggers, steps joined by lines, branches, loops and steps side by side, then test it, publish it and watch it run.
+- [Workflows, schedules and alerts](https://docs.mobster.dev/schedules.md): Save a conversation as a workflow: text steps with blanks you run again from Workflows, ⌘K, Siri, the terminal or MCP.
+- [Notification triggers](https://docs.mobster.dev/triggers.md): A trigger sends an iPhone notification to a destination, runs a workflow or starts a task in Mobster for Mac, when an app you choose notifies you.
+- [Siri, Shortcuts and Raycast](https://docs.mobster.dev/launchers.md): Say "Ask Mobster" to Siri, or add Ask Mobster or Run Mobster Workflow to a shortcut, and Mobster on your Mac runs the task or the workflow and returns the answer. Raycast, Alfred and your iPhone start tasks with a small script.
+- [Content queue](https://docs.mobster.dev/content-queue.md): Line up posts with their media, caption, hashtags and sound, give each a profile and a time, and Mobster posts them from the right iPhone after you approve.
+
+## Run tasks on your phone: Profiles and apps
+
+- [Profiles](https://docs.mobster.dev/profiles.md): Map each social media profile to the iPhone it's signed in on. Tasks go to the right phone, and Mobster checks the profile on screen before it posts.
+- [Apps Mobster knows](https://docs.mobster.dev/app-packs.md): Mobster for Mac knows the screens of Instagram, TikTok, Messages, Settings, Calendar, Notes, Maps, Photos and Safari: it goes straight to the screen a task needs and reads it by code, with no model call for each step.
+
+## Run tasks on your phone: Your iPhone
+
+- [Set up an iPhone or simulator](https://docs.mobster.dev/device-setup.md): Put Mobster's helper on your iPhone or a simulator with Mobster's guided setup.
+- [Several phones](https://docs.mobster.dev/devices.md): How Mobster reaches each iPhone and simulator, keeps its helper running, and runs tasks and checks on several at once.
+- [Devices and health](https://docs.mobster.dev/phones.md): The Mac app's Devices page: add, set up and manage every iPhone, iPad and simulator Mobster can drive, and see how it's connected, its screen, the profiles on it, its last good task and what needs you. Alerts reach you when a device is unplugged, locked, signed out or challenged.
+- [What it can and can't do](https://docs.mobster.dev/capabilities.md): What Mobster does on your iPhone besides tap and type, one example each, and what it won't do.
+- [Watch and hear videos and voice notes](https://docs.mobster.dev/watch.md): Ask Mobster to summarize a video, transcribe a voice note or say what happens in a Reel. It watches the screen over time and hears a USB iPhone's sound, and turns the words and the other sounds into text on your Mac.
+- [Without the cable](https://docs.mobster.dev/wifi.md): Reach an iPhone over Wi-Fi after one cable pairing, through the encrypted link between this Mac and the phone. It has an off switch.
+- [Soak test for many phones](https://docs.mobster.dev/soak-test.md): Run read-only checks on 5 to 10 iPhones for minutes or hours and read each step's latency and failure rate.
+
+## Run tasks on your phone: Settings
+
+- [Settings in Mobster for Mac](https://docs.mobster.dev/mac/settings.md): What each section of Settings in Mobster for Mac does.
+
+## Connect agents and tools: Your coding agent
+
+- [Add Mobster to your agent](https://docs.mobster.dev/agents.md): Add Mobster's MCP server to every detected MCP client on your Mac with one command. Connect with Claude Code or Codex.
+- [Use Mobster from Claude Code](https://docs.mobster.dev/agents/claude-code.md): Add Mobster's MCP server to Claude Code with one command, so Claude checks your iOS app on a simulator and drives your iPhone.
+- [Use Mobster from Cursor](https://docs.mobster.dev/agents/cursor.md): Add Mobster's MCP server to Cursor in one click or one command. Only Claude Code and Codex are tested with the server.
+- [Claude Code plugin and skill](https://docs.mobster.dev/agents/plugin-and-skill.md): Add Mobster's Claude Code plugin, or the mobster skill for any agent that reads Agent Skills, so your agent knows how to use your iPhone through Mobster.
+- [Mobster in Cursor, Codex, Windsurf and Xcode](https://docs.mobster.dev/agents/editors.md): Add Mobster's MCP server and skill to Cursor, Codex, Windsurf or the agents inside Xcode with one command. Only Claude Code and Codex are tested with the server.
+- [Use Mobster from Windsurf](https://docs.mobster.dev/agents/windsurf.md): Add Mobster's MCP server to Windsurf with one command. Only Claude Code and Codex are tested with the server.
+- [Use Mobster from Codex CLI](https://docs.mobster.dev/agents/codex.md): Add Mobster's MCP server to Codex CLI with one command, so its agent can check iOS apps on a simulator and drive your iPhone.
+- [Use Mobster from opencode](https://docs.mobster.dev/agents/opencode.md): Add Mobster's MCP server to opencode with one command. Only Claude Code and Codex are tested with the server.
+- [Use Mobster from Gemini CLI](https://docs.mobster.dev/agents/gemini-cli.md): Add Mobster's MCP server to Gemini CLI with one command. Only Claude Code and Codex are tested with the server.
+- [Use Mobster from GitHub Copilot CLI](https://docs.mobster.dev/agents/copilot-cli.md): Add Mobster's MCP server to GitHub Copilot CLI with one command. Only Claude Code and Codex are tested with the server.
+- [Mobster's MCP server](https://docs.mobster.dev/mcp-server.md): How your coding agent checks a screen, drives a simulator or your iPhone, and hands Mobster a task through mobster mcp.
+- [Instructions for agents](https://docs.mobster.dev/agents/instructions.md): A block for CLAUDE.md, AGENTS.md or .cursor/rules that makes your coding agent check each UI change with Mobster.
+- [Mobster in Cursor and VS Code](https://docs.mobster.dev/agents/editor-extension.md): A side panel beside your code with your app live on a simulator, your checks with run and heal, approvals, and test on save. You build it on your Mac and install it from a VSIX.
+- [Setup for a coding agent](https://docs.mobster.dev/agents/setup.md): Numbered steps for a coding agent that sets Mobster up for its user: find Mobster for Mac, prepare the simulator, connect over MCP, and run a first launch-only check, with the output to expect and when to stop.
+
+## Connect agents and tools: Apps and tools
+
+- [App API](https://docs.mobster.dev/app-api.md): Every app on your iPhone as an API: GET /v1/<app>/<thing> reads the real app into JSON or CSV, and the same endpoint is an MCP tool.
+- [Use other services in a task](https://docs.mobster.dev/connectors.md): Mobster for Mac's agent calls tools of MCP servers you connect while it works on your iPhone: read a Notion page, create a Linear issue, then act on the phone.
+- [Install plugins in Mobster for Mac](https://docs.mobster.dev/plugins.md): A plugin adds connectors, skills and workflows to Mobster for Mac in one go. It uses the Claude Code plugin layout, so one folder works in both.
+- [Send results to other tools](https://docs.mobster.dev/webhooks.md): When a task starts, needs you or finishes, Mobster for Mac tells Slack, Discord or a signed webhook for Zapier, Make, n8n or your server, and puts results in Google Sheets, Notion, a folder or your email. Slack, Discord, Notion and Google Sheets connect with one sign-in.
+- [Start tasks from Zapier](https://docs.mobster.dev/zapier.md): Mobster for Zapier lets a Zap run a task or a workflow on your iPhone, find your workflows, and start another Zap when a task finishes.
+
+## Connect agents and tools: From anywhere
+
+- [Mobster Remote](https://docs.mobster.dev/remote.md): Let an assistant in the cloud hand tasks to Mobster on your iPhone, through Mobster for Mac. You allow each app on your Mac, and approvals stay there.
+- [Connect an assistant](https://docs.mobster.dev/remote/assistants.md): Where to add Mobster's Remote URL in Claude, ChatGPT, Poke, Raycast and Grok, and how the xAI, OpenAI and Anthropic APIs use a Remote key.
+
+## Connect agents and tools: In the terminal
+
+- [The terminal UI](https://docs.mobster.dev/tui.md): Run tasks, answer approvals and look back at history in the terminal UI.
+- [Scripts and the API](https://docs.mobster.dev/scripting.md): Run tasks from shell scripts with mobster run, or from your own code with the local HTTP API.
+
+## Reference: CLI
+
+- [CLI reference](https://docs.mobster.dev/reference/cli.md): Every mobster command, subcommand, argument and option with its default, generated from the command's own parser.
+
+## Reference: MCP
+
+- [MCP tools](https://docs.mobster.dev/reference/mcp-tools.md): Every tool mobster mcp offers, with its arguments, input schema and whether it only reads or acts on a device, generated from the server's tool list.
+- [App API reference](https://docs.mobster.dev/reference/app-api.md): Every App API endpoint, as a REST route and as an MCP tool, with its parameters and answer, generated from the OpenAPI description the App API serves.
+- [CLI, API and MCP parity](https://docs.mobster.dev/reference/parity.md): Every Mobster capability against the command line, the local API and MCP, with the gaps ranked.
+
+## Reference: Settings and errors
+
+- [Keys, env files and settings](https://docs.mobster.dev/configuration.md): Where Mobster reads your keys and settings, and where it keeps its files.
+- [Errors, statuses and exit codes](https://docs.mobster.dev/reference/errors.md): Every exit code, task status, check verdict and HTTP error, and what to do about each.
+
+## Reference: Inside Mobster
+
+- [Architecture](https://docs.mobster.dev/architecture.md): How a task turns into taps on the phone, and where each part lives in the code.
+- [Benchmarks](https://docs.mobster.dev/benchmarks.md): How Mobster is measured, the latest results, and how to run the same suites yourself.
+
+## Changelog
+
+- [Changelog](https://docs.mobster.dev/changelog.md): What's new in Mobster for Mac and Mobster CLI.
+
+## Optional
+
+- [Mobster for Mac](https://mobster.dev): Download the Mac app, see pricing and choose a plan.
+- [Connectors](https://mobster.dev/connectors): Using Mobster from Claude Code, Codex, Cursor, Claude Desktop, VS Code, Gemini CLI and other agents.
+- [Compare](https://mobster.dev/compare): Mobster beside TapKit, Maestro, Appium and XCUITest.
+- [Blog](https://mobster.dev/blog): Guides and notes from the people who make Mobster.
+- [Mobster's engine on GitHub](https://github.com/RadishSoftware/mobster): The open-source agent loop that drives the iPhone, and the research behind it, under MIT.

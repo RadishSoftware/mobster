@@ -1,0 +1,126 @@
+{
+"note": "Synthetic and inferred: built from labels seen in real runs' steps (a DM row, the Primary/General/Requests tabs) and Instagram's usual words; waiting for a recorded tree (REAL-QA-QUEUE.md, PRIORITY: app packs).",
+"rows": [
+{
+"role": "Button",
+"label": "Back",
+"rect": [
+0.02,
+0.07,
+0.08,
+0.04
+]
+},
+{
+"role": "StaticText",
+"label": "Sam Lee",
+"rect": [
+0.3,
+0.07,
+0.4,
+0.03
+]
+},
+{
+"role": "Button",
+"label": "Audio call",
+"rect": [
+0.74,
+0.07,
+0.08,
+0.04
+]
+},
+{
+"role": "Button",
+"label": "Video call",
+"rect": [
+0.86,
+0.07,
+0.08,
+0.04
+]
+},
+{
+"role": "StaticText",
+"label": "Yesterday 9:41 PM",
+"rect": [
+0.3,
+0.2,
+0.4,
+0.02
+]
+},
+{
+"role": "StaticText",
+"label": "are we still on for friday?",
+"rect": [
+0.04,
+0.24,
+0.6,
+0.04
+]
+},
+{
+"role": "StaticText",
+"label": "yes! what time works?",
+"rect": [
+0.4,
+0.3,
+0.56,
+0.04
+]
+},
+{
+"role": "StaticText",
+"label": "Today 2:10 PM",
+"rect": [
+0.3,
+0.38,
+0.4,
+0.02
+]
+},
+{
+"role": "StaticText",
+"label": "8 at the usual place?",
+"rect": [
+0.04,
+0.42,
+0.55,
+0.04
+]
+},
+{
+"role": "TextView",
+"label": "Message...",
+"rect": [
+0.12,
+0.9,
+0.6,
+0.04
+],
+"editable": true
+},
+{
+"role": "Button",
+"label": "Voice message",
+"rect": [
+0.74,
+0.9,
+0.08,
+0.04
+]
+},
+{
+"role": "Button",
+"label": "Gallery",
+"rect": [
+0.84,
+0.9,
+0.08,
+0.04
+]
+}
+]
+}

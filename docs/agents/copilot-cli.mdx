@@ -1,0 +1,69 @@
+---
+title: "Use Mobster from GitHub Copilot CLI"
+sidebarTitle: "GitHub Copilot CLI"
+description: "Add Mobster's MCP server to GitHub Copilot CLI with one command. Only Claude Code and Codex are tested with the server."
+icon: "/images/marks-ink/copilot.svg"
+keywords: ["github copilot cli", "mcp", "mobster mcp install", "ios testing", "agent"]
+---
+
+Use Mobster's command below to add its MCP server to GitHub Copilot CLI's config. The server exposes Mobster's tools (`verify_start`, `screen`, `tap`, `run_tests` and the rest of [the MCP server](/mcp-server)).
+
+## Add it
+
+```sh
+mobster mcp install copilot-cli
+```
+
+It prints what it changed:
+
+```text
+Mobster's MCP server: /Applications/Mobster.app/Contents/MacOS/mobster-agent mcp
+  Copilot CLI     added      ~/.copilot/mcp-config.json
+New sessions of the other clients pick it up. Check it with `mobster mcp doctor`.
+```
+
+Add `--dry-run` to see the change first and write nothing. Run the command again and nothing changes. `mobster mcp install --all` sets up every agent it finds, GitHub Copilot CLI included.
+
+## What it writes
+
+The entry goes in `~/.copilot/mcp-config.json`. `$COPILOT_HOME` replaces `~/.copilot`. The entry has `"tools": ["*"]`, so Copilot offers every Mobster tool.
+
+```json
+{
+  "mcpServers": {
+    "mobster": {
+      "type": "local",
+      "command": "/Applications/Mobster.app/Contents/MacOS/mobster-agent",
+      "args": ["mcp"],
+      "env": {},
+      "tools": ["*"]
+    }
+  }
+}
+```
+
+Mobster keeps the rest of the file as it is, with a copy of the old one beside it (`.mobster-backup`). It writes the full path to `mobster` because apps opened from the Dock don't see your shell's `PATH`, and it never writes a key. `--project DIR` writes `DIR/.github/mcp.json`, the file Copilot reads for a repository's shared servers. It leaves `.mcp.json` to Claude Code.
+
+## Check it
+
+```sh
+mobster mcp doctor
+```
+
+The doctor starts the server the way GitHub Copilot CLI does, lists its tools and calls `status`. Then it checks that the GitHub Copilot CLI entry runs a `mobster` that exists, and says which command to run if it doesn't. Start a new `copilot` session. `copilot mcp list` shows the server.
+
+## Add the skill
+
+```sh
+mobster mcp install copilot-cli --with-skill
+```
+
+This copies the `mobster` skill into `~/.copilot/skills`, so the agent also knows the verify loop and the rules for a real iPhone: ask before anything that sends, buys, posts or deletes, and never enter a passcode.
+
+## Take it out
+
+```sh
+mobster mcp install copilot-cli --remove
+```
+
+This removes the `mobster` entry and leaves your other servers alone. GitHub Copilot CLI's own reference for the file is at https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-mcp-servers.

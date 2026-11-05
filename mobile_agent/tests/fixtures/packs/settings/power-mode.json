@@ -1,0 +1,173 @@
+{
+"note": "Recorded on the test device (iPhone 15 Pro, iOS 26.0.1), 12 Oct 2026: the rows the agent saw, scrubbed (the account's name, the phone's name; serial and model numbers dropped).",
+"rows": [
+{
+"role": "NavigationBar",
+"label": "Power Mode",
+"rect": [
+0.0,
+0.07,
+1.0,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "Battery",
+"rect": [
+0.04,
+0.07,
+0.11,
+0.05
+]
+},
+{
+"role": "StaticText",
+"label": "Power Mode",
+"rect": [
+0.37,
+0.08,
+0.26,
+0.02
+]
+},
+{
+"role": "Cell",
+"label": "Adaptive Power",
+"rect": [
+0.04,
+0.15,
+0.92,
+0.07
+],
+"value": "0"
+},
+{
+"role": "Switch",
+"label": "Adaptive Power",
+"rect": [
+0.75,
+0.17,
+0.16,
+0.03
+],
+"value": "off"
+},
+{
+"role": "Cell",
+"label": "Adaptive Power Notifications",
+"rect": [
+0.04,
+0.22,
+0.92,
+0.06
+],
+"value": "0"
+},
+{
+"role": "Switch",
+"label": "Adaptive Power Notifications",
+"rect": [
+0.75,
+0.23,
+0.16,
+0.04
+],
+"value": "off"
+},
+{
+"role": "Other",
+"label": "When your battery usage is higher than usual, iPhone can extend your battery life by making performance adjustments, such as lowering display brightness, allowi",
+"rect": [
+0.04,
+0.27,
+0.92,
+0.11
+]
+},
+{
+"role": "Cell",
+"label": "Low Power Mode",
+"rect": [
+0.04,
+0.4,
+0.92,
+0.07
+],
+"value": "0"
+},
+{
+"role": "Switch",
+"label": "Low Power Mode",
+"rect": [
+0.75,
+0.42,
+0.16,
+0.03
+],
+"value": "off"
+},
+{
+"role": "Other",
+"label": "iPhone will temporarily reduce some background activities, processing speed, display refresh rate and brightness, and limit certain features such as 5G, iCloud ",
+"rect": [
+0.04,
+0.47,
+0.92,
+0.09
+]
+},
+{
+"role": "Toolbar",
+"label": "Toolbar",
+"rect": [
+0.0,
+0.91,
+1.0,
+0.09
+]
+},
+{
+"role": "SearchField",
+"label": "Search",
+"rect": [
+0.02,
+0.91,
+0.8,
+0.06
+],
+"value": "Low Power Mode",
+"editable": true
+},
+{
+"role": "Image",
+"label": "Search",
+"rect": [
+0.06,
+0.92,
+0.05,
+0.03
+]
+},
+{
+"role": "Button",
+"label": "Clear text",
+"rect": [
+0.73,
+0.92,
+0.05,
+0.03
+]
+},
+{
+"role": "Button",
+"label": "close",
+"rect": [
+0.85,
+0.91,
+0.11,
+0.06
+]
+}
+]
+}

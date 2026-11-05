@@ -1,0 +1,27 @@
+---
+title: "Unable to launch app.mobster.wda.runner.xctrunner because it has an invalid code signature, inadequate entitlements or its profile has not been explicitly trusted by the user."
+sidebarTitle: "Invalid code signature"
+description: "iOS refused to start Mobster's helper because you haven't trusted the developer app, or its 7-day signature expired. Trust it, or refresh it."
+icon: "triangle-alert"
+keywords: ["code signature", "xctrunner", "VPN & Device Management", "trust developer", "free Apple Account"]
+"article:modified_time": "2026-10-26"
+---
+
+You see this: `xcodebuild` prints this when it installs Mobster's helper and iOS won't launch it. Mobster shows `On the iPhone, open Settings › General › VPN & Device Management and trust your developer app`, or `Mobster's helper needs a refresh: its signature expired`.
+
+## Why it happens
+
+Two causes print the same line. Either the phone doesn't trust the developer app yet, or a free Apple Account's signature, which lasts 7 days, has run out.
+
+## Fix
+
+1. On the iPhone, open **Settings › General › VPN & Device Management**.
+2. Select your developer app and tap **Trust**.
+3. If it's already trusted, refresh the helper: in Mobster for Mac, open **Devices**, the iPhone's card, then **Refresh now**. Mobster also refreshes it while the phone is plugged in and unlocked.
+4. Without the app, run the guided setup's `setup /build`.
+
+## Check it worked
+
+`mobster doctor` prints no `✗` line for the runner and the helper answers at `http://127.0.0.1:8100`. See also [the runner's signature expired](/troubleshooting#runner-expired).
+
+Checked 26 Oct 2026 against Mobster 0.4.0. Back to [Troubleshooting](/troubleshooting#iphone).

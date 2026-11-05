@@ -1,25 +1,4 @@
-"""Mobster's Smart engine (frontier.FrontierAgent) on the bench phone, composed as the app composes it.
-
-``engines.build_frontier`` with SMART_CONFIG's loop, the device lease, WDA's current session with a FrameClock attached, the task's apps, its answer fields as
-``output_schema``, and the task's budgets. The answer goes through ``smart_result.summarize`` exactly as the app's
-result does (the DONE turn's data_json when it fits, else one structuring call).
-
-Agents (``SMART_MODELS``):
-  ``mobster-smart``         Claude Sonnet 5.5 on the API (Smart's default model).
-  ``mobster-smart-haiku``   Claude Haiku 5.5 on the API.
-  ``mobster-smart-codex``   gpt-6.1-sol on the operator's ChatGPT plan through the Codex CLI's sign-in ($0 a call).
-  ``mobster-smart-cc``      Sonnet 5.5 through ``claude -p`` (Claude Code's plan): seconds of process start per
-                            call, so it is for success comparisons only.
-
-Every action Smart sends reaches the phone through ``SmartGuardedDriver``: the bench safety monitor sees it first,
-including the paths ``execute`` does not cover (a point tap, a long press, write_text, set_value, a clear).
-
-``as_app`` (the real-customer benchmark, bench/real) composes the run as the Mac app does for a person who typed a
-request: Ask before acting (the default permission mode) with an approver that records each card and declines it,
-so nothing that reaches outside the phone happens; a long request ("skim my Reels for 3 minutes") as a long run
-(mobile_agent/longform) with its report; every app the phone has on offer (``inventory``), the task's apps first;
-and a task that starts on the Home Screen (``task.start == "home"``) opens no app first.
-"""
+"""Mobster's Smart engine (frontier.FrontierAgent) on the bench phone, composed as the app composes it."""
 
 import os
 import time
@@ -69,7 +48,7 @@ class SmartGuardedDriver:
                    "/wda/touchAndHold", "/wda/doubleTap", "/wda/element")
 
     def call(self, method, path, body=None, timeout=10):
-        from ...driver_guards import DriverRejection
+        from ...wda.guards import DriverRejection
         if method == "POST" and isinstance(path, str):
             intent = None
             if path == "/url":
@@ -88,7 +67,7 @@ class SmartGuardedDriver:
         opener = getattr(self._driver, "open_url", None)
         intent = ActionIntent("OPEN_URL", bundle=getattr(self._driver, "_last_bundle", "") or "")
         if self._monitor.check(intent).blocked:
-            from ...driver_guards import DriverRejection
+            from ...wda.guards import DriverRejection
             raise DriverRejection("unsupported_or_stale_target")
         self._recorder.action("OPEN_URL")
         if callable(opener):
@@ -98,7 +77,7 @@ class SmartGuardedDriver:
         return self._driver.call("POST", "/url", {"url": url, "bundleId": "com.apple.mobilesafari"}, timeout)
 
     def execute(self, operation, target, snapshot, text=None, timeout=10):
-        from ...driver_guards import DriverRejection
+        from ...wda.guards import DriverRejection
         if operation == "LAUNCH_APP":
             intent = ActionIntent("LAUNCH_APP", app_target=str(target), bundle=snapshot.bundle_id or "")
         elif operation in HOST_KEYS or target is None:
@@ -114,7 +93,7 @@ class SmartGuardedDriver:
         return self._driver.execute(operation, target, snapshot, text=text, timeout=timeout)
 
     def _check(self, intent):
-        from ...driver_guards import DriverRejection
+        from ...wda.guards import DriverRejection
         if self._monitor.check(intent).blocked:
             raise DriverRejection("unsupported_or_stale_target")
         self._recorder.action(intent.operation, label=intent.label[:80] or None)
@@ -191,9 +170,7 @@ class SmartAgent:
         return config
 
     def offered_apps(self, task):
-        """{bundle: name} the run may open. Bench tasks: the task's apps. As the app: the task's apps first, then every
-        app the phone has (the inventory: user apps and the system apps it kept), else the catalog's, at most
-        server.MAX_SMART_APPS, as Runtime.smart_apps."""
+        """{bundle: name} the run may open."""
         from ...catalog import APPS, app_label
         apps = {bundle: app_label(bundle).split(" (")[0] for bundle in task.bundles}
         if not self.as_app:
@@ -226,11 +203,11 @@ class SmartAgent:
 
     def run(self, task, ctx):
         from ...compose import build_target_driver, close_all
-        from ...engines import SMART_CONFIG, build_frontier
         from ...costs import meter
-        from ...smart_result import summarize
-        from ...frame_clock import attach_frame_clock
+        from ...engines import SMART_CONFIG, build_frontier
         from ...journal import Lease
+        from ...smart_result import summarize
+        from ...wda.frame_clock import attach_frame_clock
 
         recorder = Recorder(ctx)
         run = recorder.run
@@ -363,6 +340,7 @@ def as_app_extras(task, apps, client, model, emit, cards, ledger=None):
     session = long_session(task, apps, client, model, emit, ledger if ledger is not None else _LongLedger())
     if session is not None:
         from types import SimpleNamespace
+
         from ...frontier import default_skills
         from ...longform import feed, items
         tools = tuple(tool for tool in (feed.factory(SimpleNamespace(run_id=session.run_id)),
@@ -393,9 +371,12 @@ def record_card(cards, request):
 def long_session(task, apps, client, model, emit, ledger):
     """A LongSession when the request is a long one (longform.plan.detect over the offered apps), else None."""
     import uuid
+
     from ...engines import anthropic_key, openai_smart_key
     try:
-        from ...longform import enabled, plan as long_plan, session as long_sessions
+        from ...longform import enabled
+        from ...longform import plan as long_plan
+        from ...longform import session as long_sessions
     except ModuleNotFoundError as error:  # long tasks are Mobster for Mac's (the open-source tree leaves them out)
         if error.name != "mobile_agent.longform":
             raise
@@ -407,7 +388,7 @@ def long_session(task, apps, client, model, emit, ledger):
     if kind is None:
         return None
     card = long_plan.make_plan(task.goal, apps=offered, limit_usd=LONG_CAP_USD,
-                               nav_model=getattr(client, "model", model), origin="bench", kind=kind)
+                               nav_model=getattr(client, "model", model), kind=kind)
     if card is None:
         return None
     key = anthropic_key() if str(model).startswith("claude-") else openai_smart_key()
@@ -432,7 +413,8 @@ def long_report(session, outcome, goal, apps):
     """(report, markdown) of a long run, as the Runtime writes them (synthesis, and an inbox sweep's drafts)."""
     from ...longform import inbox
     from ...longform.synthesis import synthesize
-    report, markdown = synthesize(session, (outcome or {}).get("status") or "error", answer=(outcome or {}).get("answer"))
+    report, markdown = synthesize(session, (outcome or {}).get("status") or "error",
+                                  answer=(outcome or {}).get("answer"))
     if inbox.wants_drafts(goal):
         section = inbox.drafts_markdown(session, app_names=apps)
         if section:

@@ -1,0 +1,286 @@
+{
+"note": "Synthetic, with the shape of the conversation list recorded on the test device (iPhone 15 Pro, iOS 26.0.1, 11 and 12 Oct 2026): the same roles, labels' parts and places; every name and message is made up.",
+"rows": [
+{
+"role": "NavigationBar",
+"label": "Messages",
+"rect": [
+0,
+0.07,
+1,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "Edit",
+"rect": [
+0.05,
+0.08,
+0.12,
+0.04
+]
+},
+{
+"role": "StaticText",
+"label": "Messages",
+"rect": [
+0.41,
+0.08,
+0.19,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "filter",
+"rect": [
+0.85,
+0.08,
+0.09,
+0.04
+]
+},
+{
+"role": "Button",
+"label": "Compose",
+"rect": [
+0.85,
+0.08,
+0.09,
+0.04
+]
+},
+{
+"role": "Cell",
+"label": "Book Club, Pinned",
+"rect": [
+0.02,
+0.14,
+0.32,
+0.13
+]
+},
+{
+"role": "Button",
+"label": "Contact photo for Book Club",
+"rect": [
+0.06,
+0.15000000000000002,
+0.22,
+0.1
+]
+},
+{
+"role": "Cell",
+"label": "Mom, Pinned",
+"rect": [
+0.34,
+0.14,
+0.32,
+0.13
+]
+},
+{
+"role": "Button",
+"label": "Contact photo for Mom",
+"rect": [
+0.38,
+0.15000000000000002,
+0.22,
+0.1
+]
+},
+{
+"role": "Cell",
+"label": "Ana Ruiz, Unread, Pinned",
+"rect": [
+0.66,
+0.14,
+0.32,
+0.13
+]
+},
+{
+"role": "Button",
+"label": "Contact photo for Ana Ruiz",
+"rect": [
+0.7000000000000001,
+0.15000000000000002,
+0.22,
+0.1
+]
+},
+{
+"role": "Cell",
+"label": "Sam Lee, Unread, see you at 6, bring the charger, 9:55 PM",
+"rect": [
+0,
+0.44,
+1,
+0.1
+]
+},
+{
+"role": "Cell",
+"label": "Sam Lee, Unread, see you at 6, bring the charger, 9:55 PM",
+"rect": [
+0,
+0.44,
+1,
+0.1
+]
+},
+{
+"role": "Image",
+"label": "UnreadIndicatorImageView",
+"rect": [
+0.02,
+0.48,
+0.03,
+0.01
+]
+},
+{
+"role": "Cell",
+"label": "Jordan Park, haha yes, 9:12 PM",
+"rect": [
+0,
+0.53,
+1,
+0.1
+]
+},
+{
+"role": "Cell",
+"label": "Jordan Park, haha yes, 9:12 PM",
+"rect": [
+0,
+0.53,
+1,
+0.1
+]
+},
+{
+"role": "Cell",
+"label": "Riley, Can you send me the address?, 4:30 PM",
+"rect": [
+0,
+0.62,
+1,
+0.1
+]
+},
+{
+"role": "Cell",
+"label": "Riley, Can you send me the address?, 4:30 PM",
+"rect": [
+0,
+0.62,
+1,
+0.1
+]
+},
+{
+"role": "Cell",
+"label": "+1 (555) 010-2233, Unread, Your code is 481516, 1:28 PM",
+"rect": [
+0,
+0.71,
+1,
+0.1
+]
+},
+{
+"role": "Cell",
+"label": "+1 (555) 010-2233, Unread, Your code is 481516, 1:28 PM",
+"rect": [
+0,
+0.71,
+1,
+0.1
+]
+},
+{
+"role": "Image",
+"label": "UnreadIndicatorImageView",
+"rect": [
+0.02,
+0.75,
+0.03,
+0.01
+]
+},
+{
+"role": "Cell",
+"label": "Dev Team, Muted, ship it, 12:50 PM",
+"rect": [
+0,
+0.8,
+1,
+0.1
+]
+},
+{
+"role": "Cell",
+"label": "Dev Team, Muted, ship it, 12:50 PM",
+"rect": [
+0,
+0.8,
+1,
+0.1
+]
+},
+{
+"role": "Cell",
+"label": "Chris Wu, Thanks!, Yesterday",
+"rect": [
+0,
+0.89,
+1,
+0.1
+]
+},
+{
+"role": "Cell",
+"label": "Chris Wu, Thanks!, Yesterday",
+"rect": [
+0,
+0.89,
+1,
+0.1
+]
+},
+{
+"role": "Toolbar",
+"label": "Toolbar",
+"rect": [
+0,
+0.91,
+1,
+0.09
+]
+},
+{
+"role": "SearchField",
+"label": "Search",
+"rect": [
+0.08,
+0.92,
+0.68,
+0.05
+],
+"editable": true
+},
+{
+"role": "Button",
+"label": "Dictate",
+"rect": [
+0.67,
+0.92,
+0.05,
+0.03
+]
+}
+]
+}

@@ -1,11 +1,10 @@
-"""WDA fast path: occlusion without `visible`, and settle-by-agreement. Offline."""
-
 import unittest
 from unittest.mock import Mock, patch
 
 from mobile_agent.drivers import WDA
-from mobile_agent.wda_observe import WDA_SETTLE_CAP_SECONDS
 from mobile_agent.state import from_wda
+from mobile_agent.transport import TransportError
+from mobile_agent.wda.observe import WDA_SETTLE_CAP_SECONDS
 
 
 def app(*children):
@@ -35,10 +34,7 @@ class OcclusionTests(unittest.TestCase):
         self.assertIn("Visible row", labels)
         self.assertNotIn("Hidden under bar", labels)
         self.assertNotIn("Hidden under bar", snapshot.text)
-
-    def test_chrome_keeps_its_own_controls(self):
-        self.assertIn("Settings", self.labels(app(ROWS, NAV)))
-        self.assertIn("Display", self.labels(app(ROWS, NAV)))
+        self.assertTrue({"Settings", "Display"} <= set(labels))
 
     def test_keyboard_covers_rows_behind_it(self):
         keyboard = node("Keyboard", "", 0, 500, 400, 300, node("Key", "q", 0, 510, 40, 50))
@@ -54,24 +50,20 @@ class OcclusionTests(unittest.TestCase):
         self.assertNotIn("Visible row", labels)
 
     def test_on_screen_children_of_a_scrolled_away_container_are_kept(self):
-        # Measured in Safari: the web container's frame scrolls off screen
-        # while its text stays visible.
         scrolled = node("Other", "", 0, -1189, 400, 852, node("StaticText", "Still visible", 0, 300, 400, 40))
         self.assertEqual(self.labels(app(scrolled)), ["Still visible"])
 
     def test_identifier_names_are_not_screen_text(self):
-        xml = app('<XCUIElementTypeOther name="SafariWindow?View=Narrow&amp;UUID=1" x="0" y="0" width="400" height="800">'
+        xml = app(
+            '<XCUIElementTypeOther name="SafariWindow?View=Narrow&amp;UUID=1" x="0" y="0" width="400" height="800">'
                   '<XCUIElementTypeButton name="GridCellCloseButtonIdentifier" x="0" y="100" width="40" height="40"/>'
                   '<XCUIElementTypeButton name="Done" x="0" y="200" width="40" height="40"/></XCUIElementTypeOther>')
         snapshot = from_wda(xml)
         self.assertNotIn("SafariWindow", snapshot.text)
         self.assertNotIn("GridCellCloseButtonIdentifier", snapshot.text)
-        # The identifier never becomes a label; the unlabelled button stays a (label-less) target.
         self.assertEqual([e.label for e in snapshot.elements], ["", "Done"])
 
     def test_a_list_drawn_over_another_hides_the_rows_behind_it(self):
-        # Settings search: the root list stays in the tree with on-screen rects
-        # under the results list; its rows must be neither targets nor text.
         root = node("CollectionView", "", 0, 0, 400, 800,
                     node("Cell", "General", 0, 200, 400, 44), node("Cell", "Privacy", 0, 260, 400, 44))
         bar = node("NavigationBar", "Settings", 0, 0, 400, 150,
@@ -84,7 +76,6 @@ class OcclusionTests(unittest.TestCase):
             self.assertIn("About", labels)
             self.assertNotIn("General", labels)
             self.assertNotIn("Privacy", snapshot.text)
-            # Chrome is never hidden by a pane, in either document order.
             self.assertTrue({"Search", "Cancel", "a"} <= set(labels), labels)
 
     def test_a_single_list_or_small_overlapping_lists_hide_nothing(self):
@@ -92,14 +83,11 @@ class OcclusionTests(unittest.TestCase):
         strip = node("CollectionView", "", 0, 180, 400, 100, node("Cell", "Chip", 0, 190, 100, 40))
         self.assertEqual(self.labels(app(rows)), ["General"])
         self.assertEqual(self.labels(app(rows, strip)), ["General", "Chip"])
-        # Nested lists (a carousel inside a list) are one surface.
         nested = node("CollectionView", "", 0, 0, 400, 800, node("Cell", "Row", 0, 100, 400, 44),
                       node("CollectionView", "", 0, 300, 400, 400, node("Cell", "Card", 0, 320, 200, 200)))
         self.assertEqual(self.labels(app(nested)), ["Row", "Card"])
 
     def browser(self, bar_height=98):
-        # Safari's bottom bar (10 Oct): Back, Page Menu with the address field, and More, each in its own container
-        # inside one full-width bar; a web page's link lies under it at the screen's foot.
         page = node("ScrollView", "", 0, 0, 400, 800,
                     node("Link", "Result above the bar", 30, 600, 200, 20),
                     node("Link", "Wikipedia", 110, 784, 60, 14))
@@ -118,9 +106,6 @@ class OcclusionTests(unittest.TestCase):
         self.assertNotIn("Wikipedia", labels)
         self.assertIn("Result above the bar", labels)
         self.assertTrue({"Back", "Page Menu", "Address", "More"} <= set(labels))
-
-    def test_a_tall_container_is_no_bar(self):
-        # Buttons low on a container as tall as half the screen are content, not a bar: nothing under them is hidden.
         self.assertIn("Wikipedia", self.labels(self.browser(bar_height=400)))
 
     def test_explicit_invisibility_is_still_honored(self):
@@ -130,7 +115,6 @@ class OcclusionTests(unittest.TestCase):
 
 
 class Clock:
-    """Simulated time: each source read takes ``per_read`` seconds."""
     def __init__(self, per_read=.3):
         self.now, self.per_read = 1000.0, per_read
 
@@ -142,7 +126,6 @@ CLOCK = Clock()
 
 
 class Screens:
-    """A scripted device: each observe returns the next screen, then repeats the last."""
     def __init__(self, *xmls):
         self.xmls, self.reads = list(xmls), 0
 
@@ -200,30 +183,44 @@ class SettleTests(unittest.TestCase):
             driver.observe_ready(timeout=30)
         self.assertLess(clock[0], 4 * WDA_SETTLE_CAP_SECONDS + 1)
 
-    def test_observe_ready_reuses_the_read_that_proved_stability(self):
+    def test_ready_pause_at_cap_returns_last_read_without_dispatching_another(self):
+        driver = self.driver(A, B)
+        driver._poll_pause = lambda last, cap: setattr(CLOCK, "now", cap)
+        started = CLOCK.now
+        snapshot, rule, _, _ = driver._ready_read(timeout=5)
+        self.assertEqual((snapshot.elements[0].label, rule, driver.call.reads), ("A", "cap", 1))
+        self.assertAlmostEqual(CLOCK.now - started, WDA_SETTLE_CAP_SECONDS)
+        self.assertIsNone(driver._stable)
+
+    def test_change_pause_at_cap_returns_last_unproven_read(self):
+        driver = self.driver(B, C)
+        driver._poll_pause = lambda last, cap: setattr(CLOCK, "now", cap)
+        started = CLOCK.now
+        result = driver.wait_for_change(from_wda(A), timeout=5, wait_seconds=.6)
+        self.assertEqual((result.elements[0].label, driver.call.reads), ("B", 1))
+        self.assertAlmostEqual(CLOCK.now - started, WDA_SETTLE_CAP_SECONDS)
+        self.assertIsNone(driver._stable)
+        self.assertIsNone(driver.settled_by)
+
+    def test_observe_ready_reuses_the_read_that_proved_stability_until_a_dispatch(self):
         driver = self.driver(B, B)
         with patch("mobile_agent.drivers.time.sleep"):
             settled = driver.wait_for_change(from_wda(A), timeout=5)
         reads = driver.call.reads
         self.assertIs(driver.observe_ready(timeout=5), settled)
         self.assertEqual(driver.call.reads, reads)
-
-    def test_any_dispatch_invalidates_the_reusable_read(self):
-        driver = self.driver(B, B)
-        with patch("mobile_agent.drivers.time.sleep"):
-            settled = driver.wait_for_change(from_wda(A), timeout=5)
         driver.execute("TAP", settled.elements[0], settled)
-        self.assertIsNone(driver._stable)
+        reads = driver.call.reads
+        self.assertIsNot(driver.observe_ready(timeout=5), settled)
+        self.assertGreater(driver.call.reads, reads)
 
     def test_a_briefly_stable_half_loaded_screen_is_not_settled(self):
-        # Measured on iOS 26 General: 24 elements for ~450 ms, then 29.
         CLOCK.per_read = .1
         driver = self.driver(B, B, C, C, C, C, C, C, C)
         after = driver.wait_for_change(from_wda(A), timeout=5, wait_seconds=.6)
         self.assertEqual(after.elements[0].label, "C")
 
     def test_a_failed_settle_read_returns_the_last_good_read(self):
-        from mobile_agent.transport import TransportError
         driver = self.driver(B)
         reads = iter([B])
         def call(*args, **kwargs):
@@ -237,7 +234,6 @@ class SettleTests(unittest.TestCase):
         self.assertEqual(after.elements[0].label, "B")
 
     def test_a_failed_first_settle_read_is_not_hidden(self):
-        from mobile_agent.transport import TransportError
         driver = self.driver(B)
         driver.call = Mock(side_effect=TransportError("down"))
         with self.assertRaises(TransportError):

@@ -1,0 +1,976 @@
+{
+  "001_assert_visible_by_id.yaml": {
+    "outcome": "imported",
+    "reason": null,
+    "checks": {
+      "001_assert_visible_by_id.yaml": {
+        "version": 1,
+        "name": "001 assert visible by id",
+        "app": {
+          "bundle": "com.example.app"
+        },
+        "reset": "none",
+        "tags": [
+          "maestro"
+        ],
+        "expect": [
+          {
+            "visible": {
+              "id": "element_id"
+            },
+            "name": "id element_id is visible"
+          }
+        ]
+      }
+    },
+    "refused": [],
+    "notes": []
+  },
+  "002_assert_visible_by_text.yaml": {
+    "outcome": "imported",
+    "reason": null,
+    "checks": {
+      "002_assert_visible_by_text.yaml": {
+        "version": 1,
+        "name": "002 assert visible by text",
+        "app": {
+          "bundle": "com.example.app"
+        },
+        "reset": "none",
+        "tags": [
+          "maestro"
+        ],
+        "expect": [
+          {
+            "visible": {
+              "label": "/^Element Text$/i"
+            },
+            "name": "Element Text is visible"
+          }
+        ]
+      }
+    },
+    "refused": [],
+    "notes": []
+  },
+  "008_tap_on_element.yaml": {
+    "outcome": "imported",
+    "reason": null,
+    "checks": {
+      "008_tap_on_element.yaml": {
+        "version": 1,
+        "name": "008 tap on element",
+        "app": {
+          "bundle": "com.example.app"
+        },
+        "reset": "none",
+        "tags": [
+          "maestro"
+        ],
+        "steps": [
+          "Tap the element whose text matches the pattern \".*button.*\""
+        ],
+        "expect": []
+      }
+    },
+    "refused": [],
+    "notes": [
+      "the flow asserts nothing, so the check ends needs_review; add an assertVisible"
+    ]
+  },
+  "010_scroll.yaml": {
+    "outcome": "imported",
+    "reason": null,
+    "checks": {
+      "010_scroll.yaml": {
+        "version": 1,
+        "name": "010 scroll",
+        "app": {
+          "bundle": "com.example.app"
+        },
+        "reset": "none",
+        "tags": [
+          "maestro"
+        ],
+        "steps": [
+          "Scroll down"
+        ],
+        "expect": []
+      }
+    },
+    "refused": [],
+    "notes": [
+      "the flow asserts nothing, so the check ends needs_review; add an assertVisible"
+    ]
+  },
+  "011_back_press.yaml": {
+    "outcome": "imported",
+    "reason": null,
+    "checks": {
+      "011_back_press.yaml": {
+        "version": 1,
+        "name": "011 back press",
+        "app": {
+          "bundle": "com.example.app"
+        },
+        "reset": "none",
+        "tags": [
+          "maestro"
+        ],
+        "steps": [
+          "Go back one screen with the Back button on screen, or by swiping from the left edge"
+        ],
+        "expect": []
+      }
+    },
+    "refused": [],
+    "notes": [
+      "command 1 (back): iOS has no back key, so the step taps the Back button on screen or swipes from the left edge",
+      "the flow asserts nothing, so the check ends needs_review; add an assertVisible"
+    ]
+  },
+  "012_input_text.yaml": {
+    "outcome": "imported",
+    "reason": null,
+    "checks": {
+      "012_input_text.yaml": {
+        "version": 1,
+        "name": "012 input text",
+        "app": {
+          "bundle": "com.example.app"
+        },
+        "reset": "none",
+        "tags": [
+          "maestro"
+        ],
+        "steps": [
+          "Type \"Hello World\" into the focused text field",
+          "Type \"user@example.com\" into the focused text field"
+        ],
+        "expect": []
+      }
+    },
+    "refused": [],
+    "notes": [
+      "the flow asserts nothing, so the check ends needs_review; add an assertVisible"
+    ]
+  },
+  "013_launch_app.yaml": {
+    "outcome": "imported",
+    "reason": null,
+    "checks": {
+      "013_launch_app.yaml": {
+        "version": 1,
+        "name": "013 launch app",
+        "app": {
+          "bundle": "com.example.app"
+        },
+        "reset": "none",
+        "tags": [
+          "maestro"
+        ],
+        "expect": []
+      }
+    },
+    "refused": [],
+    "notes": [
+      "the flow asserts nothing, so the check ends needs_review; add an assertVisible"
+    ]
+  },
+  "014_tap_on_point.yaml": {
+    "outcome": "imported",
+    "reason": null,
+    "checks": {
+      "014_tap_on_point.yaml": {
+        "version": 1,
+        "name": "014 tap on point",
+        "app": {
+          "bundle": "com.example.app"
+        },
+        "reset": "none",
+        "tags": [
+          "maestro"
+        ],
+        "steps": [
+          "Tap the screen point 100,200"
+        ],
+        "expect": []
+      }
+    },
+    "refused": [],
+    "notes": [
+      "command 1 (tapOn): the point 100,200 is in screen points, so it depends on the device; write it as 50%,90% to work on any size",
+      "the flow asserts nothing, so the check ends needs_review; add an assertVisible"
+    ]
+  },
+  "015_element_relative_position.yaml": {
+    "outcome": "imported",
+    "reason": null,
+    "checks": {
+      "015_element_relative_position.yaml": {
+        "version": 1,
+        "name": "015 element relative position",
+        "app": {
+          "bundle": "com.example.app"
+        },
+        "reset": "none",
+        "tags": [
+          "maestro"
+        ],
+        "steps": [
+          "Tap the element above \"Middle\" to the right of \"Top Left\"",
+          "Tap the element below \"Middle\" to the right of \"Bottom Left\"",
+          "Tap the element to the left of \"Middle\" below \"Top Left\"",
+          "Tap the element to the right of \"Middle\" below \"Top Right\"",
+          "Tap the element above \"Middle\" to the left of \"Middle\"",
+          "Tap the element above \"Middle\" to the right of \"Middle\"",
+          "Tap the element below \"Middle\" to the left of \"Middle\"",
+          "Tap the element below \"Middle\" to the right of \"Middle\""
+        ],
+        "expect": []
+      }
+    },
+    "refused": [],
+    "notes": [
+      "the flow asserts nothing, so the check ends needs_review; add an assertVisible"
+    ]
+  },
+  "017_swipe.yaml": {
+    "outcome": "imported",
+    "reason": null,
+    "checks": {
+      "017_swipe.yaml": {
+        "version": 1,
+        "name": "017 swipe",
+        "app": {
+          "bundle": "com.example.app"
+        },
+        "reset": "none",
+        "tags": [
+          "maestro"
+        ],
+        "steps": [
+          "Swipe from the screen point 100,500 to 100,200"
+        ],
+        "expect": []
+      }
+    },
+    "refused": [],
+    "notes": [
+      "the flow asserts nothing, so the check ends needs_review; add an assertVisible"
+    ]
+  },
+  "021_launch_app_with_clear_state.yaml": {
+    "outcome": "imported",
+    "reason": null,
+    "checks": {
+      "021_launch_app_with_clear_state.yaml": {
+        "version": 1,
+        "name": "021 launch app with clear state",
+        "app": {
+          "bundle": "com.example.app"
+        },
+        "reset": "data",
+        "tags": [
+          "maestro"
+        ],
+        "expect": []
+      }
+    },
+    "refused": [],
+    "notes": [
+      "the flow asserts nothing, so the check ends needs_review; add an assertVisible"
+    ]
+  },
+  "026_assert_not_visible.yaml": {
+    "outcome": "imported",
+    "reason": null,
+    "checks": {
+      "026_assert_not_visible.yaml": {
+        "version": 1,
+        "name": "026 assert not visible",
+        "app": {
+          "bundle": "com.example.app"
+        },
+        "reset": "none",
+        "tags": [
+          "maestro"
+        ],
+        "expect": [
+          {
+            "absent": {
+              "id": "element_id"
+            },
+            "name": "id element_id is not visible"
+          }
+        ]
+      }
+    },
+    "refused": [],
+    "notes": []
+  },
+  "027_open_link.yaml": {
+    "outcome": "imported",
+    "reason": null,
+    "checks": {
+      "027_open_link.yaml": {
+        "version": 1,
+        "name": "027 open link",
+        "app": {
+          "bundle": "com.example.app"
+        },
+        "reset": "none",
+        "tags": [
+          "maestro"
+        ],
+        "launch": {
+          "url": "https://example.com"
+        },
+        "expect": []
+      }
+    },
+    "refused": [],
+    "notes": [
+      "the flow asserts nothing, so the check ends needs_review; add an assertVisible"
+    ]
+  },
+  "028_env.yaml": {
+    "outcome": "refused",
+    "reason": null,
+    "checks": {},
+    "refused": [
+      [
+        "command 1 (launchApp)",
+        "launchApp",
+        "uses ${APP_ID}, which the flow's env doesn't set"
+      ],
+      [
+        "command 2 (tapOn)",
+        "tapOn",
+        "uses ${BUTTON_ID}, which the flow's env doesn't set"
+      ],
+      [
+        "command 3 (tapOn)",
+        "tapOn",
+        "uses ${BUTTON_TEXT}, which the flow's env doesn't set"
+      ],
+      [
+        "command 4 (assertVisible)",
+        "assertVisible",
+        "uses ${BUTTON_TEXT}, which the flow's env doesn't set"
+      ],
+      [
+        "command 5 (assertVisible)",
+        "assertVisible",
+        "uses ${BUTTON_ID}, which the flow's env doesn't set"
+      ],
+      [
+        "command 6 (assertNotVisible)",
+        "assertNotVisible",
+        "uses ${NON_EXISTENT_TEXT}, which the flow's env doesn't set"
+      ],
+      [
+        "command 7 (assertNotVisible)",
+        "assertNotVisible",
+        "uses ${NON_EXISTENT_ID}, which the flow's env doesn't set"
+      ],
+      [
+        "command 8 (inputText)",
+        "inputText",
+        "uses ${PASSWORD}, which the flow's env doesn't set"
+      ],
+      [
+        "command 9 (openLink)",
+        "openLink",
+        "uses ${URL}, which the flow's env doesn't set"
+      ]
+    ],
+    "notes": [
+      "2 commands became a step marked TODO: the first run (Smart) fills it, then replay keeps what it did; read that run's report before you trust the check"
+    ]
+  },
+  "029_long_press_on_element.yaml": {
+    "outcome": "imported",
+    "reason": null,
+    "checks": {
+      "029_long_press_on_element.yaml": {
+        "version": 1,
+        "name": "029 long press on element",
+        "app": {
+          "bundle": "com.example.app"
+        },
+        "reset": "none",
+        "tags": [
+          "maestro"
+        ],
+        "steps": [
+          "Press and hold the element whose text matches the pattern \".*button.*\""
+        ],
+        "expect": []
+      }
+    },
+    "refused": [],
+    "notes": [
+      "the flow asserts nothing, so the check ends needs_review; add an assertVisible"
+    ]
+  },
+  "034_press_key.yaml": {
+    "outcome": "refused",
+    "reason": null,
+    "checks": {},
+    "refused": [
+      [
+        "command 4 (pressKey)",
+        "pressKey",
+        "presses 'back', a key iOS doesn't have"
+      ],
+      [
+        "command 5 (pressKey)",
+        "pressKey",
+        "presses 'Volume Up', a key iOS doesn't have"
+      ],
+      [
+        "command 6 (pressKey)",
+        "pressKey",
+        "presses 'volume Down', a key iOS doesn't have"
+      ],
+      [
+        "command 7 (pressKey)",
+        "pressKey",
+        "presses 'lOcK', a key iOS doesn't have"
+      ],
+      [
+        "command 8 (pressKey)",
+        "pressKey",
+        "presses 'remote dpad up', a key iOS doesn't have"
+      ],
+      [
+        "command 9 (pressKey)",
+        "pressKey",
+        "presses 'Remote dpad Down', a key iOS doesn't have"
+      ],
+      [
+        "command 10 (pressKey)",
+        "pressKey",
+        "presses 'Remote Dpad Left', a key iOS doesn't have"
+      ],
+      [
+        "command 11 (pressKey)",
+        "pressKey",
+        "presses 'Remote Dpad Right', a key iOS doesn't have"
+      ],
+      [
+        "command 12 (pressKey)",
+        "pressKey",
+        "presses 'remote dpad Center', a key iOS doesn't have"
+      ],
+      [
+        "command 13 (pressKey)",
+        "pressKey",
+        "presses 'rEmote Media plAy Pause', a key iOS doesn't have"
+      ],
+      [
+        "command 14 (pressKey)",
+        "pressKey",
+        "presses 'RemOte MediA StoP', a key iOS doesn't have"
+      ],
+      [
+        "command 15 (pressKey)",
+        "pressKey",
+        "presses 'remote Media NeXt', a key iOS doesn't have"
+      ],
+      [
+        "command 16 (pressKey)",
+        "pressKey",
+        "presses 'Remote Media Previous', a key iOS doesn't have"
+      ],
+      [
+        "command 17 (pressKey)",
+        "pressKey",
+        "presses 'REMOTE MEDIA REWIND', a key iOS doesn't have"
+      ],
+      [
+        "command 18 (pressKey)",
+        "pressKey",
+        "presses 'Remote Media Fast Forward', a key iOS doesn't have"
+      ],
+      [
+        "command 19 (pressKey)",
+        "pressKey",
+        "presses 'power', a key iOS doesn't have"
+      ],
+      [
+        "command 20 (pressKey)",
+        "pressKey",
+        "presses 'Tab', a key iOS doesn't have"
+      ],
+      [
+        "command 21 (pressKey)",
+        "pressKey",
+        "presses 'Remote System Navigation Up', a key iOS doesn't have"
+      ],
+      [
+        "command 22 (pressKey)",
+        "pressKey",
+        "presses 'Remote System Navigation Down', a key iOS doesn't have"
+      ],
+      [
+        "command 23 (pressKey)",
+        "pressKey",
+        "presses 'Remote Button A', a key iOS doesn't have"
+      ],
+      [
+        "command 24 (pressKey)",
+        "pressKey",
+        "presses 'Remote Button B', a key iOS doesn't have"
+      ],
+      [
+        "command 25 (pressKey)",
+        "pressKey",
+        "presses 'Remote Menu', a key iOS doesn't have"
+      ],
+      [
+        "command 26 (pressKey)",
+        "pressKey",
+        "presses 'TV Input', a key iOS doesn't have"
+      ],
+      [
+        "command 27 (pressKey)",
+        "pressKey",
+        "presses 'TV Input HDMI 1', a key iOS doesn't have"
+      ],
+      [
+        "command 28 (pressKey)",
+        "pressKey",
+        "presses 'TV Input HDMI 2', a key iOS doesn't have"
+      ],
+      [
+        "command 29 (pressKey)",
+        "pressKey",
+        "presses 'TV Input HDMI 3', a key iOS doesn't have"
+      ]
+    ],
+    "notes": []
+  },
+  "036_erase_text.yaml": {
+    "outcome": "imported",
+    "reason": null,
+    "checks": {
+      "036_erase_text.yaml": {
+        "version": 1,
+        "name": "036 erase text",
+        "app": {
+          "bundle": "com.example.app"
+        },
+        "reset": "none",
+        "tags": [
+          "maestro"
+        ],
+        "steps": [
+          "Type \"Hello World\" into the focused text field",
+          "Delete 6 characters from the focused text field"
+        ],
+        "expect": []
+      }
+    },
+    "refused": [],
+    "notes": [
+      "the flow asserts nothing, so the check ends needs_review; add an assertVisible"
+    ]
+  },
+  "039_hide_keyboard.yaml": {
+    "outcome": "imported",
+    "reason": null,
+    "checks": {
+      "039_hide_keyboard.yaml": {
+        "version": 1,
+        "name": "039 hide keyboard",
+        "app": {
+          "bundle": "com.example.app"
+        },
+        "reset": "none",
+        "tags": [
+          "maestro"
+        ],
+        "steps": [
+          "Dismiss the keyboard"
+        ],
+        "expect": []
+      }
+    },
+    "refused": [],
+    "notes": [
+      "the flow asserts nothing, so the check ends needs_review; add an assertVisible"
+    ]
+  },
+  "042_extended_wait.yaml": {
+    "outcome": "imported",
+    "reason": null,
+    "checks": {
+      "042_extended_wait.yaml": {
+        "version": 1,
+        "name": "042 extended wait",
+        "app": {
+          "bundle": "com.example.app"
+        },
+        "reset": "none",
+        "tags": [
+          "maestro"
+        ],
+        "expect": [
+          {
+            "visible": {
+              "label": "/^Item$/i"
+            },
+            "name": "Item is visible"
+          },
+          {
+            "absent": {
+              "label": "/^Another item$/i"
+            },
+            "name": "Another item is not visible"
+          },
+          {
+            "visible": {
+              "label": "/^Item$/i"
+            },
+            "name": "Item is visible"
+          }
+        ]
+      }
+    },
+    "refused": [],
+    "notes": []
+  },
+  "046_run_flow.yaml": {
+    "outcome": "refused",
+    "reason": null,
+    "checks": {},
+    "refused": [
+      [
+        "command 1 (runFlow)",
+        "runFlow",
+        "013_launch_app.yaml is for a different app"
+      ]
+    ],
+    "notes": []
+  },
+  "054_enabled.yaml": {
+    "outcome": "imported",
+    "reason": null,
+    "checks": {
+      "054_enabled-part-1.yaml": {
+        "version": 1,
+        "name": "054 enabled (part 1 of 2)",
+        "app": {
+          "bundle": "com.other.app"
+        },
+        "reset": "none",
+        "tags": [
+          "maestro"
+        ],
+        "expect": [
+          {
+            "visible": {
+              "label": "/^Button$/i",
+              "enabled": true
+            },
+            "name": "Button is visible"
+          }
+        ]
+      },
+      "054_enabled-part-2.yaml": {
+        "version": 1,
+        "name": "054 enabled (part 2 of 2)",
+        "app": {
+          "bundle": "com.other.app"
+        },
+        "reset": "none",
+        "tags": [
+          "maestro"
+        ],
+        "steps": [
+          "Tap \"Button\""
+        ],
+        "expect": [
+          {
+            "absent": {
+              "label": "/^Button$/i",
+              "enabled": true
+            },
+            "name": "Button is not visible"
+          },
+          {
+            "visible": {
+              "label": "/^Button$/i",
+              "enabled": false
+            },
+            "name": "Button is visible"
+          }
+        ]
+      }
+    },
+    "refused": [],
+    "notes": [
+      "assertions in the middle of the flow became 2 checks; each one replays the steps up to its assertions"
+    ]
+  },
+  "057_runFlow_env.yaml": {
+    "outcome": "refused",
+    "reason": null,
+    "checks": {},
+    "refused": [
+      [
+        "057_subflow.yaml command 2 (inputText)",
+        "inputText",
+        "uses ${OUTER_ENV}, which the flow's env doesn't set"
+      ]
+    ],
+    "notes": []
+  },
+  "057_subflow.yaml": {
+    "outcome": "refused",
+    "reason": null,
+    "checks": {},
+    "refused": [
+      [
+        "command 1 (inputText)",
+        "inputText",
+        "uses ${INNER_ENV}, which the flow's env doesn't set"
+      ],
+      [
+        "command 2 (inputText)",
+        "inputText",
+        "uses ${OUTER_ENV}, which the flow's env doesn't set"
+      ]
+    ],
+    "notes": []
+  },
+  "057_subflow_override.yaml": {
+    "outcome": "refused",
+    "reason": null,
+    "checks": {},
+    "refused": [
+      [
+        "command 1 (inputText)",
+        "inputText",
+        "uses ${INNER_ENV}, which the flow's env doesn't set"
+      ]
+    ],
+    "notes": []
+  },
+  "058_inline_env.yaml": {
+    "outcome": "refused",
+    "reason": null,
+    "checks": {},
+    "refused": [
+      [
+        "command 2 (runFlow)",
+        "runFlow",
+        "058_subflow.yaml sets INLINE_ENV to a different value than the flow that runs it, and Mobster can't tell which wins"
+      ]
+    ],
+    "notes": []
+  },
+  "058_subflow.yaml": {
+    "outcome": "imported",
+    "reason": null,
+    "checks": {
+      "058_subflow.yaml": {
+        "version": 1,
+        "name": "058 subflow",
+        "app": {
+          "bundle": "com.example.app"
+        },
+        "reset": "none",
+        "tags": [
+          "maestro"
+        ],
+        "steps": [
+          "Type \"Overridden Parameter\" into the focused text field"
+        ],
+        "expect": []
+      }
+    },
+    "refused": [],
+    "notes": [
+      "the flow asserts nothing, so the check ends needs_review; add an assertVisible"
+    ]
+  },
+  "059_directional_swipe_command.yaml": {
+    "outcome": "imported",
+    "reason": null,
+    "checks": {
+      "059_directional_swipe_command.yaml": {
+        "version": 1,
+        "name": "059 directional swipe command",
+        "app": {
+          "bundle": "com.example.app"
+        },
+        "reset": "none",
+        "tags": [
+          "maestro"
+        ],
+        "steps": [
+          "Swipe right across the screen"
+        ],
+        "expect": []
+      }
+    },
+    "refused": [],
+    "notes": [
+      "the flow asserts nothing, so the check ends needs_review; add an assertVisible"
+    ]
+  },
+  "069_wait_for_animation_to_end.yaml": {
+    "outcome": "imported",
+    "reason": null,
+    "checks": {
+      "069_wait_for_animation_to_end.yaml": {
+        "version": 1,
+        "name": "069 wait for animation to end",
+        "app": {
+          "bundle": "com.example.app"
+        },
+        "reset": "none",
+        "tags": [
+          "maestro"
+        ],
+        "steps": [
+          "Wait for animations on screen to finish"
+        ],
+        "expect": []
+      }
+    },
+    "refused": [],
+    "notes": [
+      "the flow asserts nothing, so the check ends needs_review; add an assertVisible"
+    ]
+  },
+  "076_optional_assertion.yaml": {
+    "outcome": "refused",
+    "reason": null,
+    "checks": {},
+    "refused": [
+      [
+        "command 2 (assertTrue)",
+        "assertTrue",
+        "judges a JavaScript condition, which Mobster doesn't run"
+      ],
+      [
+        "command 3 (extendedWaitUntil)",
+        "extendedWaitUntil",
+        "is optional, so it asserts nothing"
+      ],
+      [
+        "command 4 (assertVisible)",
+        "assertVisible",
+        "asserts with optional, which an assertion on the accessibility tree can't carry"
+      ]
+    ],
+    "notes": []
+  },
+  "079_scroll_until_visible.yaml": {
+    "outcome": "imported",
+    "reason": null,
+    "checks": {
+      "079_scroll_until_visible.yaml": {
+        "version": 1,
+        "name": "079 scroll until visible",
+        "app": {
+          "bundle": "com.example.app"
+        },
+        "reset": "none",
+        "tags": [
+          "maestro"
+        ],
+        "steps": [
+          "Scroll down until \"Test\" is visible"
+        ],
+        "expect": []
+      }
+    },
+    "refused": [],
+    "notes": [
+      "the flow asserts nothing, so the check ends needs_review; add an assertVisible"
+    ]
+  },
+  "094_runFlow_inline.yaml": {
+    "outcome": "imported",
+    "reason": null,
+    "checks": {
+      "094_runFlow_inline.yaml": {
+        "version": 1,
+        "name": "094 runFlow inline",
+        "app": {
+          "bundle": "com.example.app"
+        },
+        "reset": "none",
+        "tags": [
+          "maestro"
+        ],
+        "steps": [
+          "Type \"Inner Parameter\" into the focused text field"
+        ],
+        "expect": []
+      }
+    },
+    "refused": [],
+    "notes": [
+      "the flow asserts nothing, so the check ends needs_review; add an assertVisible"
+    ]
+  },
+  "101_doubleTapOn.yaml": {
+    "outcome": "imported",
+    "reason": null,
+    "checks": {
+      "101_doubleTapOn.yaml": {
+        "version": 1,
+        "name": "101 doubleTapOn",
+        "app": {
+          "bundle": "com.other.app"
+        },
+        "reset": "none",
+        "tags": [
+          "maestro"
+        ],
+        "steps": [
+          "Double-tap \"Button\""
+        ],
+        "expect": []
+      }
+    },
+    "refused": [],
+    "notes": [
+      "the flow asserts nothing, so the check ends needs_review; add an assertVisible"
+    ]
+  },
+  "129_text_and_id.yaml": {
+    "outcome": "imported",
+    "reason": null,
+    "checks": {
+      "129_text_and_id.yaml": {
+        "version": 1,
+        "name": "129 text and id",
+        "app": {
+          "bundle": "com.example.app"
+        },
+        "reset": "none",
+        "tags": [
+          "maestro"
+        ],
+        "expect": [
+          {
+            "visible": {
+              "id": "some_id",
+              "label": "/^some_text$/i"
+            },
+            "name": "some_text is visible"
+          }
+        ]
+      }
+    },
+    "refused": [],
+    "notes": []
+  }
+}

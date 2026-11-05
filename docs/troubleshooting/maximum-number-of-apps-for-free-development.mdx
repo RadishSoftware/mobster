@@ -1,0 +1,25 @@
+---
+title: "The maximum number of apps for free development profiles has been reached."
+sidebarTitle: "Free development app limit"
+description: "A free Apple Account allows 3 apps signed with Xcode on an iPhone. Delete one and install Mobster's helper again."
+icon: "triangle-alert"
+keywords: ["free developer", "app limit", "Apple Account", "WebDriverAgentRunner-Runner"]
+"article:modified_time": "2026-10-26"
+---
+
+You see this: `xcodebuild` prints this as the recovery suggestion for `Unable to Install "WebDriverAgentRunner-Runner"`. Mobster shows `Delete an app you installed with Xcode from your iPhone. A free Apple Account allows 3`.
+
+## Why it happens
+
+iOS caps apps signed by a free Apple Account at 3 on the phone. Waiting never frees a slot; deleting an app does.
+
+## Fix
+
+1. On the iPhone, delete an app you installed with Xcode: touch and hold its icon, then **Remove App › Delete App**.
+2. Install Mobster's helper again from Mobster for Mac (**Devices**), or run the guided setup's `setup /build`.
+
+## Check it worked
+
+The install finishes and `mobster doctor` prints `✓ WebDriverAgent`. A paid developer team has no such cap.
+
+Checked 26 Oct 2026 against Mobster 0.4.0. Back to [Troubleshooting](/troubleshooting#iphone).

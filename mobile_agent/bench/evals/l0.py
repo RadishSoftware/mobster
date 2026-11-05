@@ -85,7 +85,8 @@ def wasted(run, screens=None):
                         (model_s if nothing_ran else 0.0)))
         if set(t.stops) & DEFER_STOPS and t.done:
             out.append(("done_deferred", t.step, 1, 0, t.seconds))
-        dead = [a for a in executed if a.changed is False and a.op not in T.TYPED_OPS and a.op not in ("WAIT", "READ_LIST")
+        dead = [a for a in executed if a.changed is False and a.op not in T.TYPED_OPS
+                and a.op not in ("WAIT", "READ_LIST")
                 and a.op not in T.END_OPS]
         if dead:
             whole = len(dead) == len(executed) and not t.gained
@@ -119,7 +120,8 @@ def wasted(run, screens=None):
             if (prev.screen and t.screen == prev.screen and prev.actions and not prev.refused and not prev.failed
                     and all(x.changed is not False or x.op in T.TYPED_OPS for x in prev.actions)
                     and labels is not None and executed and all(T.norm(x.label) in labels for x in executed
-                                                                  if x.op in ("TAP", "LONG_PRESS") or x.op in T.TYPED_OPS)
+                                                                if x.op in ("TAP", "LONG_PRESS")
+                                                                or x.op in T.TYPED_OPS)
                     and any(x.op in ("TAP", "LONG_PRESS") or x.op in T.TYPED_OPS for x in executed)):
                 out.append(("chainable_turn", t.step, 1, 0, model_s))
     if turns and turns[-1].done_only and run.passed:
@@ -149,8 +151,6 @@ def settle_after_still(run):
     return total / 1000, n
 
 
-# -- step inefficiency -----------------------------------------------------------------------------------
-
 def shortest(runs):
     """{(suite, task): (turns, actions)}: the fewest of any passing run."""
     best = {}
@@ -173,8 +173,6 @@ def excess(run, best):
     per_turn = statistics.mean([t.seconds for t in run.turns if t.timed] or [0.0])
     return {"turns": turns, "actions": actions, "seconds": max(turns, 0) * per_turn, "best_turns": b[0]}
 
-
-# -- first divergence -----------------------------------------------------------------------------------
 
 def lcs_pairs(a, b):
     """Index pairs of a longest common subsequence of ``a`` and ``b``."""
@@ -279,7 +277,8 @@ def divergence(fail, passing):
             "position": round(i0 / len(f), 3) if f else None,
             "step": turn.step if turn else None, "ref_step": p_turn.step if p_turn else None,
             "app": turn.app if turn else None, "screen": turn.title if turn else None,
-            "same_screen": bool(p_turn is not None and turn is not None and turn.screen and turn.screen == p_turn.screen),
+            "same_screen": bool(p_turn is not None and turn is not None and turn.screen
+                                and turn.screen == p_turn.screen),
             "fail_action": [f_action.op, f_action.label[:80], f_action.app] if f_action else None,
             "ref_action": [p_action.op, p_action.label[:80], p_action.app] if p_action else None}
 
@@ -299,8 +298,6 @@ def divergences(runs, only_clean=True):
             out.append(divergence(r, refs))
     return out
 
-
-# -- time sinks ---------------------------------------------------------------------------------------------
 
 def time_sinks(runs, groups=None):
     """{"by_step_type": {...}, "by_app_group": {...}}: seconds by bucket, over timed turns."""
@@ -373,8 +370,6 @@ def partition(runs):
     return [{"bucket": k, "seconds": round(v, 1), "share": round(v / total, 3)} for k, v in c.most_common() if v > 0]
 
 
-# -- time to first token -------------------------------------------------------------------------------------------
-
 def _fit(xs, ys):
     """(intercept, slope, r) of a least-squares line, or Nones."""
     if len(xs) < 3 or len(set(xs)) < 2:
@@ -409,7 +404,8 @@ def ttft_table(runs, chars_per_token=3.0):
     for lo, hi in ((0, 1), (1, 10), (10, 20), (20, 35), (35, 10**6)):
         sel = [t.ttft_ms for t in turns if t.step is not None and lo <= t.step < hi]
         if sel:
-            by_step.append({"turns_from": lo, "turns_to": hi, "n": len(sel), "ttft_p50_ms": round(statistics.median(sel))})
+            by_step.append({"turns_from": lo, "turns_to": hi, "n": len(sel),
+                            "ttft_p50_ms": round(statistics.median(sel))})
     p75 = statistics.quantiles(ttft, n=4)[2]
     return {"turns": len(turns), "cache_missed_turns": sum(not (t.cached_tokens or 0) for t in turns),
             "cache_write_turns": sum(bool(t.write_tokens) for t in turns),
@@ -423,8 +419,6 @@ def ttft_table(runs, chars_per_token=3.0):
             "ms_above_p75_per_turn": round(sum(max(0.0, y - p75) for y in ttft) / len(ttft)),
             "by_hidden_thinking": bands, "by_turn_index": by_step}
 
-
-# -- the ranked table -----------------------------------------------------------------------------------------
 
 def mechanism_table(runs, use_screens=True):
     """Rows {mechanism, runs, occurrences, turns, actions, seconds, s_per_run, share_time, share_turns}, ranked."""
@@ -519,10 +513,9 @@ def outcome_table(runs, labels=None):
         if run is not None:
             row["turns"] += len(run.turns)
             row["seconds"] += sum(t.seconds for t in run.turns)
-    return {k: {**v, "seconds": round(v["seconds"], 1)} for k, v in sorted(by_cause.items(), key=lambda kv: -kv[1]["runs"])}
+    return {k: {**v, "seconds": round(v["seconds"], 1)} for k,
+            v in sorted(by_cause.items(), key=lambda kv: -kv[1]["runs"])}
 
-
-# -- report --------------------------------------------------------------------------------------------------
 
 def _md_table(rows, cols):
     head = "| " + " | ".join(c for c, _ in cols) + " |\n|" + "---|" * len(cols) + "\n"
@@ -541,7 +534,8 @@ def report(runs, groups=None, labels=None, title="L0 trace analytics"):
     ex = [e for e in ex if e]
     lines = [f"# {title}", "",
              f"Runs: {len(runs)} ({len(judged)} judged, {sum(bool(r.passed) for r in judged)} passing); "
-             f"timed: {totals['runs']} runs, {totals['turns']} turns, {totals['seconds']:.0f} s of model and device time.",
+             f"timed: {totals['runs']} runs, {totals['turns']} turns, {totals['seconds']:.0f} s "
+             "of model and device time.",
              "",
              "## Mechanisms ranked by seconds", "",
              "Each row is a ceiling on what removing that one mechanism could save; rows overlap.", ""]
@@ -562,7 +556,8 @@ def report(runs, groups=None, labels=None, title="L0 trace analytics"):
                      f"p50 {statistics.median(max(e['turns'], 0) for e in ex):.0f}; "
                      f"excess seconds {sum(e['seconds'] for e in ex):.0f} s in all.")
     lines += ["", "## Time sinks by step type", ""]
-    cols = [("", lambda kv: kv[0]), ("turns", lambda kv: str(kv[1]["turns"])), ("total s", lambda kv: f"{kv[1]['total_s']:.0f}"),
+    cols = [("", lambda kv: kv[0]), ("turns", lambda kv: str(kv[1]["turns"])),
+            ("total s", lambda kv: f"{kv[1]['total_s']:.0f}"),
             ("share", lambda kv: f"{100 * kv[1]['share']:.0f}%"), ("s/turn", lambda kv: str(kv[1]["s_per_turn"])),
             ("model s/turn", lambda kv: str(kv[1]["model_s_per_turn"])),
             ("ttft s", lambda kv: str(kv[1]["ttft_s_per_turn"])), ("gen s", lambda kv: str(kv[1]["gen_s_per_turn"])),
@@ -573,7 +568,8 @@ def report(runs, groups=None, labels=None, title="L0 trace analytics"):
     lines.append(_md_table(list(sinks["by_step_type"].items()), cols))
     lines += ["", "## Time sinks by app group", ""]
     lines.append(_md_table(list(sinks["by_app_group"].items()), cols))
-    lines += ["", f"## First divergence of failing runs ({len(divs)} clean failing runs with a passing run to compare)", ""]
+    lines += ["", f"## First divergence of failing runs ({len(divs)} clean failing runs with a passing run to compare)",
+              ""]
     if divs:
         lines.append(_md_table(kinds.most_common(), [("kind", lambda kv: kv[0]), ("runs", lambda kv: str(kv[1])),
                                                      ("share", lambda kv: f"{100 * kv[1] / len(divs):.0f}%")]))
@@ -584,8 +580,8 @@ def report(runs, groups=None, labels=None, title="L0 trace analytics"):
     if ttft:
         lines += ["", "## Time to first token", "",
                   f"{ttft['turns']} turns with streamed timing; {ttft['cache_missed_turns']} missed the cache; "
-                  f"cached share of input {100 * ttft['cached_share_mean']:.0f}%. TTFT p50 {ttft['ttft_p50_ms']:.0f} ms, "
-                  f"p90 {ttft['ttft_p90_ms']:.0f} ms, mean {ttft['ttft_mean_ms']} ms. Fit on uncached tokens: "
+                  f"cached share of input {100 * ttft['cached_share_mean']:.0f}%. TTFT p50 {ttft['ttft_p50_ms']:.0f} "
+                  f"ms, p90 {ttft['ttft_p90_ms']:.0f} ms, mean {ttft['ttft_mean_ms']} ms. Fit on uncached tokens: "
                   f"{ttft['fit_intercept_ms']} ms + {ttft['fit_ms_per_1k_uncached']} ms per 1k (r {ttft['fit_r']}); on "
                   f"turns without hidden thinking {ttft['fit_no_thinking_ms_per_1k']} ms per 1k (r "
                   f"{ttft['fit_no_thinking_r']}).", ""]
@@ -596,9 +592,10 @@ def report(runs, groups=None, labels=None, title="L0 trace analytics"):
     if labels:
         lines += ["", "## Failing runs by labelled cause", ""]
         causes = outcome_table(runs, labels)
-        lines.append(_md_table(list(causes.items()), [("cause", lambda kv: str(kv[0])), ("runs", lambda kv: str(kv[1]["runs"])),
-                                                      ("turns", lambda kv: str(kv[1]["turns"])),
-                                                      ("seconds", lambda kv: f"{kv[1]['seconds']:.0f}")]))
+        lines.append(_md_table(list(causes.items()),
+                               [("cause", lambda kv: str(kv[0])), ("runs", lambda kv: str(kv[1]["runs"])),
+                                ("turns", lambda kv: str(kv[1]["turns"])),
+                                ("seconds", lambda kv: f"{kv[1]['seconds']:.0f}")]))
     return "\n".join(lines) + "\n", {"mechanisms": table, "totals": totals, "time_sinks": sinks,
                                       "partition": partition([r for r in runs if r.timed]), "ttft": ttft,
                                       "divergences": divs, "divergence_kinds": dict(kinds),

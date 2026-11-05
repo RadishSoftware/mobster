@@ -1,0 +1,49 @@
+---
+title: "Test and automate apps on real iPhones"
+sidebarTitle: "Introduction"
+description: "Set up Mobster, test your app, or connect your coding agent to your iPhone."
+icon: "house"
+mode: "wide"
+keywords: ["mobster", "mobster for mac", "iphone agent", "ios testing", "mcp", "get started", "what is mobster"]
+"og:image": "https://mobster.dev/og/docs/get-started.jpg"
+"og:image:alt": "Test and automate apps on real iPhones, beside a violet glass disc"
+"twitter:image": "https://mobster.dev/og/docs/get-started.jpg"
+---
+
+<div className="mob-actions">
+  <a className="mob-button" href="https://mobster.dev/download">Get Mobster for Mac</a>
+</div>
+
+Mobster tests the iOS app you're building, on a simulator or your iPhone. It also does tasks in the apps on your iPhone, signed in as you.
+
+<div className="mob-hero">
+  <img src="/images/home/approval-light.webp" alt="Mobster for Mac asking Send this message to Alex Rivera? with the message, Don't send and Send." className="block dark:hidden" />
+  <img src="/images/home/approval-dark.webp" alt="Mobster for Mac asking Send this message to Alex Rivera? with the message, Don't send and Send." className="hidden dark:block" />
+</div>
+
+## Pick your job
+
+<CardGroup cols={3}>
+  <Card title="Test your app" icon="circle-check" href="/quickstart/test">
+    Write what must be true after a flow and run it on simulators. No iPhone needed.
+  </Card>
+  <Card title="Run tasks on your phone" icon="smartphone" href="/quickstart/mac">
+    Install the app, connect your iPhone and run a first task.
+  </Card>
+  <Card title="Connect agents and tools" icon="plug" href="/agents">
+    Give Claude Code or Codex your iPhone over MCP.
+  </Card>
+</CardGroup>
+
+## How it works
+
+Mobster runs on your Mac and drives a simulator, or your iPhone over a USB cable. It reads each screen the way VoiceOver does, as buttons and text with names, so it taps **Send** by name. A check that passed once replays with no model call. By default Mobster stops before anything that sends, buys, posts or deletes, and shows you the exact action, as above ([Approvals and safety](/safety)).
+
+Mobster's agent runs on your own key or on a plan you already pay for, such as Claude Code or Codex. No Mobster server sits in between ([Models and keys](/models-and-keys)). It can't get past Face ID or your passcode.
+
+Mobster for Mac is \$12 a month, \$99 a year or \$149 once, for every phone, after a 7-day free trial with no card ([Pricing](/pricing)). Checks on a simulator are free.
+
+
+<Visibility for="agents">
+To set Mobster up for a user, follow https://docs.mobster.dev/agents/setup.md. Every page here is also served as Markdown: add `.md` to its URL. The generated references, /reference/cli and /reference/mcp-tools, match the code they were built from.
+</Visibility>

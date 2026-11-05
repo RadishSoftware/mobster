@@ -1,0 +1,13 @@
+# A launch-only check that ends on a screen worth showing in the App Store: no model calls, any language.
+#   mobster test .mobster/checks/home.yaml                 run it
+#   mobster asc screenshots --size 6.9 --size 13            make the store screenshots from every check tagged screenshot
+version: 1
+name: Home greets a returning user
+app:
+  bundle: com.example.yourapp
+  path: .mobster/build/Build/Products/Release-iphonesimulator/YourApp.app   # `mobster expo build` or `mobster test pr` makes it
+tags: [smoke, screenshot]
+launch:
+  url: yourapp://home
+expect:
+  - text: Welcome back

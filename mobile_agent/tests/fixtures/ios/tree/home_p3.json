@@ -1,0 +1,107 @@
+{
+"name": "home_p3",
+"bundle": "com.apple.springboard",
+"keyboard": "",
+"w": 402.0,
+"h": 874.0,
+"elements": [
+{
+"role": "Icon",
+"label": "WebDriverAgentRunner-Runner",
+"value": "",
+"rect": [
+0.0199,
+0.1007,
+0.2687,
+0.1098
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "PageIndicator",
+"label": "Page control",
+"value": "Page 3 of 3",
+"rect": [
+0.398,
+0.8055,
+0.199,
+0.0412
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Image",
+"label": "Search",
+"value": "",
+"rect": [
+0.4279,
+0.8146,
+0.0299,
+0.0137
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "StaticText",
+"label": "Search",
+"value": "Search",
+"rect": [
+0.4677,
+0.8146,
+0.0995,
+0.0183
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "Safari",
+"value": "",
+"rect": [
+0.3085,
+0.8833,
+0.1692,
+0.0778
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "Messages",
+"value": "",
+"rect": [
+0.5274,
+0.8833,
+0.1692,
+0.0778
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "StaticText",
+"label": "2:59\u202fPM",
+"value": "2:59\u202fPM",
+"rect": [
+0.1393,
+0.0275,
+0.0896,
+0.0229
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+}
+]
+}

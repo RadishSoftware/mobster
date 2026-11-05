@@ -1,0 +1,241 @@
+{
+"note": "Recorded on the test device (iPhone 15 Pro, iOS 26.0.1), 12 Oct 2026: the rows the agent saw, scrubbed (the account's name, the phone's name; serial and model numbers dropped). The same screen read by Vision OCR (iPhone Mirroring's reading).",
+"rows": [
+{
+"text": "11:32 L",
+"confidence": 1,
+"rect": [
+0.0983,
+0.0235,
+0.1695,
+0.0235
+]
+},
+{
+"text": "•1l7",
+"confidence": 0.3,
+"rect": [
+0.7119,
+0.025,
+0.1186,
+0.0219
+]
+},
+{
+"text": "00•",
+"confidence": 1,
+"rect": [
+0.8644,
+0.0282,
+0.061,
+0.0141
+]
+},
+{
+"text": "About",
+"confidence": 1,
+"rect": [
+0.4338,
+0.0859,
+0.1426,
+0.0207
+]
+},
+{
+"text": "Name",
+"confidence": 1,
+"rect": [
+0.0814,
+0.1753,
+0.1254,
+0.0188
+]
+},
+{
+"text": "iOS Version",
+"confidence": 1,
+"rect": [
+0.0746,
+0.2363,
+0.2441,
+0.0203
+]
+},
+{
+"text": "Model Name",
+"confidence": 1,
+"rect": [
+0.0814,
+0.2989,
+0.261,
+0.0203
+]
+},
+{
+"text": "Studio iPhone>",
+"confidence": 1,
+"rect": [
+0.7692,
+0.1749,
+0.1564,
+0.0227
+]
+},
+{
+"text": "26.0.1 >",
+"confidence": 1,
+"rect": [
+0.7454,
+0.2358,
+0.1803,
+0.0245
+]
+},
+{
+"text": "iPhone 15Pro",
+"confidence": 1,
+"rect": [
+0.6373,
+0.2989,
+0.2881,
+0.0203
+]
+},
+{
+"text": "Coverage Expired",
+"confidence": 1,
+"rect": [
+0.0814,
+0.5274,
+0.3627,
+0.0219
+]
+},
+{
+"text": ">",
+"confidence": 1,
+"rect": [
+0.8949,
+0.5274,
+0.0271,
+0.0188
+]
+},
+{
+"text": "Parts & Service History",
+"confidence": 1,
+"rect": [
+0.078,
+0.6291,
+0.478,
+0.0235
+]
+},
+{
+"text": "Songs",
+"confidence": 1,
+"rect": [
+0.0797,
+0.7359,
+0.1316,
+0.0202
+]
+},
+{
+"text": "Videos",
+"confidence": 1,
+"rect": [
+0.0779,
+0.7949,
+0.1527,
+0.0206
+]
+},
+{
+"text": "Photos",
+"confidence": 1,
+"rect": [
+0.081,
+0.8571,
+0.1498,
+0.0214
+]
+},
+{
+"text": "182",
+"confidence": 1,
+"rect": [
+0.8441,
+0.7966,
+0.0814,
+0.0188
+]
+},
+{
+"text": "2,543",
+"confidence": 1,
+"rect": [
+0.7929,
+0.8557,
+0.1329,
+0.0304
+]
+},
+{
+"text": "85",
+"confidence": 1,
+"rect": [
+0.8644,
+0.9202,
+0.061,
+0.0203
+]
+},
+{
+"text": "Applications",
+"confidence": 1,
+"rect": [
+0.0777,
+0.9196,
+0.2615,
+0.0231
+]
+},
+{
+"text": "Canacitv",
+"confidence": 1,
+"rect": [
+0.0813,
+0.9825,
+0.1866,
+0.0162
+]
+},
+{
+"text": "128GB",
+"confidence": 1,
+"rect": [
+0.7691,
+0.9818,
+0.1568,
+0.0176
+]
+}
+],
+"hash": "about",
+"window": {
+"w": 589,
+"h": 1278
+},
+"icons": [
+[
+"Back",
+[
+0.0712,
+0.0829,
+0.0441,
+0.0282
+]
+]
+]
+}

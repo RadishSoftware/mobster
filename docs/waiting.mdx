@@ -1,0 +1,46 @@
+---
+title: "Who's waiting on me"
+sidebarTitle: "Who's waiting on me"
+description: "Mobster reads the Messages history on your Mac, lists the people you left on read, and drafts a reply for each with Apple's on-device model. You approve each one before it sends."
+icon: "message-circle-reply"
+keywords: ["waiting on me", "left on read", "unanswered messages", "iMessage", "drafts", "review queue", "on-device", "Full Disk Access", "Apple Intelligence"]
+---
+
+**Who's waiting on me?** is a chip on Home. Press it and Mobster reads your Messages on this Mac, finds the people waiting on a reply, and hands you a review queue with a draft for each. Nothing is sent until you approve it.
+
+## What it reads
+
+Messages in iCloud keeps your history on your Mac, in `~/Library/Messages/chat.db`. Mobster opens that file read-only, reads the last 30 days of your one-to-one conversations into memory, and closes it. It writes nothing, copies nothing to disk and logs no message text. It reads names from your Contacts on this Mac and falls back to the phone number or email address.
+
+The first time, macOS needs you to allow **Full Disk Access** for Mobster. The sheet explains why, opens System Settings at the right pane, and starts the job by itself when you turn it on. You can turn it off again in System Settings › Privacy & Security › Full Disk Access.
+
+## Who shows up
+
+| Bucket | Who is in it |
+| --- | --- |
+| **Asked you something** | Their last message asks a question or makes a request ("can you", "did you", "let me know", "call me"), and it is at least 2 hours old. |
+| **Waiting on you** | Their last message is the last in the chat, at least 2 hours old, and asks nothing. |
+| **You said you would** | You wrote "I'll", "I will", "let me" or "tomorrow" in the last 30 days, and they haven't written since. A file you sent after it counts as keeping the promise. |
+
+Each person shows once, the longest wait first, up to 25 people. The rules are fixed. No model decides who is waiting.
+
+Left out: a last message that closes the conversation ("ok", "thanks", "lol", "👍", a lone emoji), a tapback or other reaction, short codes and business senders (a number of 6 digits or fewer, `no-reply` addresses), group chats and anything older than 30 days.
+
+## Drafts come from your Mac
+
+Each draft is written by Apple's on-device model (macOS 26 and Apple Intelligence). Mobster gives it only that conversation's last 8 messages, marked as data to read and never as instructions. It asks for a short, plain reply that commits you to nothing: no dates, no money, no yes or no for you. Where you need to decide, the draft says something like "Let me check and get back to you." A draft that names a date, a time, an amount or a yes or no is dropped, and you write your own.
+
+No message text goes to a cloud model, and Mobster never falls back to one. If Apple Intelligence is off, the Mac is too old or the model is still downloading, the people still show up with no draft, and the result says so once: "Apple Intelligence is off on this Mac, so you'll write your own replies." Drafting takes a few seconds per person and stops after 75 seconds; people it didn't reach have no draft.
+
+## Approve and send
+
+The result is a finished task with a review queue, like any other ([Results](/results#review-queues)). **Edit** changes the words, **Skip** sets a person aside, and **Approve** starts a task that sends exactly those words to exactly that person in Messages on your iPhone. That task asks first as your permission mode says, and it is journaled like any send. A person with no draft shows an empty box, "Write your reply", with **Skip** and **Approve** beside it. **Approve** waits until you type something, then sends your words, and Mobster refuses an empty reply. Approving the same person twice never sends twice.
+
+The task's stored result keeps only what the card shows: the name, the number or address, the person's last message (cut to 200 characters), how long ago, and the draft. A share link masks the people it names by default ([Share a result](/results#share-a-result)).
+
+## Limits
+
+- One-to-one conversations in Messages (iMessage and SMS) only. Group chats, WhatsApp and other apps aren't read yet.
+- Only the Mobster app on this Mac can start it. It is not a tool an agent can call, because a tool result would carry your messages to the agent's model.
+- Approve sends through your iPhone, so it needs a phone connected. Reading and drafting don't.
+- When the phone's Messages shows a name that differs from the one on this Mac, the send asks you to confirm the person instead of going ahead.

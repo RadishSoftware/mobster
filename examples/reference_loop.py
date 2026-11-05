@@ -10,7 +10,7 @@ delete. The events stay in memory; mobile_agent/journal.py is how Mobster journa
     WDA_URL=http://127.0.0.1:8100 ANTHROPIC_API_KEY=... PYTHONPATH=. mobile_agent/.venv/bin/python examples/reference_loop.py
 
 Mobster for Mac is the product built on this loop: https://mobster.dev
-"""
+"""  # noqa: E501
 
 import json
 import os

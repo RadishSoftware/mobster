@@ -1,0 +1,47 @@
+---
+title: "Running checks in Xcode Cloud"
+sidebarTitle: "Xcode Cloud"
+keywords: ["xcode cloud", "ci_post_xcodebuild", "ci_scripts", "hosted runner", "ci token"]
+description: "Run your checks after Xcode Cloud builds a pull request, on Apple's hosted Macs, with simulators and a CI token."
+icon: "apple"
+hidden: true
+noindex: true
+---
+
+<Warning>CI tokens are not enabled yet, so hosted runners cannot run your checks today. Run them on [your own Mac](/ci#a-mac-of-yours).</Warning>
+
+Xcode Cloud runs a script after a build when the script is named `ci_post_xcodebuild.sh` in a `ci_scripts` folder at the root of your repository. `mobster ci init` writes that script. [CI](/ci) has the parts every host shares.
+
+## Set it up
+
+```sh
+mobster ci init --host xcode-cloud
+```
+
+It writes `ci_scripts/ci_post_xcodebuild.sh`, marked executable, and prints what's left: add `MOBSTER_CI_TOKEN` as a secret environment variable of your Xcode Cloud workflow, commit the file and open a pull request.
+
+```sh ci_scripts/ci_post_xcodebuild.sh
+#!/bin/sh
+set -eu
+if [ -z "${CI_PULL_REQUEST_NUMBER:-}" ]; then
+  echo "This build isn't for a pull request, so Mobster tested nothing."
+  exit 0
+fi
+MOBSTER=/Applications/Mobster.app/Contents/MacOS/mobster-agent
+brew install --cask radishsoftware/tap/mobster-app
+"$MOBSTER" sim doctor --fix
+status=0
+"$MOBSTER" ci run || status=$?
+"$MOBSTER" ci comment || true   # Xcode Cloud has no comment token; the verdict is in this log
+exit "$status"
+```
+
+The script exits with the checks' exit code, so a failed check fails the Xcode Cloud build. The target branch comes from `CI_PULL_REQUEST_TARGET_BRANCH`. Xcode Cloud posts no comment on the pull request through Mobster: the verdict and the report's location are in the build log, and `.mobster/ci/comment.md` holds the comment.
+
+## Sign in with a CI token
+
+The job signs in with a CI token, not with Mobster for Mac. It is part of your plan, adds no seat and counts no runs. It licenses simulator checks only (`mobster ci run` and `mobster test`), it ends after 90 days unless you choose up to 365, and it never licenses an iPhone. Make one with `mobster account ci-token create NAME` or in the console under Settings › CI tokens, and revoke it from either. Store it as `MOBSTER_CI_TOKEN`, as a secret of the service. `mobster ci doctor` in the job checks that it is live and says what to fix if it isn't.
+
+## What this runner doesn't do
+
+A hosted Mac has no iPhone, so the checks run on simulators. To test on a phone, use [a Mac of yours](/ci/mac-runner).

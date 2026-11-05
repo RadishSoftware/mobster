@@ -82,8 +82,9 @@ def load(paths, latest=False):
                 record = json.load(open(task_json, encoding="utf-8"))
             except (OSError, ValueError):
                 continue
-            if (record.get("mobster") or {}).get("policy") != "frontier" and not any(
-                    e.get("event", "").startswith("frontier_") for e in (record.get("mobster") or {}).get("events", [])):
+            if ((record.get("mobster") or {}).get("policy") != "frontier" and not any(
+                    e.get("event", "").startswith("frontier_")
+                    for e in (record.get("mobster") or {}).get("events", []))):
                 continue
             runs.append((os.path.basename(os.path.dirname(os.path.dirname(task_json))), record,
                          os.path.getmtime(task_json)))
@@ -153,7 +154,8 @@ def task_trails(runs, least=3):
         for step, category, detail in classify(events):
             if category.startswith(WASTE):
                 decision = decisions.get(step, {})
-                what = detail if category == "no_change" else f"{decision.get('operation')} {decision.get('target_label')!r}"
+                what = (detail if category == "no_change" else f"{decision.get('operation')} "
+                        f"{decision.get('target_label')!r}")
                 trail.append(f"{step}:{category.split(':')[-1]} {str(what)[:40]}")
         if len(trail) >= least:
             evaluation = record.get("evaluation")

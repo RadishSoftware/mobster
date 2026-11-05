@@ -35,8 +35,8 @@ MAX_TEXT = 2000
 MAX_MARKDOWN = 12000
 MAX_TITLE = 160
 MAX_BYTES = 256_000
-MAX_SERIES = 5                 # the categorical palette's validated slots (docs/brand/tokens.json "data")
-MAX_POINTS = 60                # labels on a chart's x axis
+MAX_SERIES = 5
+MAX_POINTS = 60
 MAX_SCATTER_SERIES = 3         # all three pairs of the first three slots stay apart for colour-blind readers
 MAX_SCATTER_POINTS = 200
 CHART_KINDS = ("bar", "line", "area", "pie", "scatter", "sparkline")
@@ -53,7 +53,6 @@ STATUSES = ("pass", "fail", "uncertain")
 QUEUE_ACTIONS = ("send_message", "reply", "post_comment")
 DEFAULT_BUCKETS = ({"id": "reply", "label": "Needs a reply"}, {"id": "wait", "label": "Can wait"},
                    {"id": "spam", "label": "Spam"})
-# A part of a draft the person must fill in before it can go: "Friday at 8 [works / doesn't work] for me".
 BLANK = re.compile(r"\[[^\]\n]{1,80}\]")
 _ID = re.compile(r"[A-Za-z0-9_.:-]{1,64}")
 _CONTROL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
@@ -64,9 +63,7 @@ class BlockError(ValueError):
 
 
 class _Marker:
-    """A value only code in this process can hold: JSON (a model's blocks, a request body) has no way to say it, and a
-    copy of it is itself."""
-
+    """A value only code in this process can hold: JSON can't say it, and a copy of it is itself."""
     def __init__(self, name):
         self.name = name
 
@@ -85,8 +82,6 @@ class _Marker:
 # comes from a model or a request can't carry the mark; ``approval_item`` is then the one place that reads it.
 YOUR_WORDS = _Marker("your words")
 
-
-# -- strings ---------------------------------------------------------------------------------------------------------
 
 def _text(value, limit=MAX_TEXT, *, required=False, field="text", multiline=True):
     """A bounded, redacted string, or None. Numbers become their text; anything else is refused."""
@@ -153,14 +148,12 @@ def status_word(value):
             "unsure": "uncertain", "unknown": "uncertain"}.get(value, value) if value else None
 
 
-# -- the vocabulary --------------------------------------------------------------------------------------------------
-
 def _review_queue(block):
     action = block.get("action") or "send_message"
     if action not in QUEUE_ACTIONS:
         raise BlockError("A review queue's action is send_message, reply or post_comment")
     buckets = []
-    for index, bucket in enumerate(block.get("buckets") or DEFAULT_BUCKETS):
+    for bucket in block.get("buckets") or DEFAULT_BUCKETS:
         if isinstance(bucket, dict):
             bucket_id = _id(bucket.get("id"), None)
             label = _text(bucket.get("label"), 40, multiline=False)
@@ -204,8 +197,10 @@ def _column(column, index):
         column = {"label": column}
     if not isinstance(column, dict):
         raise BlockError("A table's column is a name or an object")
-    label = _text(column.get("label") or column.get("key"), 60, required=True, field="A column's label", multiline=False)
-    key = _id(column.get("key"), None) or re.sub(r"[^a-z0-9]+", "_", label.casefold()).strip("_")[:40] or f"c{index + 1}"
+    label = _text(column.get("label") or column.get("key"), 60, required=True, field="A column's label",
+                  multiline=False)
+    key = (_id(column.get("key"), None) or re.sub(r"[^a-z0-9]+", "_", label.casefold()).strip("_")[:40]
+           or f"c{index + 1}")
     kind = column.get("type") or "text"
     if kind not in COLUMN_TYPES:
         kind = "text"
@@ -234,11 +229,12 @@ def _cell(value, kind):
         if isinstance(value, bool):
             return value
         word = str(value).strip().casefold()
-        return True if word in ("yes", "true", "y", "1") else False if word in ("no", "false", "n", "0") else _text(value)
+        return (True if word in ("yes", "true", "y", "1") else False
+                if word in ("no", "false", "n", "0") else _text(value))
     if kind == "link":
         return _link(value) or _text(value, 300, multiline=False)
     if kind == "brand":
-        return _text(value, 80, multiline=False)    # a company's name; the app shows its logo when it has one
+        return _text(value, 80, multiline=False)
     if kind == "status":
         status = status_word(value)
         return status if status in STATUSES else _text(value, 120, multiline=False)
@@ -366,9 +362,7 @@ def _markdown(block):
 
 
 def _chart(block):
-    """bar, line, area, pie, scatter or sparkline. ``x`` labels with one value per label in each series, except
-    scatter, whose series hold ``points`` ({x, y, label?}). Optional: unit, format (number, money, percent),
-    currency, stacked (bar and area), xLabel, yLabel."""
+    """bar, line, area, pie, scatter or sparkline."""
     kind = str(block.get("kind") or "bar").strip().lower()
     kind = CHART_ALIASES.get(kind, kind)
     if kind not in CHART_KINDS:
@@ -403,7 +397,8 @@ def _chart(block):
         labels = [_text(label, 40, multiline=False) or "" for label in x]
         series = []
         for one in raw[:1 if kind == "pie" else MAX_SERIES]:
-            if not isinstance(one, dict) or not isinstance(one.get("values"), list) or len(one["values"]) != len(labels):
+            if (not isinstance(one, dict) or not isinstance(one.get("values"), list)
+                    or len(one["values"]) != len(labels)):
                 raise BlockError("Each series has one value per label")
             values = [_number(value) for value in one["values"]]
             series.append({"label": _text(one.get("label"), 40, multiline=False) or "Value", "values": values})
@@ -437,8 +432,7 @@ def _coordinate(value, limit):
 
 
 def _map(block):
-    """Places on a map: each a name and an address or a latitude and longitude (``lat``, ``lon``). ``near`` is
-    where to look for an address that doesn't say its city ("San Francisco, CA")."""
+    """Places on a map: each a name and an address or a latitude and longitude (``lat``, ``lon``)."""
     raw = block.get("places")
     if not isinstance(raw, list) or not raw:
         raise BlockError("A map needs places")
@@ -488,8 +482,6 @@ def _timeline(block):
 
 
 def _comparison(block):
-    """Two to four options side by side: each a name, facts (label and value, the same labels across options),
-    pros and cons; ``recommended`` names the option Mobster would pick, and ``verdict`` says why."""
     raw = block.get("options")
     if not isinstance(raw, list) or not 2 <= len(raw) <= MAX_OPTIONS:
         raise BlockError(f"A comparison has 2 to {MAX_OPTIONS} options")
@@ -557,7 +549,7 @@ def _gallery(block):
 SHAPES = {"review_queue": _review_queue, "table": _table, "media_list": _media_list, "evidence": _evidence,
           "checklist": _checklist, "markdown": _markdown, "chart": _chart, "map": _map, "timeline": _timeline,
           "comparison": _comparison, "gallery": _gallery}
-TYPES = tuple(SHAPES)  # the block kinds, in the order the schema lists them
+TYPES = tuple(SHAPES)
 
 
 def _readable(block):
@@ -602,9 +594,7 @@ def validate_block(block, index=0):
 
 
 def validate(value):
-    """(envelope, problems). ``value`` is an envelope ``{"v": 1, "blocks": [...]}`` or a bare list of blocks. Each
-    block that doesn't fit is replaced by a markdown block with its readable text (dropped when it has none), and
-    each such block adds a problem. None when nothing is left, or ``value`` is no envelope at all."""
+    """(envelope, problems)."""
     problems = []
     if isinstance(value, dict):
         if value.get("v", VERSION) != VERSION:
@@ -642,8 +632,6 @@ def validate(value):
     return (envelope if envelope["blocks"] else None), problems
 
 
-# -- builders --------------------------------------------------------------------------------------------------------
-
 def review_queue(items, *, title=None, buckets=None, action="send_message", id="queue"):
     return {"type": "review_queue", "id": id, **({"title": title} if title else {}), "action": action,
             **({"buckets": list(buckets)} if buckets is not None else {}), "items": list(items)}
@@ -672,8 +660,7 @@ def markdown(text, *, title=None, id="text"):
 
 
 def chart(x, series, *, kind="bar", title=None, unit=None, id="chart", **extra):
-    """A chart block. ``x`` labels (None for scatter, whose series hold points); ``extra``: format, currency, stacked,
-    xLabel, yLabel."""
+    """A chart block."""
     return {"type": "chart", "id": id, **({"title": title} if title else {}), "kind": kind,
             **({"x": list(x)} if x is not None else {}), "series": list(series), **({"unit": unit} if unit else {}),
             **extra}
@@ -707,8 +694,6 @@ def merge(*envelopes):
     blocks = [block for value in envelopes if isinstance(value, dict) for block in value.get("blocks") or ()]
     return validate(blocks)[0] if blocks else None
 
-
-# -- export ----------------------------------------------------------------------------------------------------------
 
 def _cell_text(value):
     if value is None:
@@ -781,7 +766,7 @@ def block_markdown(block):
         if block.get("quote"):
             lines.append(f"> {block['quote']}")
     elif kind == "checklist":
-        marks = {"pass": "Pass", "fail": "Fail", "uncertain": "Unsure"}
+        marks = {"pass": "Pass", "fail": "Fail", "uncertain": "Needs review"}
         for item in block["items"]:
             lines.append(f"- {marks[item['status']]}: {item['label']}")
             if item.get("expected"):
@@ -799,11 +784,13 @@ def block_markdown(block):
         lines.append("| | " + " | ".join(names) + " |")
         lines.append("| --- |" + " ---: |" * len(names))
         for index, label in enumerate(block["x"]):
-            lines.append(f"| {_md_cell(label)} | " + " | ".join(_cell_text(one["values"][index]) for one in block["series"]) + " |")
+            lines.append(f"| {_md_cell(label)} | "
+                         + " | ".join(_cell_text(one["values"][index]) for one in block["series"]) + " |")
     elif kind == "map":
         for index, place in enumerate(block["places"], 1):
             where = place.get("address") or f"{place['lat']}, {place['lon']}"
-            lines.append(f"{index}. **{place['name']}**: {where}" + (f" ({place['note']})" if place.get("note") else ""))
+            lines.append(f"{index}. **{place['name']}**: {where}"
+                         + (f" ({place['note']})" if place.get("note") else ""))
     elif kind == "timeline":
         for item in block["items"]:
             lines.append(f"- {item['at'] + ': ' if item.get('at') else ''}**{item['title']}**"
@@ -834,8 +821,6 @@ def to_markdown(value):
     return "\n".join(block_markdown(block) for block in blocks or ())
 
 
-# -- a review queue's Approve -----------------------------------------------------------------------------------------
-
 def find(value, block_id, item_id=None):
     """(block, item) in a stored envelope, or (None, None)."""
     for block in (value or {}).get("blocks") or () if isinstance(value, dict) else ():
@@ -848,9 +833,7 @@ def find(value, block_id, item_id=None):
 
 
 def approval_item(value, block_id, item_id, text):
-    """The item an Approve names and the exact words it sends, from the STORED envelope. Raises BlockError, in the
-    words the Mac app shows, when it can't be approved: no such item, no draft (unless it is a ``yourWords`` item and
-    the person typed their own), no recipient, no words, a part left to fill in, or words that hold a secret."""
+    """The item an Approve names and its exact words, from the STORED envelope; BlockError when it can't go."""
     block, item = find(value, block_id, item_id)
     if block is None or block.get("type") != "review_queue":
         raise BlockError("That draft isn't in this task's results anymore.")
@@ -906,13 +889,11 @@ def _plain(text):
 
 
 def preapproval_matches(spec, request):
-    """Whether ``request`` (an approval request, Run.request_approval) is the one send ``spec`` covers: a commit that
-    sends a message, its words exactly the approved words, to the person the screen itself shows (``recipient_seen``),
-    in the approved app, and the spec not used yet. Anything else asks as usual (fail closed)."""
+    """Whether ``request`` is exactly the send ``spec`` covers (words, shown recipient, app, unused); else it asks."""
     if not isinstance(spec, dict) or spec.get("used") or not isinstance(request, dict):
         return False
     if spec.get("kind") is not None:
-        return False  # another kind of preapproval (the content queue's): Run.request_approval matches it itself
+        return False  # the content queue's: Run.request_approval matches it itself
     if (request.get("kind") or "action") != "commit" or request.get("act") not in (
             "send_message", "reply", "comment", "post", "send"):
         return False
@@ -930,11 +911,7 @@ def preapproval_matches(spec, request):
     return True
 
 
-# -- blocks from data a task already holds ---------------------------------------------------------------------------
-
 def from_report(report):
-    """A long task's report's blocks: its own ``blocks`` when it has them, and an inbox sweep's review queue
-    (``queue``, else ``drafts``: longform/inbox.py) as a review_queue. None when there are none."""
     if not isinstance(report, dict):
         return None
     blocks = []

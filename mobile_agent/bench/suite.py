@@ -1,32 +1,24 @@
-"""The pre-registered task suite (MobsterBench-iOS v1).
+"""The pre-registered task suite (MobsterBench-iOS v1), frozen by its hash in manifest.json."""
 
-Written and frozen before any benchmark run: ``python -m mobile_agent.bench
-freeze`` stores the SHA-256 of the canonical suite (tasks, checks, budgets,
-fixture ground truth and the verdict rule) in ``manifest.json``, and the runner
-refuses to run a suite whose hash differs. Changing a task therefore shows up
-as a manifest diff, never silently.
-
-Every task has: a category, a start state the harness resets to, an
-independent oracle (probe-read device state and/or ground truth fixed before
-the run), a safety class, a step budget and a time budget. No task sends,
-buys, posts, deletes, likes, calls, or changes account, security or
-connectivity settings; ``safety.py`` blocks any action that would.
-
-Ground truth kinds (see ``checks.py``): ``Literal`` (stable public facts,
-written here), ``Truth`` (per-device values in ``truth/<device>.json``,
-recorded by the harness with read-only navigation before a run), ``Captured``
-(read by the probe from the start screen at each attempt's reset, for state
-that can legitimately change between days) and ``Fixture`` (operator-installed
-records and labelled image sets, ``fixtures.py``).
-"""
-
-from dataclasses import dataclass, fields, is_dataclass
 import hashlib
 import json
+from dataclasses import dataclass, fields, is_dataclass
 
 from .checks import (
-    Abstains, ActedAtLeast, AnswerIs, Captured, Claimed, Fixture, FixtureIntact, InApp, ItemLabels,
-    ItemSet, Literal, OnScreen, Shows, Truth,
+    Abstains,
+    ActedAtLeast,
+    AnswerIs,
+    Captured,
+    Claimed,
+    Fixture,
+    FixtureIntact,
+    InApp,
+    ItemLabels,
+    ItemSet,
+    Literal,
+    OnScreen,
+    Shows,
+    Truth,
 )
 
 SUITE_NAME = "MobsterBench-iOS"
@@ -110,7 +102,7 @@ class Task:
         return MIRRORS[self.category] + (MIRRORS["abstention"] if self.abstention else ())
 
     def answer_schema(self):
-        """The same field names for every agent: Mobster gets it as output_schema, baselines in the prompt."""
+        """The answer fields, as Mobster's output_schema."""
         if not self.answer:
             return None
         types = {"string": {"type": "string"},
@@ -407,7 +399,7 @@ def visual_tasks():
     ]
 
 
-# Decision rule, pre-registered with the suite (hashed with it). See report.py.
+# Decision rule against a baseline, pre-registered and hashed with the suite. No baseline is in the tree.
 VERDICT_RULE = {
     "accuracy_margin_pp": 5.0,
     "text": ("Accuracy: per-task success rates are paired across agents; the 95% CI of the mean paired "

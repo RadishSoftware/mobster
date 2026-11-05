@@ -11,7 +11,6 @@ from dataclasses import dataclass, field
 
 from .task_policy import COMMIT_CONTROL_WORDS, GUARD_WORDS, UNSEND
 
-
 KINDS = ("READ", "WRITE", "COMMIT", "REPORT", "FORBID")
 # Long reads whose notebook proves their summary item (Contract.notebook): a chain's REPORT items keep screen proof.
 NOTEBOOK_KINDS = ("feed", "survey", "browse")
@@ -77,8 +76,8 @@ GENERIC_TITLES = frozenset({"messages", "new message", "imessage", "chats", "inb
                             "edit", "mail", "whatsapp", "signal"})
 # The last word of a view's or a field's developer name ("ChatView", "chat_compose_field"): words of a UI's
 # structure, which no person's or place's name ends with.
-UI_WORDS = frozenset({"view", "views", "controller", "vc", "bar", "navbar", "navigationbar", "toolbar", "tabbar", "field",
-                      "textfield", "textview", "button", "btn", "cell", "label", "header", "footer", "screen",
+UI_WORDS = frozenset({"view", "views", "controller", "vc", "bar", "navbar", "navigationbar", "toolbar", "tabbar",
+                      "field", "textfield", "textview", "button", "btn", "cell", "label", "header", "footer", "screen",
                       "container", "sheet", "modal", "input", "window", "panel", "identifier", "nav"})
 # The first part of a bundle identifier ("com.apple.MobileSMS").
 BUNDLE_ROOTS = frozenset({"com", "org", "net", "io", "app", "co", "dev", "me", "ai", "us", "uk", "de", "fr", "jp"})
@@ -124,11 +123,13 @@ COMPOSER = re.compile(r"compose|message|chat|comment|reply|write|tweet|caption|s
 # a checkout page's "saved card" once closed an order that was never placed).
 RECEIPTS = {
     "order": re.compile(r"\border (placed|confirmed|received|is on|submitted)|thank you for your order|\border #|"
-                        r"order number|on (its|the) way|being prepared|estimated (delivery|arrival)|\barriving\b", re.I),
+                        r"order number|on (its|the) way|being prepared|estimated (delivery|arrival)|\barriving\b",
+                        re.I),
     "book": re.compile(r"\b(confirmed|confirmation|reserved|booked|you.re all set|ride requested|finding (you a|your) "
                        r"driver|driver (is|on)|arriving|on the way)\b|\bRSV[- ]?\w+|\b[A-Z]{2,4}-?\d{4,}\b", re.I),
     "pay": re.compile(r"\b(paid|payment (sent|complete|successful)|you paid|money sent|sent \$|completed)\b", re.I),
-    "transfer": re.compile(r"\b(transfer(red)? (complete|sent|scheduled|successful)|transferred|completed|sent \$)\b", re.I),
+    "transfer": re.compile(r"\b(transfer(red)? (complete|sent|scheduled|successful)|transferred|completed|sent \$)\b",
+                           re.I),
     "request_money": re.compile(r"\b(requested|request sent|you requested|request (is )?pending)\b", re.I),
     "follow": re.compile(r"^(following|unfollow|followed|subscribed)\b", re.I),
     "unfollow": re.compile(r"^(follow|unfollowed|subscribe)\b", re.I),
@@ -216,8 +217,9 @@ def quoted(text):
 
 
 # A control that acts on several things at once: "Delete All", "Delete 3 Notes", "Remove (2)".
-MORE_THAN_ONE = re.compile(r"\b(?:all|everything|every)\b|\(\s*[2-9]\d*\s*\)|\b(?:[2-9]|\d{2,}) (?:items|notes|messages|"
-                           r"photos|videos|files|emails|conversations|contacts|reminders|events)\b", re.I)
+MORE_THAN_ONE = re.compile(r"\b(?:all|everything|every)\b|\(\s*[2-9]\d*\s*\)|\b(?:[2-9]|\d{2,}) "
+                           r"(?:items|notes|messages|photos|videos|files|emails|conversations|contacts|reminders|"
+                           r"events)\b", re.I)
 
 
 def row_of(element, elements):
@@ -234,6 +236,26 @@ def row_of(element, elements):
     beside = [e for e in elements if e is not element and e.role == "Cell" and abs(center_y(e) - cy) <= e.rect[3] / 2
               and e.rect[0] + e.rect[2] <= x + .02 and e.rect[3] <= .2]
     return max(beside, key=lambda e: e.rect[0] + e.rect[2]) if beside else None
+
+
+# A reaction control's label, which a feed repeats on every post's action line ("Like", "Liked", "React").
+REACTION_CONTROL = re.compile(r"(?:like|liked|unlike|react|reacted|reaction)\b")
+# How far a feed's action lines may sit from one column (screen fractions), and how far below its line a post starts.
+ACTION_COLUMN, ACTION_LINE = .03, .02
+
+
+def card_of(element, elements):
+    """The post a reaction control closes, on a feed whose posts are not Cells: the elements from just below the
+    previous reaction control in its column (the action line of the post above) down to this control's line, or from
+    the screen's top. iOSWorld multi-092 (18 Oct, LockedIn): the Like at y .84 closes Devi Anand's card, from her name
+    at .42; the Like at .35 closes Rohan's post above it. A reactions summary's "Like" icon is a picture, not a post's
+    action line (the same run, on the post's own page)."""
+    x, middle = element.rect[0], center_y(element)
+    above = [center_y(other) for other in elements if other is not element and other.role != "Image"
+             and abs(other.rect[0] - x) <= ACTION_COLUMN and center_y(other) < middle - ACTION_LINE
+             and REACTION_CONTROL.match(plain(other.label))]
+    top = max(above) + ACTION_LINE if above else -1.0
+    return [other for other in elements if top < center_y(other) <= middle + ACTION_LINE / 4]
 
 
 def is_opener(label):
@@ -394,15 +416,16 @@ _TITLE_ROLES = frozenset({"NavigationBar", "Header", "Heading", "TabBar", "Toolb
 
 def _screen_titles(snapshot):
     """What names the screen or the app: navigation titles and the app's own name (never proof)."""
-    names = {" ".join(e.label.split()).casefold() for e in snapshot.elements if e.role in _TITLE_ROLES and e.label.strip()}
+    names = {" ".join(e.label.split()).casefold() for e in snapshot.elements if e.role in _TITLE_ROLES
+             and e.label.strip()}
     bundle = (snapshot.bundle_id or "").rsplit(".", 1)[-1]
     if bundle:
         names.add(bundle.casefold())
     try:
         from . import harness_api
-        catalog = harness_api.hook("app_catalog")  # None in the open-source engine: no app names beyond the bundle's
-        apps = catalog() if catalog is not None else ()
-        names.update(" ".join(app["name"].split()).casefold() for app in apps if app.get("bundleId") == snapshot.bundle_id)
+        apps = harness_api.hooks().app_catalog()  # () in the open-source engine: no app names beyond the bundle's
+        names.update(" ".join(app["name"].split()).casefold() for app in apps
+                     if app.get("bundleId") == snapshot.bundle_id)
     except Exception:
         pass
     return names
@@ -429,8 +452,10 @@ def header_recipient(snapshot, target=None):
     for element in snapshot.elements:
         label = " ".join((element.label or "").split())
         x, y, w, h = element.rect
-        if (element.editable or not label or len(label) > 40 or " ".join(label.split()).casefold() in generic or internal_name(label)
-                or not top <= y + h / 2 <= bottom or y >= above or element.role in {"Image", "Icon", "Key", "Switch", "Toggle"}
+        if (element.editable or not label or len(label) > 40 or " ".join(label.split()).casefold() in generic
+                or internal_name(label)
+                or not top <= y + h / 2 <= bottom or y >= above
+                or element.role in {"Image", "Icon", "Key", "Switch", "Toggle"}
                 or re.fullmatch(r"[\d:. ]+(?:AM|PM)?|Today|Yesterday", label, re.I)):
             continue
         candidates.append(label)
@@ -718,12 +743,81 @@ def screen_amounts(elements):
     return out
 
 
-def commit_amount(element, elements):
-    """The amount a commit control moves: in its label, else the money shown nearest to it."""
+AMOUNT_FIELD = re.compile(r"[$€£]?\s?(\d[\d,]*(?:\.\d+)?)")
+
+
+def typed_amount(element, elements, typed):
+    """The amount in a field the run typed into, nearest the control: what a form's Send or Pay moves. ``typed``:
+    (the field's label, the text) for each thing the run typed, the label None for text typed earlier in this model
+    call's chain, which counts only where a field holds exactly that text. The field must be named Amount and its whole
+    value must be an amount ("50", "$50.00"): a numeric memo or account number is not one. None when no such field is on
+    screen. A bank's form shows the account's balance beside the amount field ("Available $15,621.00"), and the nearest
+    money is that, not the 50 that was typed (iOSWorld mybank-003, 18 Oct)."""
+    found = []
+    for field_ in elements:
+        value = (getattr(field_, "value", "") or "").strip()
+        if not getattr(field_, "editable", False) or not value or value == (getattr(field_, "placeholder", "") or ""):
+            continue
+        if plain(field_.label) != "amount":
+            continue
+        whole = AMOUNT_FIELD.fullmatch(value)
+        amount = as_float(whole.group(1)) if whole else None
+        mine = any(label == field_.label if label is not None else plain(text) == plain(value)
+                   for label, text in typed)
+        if amount is not None and mine:
+            found.append((abs(center_y(field_) - center_y(element)), amount))
+    return min(found)[1] if found else None
+
+
+# The words a bank puts beside money an account holds. "Balance due", "statement balance", an amount or a total are
+# what a payment moves, and are not these.
+HELD = re.compile(r"(?:available (?:balance|credit|funds|cash|to spend)|current balance)")
+HELD_SECTION = re.compile(r"(?:bank accounts|credit cards)(?: \(\d+\))?")
+
+
+def held_figures(elements):
+    """Labelled account balances on a non-editable dashboard, including an account section's aligned total.
+    A bare payment can equal one balance or their sum: only its labels and row establish what the figure means.
+    Unknown figures remain checked as payment amounts; any editable field keeps the normal form checks."""
+    sections = [e for e in elements if HELD_SECTION.fullmatch(plain(element_text(e)))]
+    if not sections or any(getattr(e, "editable", False) for e in elements):
+        return set()
+    held, bare = set(), []
+    for element in elements:
+        text = element_text(element)
+        if MONEY.fullmatch(text.strip()):
+            bare.append((element, as_float(MONEY.fullmatch(text.strip()).group(1))))
+            continue
+        parts = [p.strip() for p in re.split(r",\s+|\n", text)]
+        for index, part in enumerate(parts):
+            for match in MONEY.finditer(part):
+                beside = [plain(part.replace(match.group(0), "")).strip(" :,"), *(
+                    plain(parts[i]) for i in (index - 1, index + 1) if 0 <= i < len(parts))]
+                if any(HELD.fullmatch(words) or HELD_SECTION.fullmatch(words) for words in beside):
+                    held.add((id(element), as_float(match.group(1))))
+    for element, value in bare:
+        if value is None:
+            continue
+        for section in sections:
+            tolerance = min(element.rect[3], section.rect[3]) / 4
+            if tolerance > 0 and abs(center_y(element) - center_y(section)) <= tolerance:
+                held.add((id(element), value))
+                break
+    return held
+
+
+def commit_amount(element, elements, typed=()):
+    """The amount a commit control moves: in its label, else in a field the run typed it into (``typed``:
+    ``typed_amount``), else the money shown nearest to it that isn't money an account holds (``held_figures``)."""
     match = MONEY.search(element.label or "")
     if match:
         return as_float(match.group(1))
-    shown = [(abs(y - center_y(element)), value) for value, y, e in screen_amounts(elements) if e is not element]
+    entered = typed_amount(element, elements, typed)
+    if entered is not None:
+        return entered
+    held = held_figures(elements)
+    shown = [(abs(y - center_y(element)), value) for value, y, e in screen_amounts(elements)
+             if e is not element and (id(e), value) not in held]
     return min(shown)[1] if shown else None
 
 

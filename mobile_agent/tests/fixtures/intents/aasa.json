@@ -1,0 +1,4 @@
+{"applinks": {"details": [
+  {"appIDs": ["ABCDE12345.com.example.things"], "components": [
+    {"/": "/private/*", "exclude": true}, {"/": "/list/*"}]},
+  {"appID": "ABCDE12345.com.example.other", "paths": ["NOT /x/*", "/x/*", "/y"]}]}}

@@ -1,0 +1,34 @@
+{
+  "manifest_version": "0.3",
+  "name": "mobster",
+  "display_name": "Mobster",
+  "version": "0.4.0",
+  "description": "Test iOS screens on a simulator and control the iPhone you set up in Mobster for Mac.",
+  "long_description": "Use Mobster’s MCP server in Claude Desktop through Mobster for Mac. Download the app from https://mobster.dev/download and move it to Applications. This bundle contains only a small script that finds Mobster.app and runs its agent with `mcp`.",
+  "icon": "icon.png",
+  "author": {
+    "name": "Radish Retail, LLC",
+    "url": "https://mobster.dev"
+  },
+  "homepage": "https://mobster.dev",
+  "documentation": "https://docs.mobster.dev/mcp-server",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RadishSoftware/mobster"
+  },
+  "support": "https://mobster.dev/support",
+  "license": "MIT",
+  "keywords": ["ios", "iphone", "simulator", "testing"],
+  "server": {
+    "type": "binary",
+    "entry_point": "server/mobster-mcp",
+    "mcp_config": {
+      "command": "${__dirname}/server/mobster-mcp",
+      "args": []
+    }
+  },
+  "compatibility": {
+    "platforms": ["darwin"]
+  },
+  "privacy_policies": ["https://mobster.dev/privacy"]
+}

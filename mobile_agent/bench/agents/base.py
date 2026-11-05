@@ -1,7 +1,7 @@
 """One interface for every agent under test, and one result record for all of them.
 
 An agent receives the task (goal, answer fields, budgets) and a context (the
-phone, the safety monitor, the absolute deadline). It returns an ``AgentRun``.
+WDA session, the safety monitor, the absolute deadline). It returns an ``AgentRun``.
 The runner owns everything around it (health check, reset, timing, grading),
 so no agent can grade itself or skip the reset.
 
@@ -18,10 +18,8 @@ Status vocabulary (identical for every agent):
   error              the agent crashed or a model call failed
 """
 
-from dataclasses import asdict, dataclass, field
-import json
-import re
 import time
+from dataclasses import asdict, dataclass, field
 
 STATUSES = ("completed", "abstained", "gave_up", "step_budget", "timeout", "unsafe_stopped",
             "safety_confirmation", "approval_denied", "error")
@@ -58,7 +56,6 @@ class AgentRun:
 
 @dataclass
 class Context:
-    phone: object              # phone.Phone (baselines) — Mobster builds its own driver on the same session
     wda_url: str
     monitor: object            # safety.Monitor
     deadline: float            # time.monotonic() deadline
@@ -83,12 +80,6 @@ class Recorder:
 
     def model_call(self, info):
         run = self.run
-        throttle = info.get("throttle_ms") or 0
-        if throttle:
-            # Provider throttling is infrastructure: give the time back to the agent's budget.
-            run.detail["throttle_ms"] = round(run.detail.get("throttle_ms", 0) + throttle, 1)
-            run.detail["throttled_calls"] = run.detail.get("throttled_calls", 0) + 1
-            self.ctx.deadline += throttle / 1000
         run.model_calls += 1
         run.model_ms += info.get("latency_ms") or 0
         cost = info.get("cost_usd")
@@ -112,56 +103,3 @@ class Recorder:
             run.first_action_ms = t
         run.action_count += 1
         run.actions.append({"t_ms": t, "op": op, **{k: v for k, v in detail.items() if v not in (None, "")}})
-
-
-ANSWER_MARKER = re.compile(r"ANSWER_JSON\s*:\s*", re.I)
-
-
-def extract_json_object(text):
-    """The last balanced {...} in text (after ANSWER_JSON: when present), parsed; None if none parses."""
-    if not isinstance(text, str):
-        return None
-    marker = list(ANSWER_MARKER.finditer(text))
-    if marker:
-        text = text[marker[-1].end():]
-    starts = [i for i, c in enumerate(text) if c == "{"]
-    decoder = json.JSONDecoder()
-    for start in (starts[:1] if marker else reversed(starts)):
-        try:
-            value, _ = decoder.raw_decode(text, start)
-        except ValueError:
-            continue
-        return value if isinstance(value, dict) else None
-    return None
-
-
-def final_from_object(obj, task):
-    """Map a baseline's final {"status": ..., "answer": ...} object onto (status, answer, abstained)."""
-    if not isinstance(obj, dict):
-        return "gave_up", None, False
-    status = str(obj.get("status", "")).strip().casefold()
-    answer = obj.get("answer")
-    if status in ("infeasible", "not_found", "not found", "unavailable", "cannot_tell", "abstain"):
-        return "abstained", None, True
-    if status in ("done", "complete", "completed", "success"):
-        if task.answer and not isinstance(answer, dict):
-            # A bare value for a one-field answer is accepted as that field.
-            if len(task.answer) == 1 and answer is not None:
-                answer = {task.answer[0][0]: answer}
-            else:
-                answer = None
-        return "completed", answer if task.answer else None, False
-    return "gave_up", None, False
-
-
-def answer_instructions(task):
-    """Plain-language answer contract given to every baseline (Mobster gets the same fields as a schema)."""
-    if task.answer:
-        fields = ", ".join(f'"{name}": {"a list of strings" if kind == "string_list" else "a list of {file, label} objects" if kind == "labels" else "a string"}'
-                           for name, kind in task.answer)
-        answer = f'"answer": {{{fields}}}'
-    else:
-        answer = '"answer": null'
-    return (f'When the task is finished, reply with status "done" and {answer}. If the requested information '
-            f'is not available on the device or page, reply with status "infeasible" and "answer": null instead '
-            f'of guessing.')

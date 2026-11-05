@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "notes": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"],
+      "env": {"MEMORY_FILE_PATH": "${CLAUDE_PLUGIN_ROOT}/notes.json"}
+    }
+  }
+}

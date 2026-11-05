@@ -1,0 +1,236 @@
+{
+"note": "Recorded on the test device (iPhone 15 Pro, iOS 26.0.1), 12 Oct 2026: the rows the agent saw, scrubbed (the account's name, the phone's name; serial and model numbers dropped).",
+"rows": [
+{
+"role": "NavigationBar",
+"label": "iPhone Storage",
+"rect": [
+0.0,
+0.07,
+1.0,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "General",
+"rect": [
+0.04,
+0.07,
+0.11,
+0.05
+]
+},
+{
+"role": "StaticText",
+"label": "iPhone Storage",
+"rect": [
+0.34,
+0.08,
+0.33,
+0.02
+]
+},
+{
+"role": "StaticText",
+"label": "iPhone",
+"rect": [
+0.08,
+0.19,
+0.14,
+0.02
+]
+},
+{
+"role": "StaticText",
+"label": "125.51 GB of 128 GB used",
+"rect": [
+0.4,
+0.19,
+0.52,
+0.02
+]
+},
+{
+"role": "StaticText",
+"label": "Applications",
+"rect": [
+0.11,
+0.26,
+0.19,
+0.01
+]
+},
+{
+"role": "StaticText",
+"label": "Messages",
+"rect": [
+0.36,
+0.26,
+0.15,
+0.01
+]
+},
+{
+"role": "StaticText",
+"label": "Photos",
+"rect": [
+0.56,
+0.26,
+0.11,
+0.01
+]
+},
+{
+"role": "StaticText",
+"label": "iOS",
+"rect": [
+0.72,
+0.26,
+0.05,
+0.01
+]
+},
+{
+"role": "StaticText",
+"label": "System Data",
+"rect": [
+0.11,
+0.29,
+0.19,
+0.02
+]
+},
+{
+"role": "StaticText",
+"label": "Recommendations",
+"rect": [
+0.08,
+0.35,
+0.41,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "Show All",
+"rect": [
+0.74,
+0.35,
+0.17,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "Review Your Photos & Videos",
+"rect": [
+0.04,
+0.39,
+0.92,
+0.07
+]
+},
+{
+"role": "StaticText",
+"label": "Save up to 8.17 GB. See photos and videos taking up storage in the Photos app and consider deleting them.",
+"rect": [
+0.04,
+0.46,
+0.92,
+0.14
+]
+},
+{
+"role": "StaticText",
+"label": "“Recently Deleted” Album",
+"rect": [
+0.07,
+0.65,
+0.64,
+0.03
+]
+},
+{
+"role": "Button",
+"label": "Empty",
+"rect": [
+0.78,
+0.65,
+0.13,
+0.02
+]
+},
+{
+"role": "StaticText",
+"label": "Save up to 3.1 MB. This will permanently delete all photos and videos kept in the “Recently Deleted” album.",
+"rect": [
+0.04,
+0.7,
+0.92,
+0.13
+]
+},
+{
+"role": "Button",
+"label": "Sorting, Size",
+"rect": [
+0.73,
+0.86,
+0.18,
+0.04
+]
+},
+{
+"role": "Toolbar",
+"label": "Toolbar",
+"rect": [
+0.0,
+0.91,
+1.0,
+0.09
+]
+},
+{
+"role": "SearchField",
+"label": "Applications",
+"rect": [
+0.08,
+0.92,
+0.83,
+0.05
+],
+"editable": true
+},
+{
+"role": "Button",
+"label": "Dictate",
+"rect": [
+0.82,
+0.92,
+0.05,
+0.03
+]
+},
+{
+"role": "Image",
+"label": "Search",
+"rect": [
+0.11,
+0.93,
+0.06,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "Dictate",
+"rect": [
+0.82,
+0.92,
+0.05,
+0.03
+]
+}
+]
+}

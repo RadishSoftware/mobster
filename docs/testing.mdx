@@ -1,0 +1,983 @@
+---
+title: "Run every check"
+sidebarTitle: "Run every check"
+keywords: ["mobster test", "mobster test pr", "test this pr", "testflight", "flaky", "retries", "quarantine", "junit", "test report", "test suite", "shards"]
+description: "Run every check in your project on simulators and your iPhone, with reports for CI."
+icon: "list-checks"
+---
+
+`mobster test` runs every check in your project, on the simulators Mobster manages and on your own iPhone, and writes one report showing what passed on each device, with frames as evidence. A model may run a check's steps, but it never grades the result: the check's assertions decide the verdict. It runs on this Mac, with no cloud devices and no per-device fee.
+
+To write your first check, follow [Quickstart: test your app](/quickstart/test). To convert Maestro flows, see [Moving from Maestro](/maestro-import).
+
+<Prompt description="**Set up checks for this app.** Paste it into your coding agent, in your app's project folder." actions={["copy", "cursor"]}>
+Set up Mobster checks for this iOS app. Follow https://docs.mobster.dev/agents/setup.md to install Mobster and prepare the simulator. Then write a launch-only check in .mobster/checks for the app's first screen, run `mobster test`, and show me the verdict and the report path. Don't run anything on a real iPhone.
+</Prompt>
+
+## Run your checks
+
+From your project folder (or any folder under it):
+
+```sh
+mobster test
+```
+
+Mobster finds every `.yaml`, `.yml` and `.json` check in `.mobster/checks`, runs each on its own simulator (its `device`, else iPhone 17 Pro), and prints a line per check, then the totals and where the reports are:
+
+```text
+✓ passed  Lesson complete awards XP and the streak goes up on iPhone 17 Pro, iOS 26.4
+✗ failed  The daily reminder stays on after a relaunch on iPhone 17 Pro, iOS 26.4
+    1 of 1 expectations failed
+~ flaky  A new user finishes onboarding and starts a lesson on iPhone 17 Pro, iOS 26.4  (2 attempts)
+    text "Fill in the blank" failed: not on screen
+
+2 passed, 1 flaky, 1 failed in 2 min 41 s, $0.11
+Report  .mobster/test-results/20261007-142233-9c1e/index.html
+JUnit   .mobster/test-results/20261007-142233-9c1e/junit.xml
+```
+
+Progress goes to stderr as each run starts and ends. Pass check files or folders to run only those: `mobster test .mobster/checks/lesson-complete.yaml`.
+
+Launch-only checks make no model calls. Checks with `steps` run Smart on your Claude or OpenAI key, as `mobster verify` does, within each check's `budget`, until they pass once: then they replay with no model ([below](#replay-and-heals)). `--keyless` skips checks with steps as couldn't run instead.
+
+In the Mac app, turn on **Copy tasks as checks** in Settings › For developers to make a check from a task goal or a finished task. **Make this a test** in the task composer opens **New check** in the project that builds the task's app, or else the project you opened last. **Make a check…** on a finished task opens it in the project you opened last, with the task's steps as a check file to read. With no project, Mobster opens **Add a project** instead. Read the app's bundle ID, the steps (one per line) and the words the last screen should show before you save; **Project** changes where it goes. Saving doesn't run or verify the check. Choose **Open the project** to see it on the Project page. Use **Record a path** for a fresh Smart run, then **Run strict** to confirm the saved replay with no healing. **Run checks** is the project's ordinary run. If Mobster doesn't hear back after a start, choose **Check on it** before you start another; if that run didn't start, **Start it again** sends the same start, so it never runs twice. Reopening the project checks a start it didn't hear back about, too. Each project keeps its newest 2,000 check runs. When an older finished run is removed, its start and its run's id still answer with the run's result, and the start never runs again, until 90 days after the run started. A run Mobster interrupted keeps answering for good, since its outcome is unknown. A run that hasn't finished is never removed. Removing a project removes its finished runs the same way.
+
+On a project's page, choose **New check** in Checks to open the project's own **New check** page, `/projects/<id>/checks/new`. Mobster fills its app bundle only when the project builds one app. Review the steps and the words the last screen should show before saving. Saving does not run or verify the check. The project's runs by branch are on its page. Suite status follows the report's exit code; quarantined evidence can appear under Passed, and a stopped suite remains Stopped even without a failed-check card.
+
+To let a CI run use this project, choose **Approve…** under **Team CI** on the Project page. It reads the folder again and opens in place. Choose the checks, a built simulator `.app` from this project's `.mobster/build` folder and one managed simulator, tick that you read them, then choose **Approve**. The row under **Team CI** then says **Revision N approved**. The approval records those exact files; changing one needs another approval. A network stub's `respond.file` must be inside the project, and its bytes are part of the approval. A snapshot check needs its baseline in `.mobster/snapshots` before you approve it; its baselines are part of the approval, and a CI suite never records one. A CI suite checks these files before each check and once after its last one. If one changed, the suite fails and Mobster exports none of its results. A file changed and changed back between two of those checks isn't noticed. Approving doesn't start a run or issue a Remote key.
+
+A saved check can also assert a small set of your app's persisted values through a locally registered fixture. Mobster reads the app's token-bound snapshot in a managed simulator and evaluates it alongside accessibility assertions. A fresh wrong value fails; missing or stale evidence makes the check `couldnt_run`. This is evidence from your instrumented app, not independent proof of a backend change. [Checks](/checks) explains the fixture protocol. A real iPhone or a check with `reset: none` cannot use it.
+
+Mobster resolves fixture steps before choosing Smart, replay, or a launch-only check. A check whose steps come only from `fixture:` still needs a model or an approved replay path; `--keyless` refuses it before acquiring a device. A missing or invalid fixture marks that check as unable to run while other saved checks continue. Mobster rechecks fixture definitions and named links before each attempt, and stops a changed check instead of using the earlier plan.
+
+## Replay and heals
+
+The first time a check with steps passes, Mobster keeps the exact steps Smart took: each tap, swipe and typed field, with what it needs to find on the screen (the app, the screen's labels and roles, and the control's label and role). From then on, `mobster test` replays those steps through WebDriverAgent with no model call. A complete replay needs no key and costs \$0; Mobster evaluates the saved assertions after the actions as in a fresh run.
+
+After you approve a replayed action, Mobster reads the screen again and checks that its full fingerprint and app permission still match. A changed screen stops that action. A recorded coordinate tap or dismissal also needs matching screen geometry; older coordinate recordings without that proof stop for review.
+
+When a step's screen changed, so its control isn't there (a button renamed, a sheet in the way), Smart redoes that step only and the replay takes over again at the next recorded step. A replay stops when the phone doesn't confirm an action, typed text, or the screen after an action. It doesn't send that action again, doesn't go on to the next step, and the suite doesn't retry the check: look at the app before you run it again. The change is a heal, and you review it:
+
+```text
+✓ passed  A new user signs up on iPhone 17 Pro, iOS 26.4
+    healed step 1: Tap "Continue" → Tap "Next"
+
+1 passed in 12 s, $0.00, 1 replayed with no model
+1 healed step waits for review: mobster test heal
+```
+
+- `results.json` lists the heal in the check's `healed` (`step`, `from`, `to`, `why`, frames before and after, and `diff`, the path of the heal file), and the HTML report shows both frames side by side.
+- `<check>.heal.yaml` appears next to the check, so it shows up in your pull request. The check file itself never changes. A heal never changes an expectation: it only redoes a step whose control moved or changed, so a real bug still fails.
+- The approved recording stays unchanged while the heal waits for review. Later runs replay those approved steps; if the screen still differs, the check fails with `drift` until you accept the heal or record again with `--fresh`.
+
+```sh
+mobster test heal                    # what healed, with the frames before and after
+mobster test heal --accept signup    # keep the healed steps
+mobster test heal --reject signup    # keep failing: the recorded steps come back, and fail when they change again
+```
+
+A project's page in the Mac app, with `MOBSTER_EXPERIMENTAL_TESTS_PAGE=1`, shows the same heals under **Heals to review**, each step before and after with its two frames, with **Accept** and **Keep failing** ([Tests in the Mac app](/mac/tour#tests)). `GET /api/tests/heals?project=PATH` lists them, `GET /api/tests/heals/frame?project=PATH&path=…` reads a frame a waiting heal names, and `POST /api/tests/heals` with `{project, action, checks?}` settles them, `action` being `accept` or `reject`. Settling needs the Mac app's session when it has one.
+
+Choose `--reject` when the change is a bug. Then that step fails the check, class `drift`, until you record it again with `--fresh`.
+
+`--accept` promotes a staged heal only while the approved path, check and external evidence still match the run that proposed it. `--reject` keeps the approved steps and marks the full replaced range strict. A stale proposal needs a new `--fresh` run. If Mobster cannot stage a proposal, the run does not pass and the approved recording stays in place.
+
+| flag | what it does |
+| --- | --- |
+| `--replay` | The default: replay, and heal a changed step. |
+| `--fresh` | Run every step with Smart and record the steps again. |
+| `--no-heal` | Replay without a model. Fail a changed screen (`drift`) or refuse a missing or incomplete approved path (`replay`). |
+
+Strict replay also refuses an approved path for another app version or device model, or a path that still needs a live Smart step, before app reset, install or launch and without calling a model. It may already have acquired a simulator or started WebDriverAgent. Record a complete path with `--fresh` for the current app and device first.
+
+- **The circuit breaker.** When healing a step would make more than half the recorded steps healed, Mobster stops and fails the check (class `drift`) instead. Record it again with `--fresh`.
+- **Text.** A replay types text that appears word for word in the check's steps, its link or its launch values, and search queries as they were typed. Smart types other text it wrote again each run, at the cost of a model call.
+- **Sends and purchases.** A replayed step that sends, posts, deletes or buys asks the same approver a Smart step asks: a simulator approves it unless Mobster can't classify it, and an iPhone refuses every commit ([What a simulator may do](#what-a-simulator-may-do-that-an-iphone-may-not)).
+- **iOS dialogs.** A permission alert, Allow Paste or purchase sheet that the recording never saw is answered from the check's `dialogs` between steps. It isn't a step and it isn't a heal ([System dialogs](#system-dialogs)).
+- **When it records again.** Mobster keeps approved steps per app version and build, iOS major version and kind of device, in `.mobster/cache/replay` (git ignores it). Each Mac records its own steps on its first pass. A new app version or iOS 27 records afresh; iOS 26.4 to 26.5 keeps them. A changed selected model records a new path. A heal proposes changed steps for review and leaves the approved path in place, including when the heal fails. An action whose outcome is unknown is `couldnt_run`, class `unknown_outcome`, and Mobster never retries it.
+
+Measured 9 Oct 2026 on the scripted world (`scripts/bench_replay.py`, 10 runs each, phone and model times modeled on a USB iPhone and Claude Sonnet): a two-step sign-up check took 21.9 s and 6 model calls fresh, 6.3 s and none replayed, and 11.7 s and 2 calls when a renamed button healed. Measured 17 Oct 2026 on a real iPhone (iPhone 15 Pro, iOS 26.0.1, USB; Smart on Claude Sonnet 5.5; 5 runs each of a two-step check that opens a paywall from Settings in a test app): fresh took 17.7 s median (16.6 to 18.7) with 4 model calls and \$0.017 a run, and replay took 10.3 s median (10.0 to 11.4) with no model call and \$0. The steps themselves took 10.4 s fresh and 3.3 s replayed; opening the app (2.6 s) and reading the expectations (2.4 s) cost the same either way.
+
+The 17 Oct 2026 benchmark uses an iPhone 17 Pro simulator on iOS 26.4. Maestro 2.4.0 runs the same check written as a flow against the same build. Across 6 interleaved pairs, the median is 13.3 s for one `mobster test` of one check and 23.6 s for one `maestro test`. Twenty runs of that check take 166.6 s on Mobster and 190.8 s on Maestro in two interleaved batches of 10. Mobster's timed check runs are replays with zero model calls. The results show a pass for every replay and flow. Maestro can't run a flow on a physical iPhone. There is no Maestro iPhone time to compare.
+
+## Several simulators
+
+```sh
+mobster test --sim "iPhone 17 Pro" --sim "iPhone SE (3rd generation)@iOS 26.4" --parallel 2
+```
+
+Every check runs on every `--sim`: a device type, with an optional `@` runtime. To keep the list in the repository, write `.mobster/matrix.yaml` and leave out `--sim`:
+
+```yaml
+# .mobster/matrix.yaml: simulators only
+simulators:
+  - iPhone 17 Pro@iOS 26.4
+  - iPhone SE (3rd generation)@iOS 26.4
+  - { device: iPhone 16e, runtime: iOS 26.4 }
+```
+
+`--matrix FILE` reads another file. A matrix file names simulators only: an entry is always a device type, never looked up as one of your devices.
+
+`--parallel N` runs up to N checks at once (at most 8). Each run takes its own simulator and holds it for the whole run, so two runs never share one; Mobster creates more simulators of a type when it needs them (each takes about 1.6 GB of disk, and `mobster sim prune` removes unused ones after 14 days). Leave room for them: four booted simulators want a Mac with 16 GB of memory or more.
+
+Mobster also caps `--parallel` at what your Mac holds: one simulator per two cores and one per 4 GB of memory, never fewer than 1 or more than 8. A 16 GB Mac runs 4. When you ask for more, the run says so on its first line and uses the cap, for example `This Mac’s configured simulator limit is 4, so --parallel 8 runs 4.` `MOBSTER_TEST_MAX_PARALLEL=N` sets the cap yourself.
+
+Each simulator has its own results. `results.json` lists the simulators under `devices` and gives each check one cell per simulator. `junit.xml` has one `<testsuite>` per simulator, the HTML report shows a check's verdict on each, and `mobster test --history` keeps the last 20 results of each check on each simulator, so a check that fails only on the iPhone SE is visible as that. Real iPhones join the same run with `--device`; a phone takes one check at a time and every simulator keeps its own slot.
+
+### Run checks in ordered simulator phases
+
+Save a scenario under `.mobster/scenarios/` when one check must pass before another starts. Name each actor with the exact ID of a distinct managed simulator from `mobster devices`:
+
+```yaml
+# .mobster/scenarios/checkout.yaml
+version: 1
+name: Checkout
+actors:
+  buyer: <managed simulator ID>
+phases:
+  - name: Start
+    runs:
+      - actor: buyer
+        check: .mobster/checks/start.yaml
+  - name: Continue
+    runs:
+      - actor: buyer
+        check: .mobster/checks/continue.yaml
+```
+
+```sh
+mobster test scenario .mobster/scenarios/checkout.yaml
+```
+
+Mobster reserves every actor before the first phase and keeps those simulator leases until the scenario ends. Checks in a phase can run together; the next phase waits for all of them to pass. A failed or uncertain phase blocks later checks and appears in the same local results, JUnit and HTML reports as other test runs. A later check on the same actor must explicitly set `reset: none` and cannot reseed files, conditions or an app-state fixture. A scenario uses strict replay with no retries or repetitions. Record a complete approved path for each step check separately before the scenario; launch-only checks need no path. A scenario has 1–4 distinct actors, subject to this Mac's simulator cap, and 1–12 phases. `--json` prints the suite result; ordinary suite overrides such as `--device` and `--fresh` are refused.
+
+## Device conditions
+
+A check can set the state the device is in while it runs:
+
+```yaml
+conditions:
+  appearance: dark
+  locale: de_DE
+  content_size: accessibility-extra-large
+  increase_contrast: enabled
+  location: { latitude: 52.52, longitude: 13.405 }
+  permissions: { photos: grant, location: revoke }
+  media: [fixtures/receipt.jpg]
+  status_bar: { time: "9:41", battery_level: 100, wifi_bars: 3, cellular_bars: 4 }
+  push: payloads/order-shipped.json
+  biometric: enrolled
+```
+
+| Key | Values | Set with |
+|---|---|---|
+| `appearance` | `light`, `dark` | `simctl ui appearance` |
+| `content_size` | Dynamic Type from `extra-small` to `accessibility-extra-extra-extra-large` | `simctl ui content_size` |
+| `locale` | a language and region, such as `de_DE` or `fr-CA` | the launch arguments `-AppleLanguages` and `-AppleLocale`: the app changes language, not iOS |
+| `increase_contrast` | `enabled`, `disabled` | `simctl ui increase_contrast` |
+| `location` | `latitude` and `longitude`, or `"52.52,13.405"` | `simctl location set` |
+| `route` | `waypoints`, 2 to 50 places written as `location` is, and `speed` in metres per second (default 20, up to 1000). The device moves along them. Use `route` or `location`, not both | `simctl location start` |
+| `permissions` | a service (`all`, `calendar`, `contacts`, `contacts-limited`, `location`, `location-always`, `photos`, `photos-add`, `media-library`, `microphone`, `motion`, `reminders`, `siri`) set to `grant`, `revoke` or `reset` | `simctl privacy` |
+| `media` | up to 20 photos, videos or contacts (`.jpg`, `.jpeg`, `.png`, `.heic`, `.gif`, `.mov`, `.mp4`, `.m4v`, `.vcf`) | `simctl addmedia` |
+| `status_bar` | `time`, `battery_level` (0 to 100), `battery_state` (`charging`, `charged`, `discharging`), `wifi_mode` (`searching`, `failed`, `active`), `wifi_bars` (0 to 3), `cellular_mode` (`notSupported`, `searching`, `failed`, `active`), `cellular_bars` (0 to 4), `data_network` (`hide`, `wifi`, `3g`, `4g`, `lte`, `lte-a`, `lte+`, `5g`, `5g+`, `5g-uwb`, `5g-uc`), `operator_name`. | `simctl status_bar override` |
+| `push` | a JSON payload file with an `aps` object, up to 4,096 bytes | `simctl push`, once the app is in front |
+| `biometric` | `enrolled`, `not_enrolled`: whether Face ID is enrolled on the simulator | the simulator's `notifyutil` enrollment event, the one `mobster sim biometric` sends |
+| `network` | `offline`, `slow-3g`, `lte`, `flaky` | a local proxy that the app's `URLSession` is pointed at ([Network conditions](#network-conditions-and-stubs)) |
+
+`appearance`, `content_size` and `locale` take a list as well as one value. A check with `appearance: [light, dark]` and `content_size: [large, accessibility-large]` runs four times under `mobster test`, once for each combination, named "Home [light, large]" and so on (at most 24 combinations). `mobster verify` runs one device state, so it refuses a check with lists and says to use `mobster test`. `--locale` replaces a `locale` list.
+
+Mobster checks the block when the file loads. A typo, a missing file or a value out of range stops the check before anything runs, and the message says what is wrong and what to write. A condition that can't be set when the check runs makes it `couldnt_run` (class `environment`): the check never runs in the wrong state.
+
+When the run ends, Mobster puts back the appearance, content size, contrast, location or route, status bar, permissions and Face ID enrollment it changed. Photos and videos added with `media` stay in the simulator's library; erase the simulator to clear them.
+
+`conditions.network` and `stubs` limit and answer the app's requests ([Network conditions and stubs](#network-conditions-and-stubs)). `status_bar` `data_network` and `wifi_mode` change only what the status bar shows, not the connection.
+
+On a real iPhone, Mobster sets only `appearance` and `locale`. `network` and `stubs` are refused there: the check ends as couldn't run, because a check that expects a slow link and runs on a fast one proves nothing. Everything else changes a phone's state (its location, its permissions, its photos) or sends to a real token, so Mobster skips it. `reset` is not a condition: it is the check's own key, with the levels `none`, `data` and `reinstall` ([Reset levels](/simulators#reset-levels)). Each result in `results.json` has `conditions.applied` and `conditions.skipped` (each skipped key and why), and the report notes them. Mobster sets the appearance through WebDriverAgent and puts it back when the run ends.
+
+### Network conditions and stubs
+
+`conditions.network` limits the app's connection while the check runs, and `stubs` answers named requests with fixed responses. Both work on a simulator only.
+
+```yaml
+conditions:
+  network: slow-3g
+stubs:
+  - match: { host: api.example.com, path_prefix: /v1/orders, method: GET }
+    respond: { status: 200, json: { orders: [] }, delay_ms: 800 }
+  - match: { host: "*.example.com" }
+    respond: { status: 503 }
+```
+
+| Profile | Round trip | Down | Up | Stalls | Resets |
+| --- | --- | --- | --- | --- | --- |
+| offline | none: every connection is reset | none | none | none | all |
+| slow-3g | 400 ms | 400 kbit/s | 400 kbit/s | 2% of chunks, 1 s each | none |
+| lte | 50 ms | 12 Mbit/s | 5 Mbit/s | none | none |
+| flaky | 150 ms | 1.5 Mbit/s | 750 kbit/s | 5% of chunks, 1 s each | 10% of connections |
+
+A stall stands for a lost packet and its retransmission. `flaky` draws its stalls and resets from a fixed seed, so a check meets the same failures on every run unless its requests race each other. These numbers are Mobster's own, set on 24 Oct 2026; they are not Apple's Network Link Conditioner profiles.
+
+A stub matches on `host` (a name, or `*.example.com`), `path_prefix` (default `/`) and `method` (default any), first match wins. `respond` takes `status` (default 200), a body from `json` or from `file` (a path relative to the project, up to 8 MiB) and `delay_ms` (up to 30,000). A request no stub matches goes to the real server, shaped by the profile. `offline` and `stubs` together are an error, because nothing can answer on a link that refuses everything.
+
+**How it works.** Before the app launches, Mobster starts a proxy on `127.0.0.1` and launches the app with a small library (built with Xcode's compiler the first time and cached in `~/Library/Caches/Mobster/netshim`) that points the app's `URLSession` at it. Mobster changes no rule, setting or file on your Mac, asks for no password and doesn't touch other apps' traffic. The proxy lives as long as the run; if Mobster stops, so does the proxy, and the next launch of the app is unshaped. Each run writes what the proxy saw to `network.json` in its run folder (method, host, path without the query, status, bytes, time, and whether the request was passed, stubbed, tunnelled or refused) and `conditions.network` in `results.json` repeats the first 200 rows.
+
+**What it reaches (measured 24 Oct 2026, iOS 26.4 simulator).** Every `URLSession`: `shared`, `default` and `ephemeral`, over `http` and `https`. That covers Swift and Objective-C apps, Alamofire and React Native's `fetch`.
+
+**What it doesn't reach.**
+
+- The app still sees a working link. `NWPathMonitor`, Reachability and the status bar read your Mac's connection, so an offline screen that appears only when the system reports no network stays hidden. Under `offline`, an `http` request fails with `NSURLErrorNetworkConnectionLost` (-1005) and an `https` request with error 310 in `kCFErrorDomainCFNetwork`, never `NSURLErrorNotConnectedToInternet` (-1009). Measured 26 Oct 2026 on an iOS 26.4 simulator.
+- Traffic that doesn't use `URLSession`: Flutter's `dart:io`, gRPC, Cronet, Firebase's own transport, raw sockets and QUIC. When no request reaches the proxy, `network.json` says so.
+- Web views, other apps and system services.
+- An `https` stub for a host needs the app to trust a certificate Mobster makes for the run. Mobster adds it to the simulator's trust store with `simctl keychain add-root-cert`, the run's private key is deleted when the run ends, and the public certificate stays in the simulator (there is no way to remove one). Apps that pin certificates refuse a stubbed host and the check fails with the app's own error. An `https` host without a stub is passed through as a tunnel Mobster never opens, so pinned apps keep working under `network:` alone.
+- An app that sets its own proxy in its `URLSessionConfiguration` keeps it.
+
+## Wire assertions
+
+`expect:` can also judge what the app sent over the network and what it wrote to disk, so a check can prove that "Add to cart" reached the server without reading a second screen. This works inside canvases and web views where the accessibility tree is empty, as long as the traffic uses `URLSession` (see [what the proxy reaches](#network-conditions-and-stubs)). It is experimental: set `MOBSTER_EXPERIMENTAL_NETWORK=1`, or Mobster refuses a check that uses it. It runs on a simulator only; on a real iPhone the check ends as couldn't run.
+
+```yaml
+steps:
+  - Add the first item to the cart
+expect:
+  - text: Cart (1)
+  - request: POST api.example.com/v1/cart
+  - request: { method: POST, host: api.example.com, path: /v1/cart, status: 2xx, body: /"sku":"a1"/ }
+  - no_request: { host: "*.tracker.example" }
+  - storage: { file: Library/Preferences/*.plist }
+  - storage: { sqlite: Library/app.db, query: "SELECT 1 FROM cart WHERE sku = 'a1'", at_least: 1 }
+```
+
+| Assertion | Holds when |
+| --- | --- |
+| `request` | The proxy saw at least one request that matches every part you wrote. `method`, `host` (a name or `*.example.com`), `path`, `status` (a number or a class such as `2xx`), `body` (in what the app sent) and `response` (in what came back) are all optional, but one of `method`, `host` and `path` is required. A string such as `POST api.example.com/v1/cart` or `/v1/cart` is the short form. |
+| `no_request` | The app was seen on the network and no request matched. It takes `method`, `host`, `path` and `body`, and a bare host (`*.tracker.example`) is enough. |
+| `storage` with `file` | A file that matches the glob, relative to the app's data container, was added, changed or deleted since the launch. `changed: false` holds when none was. `contains` also requires matching text in a matching file. |
+| `storage` with `sqlite` | The `SELECT` or `WITH` query returns `equals`, `at_least` or `at_most` rows. Mobster runs it on a copy of the database, so the app's file is never opened for writing. |
+
+`path` is a glob (`*` matches anything, including `/`) on the path, or a `/regex/`. A glob without `?` ignores the query string. A body or `response` is a case-insensitive substring, or a `/regex/`. Mobster reads gzip, deflate and chunked response bodies, and the first 64 KiB of each body.
+
+**What they show.** A request that matches is the evidence: `POST api.example.com/v1/cart -> 200 at 4.2 s` in the report, and `wire.json` in the run folder with the request's headers (authorization, cookie, token and key headers are masked, other values go through the secret filter) and the first 200 characters of its body and response. A storage change shows the diff of a text or plist file, or the first rows of a query, masked the same way. `results.json` repeats this in the assertion's `matches`.
+
+**What they can't see.**
+
+- Mobster opens an `https` connection only to a host a `request` or `no_request` names together with a `path`, `status`, `body` or `response`, because opening it needs the run's certificate (see [Network conditions and stubs](#network-conditions-and-stubs)). Name the host. Any other `https` connection is a tunnel: the assertions see its host, not its paths.
+- A `no_request` with only a `path` can't be decided while the app has an unopened `https` connection, and fails with the host to name. If no request from the app reached the proxy at all, `request` and `no_request` both fail: the app may not use `URLSession`. Pair a `no_request` with a `request` or a screen assertion that proves the app was routed.
+- The proxy records every request from launch to the end of the run, not only those after the steps. A `request` proves it happened during the run.
+- Pinned apps refuse the certificate for an opened host, as with stubs.
+- `storage` compares the container at the launch screen with the container at the end. The simulator's data container is a folder on your Mac, so Mobster reads it in place with `simctl get_app_container`; nothing is pulled over a cable. Preferences that the app has not flushed to disk are not there yet.
+
+**On a real iPhone (unverified, 26 Oct 2026).** Mobster does not run this on a phone today, because the proxy listens on `127.0.0.1` and the phone can't reach it, and the run's certificate authority exists only on the Mac. The mode would need these steps, which no one has run end to end: open the run's root certificate on the phone and install the profile (Settings, then Profile Downloaded); turn it on under Settings, General, About, Certificate Trust Settings; point the phone's Wi-Fi at the Mac's proxy under Settings, Wi-Fi, the network's (i) button, Configure Proxy, Manual. A proxy set that way sees every app on the phone, not only the one under test, so remove it afterwards. Apps that pin certificates refuse the proxy. Until a person has run it on a phone, treat the steps as a plan.
+
+## Languages
+
+```sh
+mobster test --locale de,ja,ar
+```
+
+Every check runs once in each language. `--locale` takes language codes, with a region if you like (`pt_BR`), separated by commas or repeated, at most 12. The run for `de` is the check "Home [de]": it launches your app with `-AppleLanguages (de) -AppleLocale de`, the same as `conditions: {locale: de}` in a check file, and it keeps any other conditions the check sets. Mobster changes the app's language and region only, not the simulator's system settings, so the next check starts as it always does. The same flag works with `--sim` and `--device`: a real iPhone gets the launch arguments and nothing else.
+
+Each language is its own check in `results.json` (`locale` on the check), in `junit.xml` (the classname `checks.home.de`) and in the history, so a layout that breaks only in German has its own pass rate. The audit reads the screens each run already reads, with no model, and reports warnings that never fail the check:
+
+| finding | what Mobster saw |
+|---|---|
+| `text-truncated` | A label that ends in `…` or `...`, or text whose frame runs past the screen's side edges or the container it sits in |
+| `untranslated-string` | In a language that isn't written in Latin script (Japanese, Arabic, Hebrew, Russian, Korean, Chinese, Thai, Hindi and others), a label of plain English letters |
+| `rtl-not-mirrored` | In a right-to-left language (Arabic, Hebrew, Persian, Urdu), a navigation bar with every button in its left half, or text in the language's own script flush to the left of a full-width row |
+
+Right-to-left layout comes from iOS: with `ar`, the app mirrors itself when it uses leading and trailing edges, and the `rtl-not-mirrored` finding tells you where it didn't.
+
+What the audit doesn't see: the accessibility tree has labels and frames, not the rendered glyphs, so text that is cut off inside a frame of the right size isn't flagged. A brand name in Latin letters is flagged as untranslated in Japanese: the finding is a warning for that reason. Languages written in Latin script (German, French, Spanish) get the truncation rules only, because English and German can't be told apart from a label alone.
+
+Each language also has its own stable case ID, so saved-suite comparisons keep German and Japanese results separate. A check without `--locale` keeps its usual file identity.
+
+## Screenshots that must not change
+
+A SwiftUI view can compile clean and still clip at a larger text size or lose its contrast in dark mode. A `snapshot` in a check's `expect` compares the screen the check ends on to a baseline image:
+
+```yaml
+conditions:
+  appearance: [light, dark]
+  content_size: [large, accessibility-extra-large]
+expect:
+  - snapshot: settings
+    mask: [{ id: last_synced }]
+```
+
+```sh
+mobster test                        # compares each snapshot to its baseline
+mobster test --update-snapshots     # writes the baselines from this run
+mobster test --update-snapshots --check settings
+mobster test snapshots              # lists the baselines; also: snapshots stale, snapshots orphaned
+```
+
+Baselines are PNGs in `.mobster/snapshots/<check>/<name>@<device>-<appearance>-<content_size>-<locale>.png`, for example `.mobster/snapshots/settings/settings@iphone-17-pro-dark-accessibility-extra-large-default.png`. A condition the check doesn't set reads `default`. Commit them: they are the expected screens. `<check>` is the check file's path under `.mobster/checks`, without the suffix.
+
+**What a run does.**
+
+- **No baseline for this device and these conditions.** Mobster saves the screen as the baseline and the check ends `needs_review` with "baseline recorded". It never fails a check for a missing baseline. Look at the PNG, commit it, and the next run compares to it.
+- **A baseline.** Mobster takes a full-size PNG after the screen settles and compares it to the baseline.
+- **The same size, within the threshold.** The snapshot passes.
+- **Over the threshold.** The check fails with class `finding`, the message says how much of the screen changed, and the run folder holds `snapshots/<name>-diff.png`: the screen faded, the changed pixels red and a box around each changed region.
+- **A different size.** The check fails and says both sizes. A baseline belongs to one device, so another device gets its own baseline.
+- **`--update-snapshots`.** Mobster writes the baseline whatever the screen shows and the snapshot passes. With `--check NAME` it updates only the checks with that name or file name. Read the diff of the PNGs in your pull request before you commit.
+
+**How the comparison works.** No model is called. Mobster blurs both images by 2 px, then counts a pixel as changed when any colour channel differs by more than 24 of 255. Antialiasing and subpixel text rendering stay under that, so they never fail a check. The check fails when more than `threshold` percent of the unmasked pixels changed (default 0.1).
+
+**What Mobster ignores.**
+
+- **Your masks.** An `id` or `label` mask covers every shown element it matches; a `rect` is in points. Masked pixels count in neither the changed pixels nor the total.
+- **The keyboard.** While the keyboard shows, Mobster masks it and the text fields on screen, because a caret blinks.
+- **The status bar.** On a simulator, Mobster sets 9:41, full battery, full signal and Wi-Fi for the run (a `status_bar` condition of yours wins) and puts it back afterwards. On a real iPhone it can't, so it masks the status bar.
+
+`mobster test snapshots` marks each baseline `current`, `stale` (its check still has the snapshot, but not for this appearance, text size or locale) or `orphaned` (no check has that snapshot). Mobster lists them and deletes nothing: remove them with `git rm`.
+
+In `results.json`, a result with a snapshot has `snapshot` with `name`, `status` (`matched`, `changed`, `size_changed`, `recorded` or `updated`), `changedPercent`, `thresholdPercent`, `regions` and `masks` as `[x, y, width, height]` in pixels, `size`, `diffMs`, and the absolute paths of the `baseline`, `current` and `diff` images. `junit.xml` lists the same paths in the case's `<system-out>`, so a CI system can attach the diff. The run's own report shows the three images side by side.
+
+Measured on 24 Oct 2026 on an M5 Max Mac with a load average of about 22 (a busy machine, run at nice 10): comparing two 1206 x 2622 px screens, the size of an iPhone 17 Pro screenshot, takes a median 130 ms (n=7, range 119 to 164 ms), whether they match or not.
+
+What it doesn't do: it doesn't judge whether a change is a bug, it doesn't compare the same baseline across two devices, and it doesn't check contrast ratios. A person reads the diff and decides. A baseline file names the device but not the iOS version, so update the baselines when you move to a new simulator runtime.
+
+## Accessibility audit
+
+`mobster test --a11y` audits the accessibility XML your checks read, including reads inside Smart navigation, settling and replay. The page [Accessibility audit](/accessibility) lists the rules, the baseline that keeps CI to new findings, and what the audit doesn't measure. `--audit a11y` and `audit: a11y` still work and mean `--a11y=strict`.
+
+`throughout` assertions and screen audits retain visibility and traits in the existing source request. Those fuller reads can take longer. They cover observed XML, not every displayed frame. A finding from an internal read may have no matching screenshot.
+
+If a required read fails, falls back to pixels, remains in flight when the verdict starts, or exceeds the 60-unique-screen audit cap, the run's `result.json` reports `screenCoverage.complete: false`. A clean final screen cannot certify `throughout` or a strict accessibility audit: the verdict needs review, unless an observed assertion or strict finding already failed. Warning audits remain advisory. `screenCoverage.a11yScreens` counts successfully audited unique screens.
+
+Assertions evaluate complete labels, identifiers, values and placeholders up to 4,000 characters each. Longer attributes are refused as assertion evidence; Mobster never decides from a shortened prefix. A missing intermediate observation marks coverage incomplete, and an unavailable final assertion tree makes the check unable to run. WebDriverAgent XML remains limited to 8 million characters.
+
+`--update-a11y-baseline` replaces `.mobster/a11y-baseline.json` only after every requested accessibility check ends on a completed attempt with complete scan coverage and at least one audited screen. A retried check is judged by its last attempt, and a strict finding still writes the file. A stopped check, missing scan, `--repeat`, or concurrently changed baseline leaves the file untouched and reports why. A complete refresh can repair a malformed old file.
+
+During a baseline refresh, Mobster does not save a new replay recording or stage a healed path. An unchanged approved replay or a fresh Smart run can supply observations. If a replay needs healing, review or record the path in a separate run, then refresh again. Review any pending heal after changing the baseline, since its earlier proof no longer matches.
+
+## System dialogs
+
+iOS puts its own screens over your app: a location alert, Allow Paste, the Sign in with Apple sheet, a Face ID prompt, the purchase sheet. They move with every iOS release and they aren't yours. A check names its answer once, and Smart's steps and a replay give it without a model:
+
+```yaml
+dialogs:
+  permissions: allow        # allow, deny or ask
+  paste: allow              # allow, deny or ask
+  sign_in_with_apple: continue   # continue or cancel
+  biometric: match          # match, nonmatch or cancel
+  purchase: confirm         # confirm or cancel
+```
+
+| Key | Answers | Default on a simulator |
+|---|---|---|
+| `permissions` | Location, Photos, camera, microphone, contacts, calendar, notifications, tracking, "Open in app?" and the other permission alerts. `allow` presses the narrowest grant on offer (`Allow Once` before `Allow While Using App`), `deny` presses `Don't Allow` | `allow` |
+| `paste` | Allow Paste | `allow` |
+| `sign_in_with_apple` | The Sign in with Apple sheet | `continue` |
+| `biometric` | A Face ID or Touch ID prompt. `match` and `nonmatch` send that event to the simulator, written to the run's action journal before it goes, `cancel` presses Cancel | `match` |
+| `purchase` | The purchase sheet and the "all set" alert after it, which StoreKit marks `[Environment: Sandbox]` or `[Environment: Xcode]`. `confirm` presses `Buy` or `Subscribe`, `cancel` presses `Cancel`. On a simulator the all-set alert gets `OK` either way, since the purchase already went through | `confirm` |
+
+`ask` keeps the rule a task uses, and a check has nobody to ask, so the run stops and says which dialog iOS showed. iOS asking for your Apple Account password, a dialog with a password field, a Save Password prompt, Trust This Computer and an Apple Account sign-in, including one that offers Face ID or Touch ID, are never answered for you, whatever `dialogs` says. Mobster knows them by Apple's wording, so an app's own alert such as "Incorrect password" or "You're all set" stays the app's. An app's own alert that uses the same wording as one of these, such as "Enter your password to continue", or on your iPhone "Do you want to buy 100 coins?", stops the check instead of being answered. A password field counts only when the screen Mobster reads is SpringBoard's or the sheet's own; read through the app's screen, a password prompt is still stopped by its words.
+
+Only iOS's own dialogs are answered, on a simulator and on your iPhone. An alert is answered only while WebDriverAgent reports SpringBoard in front, or the Apple process for its own kind: StoreKit for a purchase alert such as the all-set one, AuthKit for a Sign in with Apple alert, CoreAuthUI for a Face ID alert. None of its lines may be on the app's own screen, so the app's alert stays the app's even when it says "location" or has Allow and Don't Allow buttons. A sheet is answered only while the one Apple process that shows it is in front and the screen Mobster reads is that process's own: StoreKit for a purchase, AuthKit for Sign in with Apple, CoreAuthUI for Face ID. The app's screen behind a real sheet is never taken for the sheet. A web page in an in-app browser or a web sign-in runs in Safari's process, so its `confirm()` and its look-alike Continue, Subscribe or "Log in with Face ID" are never answered. When WebDriverAgent can't say what is in front, nothing is pressed. The step meets everything Mobster leaves like any screen, under the check's approver.
+
+Each dialog Mobster answers is its own `system_dialog` event in `events.jsonl`: the kind, the button, and that the check chose it. A replay answers one between steps, so it doesn't count as a step or a heal, and a replay that meets a dialog it has not seen before answers it from `dialogs` instead of failing. A replay that meets one `dialogs` has no answer for ends `couldnt_run`, class `system_dialog`, and keeps its recorded steps. Within one run Mobster never answers the same dialog twice in a row: when the dialog it answered last is still there, or back, a replay ends `couldnt_run`, class `system_dialog`, and Smart's steps stop there too. Mobster reads a dialog from WebDriverAgent's alert, or from the screen for a sheet an app presents; it never asks a model to read one.
+
+To test that the app handles a refusal, answer the other way:
+
+```yaml
+dialogs: { permissions: deny, purchase: cancel }
+```
+
+### What a simulator may do that an iPhone may not
+
+| | Simulator | Your iPhone |
+|---|---|---|
+| Buy, Send, Post and Delete in the app under test | Approved. A commit Mobster can't classify is refused | Refused, and Mobster asks nobody |
+| Dialogs when `dialogs` is silent | The defaults above | Declines what it can (`Don't Allow Paste`, `Not Now`, `Later`) and stops at the rest; a permission alert is left to the step |
+| `permissions: allow` | Presses the narrowest grant, such as `Allow Once` | Presses it too, so the app under test gets that access on your iPhone. Only while SpringBoard shows the alert, and `Open` in another app only for a link Mobster opened |
+| `sign_in_with_apple: continue` | Presses `Continue` | Presses `Continue` too, which signs in to the app under test with your iPhone's Apple Account. Only while AuthKit's sheet is in front |
+| `purchase: confirm` | Presses `Buy` | Never. Mobster stops at the sheet; `purchase: cancel` presses `Cancel` |
+| `biometric: match` or `nonmatch` | Sends the event | Can't send one to a phone: it stops. `cancel` presses `Cancel` |
+| `paste: allow` | Presses `Allow Paste` | Only for text Mobster put on the clipboard itself |
+| `conditions.biometric` | Enrolls or unenrolls Face ID, and puts it back | Skipped, and the report says so |
+
+On a simulator there is no money to spend and nobody to message, so the checks that matter most (the paywall buys, the composer sends) run. The app's own backend still receives what the app sends, so point a check at staging.
+
+## On your iPhone
+
+```sh
+mobster test --device "Sam's iPhone"
+```
+
+`--device` takes a device from `mobster devices`. Mobster reaches a real iPhone only through this flag on the command line: a check file, a matrix file and an MCP tool can't name one. On your iPhone:
+
+- A check drives only its own app, and only a build you put there: Mobster installs the check's `app.path` when it's an `.ipa` or a build for devices, or it uses the build already on the phone when devicectl lists it as built by a developer (from Xcode or `xcrun devicectl`). An app from the App Store couldn't run: "Mobster tests your own apps on your iPhone. Instagram is from the App Store." Apps that are part of iOS couldn't run either, and neither can a build of another app than the check's `app.bundle`.
+- Smart steps stay in that app. If one opens another app (Messages, Photos), the check stops at once, couldn't run, and its report has no frame of the other app. A `launch.url` opens in the app itself, or the check couldn't run.
+- Mobster never clears the app's data. A check with `reset: data` or `reinstall` runs with `reset: none`, and the report says so.
+- Smart steps never send, buy, post or delete there: Mobster refuses every commit and asks nobody. A simulator approves the ones Mobster can classify ([What a simulator may do](#what-a-simulator-may-do-that-an-iphone-may-not)).
+- iOS's own dialogs get only the answers the check's `dialogs` names, and only while SpringBoard or Apple's sheet is in front. `permissions: allow` presses Allow and `sign_in_with_apple: continue` presses Continue on your iPhone. A purchase is never confirmed there, a Face ID match is never sent, and the app's own alerts and web pages are never answered.
+- The iPhone runs one check at a time, beside any simulators.
+
+For a fixed phone run, `--no-heal` or `--repeat` refuses an `app.path` device build before taking the phone: installing it could change the revision the approved path describes. A bundle-only check still needs Mobster to verify the app already installed on the phone before launch. The current WebDriverAgent route cannot confirm its version and build, so fixed replay refuses there too. Ordinary local phone checks remain available.
+
+Keep the phone unlocked and connected, with its runner started in the Mobster app or by `mobster serve --manage-device`.
+
+### Every plugged-in iPhone at once
+
+```sh
+mobster test --device all --sim "iPhone 17 Pro" --video
+```
+
+`--device all` is every iPhone that is ready on this Mac: plugged in, unlocked and set up in Mobster. Each phone runs its checks one at a time, beside the others and beside the simulators, and the run writes one report: every check down the side, every phone and simulator across the top. With none ready, it stops before anything runs.
+
+### Share the checks between phones
+
+```sh
+mobster test --device "Sam's iPhone" --device "Kim's iPhone" --device "Lee's iPhone" --spread
+```
+
+Without `--spread`, every check runs on every device you name. With it, each check runs once, on whichever device is free: every device takes the next check from one queue, so three phones finish a suite about three times sooner than one. `--spread` needs two or more devices (phones, `--sim` types or both), and it stops before anything runs if you name fewer. Each phone still runs one check at a time, and only the command line or the runner's `.env` names a phone.
+
+The report groups the checks by device. `results.json` has one result per check, with the device it ran on, and `junit.xml` has one `<testsuite>` per device. A check that never started appears under the device `Not run`.
+
+If a phone stops answering while a check runs, that check is `couldnt_run` with class `device_lost`. Mobster doesn't run it again, on that phone or another: it can't tell how far the check got, and a step may already have sent something. The phone takes no more checks in this run, and the others carry on. Mobster passes over a phone that another Mobster app or command holds (class `busy`, before anything is tapped), and its check goes to another phone untouched. If every device is lost or busy, the checks left are `couldnt_run`, and the run exits 3. Mobster tells that a phone dropped by asking its WebDriverAgent; it doesn't watch a simulator for that.
+
+A device that refuses a check (an App Store app, say) refuses only that check there. Mobster doesn't pass it to another phone, so name the same build on every phone.
+
+### Your TestFlight build
+
+devicectl doesn't list a build from TestFlight as built by a developer, so by default it couldn't run, as an App Store app can't. When the app is yours, name its bundle ID with `--testflight`:
+
+```sh
+mobster test --device "Test iPhone" --testflight com.example.yourapp
+```
+
+Only the bundle IDs you name count, and only with `--device` on the command line. Apple's apps couldn't run even when named, and the app's data is still never cleared.
+
+## Retries and flaky checks
+
+Mobster tries a failed run again once (`--retries N`, from 0 to 5) with the check's own reset, which by default reinstalls the app or clears its data. A check that couldn't run because of the machine (WebDriverAgent, the simulator, the launch, a busy device) gets another try too. A usage error, a missing key, the spend cap, a refused app or a phone that stopped answering mid-run (`device_lost`) doesn't.
+
+A check that passes on a retry passed, and is **flaky**: the summary marks it `~ flaky`, the report lists it in its Flaky table, and JUnit gives it the property `flaky=true`. `--strict` makes a flaky check fail the run.
+
+To measure a flaky check, run it several times:
+
+```sh
+mobster test --repeat 5 .mobster/checks/onboarding.yaml
+```
+
+With `--repeat K`, each check runs K times, retries are off unless you pass `--retries`, and each result has a pass rate. A check passes only when all K runs passed. For a check with steps, first record a passing path with `mobster test --fresh CHECK`, then run `mobster test --repeat K CHECK`. Repetition needs that complete approved model-free path; a missing path refuses before app reset, install or launch. `--fresh --repeat` and `--spread --repeat` refuse during command validation. Launch-only checks can repeat without a model.
+
+The repeated run pins the effective check and expectations, its declared fixture and condition assets, the selected model and full iOS runtime, and the approved replay path for each target. If one changes before a later attempt, Mobster refuses that attempt before app reset, install or launch. A repeated step check uses that fixed path, not an adaptive fresh or live Smart path.
+
+Every suite pins each check's file, effective steps and assertion assets and the bytes at `app.path` when it starts. If a pinned input changes before a later attempt, or a fixture, linked step or accessibility baseline changed between planning and the start, Mobster refuses that attempt before app reset, install or launch, and the suite stops with exit 3.
+
+Mobster pins each input on its own. It can't pin a missing file, a file that is a symlink, a seed folder holding a symlink, a seed or media asset over its limit, an app holding a symlink, or an app over 2 GB or 50,000 files. That input stays unpinned, and what Mobster could read stays pinned. The run prints a note naming what it couldn't pin, its digest is `null` in `results.json`, and `mobster test compare` can't report a verified fix for it.
+
+The check still runs, unpinned, and the other checks carry on. An app Mobster can't pin runs as it is, so a change to it during the suite goes unnoticed. A missing app fails only its own check. A symlink in a seed folder also fails only its own check: Mobster refuses to copy it, after the app's reset and install. `--repeat` refuses an app it can't pin, for that check only, because its runs could otherwise span two builds of one version. `mobster test scenario` and `mobster test minimize` need pinned inputs and refuse before they start.
+
+## Quarantine
+
+A check you know is flaky can keep running without failing the run. List it in `.mobster/quarantine.yaml`:
+
+```yaml
+- onboarding                     # a check's file name, its path, or its name
+- check: restore-purchases
+  reason: Flaky on iOS 26.4 (FB13579)
+```
+
+A quarantined check runs and ordinary failures appear as JUnit `<skipped>` without changing the exit code. A safety stop still ends the suite and appears as a JUnit error. `--quarantine FILE` reads another file, and stderr says when a listed name matches no check.
+
+### See which checks are flaky
+
+Every `mobster test` run adds each check's result, per device, to `.mobster/test-results/history.json`, and keeps the last 20. The folder is already in `.mobster/.gitignore`, so the history stays on your Mac.
+
+```sh
+mobster test --history
+```
+
+```
+flaky   Feed loads  on iPhone 17 Pro  ✗✓✗✓✗✓✓✗✓  56% of 9 runs, flake score 0.88, slower
+    Flaky: add .mobster/checks/feed.yaml to .mobster/quarantine.yaml, or run with --auto-quarantine.
+stable  Onboarding  on iPhone 17 Pro  ✓✓✓✓✓✓✓✓✓  100% of 9 runs, flake score 0.00
+```
+
+Under each row, `Last run:` gives the launch time, memory and hangs of the check's last run with their markers ([What a check measures](#what-a-check-measures)). `--history` runs nothing and takes a project path. `--json` prints the same rows as JSON. Each row has the pass rate, the duration of every run, the duration trend (`slower`, `faster` or `steady`, newer half of the runs against the older half) and a flake score from 0 to 1.
+
+The flake score is the larger of two shares: the runs that passed only after a retry or a repeat that failed, and the neighbouring runs where one passed and the other didn't. A run that ended `budget_unmeasured` counts in neither, because a reading Mobster missed says nothing about the app. With 5 or more runs a check is:
+
+| State | Meaning |
+|---|---|
+| `flaky` | The score is 0.15 or more and the last run passed |
+| `failing` | The last run didn't pass. It fails the same way each time, or began to |
+| `stable` | Everything else, including a check that failed for a while and was fixed |
+| `new` | Fewer than 5 runs |
+
+A run that couldn't run (a lost device, a busy phone, a stopped suite) says nothing about the check, and Mobster doesn't keep it. Mobster suggests quarantining a flaky check in the summary, in `results.json` (`history.suggestQuarantine`, and `history` on each result) and in the HTML report's "Flaky over time" table. It never quarantines a check on its own. With `--auto-quarantine`, Mobster quarantines the checks the history calls flaky, for that run only: they run and are reported, and they don't change the exit code. It never quarantines a check this way when its latest recorded result failed on any device, and `.mobster/quarantine.yaml` stays as you wrote it. Mobster sets aside a history file it can't read as `history.json.corrupt`, and the history starts again.
+
+The Mac app reads the same numbers from `GET /api/tests/history`, with `?project=PATH` for one project `mobster test` ran in on this Mac.
+
+## Tags and shards
+
+Give a check `tags` (`tags: [smoke, lessons]`) and pick by them: `mobster test --tag smoke`. A tag no check has is a usage error, so a typo can't pass CI by running nothing.
+
+`--shard 2/4` runs the second of four even shards, every fourth check in file order, so four CI machines split one suite.
+
+## Reports
+
+<Frame caption="A failed check in the report: the lesson ends and the XP goes up, but the streak stays at 3 days.">
+  <img src="/images/test/report-light.webp" alt="A failed check in a mobster test report, open: value id=streak_days == 4 was 3 days, beside the lesson's last screen with the streak outlined in red and numbered 3." className="block dark:hidden" />
+  <img src="/images/test/report-dark.webp" alt="A failed check in a mobster test report, open: value id=streak_days == 4 was 3 days, beside the lesson's last screen with the streak outlined in red and numbered 3." className="hidden dark:block" />
+</Frame>
+
+Every run writes a folder, `.mobster/test-results/<suite-id>/`, that stands on its own: upload it as a CI artifact and every link in it works. Reports stay in your project folder unless you [share them with your team](#share-a-report-with-your-team).
+
+| file | what it holds |
+| --- | --- |
+| `index.html` | What didn't pass, then every check with its file, tags and verdict on each device (grouped by device with `--spread`). A check that didn't pass opens to its expectations, what was found instead, the verdict frame, its [Logs and Crash pane](#logs-crashes-and-video), and links to the run's report, log and video. Then the Flaky table. Its links stay inside the folder, except "Mobster" in the footer, which links to mobster.dev |
+| `junit.xml` | One `<testsuite>` per device (`iPhone 17 Pro · iOS 26.4`), one `<testcase classname="checks.<file>">` per check, with `<failure type="assertion">`, `type="app_crashed"` or `type="couldnt_run"`, `<skipped>` for quarantine, and the properties `status`, `attempts`, `flaky`, `passRate`, `report` and, when measured, `perf.launchMs`, `perf.memoryMb` and `perf.hangs`. Each `<testsuite>` has the properties `git.branch` and `git.head` in a git checkout. A crash's top frames are in `<failure>`, and the app's log around the failure in `<system-out>` |
+| `results.json` | Everything, `schema: "mobster.test/1"`: below |
+| `evidence-inventory.json` | Completion-time size and SHA-256 hashes for `results.json`, JUnit, HTML reports and any referenced evidence files Mobster found |
+| `runs/<run-id>.html` | A copy of each run's own report (self-contained, frames included) |
+| `runs/<run-id>/logs/app.log`, `runs/<run-id>/crashes/*.ips` | The app's log and crash report of each run that didn't pass |
+| `videos/` | Each run's screen, on a simulator or an iPhone, with `--video` |
+
+A safety stop is a JUnit error even when its check is quarantined. A stopped or other nonzero suite with no failing check gets a `Suite verdict` error, so CI does not report it as passed.
+
+`--junit FILE` and `--html DIR` also write the JUnit file and the HTML report (with `runs/` and `videos/`) where your CI expects them. `--json` prints `results.json` on stdout.
+
+```json
+{"schema": "mobster.test/1", "suite": "20261007-142233-9c1e", "exitCode": 1,
+ "git": {"branch": "streak-fix", "head": "217873d10389c1f0a7f4f1e0c2b9d6e5a4f3b2c1"},
+ "devices": [{"key": "sim:iPhone 17 Pro@iOS 26.4", "name": "iPhone 17 Pro · iOS 26.4", "kind": "simulator"}],
+ "checks": [{"name": "Lesson complete awards XP and the streak goes up", "file": ".mobster/checks/lesson-complete.yaml",
+             "results": [{"device": "iPhone 17 Pro · iOS 26.4", "status": "passed", "attempts": 1, "flaky": false,
+                          "report": "runs/20261007-142240-a1b2.html", "durationMs": 21400, "healed": [],
+                          "replayed": true, "replay": {"mode": "replayed", "steps": 6, "replayed": 6, "healed": 0,
+                                                       "seconds": 4.1, "costUsd": 0},
+                          "runs": [{"attempt": 1, "runId": "20261007-142240-a1b2", "verdict": "passed"}]}]}],
+ "summary": {"passed": 1, "failed": 0, "needsReview": 0, "couldntRun": 0, "flaky": 0, "quarantined": 0}}
+```
+
+`git` is the branch and commit the suite tested, read as it starts, and is left out outside a git checkout. On a CI's detached checkout the branch comes from the CI: `GITHUB_HEAD_REF` (a pull request), `GITHUB_REF_NAME`, `CI_COMMIT_REF_NAME`, `BITRISE_GIT_BRANCH`, `BUILDKITE_BRANCH`, `CIRCLE_BRANCH` or `CI_BRANCH`. Mobster for Mac groups a project's runs by it. `status` is a verify verdict: `passed`, `failed`, `needs_review` or `couldnt_run`. A result that didn't pass has `evidence`, described in [Logs, crashes and video](#logs-crashes-and-video). `passRate` is there with `--repeat`. A flaky check counts under its status and under `flaky`. `replay.mode` is `replayed` (no model), `healed` (Smart did some steps) or `live` (Smart ran every step), and `summary.cacheHitRate` is the share of checks with steps that replayed.
+
+### Inspect or export one local suite
+
+From the project folder, name the completed suite you want to inspect:
+
+```sh
+mobster test capsule show 20261007-142233-9c1e
+mobster test capsule export 20261007-142233-9c1e --output ./suite-capsule
+```
+
+`show` prints the suite verdict and evidence count; `--json` gives opaque check and target IDs, statuses, and evidence hashes without check names, device names, paths, app text or pixels. `export` creates a new local directory with that safe descriptor. It does not upload anything. The completion inventory checks that `results.json` still matches the saved result; it records hashes of JUnit, HTML reports and any referenced visual files found when the suite completed. The inventory records what Mobster saved, not proof of who ran the suite. If inventory capture fails, the ordinary suite verdict still exists, but capsule commands and comparison refuse that saved suite.
+
+To copy raw evidence, select each kind yourself:
+
+```sh
+mobster test capsule export 20261007-142233-9c1e --output ./suite-capsule-raw \
+  --include junit --include report
+```
+
+Selected files are unredacted and stay on this Mac until you choose to share them. `--output` names a new directory; an existing macOS alias such as `/tmp` works, but a replaced output parent or a symlinked suite source is refused. If a selected file is missing, changed or was unavailable at completion, export refuses before creating the output directory. Standalone logs, crash reports and videos remain in the original suite folder and are never copied into a capsule. A selected HTML report or JUnit file can still contain app text, log excerpts or crash details.
+
+### Compare two saved suites
+
+```sh
+mobster test compare BASE_SUITE_ID CANDIDATE_SUITE_ID --json
+```
+
+Choose both IDs yourself. Mobster compares their exact saved results and reports each case-target `observedTransition` separately from `verifiedFix`. It does not search history for a favorable baseline. The comparison requires each suite's completion inventory and unchanged `results.json`; it does not claim that unselected raw files are unchanged. Matching check inputs, environment and execution policy can support an observed failed-to-passed transition. `verifiedFix` is true only for a controlled app-state comparison: clean, single-attempt simulator runs with complete app-authored snapshots show at least one explicit persisted field fail then pass across two distinct app builds, with no field failing afterward, while the check, fixture, environment and policy stay fixed. Its scope is that stored app value; it does not prove backend equivalence or that the build change was the sole cause.
+
+### Try a smaller local reproducer
+
+If an exact bad and clean-control suite produce a `controlled_app_state` verified comparison, choose its `caseRef` and `targetRef`. Keep both original simulator `.app` builds inside the project, then run from that project:
+
+```sh
+mobster test minimize BAD_SUITE_ID CONTROL_SUITE_ID CASE_REF TARGET_REF \
+  --bad-app path/to/bad.app --control-app path/to/control.app --isolated
+```
+
+`--isolated` confirms that you have isolated any external fixture for every trial. Mobster resets the app as the saved check requires; it cannot reset your backend or prove external state was unchanged. It first reruns the original bad failure and clean control. For each step it tries removing, it accepts the deletion only when the bad build shows the same explicit app-state assertion failure twice and the control build passes once between them. An unknown outcome stops without a retry.
+
+The default budget is eight total bad and control suite runs, including the original pair; `--max-attempts N` accepts 5–8. The result is saved as `.mobster/drafts/repro/<pair-and-refs>/result.json`, with a separate `candidate.yaml` only when a smaller reproducer is confirmed. Review that draft yourself: Mobster does not edit the approved check or its approved replay path, and does not claim global minimality, backend equivalence, or a verified fix. `--json` prints the reducer result. Exit 0 includes a completed run that found no smaller reproducer; invalid input or an unknown outcome exits 3, and a stopped run exits 130. This command runs locally, with no MCP or Remote start.
+
+A confirmed deletion prints a review path:
+
+```text
+Reduction smaller reproducer: 5 trial suites; 3 original steps.
+Review .mobster/drafts/repro/<pair-and-refs>/candidate.yaml (2 steps).
+```
+
+## Share a report with your team
+
+On the [Team plan](/pricing), `--share` uploads the suite's folder to your team's hosted reports and prints its link:
+
+```sh
+mobster test --share
+```
+
+```text
+Shared with your team for 30 days: https://console.mobster.dev/r/6b1f0a52-3c1e-4d7a-9a40-5be0c2d9e7f1#k=…
+```
+
+- Mobster seals every file on this Mac with a new key before it uploads it. The key is only in the link, after the `#`, which a browser never sends to a server. Mobster's servers store the sealed files under opaque names: no file's path, words or frames reach them.
+- A member of the team, Viewers included, opens the link in the console. Someone with the link who isn't in the team can't open it, and a member without the link can't read it.
+- `--share-days 7`, `30` or `90` sets how long the team keeps it (default 30). The person who uploaded it, or an Admin, can delete it sooner in the console.
+- It uploads from one of your team's Macs, or from CI with `MOBSTER_TEAM_KEY` ([CI](/ci#share-the-report-with-your-team)). On any other Mac, or without the Team plan, it says so, and the report stays in `.mobster/test-results/<suite-id>/`.
+- A report holds 500 MB at most.
+- `mobster test pr --share` also links each frame, GIF and video in `pr-comment.md` to its page in the hosted report.
+
+The standalone CLI does not include the app's team extension. With `--share`, it explains that sharing is unavailable and keeps the local report.
+
+The test's result and exit code don't depend on the upload: if it fails, `mobster test` says why and the local report is unchanged.
+
+## Tell Slack how a suite ended
+
+A project can post each suite's verdict to a Slack channel. You pick the channel once, in Mobster; the project file picks when to post.
+
+1. Connect Slack in Settings › Connectors under Send results to, and save a destination such as `Team channel`. It posts as you, with the same Slack sign-in as the Slack connector.
+2. Write `.mobster/notifications.yaml` in the project:
+
+```yaml
+slack:
+  destination: Team channel
+  on: fail
+```
+
+`on` is `fail` (the default), `always` or `fix`, or a list of them:
+
+- `fail`: a check failed, needs review or couldn't run, or a step healed and waits for your review.
+- `always`: every suite.
+- `fix`: the suite passed and the one before it, in this project on this Mac, didn't.
+
+`mobster test` and `mobster test pr` post after the reports are written, and print one line to stderr:
+
+```text
+mobster test: told Team channel on Slack.
+```
+
+The message names the verdict, each check that didn't pass with its device and what it found, a "Needs review" line when steps healed (`mobster test heal` shows the diffs), and the report: the `--share` link when there is one, else the suite folder on your Mac. Mobster masks secrets in it, and text from a screen can't mention `@channel` or a person.
+
+- The file names a destination, never a channel or a token. Mobster posts only to a Slack destination saved on this Mac, through the running Mobster. Without it, without a Slack sign-in, or when the destination is gone, Mobster posts nothing, and the line says what to do.
+- Mobster tries a post once. If it can't tell whether it arrived (no answer, a Slack error), it writes `slack-notify.json` in the suite folder and doesn't post that suite again; check the channel before you run the suite again.
+- The test's result and exit code don't depend on the post.
+- Slack shows in Settings › Connectors once Mobster has tested it with your workspace, as it does for any destination.
+
+## What a check measures
+
+Every run on a simulator takes four numbers while it checks your flow. They land in `perf` in `results.json`, in the HTML report, in the PR comment and in JUnit (properties `perf.launchMs`, `perf.memoryMb` and `perf.hangs`).
+
+| Number | How Mobster takes it |
+|---|---|
+| Cold launch | The time from the `simctl launch` call to the first accessibility read of the app's own screen that the next read agrees with. `perf.launch.interactiveMs`. It reads every 0.1 s, so it has that resolution plus the time of one read. `foregroundMs` is the time until WebDriverAgent names your app as the app in front |
+| Memory | The app's resident memory, from `ps` on its process when it is in front, every 500 ms after that, and once more at the verdict read, so a check that settles in a second still has a reading. `peakMb` is the largest sample and `p95Mb` the nearest-rank 95th percentile. It is resident size, which is larger than the footprint Xcode shows, and it includes shared frameworks |
+| Hangs | The lines `Hang detected: 0.52s` in the app's own log of 250 ms or longer. `count` and `longestMs` |
+| CPU | The largest `ps` CPU share of the process, in `memory.cpuPeakPct`. One busy core is about 100 |
+
+What Mobster doesn't measure is in `perf.notMeasured`, so a missing number says why:
+
+- **First frame.** A simulator writes no log line that marks the app's first frame, so `launch` has no `firstFrameMs`. Cold launch ends at the first stable screen, which comes after the first frame.
+- **Dropped frames.** A simulator exposes no Core Animation commit times and MetricKit isn't available in one. Mobster counts none.
+- **An iPhone.** A phone run takes the two launch times and the hang count. It doesn't sample memory, because `pymobiledevice3 developer dvt sysmon` isn't wired in. `memory` is `null`.
+- **Hangs on a simulator.** A simulator may not log hangs at all. A count of 0 means no hang line appeared, not that the app never stalled.
+
+Set limits with `budget` in a check file ([the keys](/checks#the-check-file)):
+
+```yaml
+budget:
+  launch_ms: 2500
+  memory_mb: 400
+  hangs: 0
+```
+
+A run over a limit fails with class `budget_exceeded` and says which number and by how much. A limit on a number the run couldn't take, such as `memory_mb` on an iPhone, ends the run `needs_review` with class `budget_unmeasured`. Mobster never passes a budget it can't check.
+
+`mobster test --history` keeps the numbers per run and marks the last run against the median of the last 10 passes before it. `↑` is 20% more launch time or memory, or more hangs than the median. `↓` is 20% less, and `→` is in between. It marks nothing until 3 earlier passes have the number.
+
+```text
+stable  Feed loads  on iPhone 17 Pro  ✓✓✓✓✓✓✓  100% of 7 runs, flake score 0.00
+    Last run: launch 1,329 ms →, memory 278 MB →, hangs 0 →.
+```
+
+The marker flags a trend and never fails a check. Only `budget` fails one. `--history --json` adds `perfLatest` (the last run's numbers) and `perf` (each number's marker, latest value, baseline median and run count) to every row.
+
+**Measured on 24 Oct 2026**, three launch-only runs of the Daybreak sample app on an iPhone 17 Pro simulator (iOS 26.4) under a 1-minute load average of 39 to 43 on an 18-core Mac: cold launch to the first stable screen was 1,844, 1,268 and 1,329 ms, and peak resident memory was 275, 278 and 278 MB. The runs lasted about 2 s after launch, so each has 1 or 2 memory samples. The log showed no hang lines. The numbers were not compared with Instruments' App Launch template, so the gap between the two is not known. Treat the launch time as a number to compare run against run on the same Mac, not as an absolute.
+
+## Logs, crashes and video
+
+A red check says what broke. For every run on a simulator or a USB iPhone, Mobster keeps the app's log and, when the app crashed, its crash report. With `--video` it also records the screen.
+
+```text
+✗ failed  Crash fixture stays up after launch on iPhone 17 Pro, iOS 26.4
+    Crash Fixture crashed: EXC_BREAKPOINT (SIGTRAP), in specialized CrashTrigger.crashNow() (CrashFixtureApp.swift:11).
+    The report's Logs and Crash pane shows the stack and the app's log around the crash.
+```
+
+- **A crash fails the check** as `failed`, class `app_crashed`, even when the expectations held. Mobster knows the app crashed the moment SpringBoard logs that its process ended on a signal (`SIGSEGV`, `SIGABRT`, `SIGTRAP`), the watchdog (`0x8badf00d`) or jetsam. Mobster's own relaunches don't count.
+- **The log** is the app's unified log (`os_log`, `Logger`, `NSLog`) from before the launch to the verdict. On a simulator Mobster reads it with `xcrun simctl spawn <udid> log stream`, at the info level and above. On an iPhone it reads the syslog with `idevicesyslog`. Mobster stamps each line with the run clock, in seconds since the run started, as it does steps. What your app prints to stdout with `print` isn't in it.
+- **The log around a failure** in `results.json` marks each line `app: true` when it's the app's own (its process, not an Apple framework such as accessibility). Mobster for Mac shows those lines first and folds the rest behind **Show system log**.
+- **The video**: a simulator's screen through `xcrun simctl io recordVideo`, an iPhone's through WebDriverAgent's video stream (the one the Mac app's live view reads), encoded on the Mac to an H.264 MP4 590 pixels wide by Mobster's `mjpeg-mp4` helper (AVFoundation, no ffmpeg). Nothing on the phone changes. Mobster doesn't store a frame that repeats the one before, so a still screen costs nothing. The Mac app carries the helper; the CLI from source compiles it once with Xcode's command line tools.
+- **The crash report** comes from `~/Library/Logs/DiagnosticReports` for a simulator, and from the iPhone with `idevicecrashreport --keep`, which copies it and leaves it on the phone. Mobster names your app's frames with the dSYM beside the check's `.app` or in `.mobster/build/Build/Products`, using `atos`. A Debug build already carries its names.
+
+Where it shows:
+
+- The run's report puts the **Logs and Crash pane** under the step the failure came in: the crash's top frames, your own in full ink, then the app's log 10 seconds either side of the failure with the moment marked. A launch-only check has it as its own section.
+- `index.html` shows the same pane under the expectations, and links to the full log and the `.ips`.
+- `junit.xml` carries the crash and its frames in `<failure type="app_crashed">`, and the log window in `<system-out>`.
+- In Mobster for Mac, each project's page (a project under **Projects** in the sidebar) shows its runs by branch, and the same pane beside each failed check's steps, with **Run checks** to run them again. A folder that isn't a project yet is under **Recent folders** on the Projects page. It reads the suite folders; nothing is copied.
+- `results.json` gives each result that didn't pass an `evidence` object ([Proof for every step](#proof-for-every-step) adds the per-step slices):
+
+| Field | Meaning |
+| --- | --- |
+| `source` | `simulator` or `iphone` |
+| `log` | `path` (relative to the suite folder), `lines`, `bytes`, and `dropped`: lines left out past the 1 MB cap |
+| `note` | Why there's no log, such as "No log: the log tool isn't installed." |
+| `atMs` | The failure on the run clock: the crash, else the verdict read, else the moment the run couldn't go on |
+| `step` | The step the failure came in: the first one recorded after it (a step is recorded once its action and the screen settle), else the last |
+| `window` | `fromMs`, `toMs` and `lines` (`atMs`, `level`, `process`, `text`): the log within 10 seconds of `atMs`, at most 60 lines, errors and your app's own lines first, and none of XCTest's (WebDriverAgent reading the app) |
+| `crash` | `type` (`EXC_BAD_ACCESS`), `signal`, `message` (Swift's or Objective-C's last words, when the report has them), `thread`, `pid`, `frames` (`index`, `image`, `own`, `symbol`, `file`, `line`, top 8), `symbolicated`, and `report`, the `.ips` copy. `report` is `null` and `frames` empty when macOS hadn't written the report |
+
+macOS writes a simulator's crash report after the crash. On 16 Oct 2026 it took 61 seconds to 4 minutes on a Mac running many simulators and builds, so `mobster test` waits up to 60 seconds once, at the end of the suite, for the reports it's missing. A report that comes later stays in `~/Library/Logs/DiagnosticReports`, and the check still says it crashed and on which signal.
+
+The log and the crash report can hold secrets, so each line and every string in the report goes through Mobster's secret filter before it's written: passwords, one-time codes, card numbers and API keys become `••••`. They stay in the run folder on this Mac, like the frames, and Mobster sends them nowhere. Over MCP, the result your coding agent reads (`verify_finish`, `run_tests`) carries `evidence` as data, the way it carries what was on screen. The log stops at 1 MB, then keeps its last 2,000 lines and says how many it dropped.
+
+What it costs, measured on 16 Oct 2026 on an M5 Max running many other simulators and builds (load average 180 to 230), with a launch-only check on an iPhone 17 Pro simulator, 6 runs each, interleaved: the check took a median 8.6 s without capture and 7.6 s with it, a difference inside the noise. The log process used 0.6 s of CPU a check; Mobster's own CPU time didn't change (5.4 s). That check's log was 35 KB (232 lines); a check with two Smart steps logged 100 KB (626 lines). A crash report is about 60 KB. A simulator's video was 2 to 7 MB a check.
+
+On an iPhone over Wi-Fi, the log and crash reports need libimobiledevice to reach the phone on the network; when it can't, the result's `note` says there's no log. A check on a WebDriverAgent address gets no log or crash report, because Mobster can't tell which phone it is.
+
+## Proof for every step
+
+A red check says which side to look at, and every step carries its own evidence. Mobster adds this from what the run already recorded (the step times, `logs/app.log`, the verdict frame). It calls no model and captures nothing more from your app.
+
+```text
+App problem: app crashed
+```
+
+- **The cause line** is one of: `app crashed`, `assertion failed on the final screen`, `timed out waiting for the screen to settle`, `step could not be done (control not found)`, `simulator or build problem` and a few more for the check and the environment. Its `side` is `app`, `check` or `environment`, so a reader can tell an app bug from a test bug from a Mac problem without a rerun.
+- **The judged frame** is the one the verdict read, with the `treeHash` of the accessibility tree read on it. The report captions the frame with both and outlines each asserted element on it.
+- **The log slice** is the app's log lines between the step before and the step itself, at most 8 a step and 160 a run, your own app's lines and errors first. `logs/app.log` has all of them.
+- **The requests** are the HTTP requests the app's log shows in that span: method, host, status, duration and response bytes. Never a path, query, header or body. On a simulator and over an iPhone's syslog they come from the CFNetwork lines the app's own process logs, so a request your app makes without a CFNetwork line isn't listed. Mobster for Mac's Network X-ray records an iPhone's traffic from outside; it isn't wired into a check run yet.
+- **The clip** is the step's span in the `--video` recording, as a link that plays only that part (`videos/001-buy-1.mp4#t=0.6,2.6`). It is a time range in the one recording, not a separate file, so a run's 20 MB cap holds.
+
+Where it shows:
+
+- The run's `report.html` puts a **Proof for this step** fold under each step with its log lines and requests, the failing step open, and **Until the verdict** under the last one.
+- `index.html` puts the cause line under a result that didn't pass, and a fold for each step with its clip link.
+- The pull request comment ([The comment](/ci#the-comment)) adds the cause to each failed check's repro, with the failing step's requests and last log lines, and its GIF shows the failing step and the one before it.
+- `run_tests` over MCP says `Cause (app): app crashed.` under each check that didn't pass, and gives `failures[]` with the `cause`, the `judged` frame and the `step`.
+- `junit.xml` adds `Cause (app): …` to `<failure>`, and the failing step's requests and log lines to `<system-out>`.
+- `result.json` has `step_proof`; `results.json` has the same as `stepProof` on each result:
+
+| Field | Meaning |
+| --- | --- |
+| `cause` | `side`, `kind` (the reason class) and `line`. `null` for a pass |
+| `judged` | `frame`, `overlay` (the frame with the outlines), `treeHash` and `verdictAtMs` |
+| `steps[]` | `index`, `text`, `frame`, the span `fromMs` to `toMs` on the run clock, `log` (`count`, `lines`) and `network` (`count`, `rows`) |
+| `after` | The same span from the last step to the verdict, with no `index` |
+
+The lines go through the secret filter before they are kept, like the rest of the log.
+
+## Overnight runs
+
+```sh
+mobster test nightly on --at 02:00 --device all
+```
+
+```text
+Every night at 02:00, Mobster runs the checks of YourApp (--device all). The morning report goes to .mobster/nightly/<date>/morning.md, with a notification.
+Keep this Mac on power and signed in. Stop it with: mobster test nightly off
+```
+
+- `nightly on` writes a LaunchAgent for your user, `~/Library/LaunchAgents/dev.mobster.nightly.<project>.plist`, so the run reaches your simulators and plugged-in iPhones and opens no window. A Mac asleep at that time runs it when it wakes.
+- Each night is `mobster test --video` with the flags you gave `nightly on` (`--sim`, `--device`, `--tag`, `--parallel`, `--retries`, `--keyless`), into `.mobster/nightly/<date>/`: the HTML report, `junit.xml` and `morning.md`.
+- `morning.md` starts with the verdict, then lists each check that failed or was flaky, with why and the command that runs it again. A notification says the verdict, and a night that didn't pass posts to `MOBSTER_ALERT_WEBHOOK_URL` (Slack, Discord, ntfy or JSON) when you set one.
+- `nightly status` says when it runs and last night's verdict, `nightly run` runs one night now, and `nightly off` removes the agent.
+
+## Scheduled health checks
+
+While Mobster runs (the Mac app, or `mobster serve`), it runs checks on a schedule and tells you when one doesn't pass. Use it to catch a backend or a build that broke overnight, without a CI job. `nightly` (above) is the other way: a LaunchAgent that runs whether or not Mobster is open.
+
+Name the schedules in `.mobster/schedule.yaml`:
+
+```yaml
+timezone: America/Los_Angeles
+schedules:
+  - name: smoke
+    every: 1h
+    tags: [smoke]
+    sim: iPhone 17 Pro
+  - name: nightly-full
+    cron: "0 3 * * *"
+```
+
+or put one line in a check file, which makes that check a schedule of its own on its own simulator:
+
+```yaml
+schedule: every 30m
+```
+
+`every` takes minutes, hours or days (`30m`, `1h`, `1d`), from 5 minutes to 7 days. `cron` takes five fields, at least 5 minutes apart. `tags` or `checks` pick the checks; without them the schedule runs every check. A repository file never names a real iPhone.
+
+```sh
+mobster test schedule list
+```
+
+```text
+smoke                    every 1h       next Sun 14:05  on iPhone 17 Pro  last ran passed
+check feed               every 30m      next Sun 13:35  on each check's simulator  last skipped (Another scheduled run is going, so this one was skipped, not queued.)
+```
+
+- **Off on this Mac.** The switch in a project's Schedules section turns a schedule off on this Mac only, and `.mobster/schedule.yaml` stays as it is. An off schedule never runs. Turned on again, it waits for its next time. `mobster test schedule list` shows it as `off on this Mac`. If Mobster can't read which ones are off, no schedule runs until you switch one.
+- **Phones.** `mobster test schedule device smoke "Sam's iPhone"` attaches an iPhone to a schedule on this Mac, outside the repository; `none` takes it off. Only a running Mobster uses it, after its plan check, and only if no task or other command holds the phone.
+- **Run one now.** `mobster test schedule run-now smoke` runs it in this command, on the schedule's simulator, or the `--sim` or `--device` you give. It never uses the attached phone.
+- **Results.** A scheduled suite is a normal suite: its reports are in `.mobster/test-results/`, and each result is added to the [history](#see-which-checks-are-flaky). `list --json` includes the last 20 runs of each schedule.
+- **Shutdown.** Mobster cancels an active scheduled suite and waits for it before releasing the phone. It records each slot before starting; if that write fails, it skips dispatch.
+- **Skips.** Mobster runs one scheduled suite at a time and never queues. It records a run as skipped, with the reason, when another scheduled suite is going, a task or another Mobster process holds the phone, you have no plan for a phone, the project can't plan the run, or Mobster wasn't running at that time. It doesn't make up a slot the Mac slept through.
+- **Failures.** A scheduled suite that doesn't pass posts to the Slack rule in `.mobster/notifications.yaml` ([Tell Slack how a suite ended](#tell-slack-how-a-suite-ended)). With no rule, you get a notification on this Mac.
+- **API.** `GET /api/tests/schedules` lists them, `POST /api/tests/schedules/run-now` with `{project, schedule}` starts one (409 with the reason when another is going), `POST /api/tests/schedules/device` attaches a phone, and `POST /api/tests/schedules/switch` with `{project, schedule, on}` turns one off or on. When the Mac app configures a private app session, these writes require its session proof. An origin label alone does not authorize them.
+
+## Your XCTest targets
+
+`mobster test --xctest` also runs your project's own XCTest and Swift Testing targets, and puts unit tests, checks and screenshots in one report:
+
+```sh
+mobster test --xctest
+```
+
+1. It builds your Xcode project once with `xcodebuild build-for-testing` into `.mobster/build`. `--scheme` and `--project` choose what to build (default: the only scheme), and `--test-plan` picks one of the scheme's test plans.
+2. It runs the checks as usual, then `xcodebuild test-without-building` on a simulator Mobster leases for the run, with the result bundle at `.mobster/test-results/<suite-id>/xctest/tests.xcresult`. The tests are the ones built in step 1. With `mobster test pr --xctest`, the app the checks drive comes from that same build, so the project builds once.
+3. It reads the `.xcresult` with `xcrun xcresulttool` (Xcode 16 or later) and merges it into the suite's reports.
+
+`--only-testing Target/Class/test` runs only that target, class or test; repeat it for more. With `mobster test pr --xctest`, the app the checks drive and the tests come from the same build, and the changed files choose the targets: a target runs when a changed file sits in a folder with its name, else every target runs. The PR comment names the targets that ran and why.
+
+```text
+✗ failed  The paywall shows three plans with Annual at $39.99 a year on iPhone 17 Pro Max, iOS 26.4
+    value id=plan_annual == "$39.99 / year": was "$39.99 / month"
+✗ failed  DaybreakTests: PlanTests.testAnnualPlanIsBilledYearly
+    PlanTests.swift:16: XCTAssertEqual failed: ("month") is not equal to ("year")
+XCTest: 3 of 4 passed, 1 failed in 1 target
+
+Mobster checks: 2 passed, 1 failed, XCTest 1 failed of 4
+```
+
+That output is `mobster test pr --xctest` on the Daybreak sample app (`examples/ios/Daybreak`) with its `annual-price` bug planted. On 24 Oct 2026, on a Mac with a load of about 10 (Xcode 26.4, macOS 26.5.1), `build-for-testing` took 20 s from an empty `.mobster/build`, and the whole run (three launch-only checks and four tests, on a simulator that was already booted) took 71 s.
+
+What lands where:
+
+| file | what it holds |
+| --- | --- |
+| `index.html` | An XCTest section with a block per target, failures first. A target with failures opens; each failed test shows its file and line and links its screenshots |
+| `junit.xml` | One `<testsuite>` per target beside the devices' suites, one `<testcase classname="<class>">` per test, with `<failure type="xctest">` (its first line is `File.swift:14: message`) and `<skipped>` |
+| `results.json` | `xctest`: `status`, `scheme`, `device`, `why` (per target), `summary` (`tests`, `passed`, `failed`, `skipped`) and `targets`, each with `cases` (`name`, `classname`, `status`, `durationMs`, `failures` with `message`, `file` and `line`, and `attachments`) |
+| `xctest/attachments/` | Screenshots and files your tests attached, exported from the `.xcresult` |
+| `--history` | Each test's last 20 results, with a flake score, as `xctest:Target/Class/test` |
+| PR comment | One line per failed test with its file and line, and the targets that ran |
+| Slack | Failed tests join the checks that didn't pass |
+
+A failed test makes the exit code 1. If the build or the tests can't run (no test target in the scheme, no free simulator, only iPhones named), the XCTest section says why, the checks still count on their own, and the exit code is 3 unless a check failed.
+
+Mobster doesn't retry a test, run tests on more than one simulator, run them on an iPhone, or change your schemes or test plans. A test that fails once fails the run; the flake score in `--history` is how you find the unstable ones, and the quarantine file names checks, not tests.
+
+## Exit codes
+
+From the checks that aren't quarantined, and from your XCTest targets with `--xctest`: 1 when one failed (or was flaky, with `--strict`), else 3 when one couldn't run, else 2 when one needs review, else 0. A usage error exits 3, and `ctrl+c` 130, after the runs in flight stop and the reports are written. The [CLI reference](/reference/cli#mobster-test) lists every flag.
+
+## Test a pull request
+
+`mobster test pr` runs the checks a branch needs, not the whole suite:
+
+```sh
+mobster test pr
+```
+
+1. It reads `git diff` from where the branch left `origin/main` (`--base` picks another), uncommitted work included.
+2. Each changed Swift view becomes a screen: its name (`PaywallView` is `paywall`), and the accessibility identifiers, strings and deep links on the changed lines. Storyboards, `.strings` and `.xcstrings` files count too.
+3. It picks every saved check that names a changed id or string, mentions a changed string in a step, carries the screen as a tag or file name, or was itself changed. With no changed screen, it runs the checks tagged `smoke`.
+4. It builds the app with `xcodebuild` into `.mobster/build`, for the simulator, or for the iPhone with `--device`, and points the picked checks at the new build. `--scheme` and `--project` choose what to build, and `--no-build` skips it.
+5. For each changed screen that no check covers, it writes a draft to `.mobster/drafts/pr/<screen>.yaml` from the screen's new ids and strings, at most 3. A draft runs beside the checks and never fails the PR. Move a good one into `.mobster/checks/` to keep it.
+
+It prints a line per check:
+
+```text
+Changed screens: PaywallView, SettingsView
+✗ failed  The paywall shows three plans on iPhone 17 Pro, iOS 26.4
+    text “Choose your plan”: not on screen; closest: "Choose a plan"
+~ draft  .mobster/drafts/pr/settings.yaml  on iPhone 17 Pro, iOS 26.4, passed
+
+Mobster checks: 0 passed, 1 failed
+Comment  .mobster/test-results/20261009-150652-1215/pr-comment.md
+GIFs     .mobster/test-results/20261009-150652-1215/pr/gifs (2)
+```
+
+The suite folder gets the usual reports, plus:
+
+| file | what it holds |
+| --- | --- |
+| `pr.json` | `schema: "mobster.test-pr/1"`: the changed screens, each check picked and why, the drafts, the verdict, and each row's frame and GIF |
+| `pr-comment.md` | The pull request comment: "Mobster checks: 11 passed, 1 failed", a table of check, device, what it expected, what it found and the frame, the failure's GIF, and the drafts |
+| `pr/frames/` | Each check's verdict frame, with the expectations outlined |
+| `pr/gifs/` | A captioned GIF of each failed check first, then the drafts, then the rest: at most 6 |
+
+For a repeated check, the repro steps, deep link and GIF come from the attempt that determined its verdict. If that saved run is unavailable, Mobster leaves those details out. A business or accessibility failure shows its recorded reason when screen expectations held.
+
+The exit codes are `mobster test`'s, counted without the drafts. A build that fails exits 3, and the comment quotes its first errors. To post the comment on every pull request or merge request, with each failure's repro steps and video, run `mobster ci` on a Mac of yours ([CI](/ci)). With [Mobster Checks](/ci/github-app) installed on the repository, the verdict also appears on the pull request as the check `Mobster`.
+
+The comment ends without a credit line. `mobster test pr --tested-with` ends it with "Tested with Mobster", linked to mobster.dev.
+
+On a real iPhone, `mobster test pr --device "Test iPhone"` builds for the phone and installs that build. With `--testflight com.example.yourapp` it skips the build and tests the TestFlight build already on the phone.
+
+With two or more devices, `--spread` runs each picked check once, on whichever device is free, as in [Share the checks between phones](#share-the-checks-between-phones). With fewer than two, or with `--repeat`, it stops before the build.
+
+## Why a run failed
+
+With `MOBSTER_EXPERIMENTAL_TRACES=1` set, a task that didn't finish carries one sentence that names why and the step it happened at. `mobster history` prints it under the task, `mobster history --json` has it as `failure`, and a failed check's repro in the pull request comment ends with it:
+
+```text
+a1b2c3d4e5f6  Oct 18 14:02   Ran out of steps      Mail   Archive the QuickBite receipt
+                                    Ran out of steps at step 50; its last action was Tap “Start”.
+```
+
+```text
+**Failure:** Said it was done at step 6, but text “Welcome” failed.
+```
+
+Mobster reads the sentence off the run's trace, so it costs no model call and arrives with the result.
+
+| Class | The sentence says |
+| --- | --- |
+| `out_of_steps` | Every step, every second or the whole cost limit was used, and the last action it took |
+| `gave_up` | The agent ended with its own "can't", or stopped seeing progress, and what it said |
+| `premature_done` | The agent called the task done and the screen never showed every part finished |
+| `blocked_by_prompt` | A lock screen, a passcode, Face ID, an iOS dialog Mobster leaves to you, or an approval nobody answered |
+| `app_crashed` | The app stopped answering, so reads or taps timed out and the task couldn't go on |
+| `wrong_app` | The agent opened an app Mobster never opens, or the app under test wasn't in front at the end |
+| `stuck` | The same step was refused or failed three times |
+| `error` | Anything else that ended the run: a model or connection error, an iPhone that was unplugged |
+
+`mobster history --to-eval ID` keeps a task as a regression task in your evals, for the engine's developers to replay offline. It needs the task's tape, which a task records when `MOBSTER_EXPERIMENTAL_TRACES=1` is set before it runs. Nothing leaves your Mac.
+
+A task that finished, that you stopped or that you declined has no sentence. A task that said it was done and was wrong has none either: the trace holds no proof of that, and only a judge or you can tell.
+
+## Record a check from a task
+
+A task you ran in the Mobster app can become a check. In the app, open the finished task and choose **Copy as check**, then paste it into a file in `.mobster/checks`. Or in Terminal, with the task's id:
+
+```sh
+mobster test record --run 3f9c2a1b7d0e --name "Finish a lesson" -o .mobster/checks/finish-lesson.yaml
+```
+
+The check's steps are the task's steps in plain words ("Tap café", "Tap Check"), and its expectations are what the task proved: the text it quoted, and the screen it ended on. It names no device, so it runs on a simulator. Read it before you commit it: text Mobster masked (a password, a code) stays masked, and a task that proved nothing needs an `expect` you write.
+
+## Reproduce a crash
+
+`mobster test repro crash.ips` turns a crash report into a check and runs it on a simulator with the screen recorded. It reads a `.ips`, a TestFlight `.crash`, a Sentry event or a brief, and exits 0 when the app crashed the same way, 1 when it didn't, and 3 when it couldn't run. [Crash to repro](/dev/crashes) has the sources and the answers.
+
+## For coding agents
+
+`mobster mcp` offers these tools for this ([MCP server](/mcp-server)):
+
+- `run_tests {pr: true, path?, base?, device?, sims?, build?, scheme?, testflight?, drafts?}` is `mobster test pr`: it answers with the verdict, each check's frame and GIF, the drafts, the failing frame as an image, and the path of `pr-comment.md`. A suite that takes longer than the call answers with its `suite_id`; `run_tests {suite_id}` waits for it. It runs on a real iPhone only when the server's `--allow-device` names it, and on a TestFlight build only when `--allow-testflight` names the app. In Claude Code, the plugin's `/mobster:test-pr` command calls it.
+- `run_tests {path?, sims?, parallel?, retries?, tags?, locales?, a11y?, fresh?, no_heal?}` without `pr` runs the project's checks on simulators and answers with the summary, any heals and the report paths. A suite that takes longer than the call answers with its `suite_id`; `run_tests {suite_id}` waits for it. It never runs on a real iPhone.
+- `test_history {path?, check?, flaky_only?, limit?}` reads each check's last 20 results on each device, with pass rate and flake score, as `mobster test --history` does.
+- `import_maestro {flows, path?, bundle?, app?, skip_unsupported?, dry_run?, force?}` is `mobster test import maestro`: it writes checks into `.mobster/checks` and keeps one that exists unless `force`.
+- `repro_crash {ips_path? | sentry_json? | crash_log? | brief?, path?, bundle?, app?, launch_args?, link?, sims?}` is `mobster test repro`: it turns a crash into a check and runs it on a simulator with the screen recorded ([Crash to repro](/dev/crashes)).
+- `test_schedule {action?, path?}` lists the project's [overnight run](#overnight-runs), or with `action: run` runs it now on simulators. It refuses a schedule that names an iPhone: run `mobster test nightly run` yourself.
+- `review_heals {action?, checks?}` lists the healed steps waiting for review, or accepts or rejects them.
+- `save_check {run_id, name}` writes a finished task, or a finished check run, as `.mobster/checks/<name>.yaml`.

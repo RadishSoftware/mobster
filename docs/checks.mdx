@@ -1,0 +1,500 @@
+---
+title: "Checks, assertions and verdicts"
+sidebarTitle: "Checks"
+description: "The check file, every assertion, and how Mobster decides a verdict."
+icon: "file-check"
+---
+
+A check says what must be true of an iOS app after a flow: "a finished lesson adds 10 XP and a day to the streak". Mobster runs the flow, then checks the app's accessibility tree and any enrolled app-state expectations. New to checks? [Quickstart: test your app](/quickstart/test) walks through a first one.
+
+A check is a saved YAML file in `.mobster/checks`, and `mobster test` runs them all. `mobster verify` is the one-off form: it takes the same fields as flags (`--text …`) or a file (`--check`), and `--save NAME` writes the file. The MCP tools take them as arguments too ([MCP server](/mcp-server)). The fields below mean the same thing everywhere.
+
+## The check file
+
+```yaml
+# .mobster/checks/lesson-complete.yaml
+version: 1
+name: Lesson complete awards XP and the streak goes up
+app:
+  bundle: com.example.yourapp
+  path: .mobster/build/Build/Products/Debug-iphonesimulator/YourApp.app
+device: iPhone 17 Pro
+runtime: iOS 26.4
+reset: reinstall
+tags: [smoke, lessons]
+schedule: every 1h
+launch:
+  args: ["-SkipOnboarding", "YES"]
+  env: { STREAK_DAYS: "3" }
+  url: yourapp://lesson/last
+steps:
+  - Pick the word that fills the blank, then tap Check.
+  - Tap Continue until the lesson ends.
+expect:
+  - name: Lesson ends after the last answer
+    text: Lesson complete
+  - name: XP goes up by 10
+    value: { id: xp_earned }
+    equals: 10
+  - name: Streak goes from 3 to 4 days
+    value: { id: streak_days }
+    equals: 4
+  - visible: { label: Continue, role: button }
+  - no_text: Loading
+budget: { max_seconds: 180, max_usd: 0.25 }
+```
+
+A `.json` file with the same shape works too.
+
+| Key | Required | Meaning |
+|---|---|---|
+| `version` | no | `1`, the only version |
+| `name` | no | The check's name in reports, up to 120 characters |
+| `app.bundle` | unless `app.path` is given | The app's bundle ID |
+| `app.path` | no | The `.app` built for the iOS Simulator, relative to the project root. Mobster installs it before the run and reads the bundle ID from its `Info.plist`. With `MOBSTER_EXPERIMENTAL_ANDROID=1`, an `.apk` runs on an Android emulator ([Android](/android)) |
+| `device` | no | The simulator device type. Default `iPhone 17 Pro`, else the newest available iPhone |
+| `runtime` | no | The iOS runtime, such as `iOS 26.4`. Default: the newest installed |
+| `fixture` | no | A fixture name, or a list of them, from `.mobster/fixtures/`: the state the check starts from ([Fixtures](/fixtures)) |
+| `business` | no | A locally registered simulator app-state fixture and up to 20 field comparisons. Saved check files only; see [Check persisted app state](#check-persisted-app-state) |
+| `reset` | no | `none`, `data` or `reinstall` (see [Reset levels](/simulators#reset-levels)). Default `reinstall` with `app.path`, else `data` |
+| `tags` | no | Up to 10 words (`a-z`, `0-9`, `-` and `_`) that `mobster test --tag` picks checks by, such as `[smoke, lessons]`. Check files only, not tool arguments |
+| `schedule` | no | `every 1h` (minutes, hours or days, 5 minutes to 7 days) or a five-field cron. While Mobster runs, it runs this check by itself on that schedule ([Scheduled health checks](/testing#scheduled-health-checks)). Check files only |
+| `launch.args` | no | Launch arguments, up to 20 |
+| `launch.env` | no | Launch environment variables, up to 20. Keys match `[A-Z_][A-Z0-9_]*`. Each reaches the app as `KEY` |
+| `launch.url` | no | A deep link opened after launch, up to 2,000 characters. [Deep links](/deep-links) lists the ones your project has and opens them by name in steps |
+| `steps` | no | The flow in plain English, up to 20 steps of up to 500 characters. None means a launch-only check |
+| `expect` | no | Accessibility-tree assertions, up to 50, and at most one `snapshot` entry ([Snapshot](#snapshot)). With no other deciding assertion or audit, the run ends `needs_review` |
+| `throughout` | no | Assertions that must hold on every screen the run visits. Only `no_text` and `absent`, such as `no_text: /lorem ipsum/i`. A screen that breaks one is a finding with that frame |
+| `somewhere` | no | Assertions that must hold on at least one screen the run visits. A miss is a finding for a person, because the run may not have reached the screen |
+| `audit` | no | Audits by name. `usage-descriptions` and `privacy-manifest` read the built app and need `app.path` ([App Review pre-check](/dev/app-review)). `a11y` reads the accessibility trees the run reads and needs no build: see [Accessibility audit](/testing#accessibility-audit) |
+| `conditions` | no | The device's state while the check runs: `appearance`, `locale`, `content_size`, `increase_contrast`, `location`, `route`, `permissions`, `media`, `status_bar`, `push`, `biometric` and `network`. Checked when the file loads. `appearance`, `content_size` and `locale` may be lists: the check runs once for each combination. See [Device conditions](/testing#device-conditions) |
+| `dialogs` | no | How the run answers iOS's own dialogs with no model: `permissions` (`allow`, `deny`, `ask`), `paste` (`allow`, `deny`, `ask`), `sign_in_with_apple` (`continue`, `cancel`), `biometric` (`match`, `nonmatch`, `cancel`) and `purchase` (`confirm`, `cancel`). A fixture can hold the same block. On your iPhone only the keys you name apply: `permissions: allow` and `sign_in_with_apple: continue` press there too, and a purchase or a Face ID match never does. The app's own alerts and screens are never answered. See [System dialogs](/testing#system-dialogs) |
+| `expect` wire assertions | no | `request`, `no_request` and `storage` entries in `expect` judge what the app sent over the network and stored in its container, on a simulator, behind `MOBSTER_EXPERIMENTAL_NETWORK=1`. See [Wire assertions](/testing#wire-assertions) |
+| `stubs` | no | Fixed responses to named requests, served on a simulator by a local proxy: `match` (`host`, `path_prefix`, `method`) and `respond` (`status`, `json` or `file`, `delay_ms`). See [Network conditions and stubs](/testing#network-conditions-and-stubs) |
+| `budget.max_seconds` | no | Smart's time limit for the flow. Default 180, at most 600 |
+| `budget.max_usd` | no | Smart's spend cap. Default 0.25, at most 1.00 |
+| `budget.launch_ms` | no | The most milliseconds the app may take from a cold launch to its first stable screen, at most 600,000. A run over it fails with class `budget_exceeded`. Check files only. [What a check measures](/testing#what-a-check-measures) says how the time is taken |
+| `budget.memory_mb` | no | The most megabytes of resident memory the app may peak at during the run, at most 65,536. A run over it fails with class `budget_exceeded`. Simulator only |
+| `budget.hangs` | no | The most hangs of 250 ms or longer the app may log during the run, from 0 to 1,000. A run over it fails with class `budget_exceeded` |
+
+Rules:
+
+- An unknown key at any level is an error, so a typo can't quietly weaken a check.
+- `launch` and `budget` take an object or `null`. A boolean, number, string or list is an error.
+- `text` and `no_text` take a string or a list of strings. A list becomes one assertion per string.
+- The **project root** is the folder that holds `.mobster/`, found by walking up from the check file. Without one, it is the check file's folder.
+- YAML is read with PyYAML's `safe_load`. Quote a value that YAML would read as something else, such as `"YES"` or `"1.0"`.
+
+### Autocomplete in your editor
+
+A check file has a JSON Schema at `https://mobster.dev/schema/check.json`. A check Mobster saves names it on its first line:
+
+```yaml
+# yaml-language-server: $schema=https://mobster.dev/schema/check.json
+```
+
+Put the same line at the top of a check you write by hand. VS Code with Red Hat's YAML extension, and any editor that runs `yaml-language-server`, read it: they complete the keys, list each assertion kind, role, audit and condition, and underline a typo as you type. In a JetBrains IDE, add the URL for `.mobster/checks/*.yaml` under Settings › Languages & Frameworks › Schemas and DTDs › JSON Schema Mappings.
+
+The schema never refuses a check Mobster reads. Mobster still checks what a schema can't see, such as a `/regex/` that doesn't compile or a file a condition names that doesn't exist, and says which line when the check loads.
+
+### Secrets and test credentials
+
+A sign-in flow needs a test account. Name its variables in `.mobster/env.example`, which you commit, and keep the values in your Keychain:
+
+```text
+# .mobster/env.example: names only
+TEST_EMAIL
+TEST_PASSWORD
+```
+
+```sh
+mobster env set TEST_EMAIL        # asks for the value, hidden
+printf '%s' "$PW" | mobster env set TEST_PASSWORD --stdin
+mobster env list
+```
+
+```text
+TEST_EMAIL     set (keychain)
+TEST_PASSWORD  set (keychain)
+```
+
+Write `${TEST_EMAIL}` in `launch.args`, `launch.env`, `launch.url` and in `steps`. A run fills the names in when it starts:
+
+```yaml
+launch:
+  env: {API_TOKEN: "${API_TOKEN}"}
+steps:
+  - Sign in as ${TEST_EMAIL} with ${TEST_PASSWORD}
+```
+
+- **Values stay out of the project.** `env set` writes the value to the login Keychain, one item per project folder, and adds only the name to `env.example`. `mobster env set` never takes a value as an argument, and nothing prints one.
+- **Masked everywhere the run writes.** `run.log`, `events.jsonl`, `result.json`, `report.html`, the step list, the progress lines and every other text file in the run folder show `••••••` where a value was. `check.yaml` keeps `${TEST_PASSWORD}`. A check that uses a project secret runs Smart every time and does not write a replay cache: screen signatures and search selectors can contain the value too.
+- **Steps reach your model.** A secret in a step is sent to the model that drives the run so it can type it. Use a throwaway test account. A secure text field draws dots on the phone, but a screenshot of a field that shows its text isn't masked.
+- **A missing value refuses the run.** A name with no value, or one that isn't in `env.example`, ends the run as `couldnt_run` (class `usage`) before a simulator starts, and the message names the variable. A run never starts with an empty value.
+- **CI.** A process variable of the same name supplies the value when the Keychain has none, so a CI job sets `TEST_PASSWORD` as its own secret. The name still has to be in `env.example`.
+
+The Mac app's API lists and sets them: `GET`, `POST` and `DELETE /api/project/env` take the project folder as `root`. The list says which names have a value and never returns one.
+
+### The project folder
+
+```text
+.mobster/
+  .gitignore       "runs/", "build/", "cache/" and "test-results/", written the first time Mobster creates .mobster/
+  checks/          saved checks: commit these
+  fixtures.json    registered app-state adapters and named scalar starting states: review and commit this
+  matrix.yaml      the simulators `mobster test` runs every check on, when you give it none: commit it
+  quarantine.yaml  checks `mobster test` runs and reports but never fails on: commit it
+  workflows/       workflows as files, kept in step with Mobster for Mac (/projects#workflows-as-files): commit these
+  runs/<run_id>/   one folder per run
+  test-results/    one folder per `mobster test` run: results.json, junit.xml, index.html
+  build/           a good -derivedDataPath for simulator builds
+```
+
+A `.gitignore` an earlier Mobster wrote (`runs/` and `build/` only) gains `cache/` and `test-results/`; one you edited is left as it is.
+
+A `run_id` is the local time plus 4 random hex characters, such as `20261001-101500-3f9a`.
+
+## Assertions
+
+Every assertion is an object with exactly one kind key. Mobster checks it against the accessibility tree that WebDriverAgent reports for the app. No model, OCR or pixel comparison is involved.
+
+| Kind | Form | Holds when |
+|---|---|---|
+| Text present | `text: "Lesson complete"` | A shown element's label or value contains the text |
+| Text absent | `no_text: "Loading"` | No shown element's label or value contains it |
+| Element shown | `visible: {selector}` | At least one shown element matches the selector |
+| Element absent | `absent: {selector}` | No shown element matches |
+| Value | `value: {selector}` with `equals: X` | Exactly one shown element matches, and its value equals X. No match fails as "not found", and two or more as "ambiguous" |
+| Count | `count: {selector}` with `equals: N`, `at_least: N` or `at_most: N` | The number of shown elements that match meets the bound |
+
+Any assertion can also have a `name`: a label of up to 120 characters used in reports.
+
+### Check persisted app state
+
+An app that implements the `mobster.business/1` fixture protocol can expose a bounded snapshot of its persisted model in a managed simulator. Register its bundle, literal field names and named starting states in `.mobster/fixtures.json`. This registration is separate from YAML fixtures in `.mobster/fixtures/`. A check selects a registered adapter and fixture; it cannot supply a command, URL or file path through `business`.
+
+```json
+{
+  "version": 1,
+  "adapters": {
+    "yourapp": {
+      "kind": "app_container_json",
+      "bundle": "com.example.yourapp",
+      "fields": ["reminder.saved"],
+      "fixtures": {"fresh-reminder": {"reminder.saved": false}}
+    }
+  }
+}
+```
+
+```yaml
+# In a saved check for com.example.yourapp
+business:
+  adapter: yourapp
+  fixture: fresh-reminder
+  expect:
+    - field: reminder.saved
+      equals: true
+```
+
+Mobster resets the simulator app and seeds `Documents/mobster-business.json` before launch. The seed contains `schema: "mobster.business/1"`, a fresh `runToken`, `generation: 0`, and the registered scalar `state`. Mobster launches the app with `-MobsterBusinessRun <runToken>`. In your simulator app, validate the token, initialize a resettable test model from the seed, and atomically publish the actual persisted model to the same file with the same token and `generation` at least `1`. Publish again after a model change, reading the persisted value rather than a screen binding or the expected assertion value. A seed left untouched by the app cannot satisfy an assertion. `reset: none` and real iPhones refuse this fixture.
+
+Mobster compares every declared `business.expect` field against one app-produced snapshot. Field names are literal keys. `true` differs from `1`; JSON numbers `1` and `1.0` compare equal. A fresh mismatch fails the check. A missing, stale or malformed snapshot ends `couldnt_run` with class `business_evidence`. An empty `business.expect` can prepare an app for accessibility checks, but it cannot make a check pass by itself. The result reports setup, observation and cleanup separately. An uncertain fixture write or cleanup stops without automatic retry and leaves a reconciliation note; an explicit new reset can discard test state.
+
+This protocol tests state persisted by the instrumented app separately from its accessibility tree. It does not independently inspect a server or prove that the app's snapshot represents an external backend. It does not read arbitrary app data. Apps without a producer continue to use accessibility checks.
+
+### Selectors
+
+A selector has at least one of these fields, and every field given must match.
+
+| Field | Matches | Notes |
+|---|---|---|
+| `id` | The accessibility identifier | Set in SwiftUI with `.accessibilityIdentifier("streak_days")`. An element with no identifier never matches `id` |
+| `label` | The accessibility label | Exact, or a `/regex/` |
+| `value` | The accessibility value | Exact, or a `/regex/`. A switch's value is `1` or `0` |
+| `role` | The element type | A role from the table below, or any `XCUIElementType` name with or without the prefix |
+| `enabled` | `true` or `false` | |
+| `selected` | `true` or `false` | From the `Selected` trait, which SwiftUI sets with `.accessibilityAddTraits(.isSelected)` |
+
+| Role | Element types |
+|---|---|
+| `button` | Button |
+| `text` | StaticText |
+| `field` | TextField, SecureTextField, SearchField, TextView |
+| `switch`, `toggle` | Switch, Toggle |
+| `cell` | Cell |
+| `image` | Image, Icon |
+| `link` | Link |
+| `tab` | Tab, and a Button inside a TabBar |
+| `slider` | Slider |
+| `stepper` | Stepper |
+| `picker` | Picker, PickerWheel, DatePicker |
+| `segment` | SegmentedControl |
+| `navbar` | NavigationBar |
+| `alert` | Alert |
+
+A string written `/pattern/` or `/pattern/i` is a regular expression, matched with Python's `re.search`. `i` ignores case. A pattern is up to 500 characters, and an invalid one is a usage error.
+
+### Matching
+
+Before comparing, Mobster normalizes text: NFKC, curly quotes and dashes become ASCII, invisible marks such as zero-width spaces are removed, and every run of whitespace becomes one space.
+
+- `text` and `no_text` ignore case and match a substring of one element's label or value. They never join two elements, so "Lesson" in one element and "complete" in the next don't make "Lesson complete".
+- Selector fields are exact and case-sensitive, unless they are a `/regex/`.
+- `equals` on a `value` assertion compares by its type. `true` and `false` compare on/off meaning, so `1`, `on` and `yes` equal `true`. A number compares the first number in the element's value, at the expected number's precision, with thousands separators removed. A string compares exactly.
+- `equals`, `at_least` and `at_most` on a `count` are whole numbers from 0.
+
+### What counts as shown
+
+An element is shown when WebDriverAgent reports that element itself visible, its frame overlaps the app's frame, and it isn't the application or a window. Each element is judged on its own: the rows of a SwiftUI `Form` or `List` are shown even though iOS reports their container hidden, while content behind a full-screen cover is reported hidden element by element and stays hidden. Content scrolled out of view isn't shown. Scroll to it first: a coding agent uses `swipe` with `until`, and Smart scrolls on its own.
+
+Secure text fields count as shown fields, so `visible: {role: field, label: Password}` works. Their value reads as bullets.
+
+### Timing
+
+Mobster decides on a settled screen, with every assertion on the same read:
+
+1. It reads the tree, waits 0.3 s, and reads again. Two reads with the same fingerprint are settled.
+2. When a settled read satisfies every assertion, that read decides.
+3. Otherwise it reads again every 0.5 s until the assertion timeout (5 s by default, `--assert-timeout` from 0 to 60).
+4. At the timeout the last read decides, and the result says whether the screen was still changing.
+
+A `no_text: Loading` that holds on one read and a `text: Plans` that holds on another never combine into a pass.
+
+### Snapshot
+
+A `snapshot` entry in `expect` compares the screen the check ends on to a baseline PNG:
+
+```yaml
+expect:
+  - text: Home
+  - snapshot: home
+    mask: [{ id: clock }, { label: Last synced }, { rect: [0, 100, 390, 40] }]
+    threshold: 0.1
+```
+
+| Key | Meaning |
+|---|---|
+| `snapshot` | The screen's name: 1 to 60 of `a-z`, `0-9`, `-` and `_`. It names the baseline file. A check has one snapshot, because it ends on one screen |
+| `mask` | Regions the diff ignores, up to 20: the elements an `id` or `label` matches, or a `rect` in points as `[x, y, width, height]` |
+| `threshold` | The percent of the unmasked pixels that may differ, from 0 to 100. Default 0.1 |
+
+A snapshot is decided by pixels, not the accessibility tree, so it is not an assertion: it has no `name`, `equals` or selector, and `--expect` and the MCP `expect` list don't take it. A changed screen is a finding at fail level (rule 7 below), a recorded baseline is a finding for a person (rule 8). [Screenshots that must not change](/testing#screenshots-that-must-not-change) says how the comparison works, where baselines live and how to update them.
+
+## Sounds
+
+`expect: [{sound: sent}]` passes when the iPhone plays a sound you recorded once, such as the chime a message makes when it sends. It calls no model: Mobster compares the shape of the sound's spectrum, in code. It is experimental and off until you set `MOBSTER_EXPERIMENTAL_SOUND=1`.
+
+Record the sound once per app, from a short WAV (16-bit PCM, up to 5 s) of that sound alone:
+
+```sh
+python -m mobile_agent.verify.sound record --bundle com.example.app --name sent --wav sent.wav
+```
+
+```text
+wrote .mobster/sounds/com.example.app/sent.json
+```
+
+Commit the file. A fingerprint is a few kilobytes: 16 frequency bands for each 64 ms of the sound. It matches at any volume and anywhere in the recording.
+
+During a run on a real iPhone, Mobster records the phone's sound through the same path as `listen` (`MOBSTER_LISTEN`), from the first step, for 20 seconds, and matches it when the steps end. A sound heard is a passed assertion with the time it was heard. A sound not heard fails with the best match it found. A sound with no fingerprint, or no recording, fails too: the result says why.
+
+It works on a real iPhone over USB only. A simulator's sound plays on your Mac, not through anything Mobster records, so a sound assertion on a simulator fails and says so. Sound that goes to Bluetooth or AirPlay isn't heard (see `listen`). Matching a 10 s recording takes about 0.7 s on a Mac (measured 26 Oct 2026, one core, synthetic tones); no phone was available to measure a real chime, so the 0.92 match threshold is tuned on synthetic sounds only.
+
+Opening the phone's capture device resets its USB network link for a moment (see `listen`), which can pause WebDriverAgent mid-run. Test it on your device before you rely on it.
+
+## System surfaces
+
+<Note>Experimental. Set `MOBSTER_EXPERIMENTAL_SYSTEM_SURFACES=1` to use `surfaces`; without it a check that has the key is refused. It isn't in the check schema yet.</Note>
+
+**What a simulator run proved (26 Oct 2026, iPhone 17 Pro, iOS 26.4, `mobster test`).** A widget added from the gallery, the Lock Screen and the Home Screen read, Spotlight's results with a `pick` that opens the app, the share sheet's targets read after a `pick` of Safari's **Share**, Safari's **More** menu closed by the tap outside it, and a shortcut run by its URL all held. These don't work on that simulator:
+
+- Control Center shows no controls, only **Add Controls**, **Power** and the status bar, so a `pick` there has nothing to tap.
+- `siri:` shows nothing, and one request to WebDriverAgent's Siri endpoint had no answer after 30 seconds.
+- A `pick` inside the share sheet itself misses: the sheet reports its targets' frames from its own top edge, not the screen's. A `pick` of the app's own menu item (Safari's **Share**, under **More**) works.
+- `app_clip` and the Dynamic Island with a running Live Activity weren't run: they need an App Clip build and steps that start an activity.
+
+An XCUITest lives inside one app. `surfaces` drives what the app puts outside its own window, from outside, with WebDriverAgent on a simulator, and reads each surface from its accessibility tree. The assertions are the ones in [Assertions](#assertions). A surface runs after the check's steps, and the app comes back to the front before the verdict is read.
+
+```yaml
+surfaces:
+  - surface: widget
+    add: Daybreak
+    expect: [{text: 12 day streak}]
+  - surface: live_activity
+    where: lock_screen
+    expect: [{text: Round 3}]
+  - surface: spotlight
+    query: Daybreak
+    expect: [{text: Daybreak}]
+    pick: {label: Daybreak, role: cell}
+    then: [{text: Choose your plan}]
+```
+
+Every surface takes `name` (its label in the report) and `expect`, what must show once the surface is up. `spotlight`, `share_sheet` and `control_center` also take `pick`, an element to tap (text for its label, or a selector), and `then`, what must show after it. A surface with no `expect` and no `then` checks nothing and is refused.
+
+| `surface` | Keys | What Mobster does |
+|---|---|---|
+| `intent` | `shortcut` (a shortcut's name) and `input`, or `siri` (a phrase) | Opens `shortcuts://run-shortcut?name=...` so Shortcuts runs the app's App Intent, or sends the phrase to Siri, then reads the screen. The shortcut must exist on the simulator |
+| `widget` | `add` (the app's name) | Presses Home. With `add`, presses and holds an empty spot, taps **Edit** (or **Edit Home Screen**), **Add Widget**, searches the gallery for the app, taps the app's row, **Add Widget** and **Done**. Then reads the Home Screen |
+| `live_activity` | `where`: `dynamic_island` (default) or `lock_screen`; `expanded` | Your steps start the activity. Mobster presses Home and reads the Dynamic Island, or locks the simulator, reads the Lock Screen and unlocks it. `expanded: true` presses and holds the island first |
+| `control_center` | `pick`, `then` | Swipes down from the top right and reads Control Center |
+| `app_clip` | `bundle`, `url`, `path` (a Clip `.app` to install first) | Launches the Clip with its invocation URL in `_XCAppClipURL`, as Xcode's scheme does, and reads it |
+| `spotlight` | `query`, `pick`, `then` | Presses Home, swipes down, types the query and reads the results |
+| `share_sheet` | `open` (the app's own share control), `pick`, `then` | Taps `open`, reads the sheet, taps `pick`. With no `pick`, taps outside the sheet to close it |
+
+The strings Mobster looks for are English, so run the simulator in English.
+
+### What fails, and how
+
+A surface that doesn't show, or whose assertion doesn't hold, is a `finding` at fail level, with the frame of the surface, and the next surface still runs. The verdict is `failed`, class `finding`.
+
+An action WebDriverAgent never answered is an `unknown_outcome`: the run ends, Mobster sends nothing more, and it doesn't send that action again. Look at the simulator first.
+
+Surfaces run on simulators only. On a real iPhone the run ends as `couldnt_run`, class `environment`, before it presses anything: these steps swipe, lock and tap system screens, which Mobster doesn't do on your phone.
+
+### No simulator path
+
+Written 26 Oct 2026. The `app_clip` step takes `via` (`url` by default, `nfc`, `qr`, `banner` or `maps`). Only `url` has a simulator path. The others end the run as `couldnt_run` with "Not on a simulator", so a check that names a tag or a place card can't pass by skipping it. Live Activity updates pushed from a server aren't driven either; start and update the activity from your app's steps.
+
+## Verdicts and exit codes
+
+| Verdict | Exit | Means |
+|---|---|---|
+| `passed` | 0 | The assertions and execution checks passed |
+| `failed` | 1 | An assertion or another check failed, such as crash detection |
+| `needs_review` | 2 | The run needs review, for example because evidence or required measurements are missing |
+| `couldnt_run` | 3 | The run could not finish, for example because of an invalid check, an execution error or a resource limit |
+
+`ctrl+c` exits 130 (SIGTERM 143, SIGHUP 129), and the run ends as `couldnt_run`, class `stopped`. A usage error in `mobster verify` exits 3, not 2, because 2 means needs review.
+
+The first rule that applies decides:
+
+| # | Condition | Verdict | `reason.class` |
+|---|---|---|---|
+| 1 | The check or an assertion is invalid, or steps were given with `--keyless` or with no key | couldnt_run | `usage` |
+| 2 | Smart is needed and there is no key for its model (Anthropic or OpenAI) | couldnt_run | `model` |
+| 3 | Xcode, the runtime or the device type is missing | couldnt_run | `environment` |
+| 3 | The simulator couldn't be created or booted | couldnt_run | `simulator` |
+| 3 | WebDriverAgent couldn't be built, started or read | couldnt_run | `wda` |
+| 3 | The `.app` is invalid, is a device build, or didn't install | couldnt_run | `install` |
+| 3 | The app didn't launch | couldnt_run | `launch` |
+| 3 | Every Mobster simulator is in use | couldnt_run | `busy` |
+| 4 | Smart hit a model failure or ran out of credit | couldnt_run | `model` |
+| 4 | Smart lost WebDriverAgent past recovery | couldnt_run | `wda` |
+| 4 | Smart hit its spend cap and an assertion fails | couldnt_run | `budget` |
+| 4 | You stopped the run, or a key-less session sat idle for 15 minutes | couldnt_run | `stopped` |
+| 4 | A replay met an iOS dialog that `dialogs` has no answer for on this device, or couldn't confirm its own answer | couldnt_run | `system_dialog` |
+| 4 | An unexpected error. The traceback is in `run.log` | couldnt_run | `internal` |
+| 4 | A device effect may have happened but Mobster cannot confirm it; no automatic retry | couldnt_run | `unknown_outcome` |
+| 4 | Mobster could not save a durable action intent before dispatch | couldnt_run | `journal` |
+| 4 | An app-state fixture cannot be registered, seeded or observed | couldnt_run | `business` or `business_evidence` |
+| 4 | Fixture cleanup could not be confirmed | couldnt_run | `business_cleanup` |
+| 5 | The app crashed during the run: its process ended on a signal, the watchdog or jetsam, whatever the assertions say | failed | `app_crashed` |
+| 5 | The app in front at the end isn't the app under test: the flow left it, or it crashed where Mobster reads no log (a WebDriverAgent address) | failed | `app_not_running` |
+| 6 | An assertion failed, and Smart ended blocked, out of time or out of steps | failed | `blocked` |
+| 6 | An assertion failed | failed | `assertion` |
+| 6 | A fresh app-produced persisted value did not equal the registered expectation | failed | `business` |
+| 7 | The run measured more than a `budget.launch_ms`, `budget.memory_mb` or `budget.hangs` allows | failed | `budget_exceeded` |
+| 7 | An audit, `throughout` or `somewhere` finding is at fail level, or the snapshot differs from its baseline | failed | `finding` |
+| 8 | An audit or `somewhere` finding is for a person to judge, or the snapshot had no baseline and Mobster recorded one | needs_review | `finding` |
+| 9 | A `budget` limit is set on a number the run could not measure | needs_review | `budget_unmeasured` |
+| 9 | No accessibility, snapshot, app-state, audit or system-surface assertion decides the run | needs_review | `no_assertions` |
+| 10 | Steps were given, and every assertion already held right after launch | needs_review | `held_before_flow` |
+| 11 | Otherwise | passed | |
+
+A crash also stands in for rules 3 and 4 when they're `wda`, `launch` or a stopped replay: WebDriverAgent losing an app that crashed is the app's failure, not the machine's. It never replaces `stopped`, `usage`, `budget` or `unknown_outcome`. [Logs, crashes and video](/testing#logs-crashes-and-video) says how Mobster sees a crash.
+
+Rule 10 uses one read taken after launch and the deep link, before any step. A check whose expectations hold before the flow runs doesn't show that the flow works, so add an expectation that only holds after it.
+
+What the model says about its own run is never an input to the verdict.
+
+## The result JSON
+
+`mobster verify --json` prints one object, the same one saved as `result.json` in the run folder and returned by the MCP tools. Its schema is `mobster.verify/1`. The shape:
+
+```json
+{
+  "schema": "mobster.verify/1",
+  "run_id": "20261001-101500-3f9a",
+  "verdict": "failed",
+  "exit_code": 1,
+  "summary": "value id=streak_days == 4 failed: was \"3 days\"",
+  "reason": {"class": "assertion", "message": "1 of 3 expectations failed", "fix": null},
+  "mode": "smart",
+  "check": {"name": "…", "steps": ["…"], "expect": [{"value": {"id": "streak_days"}, "equals": 4}], "source": null},
+  "app": {"bundle_id": "com.example.yourapp", "name": "YourApp", "version": "1.0 (1)", "path": "/abs/…/YourApp.app"},
+  "device": {"name": "Mobster · iPhone 17 Pro · iOS 26.4", "udid": "…", "type": "iPhone 17 Pro", "runtime": "iOS 26.4"},
+  "assertions": [
+    {"index": 0, "assertion": {"text": "Lesson complete"}, "text": "text \"Lesson complete\"", "ok": true,
+     "observed": "found in text \"Lesson complete!\"",
+     "matches": [{"id": "", "label": "Lesson complete!", "value": "", "role": "StaticText", "rect": [82, 384, 238, 36]}],
+     "frame": "frames/06-verdict.jpg"}
+  ],
+  "screenCoverage": {"complete": true, "a11yScreens": 0},
+  "baseline": {"taken": true, "held": [false, false, false]},
+  "stable": true,
+  "steps": [
+    {"index": 1, "op": "TAP", "text": "Tapped “café”", "target": {"id": "answer_cafe", "label": "café", "role": "Button"},
+     "typed": null, "changed": true, "frame": "frames/02-step.jpg", "at_ms": 3120}
+  ],
+  "agent": {"status": "completed", "note": "…", "model": "claude-sonnet-5-5", "turns": 4},
+  "frames": ["frames/01-launch.jpg", "frames/02-step.jpg", "…", "frames/06-verdict.jpg", "frames/07-verdict-ax.jpg"],
+  "proof": ["/abs/…/frames/07-verdict-ax.jpg", "/abs/…/frames/06-verdict.jpg", "/abs/…/frames/05-step.jpg"],
+  "alert": null,
+  "report": "/abs/…/report.html",
+  "draft_check": "/abs/…/check.yaml",
+  "run_dir": "/abs/…/.mobster/runs/20261001-101500-3f9a",
+  "repro": "mobster verify --check /abs/…/check.yaml",
+  "seconds": 12.4,
+  "timing": {"simulator": 0.4, "install": 2.1, "launch": 1.3, "flow": 6.8, "assert": 1.2, "report": 0.3},
+  "cost_usd": 0.031,
+  "mobster": {"version": "0.4.0"}
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `verdict`, `exit_code` | The verdict and its exit code, from the tables above |
+| `summary` | One line: the first failing assertion, or what happened |
+| `reason` | `class` from the precedence table, a `message`, and a `fix` sentence when there is one |
+| `mode` | `launch` (no steps), `keyless` (a coding agent drove) or `smart` |
+| `assertions[]` | Per assertion: `ok`; `text`, a one-line rendering; `observed`, what was on screen, with up to 5 near misses when the text wasn't found; up to 10 `matches`; and the `frame` it was decided on |
+| `business` | Registered adapter and fixture IDs, binding digest, app-produced snapshot generation and digest, comparison outcomes, and separate setup/cleanup status. String and numeric observed values are redacted |
+| `findings[]` | Findings from the check's audits (each a11y finding also has `audit: "a11y"` and an `element`). An empty list when there are none, or the check never started |
+| `screenCoverage` | Whether requested per-screen checks had complete observed XML evidence, and how many unique accessibility screens were audited. A check that never started reports `false` and `0` |
+| `baseline` | Whether the after-launch read was taken, and which assertions already held on it |
+| `stable` | `false` when the screen was still changing at the timeout |
+| `steps[]` | Each action: `op`, its `text`, the `target`, `typed` (masked as `••••` in a secure field), whether the screen `changed`, its `frame`, and when (`at_ms`) |
+| `agent` | Smart only: the model's status, its note, the model and its turns. `null` otherwise |
+| `frames` | Every frame, relative to `run_dir` |
+| `proof` | The frames that show the verdict best, as absolute paths: the overlay first |
+| `report`, `draft_check`, `run_dir` | Absolute paths to the HTML report, this run's check as a file, and the run folder |
+| `repro` | The command that runs the check again |
+| `seconds`, `timing` | The run's length, and each phase's |
+| `perf` | What the run measured: `launch` (`interactiveMs`, `foregroundMs`), `memory` (`peakMb`, `p95Mb`, `cpuPeakPct`, `samples`; `null` when not sampled), `hangs` (`count`, `longestMs`, `thresholdMs`; `null` without a log), the Mac's 1-minute `loadAverage` when the run ended, and `notMeasured`, which names each number Mobster could not take and why. [What a check measures](/testing#what-a-check-measures) |
+| `cost_usd` | Smart's model spend. `0` for launch-only and key-less runs |
+| `evidence` | On a simulator or a USB iPhone: the app's log (`log.path`, relative to `run_dir`), and for a run that didn't pass, the log `window` around the failure, the `step` it followed and the `crash`. [Logs, crashes and video](/testing#logs-crashes-and-video) has every field |
+| `step_proof` | Why a run that didn't pass went red and what each step did: the `cause` (`side`, `kind`, one `line`), the `judged` frame (`frame`, `overlay`, the `treeHash` of the screen read, `verdictAtMs`), and per step the span (`fromMs`, `toMs`), the app's `log` lines in that span and the `network` requests the log shows. [Proof for every step](/testing#proof-for-every-step) has every field |
+
+## The run folder
+
+```text
+.mobster/runs/<run_id>/
+  result.json      the object above
+  report.html      one file with no external requests: verdict, assertions, overlay, steps, run facts
+  check.yaml       this run's check, which `repro` runs
+  events.jsonl     Smart's actions, or the key-less actions, one per line (no prompts, no images)
+  actions.jsonl    durable category-only intent and outcome for physical actions; no text or body
+  run.log          progress lines, and a traceback for `internal`
+  logs/app.log     the app's log, on the run clock, secret-filtered, at most 1 MB
+  crashes/*.ips    the app's crash report, when it crashed, secret-filtered
+  app-icon.png     your app's own icon, when its bundle has one to read
+  frames/NN-<label>.jpg
+```
+
+The report shows your app's own icon beside its name. Mobster reads it from the app's bundle: the largest of the icons Info.plist lists under `CFBundleIcons`, the files Xcode's asset catalog writes beside it (`AppIcon60x60@3x.png`), scaled to 120 px. An app with no icon there keeps the app glyph. A device build's icons use Apple's CgBI format, which Mobster doesn't read.
+
+Frames are JPEGs at half the simulator's width. Every run has `01-launch`, one frame per step, the verdict frame, and the same frame with the **accessibility overlay**: every shown element outlined faintly in violet, and each asserted element outlined in green when its assertion held or red when it failed, with one numbered pill beside it. The numbers are the assertions' order in the check, as the report lists them. A run folder stays under 20 MB and keeps at most 60 step frames.
+
+`mobster verify --save NAME` also copies `check.yaml` to `.mobster/checks/NAME.yaml`, replacing a file of that name. `NAME` is lowercase letters, digits and dashes, up to 60 characters.

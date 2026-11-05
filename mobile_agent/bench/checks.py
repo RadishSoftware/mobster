@@ -1,19 +1,11 @@
-"""Independent oracles for the benchmark, shared by every agent under test.
+"""The benchmark's oracles: never the agent's own claim, only ground truth fixed before the run or the probe's reads.
 
-Same rule as ``evals/oracles.py``: a check never trusts the agent's own claim
-of success, evidence or citations. It compares (a) the agent's final answer
-with ground truth fixed before the run, and/or (b) the device state read by
-the harness's own probe after the run.
-
-Checks work on the agent-neutral run record (``agents.base.AgentRun`` as a
-dict), so Mobster and the screenshot baselines are graded by the same code.
-Citation checks are deliberately absent: only Mobster produces citations, and
-grading a property one agent cannot have would bias the comparison.
+Checks work on the agent-neutral run record (``agents.base.AgentRun`` as a dict).
 """
 
-from dataclasses import dataclass, field
 import re
 import unicodedata
+from dataclasses import dataclass, field
 
 from ..evals.oracles import ProbeUnavailable, navigation_title, screen_text
 
@@ -21,8 +13,6 @@ from ..evals.oracles import ProbeUnavailable, navigation_title, screen_text
 class MissingTruth(Exception):
     """Ground truth for a check was not recorded, so the attempt is ungraded (never passed)."""
 
-
-# ---------------------------------------------------------------- references
 
 @dataclass(frozen=True)
 class Literal:
@@ -66,8 +56,6 @@ def resolve(ref, ctx):
         return ctx.fixtures.value(ref.key, ref.part)
     return ref
 
-
-# ---------------------------------------------------------------- normalizers
 
 _QUOTES = str.maketrans({"‘": "'", "’": "'", "“": '"', "”": '"',
                          "–": "-", "—": "-", " ": " ", " ": " "})
@@ -169,8 +157,6 @@ def answer_field(run, path):
             return None
     return value
 
-
-# ---------------------------------------------------------------- checks
 
 @dataclass(frozen=True)
 class Check:
@@ -276,11 +262,7 @@ class ActedAtLeast(Check):
 
 @dataclass(frozen=True)
 class ItemSet(Check):
-    """Exact set of items meeting a visual predicate (dry run: nothing is acted on).
-
-    Pass requires the exact set. Precision/recall are recorded per attempt so
-    the report can show item-level quality, not only task pass/fail.
-    """
+    """Exact set of items meeting a visual predicate (dry run: nothing is acted on)."""
     field: str
     fixture: str
 
@@ -300,11 +282,7 @@ class ItemSet(Check):
 
 @dataclass(frozen=True)
 class ItemLabels(Check):
-    """Per-item label (e.g. eye colour) with 'unsure' as the correct answer where it is.
-
-    Every fixture item carries an accept set; items whose true label is
-    'unsure' measure abstention: answering a colour there is a wrong answer.
-    """
+    """Per-item label (e.g. eye colour) with 'unsure' as the correct answer where it is."""
     field: str
     fixture: str
     item_key: str = "file"

@@ -1,0 +1,181 @@
+{
+"note": "Recorded on the test device (iPhone 15 Pro, iOS 26.0.1), 12 Oct 2026: the rows the agent saw, scrubbed (the account's name, the phone's name; serial and model numbers dropped). The same screen read by Vision OCR (iPhone Mirroring's reading).",
+"rows": [
+{
+"text": "10:09 C",
+"confidence": 1,
+"rect": [
+0.0944,
+0.0238,
+0.1774,
+0.0212
+]
+},
+{
+"text": "•1l",
+"confidence": 0.3,
+"rect": [
+0.7119,
+0.0266,
+0.0678,
+0.0188
+]
+},
+{
+"text": "814",
+"confidence": 1,
+"rect": [
+0.8508,
+0.0266,
+0.0678,
+0.0172
+]
+},
+{
+"text": "Power Mode",
+"confidence": 1,
+"rect": [
+0.3695,
+0.0876,
+0.2644,
+0.0172
+]
+},
+{
+"text": "Adaptive Power",
+"confidence": 1,
+"rect": [
+0.078,
+0.1737,
+0.3254,
+0.0235
+]
+},
+{
+"text": "Adaptive Power Notifications",
+"confidence": 1,
+"rect": [
+0.0814,
+0.2379,
+0.5864,
+0.0203
+]
+},
+{
+"text": "When your battery usage is higher than usual,",
+"confidence": 1,
+"rect": [
+0.0776,
+0.2827,
+0.7465,
+0.0241
+]
+},
+{
+"text": "iPhone can extend your battery life by making",
+"confidence": 1,
+"rect": [
+0.0746,
+0.3052,
+0.7424,
+0.0172
+]
+},
+{
+"text": "performance adjustments, such as lowering display",
+"confidence": 1,
+"rect": [
+0.078,
+0.3239,
+0.8339,
+0.0203
+]
+},
+{
+"text": "brightness, allowing some activities to take longer,",
+"confidence": 1,
+"rect": [
+0.078,
+0.3427,
+0.8237,
+0.0203
+]
+},
+{
+"text": "or turning on Low Power Mode at 20%.",
+"confidence": 1,
+"rect": [
+0.078,
+0.3615,
+0.6305,
+0.0172
+]
+},
+{
+"text": "Low Power Mode",
+"confidence": 1,
+"rect": [
+0.0814,
+0.4304,
+0.3458,
+0.0172
+]
+},
+{
+"text": "iPhone will temporarily reduce some background",
+"confidence": 1,
+"rect": [
+0.078,
+0.4789,
+0.7898,
+0.0172
+]
+},
+{
+"text": "activities, processing speed, display refresh rate",
+"confidence": 1,
+"rect": [
+0.078,
+0.4977,
+0.7864,
+0.0188
+]
+},
+{
+"text": "and brightness, and limit certain features such as",
+"confidence": 1,
+"rect": [
+0.0777,
+0.514,
+0.8006,
+0.0226
+]
+},
+{
+"text": "5G, iCloud syncing, mail fetch, and more.",
+"confidence": 1,
+"rect": [
+0.078,
+0.5352,
+0.6712,
+0.0188
+]
+}
+],
+"hash": "power-mode",
+"window": {
+"w": 589,
+"h": 1278
+},
+"icons": [
+[
+"Back",
+[
+0.078,
+0.0845,
+0.0339,
+0.0235
+]
+]
+]
+}

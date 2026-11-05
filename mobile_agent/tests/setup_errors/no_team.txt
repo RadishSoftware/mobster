@@ -1,0 +1,9 @@
+Build settings from command line:
+    DEVELOPMENT_TEAM =
+    USE_IP = 127.0.0.1
+
+Prepare packages
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+/Users/test/Library/Application Support/app.mobster.desktop/WebDriverAgent/WebDriverAgent.xcodeproj: error: Signing for "WebDriverAgentRunner" requires a development team. Select a development team in the Signing & Capabilities editor. (in target 'WebDriverAgentRunner' from project 'WebDriverAgent')
+** TEST BUILD FAILED **

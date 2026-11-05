@@ -1,0 +1,246 @@
+---
+title: "Troubleshooting"
+description: "Find the message you see, why it happens and the fix. Start with mobster doctor or mobster sim doctor."
+icon: "life-buoy"
+keywords: ["troubleshooting", "error", "not working", "help", "fix", "doctor"]
+---
+
+Start with a doctor. It checks each part in order and prints the fix under anything that's wrong.
+
+| What fails | Run |
+|---|---|
+| A task on your iPhone | `mobster doctor` |
+| A check on a simulator | `mobster sim doctor` |
+
+## Find what you see
+
+| You see | Go to |
+|---|---|
+| `mobster: command not found`, an old version, or no terminal UI | [Install](#install) |
+| WebDriverAgent isn't answering, no iPhone, not trusted, locked, unplugged, Face ID | [iPhone](#iphone) |
+| No model key, a task ends blocked or needs review, the spend cap | [Tasks](#tasks) |
+| Setup, the helper's weekly refresh, voice, your Claude or OpenAI account | [Mobster for Mac](#mac) |
+| `couldnt_run`, a slow first build, or no Smart in `mobster mcp` | [Checks](#checks) |
+| Signing in, your plan and billing, your Macs | [Your Mobster account](/account#troubleshooting) |
+| Mobster Remote: an assistant can't connect, or your Mac shows as offline | [Mobster Remote](/remote#troubleshooting) |
+| A status or exit code you don't know | [Errors and exit codes](/reference/errors) |
+
+## Exact messages
+
+Each message below has its own page, titled with the message as it prints, with the fix.
+
+| You see | What it means |
+|---|---|
+| [Unable to find a destination matching the provided destination specifier](/troubleshooting/unable-to-find-a-destination) | Xcode printed this while building Mobster's helper for your iPhone. It names why Xcode can't use the phone. Here is each cause and its fix. |
+| [Developer Mode disabled](/troubleshooting/developer-mode-disabled) | Developer Mode is off on your iPhone, so Xcode and Mobster can't run their helper on it. Turn it on in Settings and restart the phone. |
+| [Timed out while enabling automation mode](/troubleshooting/timed-out-while-enabling-automation-mode) | iOS asked for your passcode before it let Mobster's helper start, and nobody answered for 60 seconds. Turn on Enable UI Automation in Settings. |
+| [Could not connect to lockdownd: Pairing dialog response pending (-19)](/troubleshooting/pairing-dialog-response-pending) | Your iPhone is waiting for you to tap Trust. Unlock it, tap Trust and enter your passcode. |
+| [Could not connect to lockdownd: Invalid HostID (-21)](/troubleshooting/invalid-hostid) | Your iPhone no longer recognises this Mac's pairing. Unplug it, plug it back in and tap Trust. |
+| [Unable to launch app.mobster.wda.runner.xctrunner because it has an invalid code signature, inadequate entitlements or its profile has not been explicitly trusted by the user.](/troubleshooting/invalid-code-signature) | iOS refused to start Mobster's helper because you haven't trusted the developer app, or its 7-day signature expired. Trust it, or refresh it. |
+| [Unable to launch app.mobster.wda.runner.xctrunner because the device was not, or could not be, unlocked.](/troubleshooting/device-was-not-unlocked) | Your iPhone was locked when Xcode tried to start Mobster's helper. Unlock it and keep it unlocked. Mobster tries again by itself. |
+| [The maximum number of apps for free development profiles has been reached.](/troubleshooting/maximum-number-of-apps-for-free-development) | A free Apple Account allows 3 apps signed with Xcode on an iPhone. Delete one and install Mobster's helper again. |
+| [Your maximum App ID limit has been reached. You may create up to 10 App IDs every 7 days.](/troubleshooting/maximum-app-id-limit) | Apple lets a free account make 10 App IDs a week. Wait a few days, or build Mobster's helper with a paid developer team. |
+| [Failed Registering Bundle Identifier](/troubleshooting/failed-registering-bundle-identifier) | Another team already owns the helper's app ID. Build again and Mobster gives the helper an ID of your own. |
+| [Signing for "WebDriverAgentRunner" requires a development team.](/troubleshooting/signing-requires-a-development-team) | Xcode has no Apple team to sign Mobster's helper with. Choose your Apple Account in Mobster's setup and build again. |
+| [No Account for Team](/troubleshooting/no-account-for-team) | Xcode's sign-in for your Apple team lapsed. Sign in again in Xcode and build again. |
+| [No space left on device](/troubleshooting/no-space-left-on-device) | Your Mac's disk is full, so Xcode couldn't write Mobster's helper. Free up space and build again. |
+| [Could not resolve host](/troubleshooting/could-not-resolve-host) | Xcode couldn't download WebDriverAgent because this Mac has no internet. Check the connection and build again. |
+| [WebDriverAgent is not answering at http://127.0.0.1:8100](/troubleshooting/webdriveragent-is-not-answering) | Mobster's helper isn't running on your iPhone, or the USB relay to it isn't. Open Mobster for Mac or run mobster serve --manage-device. |
+| [The encrypted link isn't up yet](/troubleshooting/the-encrypted-link-isnt-up-yet) | Your iPhone is on the network, but the encrypted Wi-Fi link to it isn't up. Unlock it and keep it on the same Wi-Fi as this Mac. |
+
+## Install
+
+| You see | Why, and the fix |
+|---|---|
+| <span id="command-not-found"></span>`mobster: command not found` | The `mobster` command is the agent inside Mobster for Mac, and it isn't on your `PATH`. **Fix:** Run the three commands below, open a new terminal window, then run `mobster version`. If the app isn't at that path, move Mobster to Applications and open it once |
+| <span id="old-version"></span>`mobster version` prints an old version | A `mobster` installed before Mobster for Mac, with the old `install.sh` or the old `radishsoftware/tap/mobster` cask, stays at its version. **Fix:** `command -v mobster` shows which copy runs. Link the app's copy with the commands below; Mobster for Mac updates itself |
+| <span id="needs-terminal"></span>`the terminal UI needs an interactive terminal` | You ran `mobster` in a pipe or a script. **Fix:** Run `mobster run "TASK"`: it prints plain lines, or JSON with `--json` |
+| <span id="no-tui"></span>`the terminal UI is not available in this build` | This copy was built without the terminal UI, like the agent inside Mobster for Mac. **Fix:** Give the task in Mobster for Mac, or run `mobster run "TASK"` |
+
+Put the app's `mobster` on your `PATH`:
+
+```sh
+mkdir -p ~/.local/bin
+ln -sf /Applications/Mobster.app/Contents/MacOS/mobster-agent ~/.local/bin/mobster
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
+```
+
+Your coding agent doesn't need your `PATH`: in Mobster for Mac, Settings › Connectors › **Use Mobster from…** adds Mobster to it ([Add Mobster to your agent](/agents)).
+
+## iPhone
+
+Run `mobster doctor` first: every line with `✗` has its fix under it. Mobster never enters your passcode and never unlocks the phone.
+
+| You see | Why, and the fix |
+|---|---|
+| <span id="wda-not-answering"></span>`✗ Phone connection  nothing answers at 127.0.0.1:8100` | Mobster's helper (WebDriverAgent) isn't running on the phone, or the USB relay isn't. **Fix:** Open Mobster for Mac, or run `mobster serve --manage-device`: either starts both and restarts them if they stop. For a simulator, run `mobster sim prepare --device NAME` |
+| <span id="no-iphone"></span>`! USB iPhone  none connected` | This Mac sees no iPhone on USB. **Fix:** Use a cable that carries data, or another port. Unlock the phone and check Settings › Privacy & Security › Developer Mode. `idevice_id -l` prints the phone's UDID once this Mac sees it |
+| <span id="not-trusted"></span>`! USB iPhone  … connected but not trusted` | The phone hasn't trusted this Mac. **Fix:** Unlock it, tap **Trust** and enter the passcode. After **Don't Trust**, unplug the phone and plug it in again |
+| <span id="runner-expired"></span>`✗ WDA runner  the runner's signature expired` | A free Apple Account signs Mobster's helper for 7 days at a time. **Fix:** In Mobster for Mac, **Devices** › the iPhone's card › **Refresh now**. Mobster also refreshes it while the phone is plugged in and unlocked. Without the app, run the guided setup's `setup /build` |
+| <span id="helper-waits-for-unlock"></span>Unlock your iPhone. Mobster's helper starts as soon as it is unlocked. | iOS won't start UI automation on a locked phone. **Fix:** Unlock it. The helper starts within about 2 seconds, with nothing to press |
+| <span id="ui-automation"></span>On your iPhone, turn on Settings › Developer › Enable UI Automation | iOS asks for the passcode before it turns on automation mode, and gives up after 60 seconds ("Timed out while enabling automation mode"). **Fix:** Turn on **Settings › Developer › Enable UI Automation**, or enter the passcode, and keep the phone unlocked. Once it's on, iOS stops asking |
+| <span id="not-registered"></span>Building WDA fails with "isn't registered in your developer account" | Xcode hasn't registered the phone on your team. **Fix:** Open Xcode once with the phone connected, or register it in Apple's developer portal. Then build again |
+| <span id="iproxy-old"></span>`iproxy is too old to bind 127.0.0.1 only` | Mobster binds the USB relay to this Mac only, and older `iproxy` builds can't. **Fix:** `brew upgrade libimobiledevice libusbmuxd` |
+| <span id="device-busy"></span>`! Device lock  another Mobster process is using this phone` | One Mobster process controls a phone at a time. **Fix:** Finish or stop the task in Mobster for Mac, in `mobster serve` or in the other terminal, then try again |
+| <span id="locked"></span>Your iPhone is locked. Unlock it and try again. No action was taken. | The phone was locked when the task started. Mobster checks before its first model call, so the task cost nothing. **Fix:** Unlock the phone and run the task again |
+| <span id="locked-mid-task"></span>Your iPhone locked during the task, so Mobster stopped. | The phone auto-locked during a task nobody watches: a schedule, `mobster run` or an API script. **Fix:** Unlock it, or lengthen Auto-Lock, and run the task again. In Mobster for Mac, **Pick up where it left off** continues from the last step |
+| <span id="locked-mid-task-timed-out"></span>Your iPhone stayed locked, so Mobster stopped. | A task you started waited 2 minutes, and nobody unlocked the phone. **Fix:** Unlock it, then choose **Pick up where it left off** |
+| <span id="unplugged"></span>Your iPhone was unplugged. Plug it back in and try again. | The cable came out during a task nobody watches. **Fix:** Plug it back in; the helper starts again by itself. Then run the task again |
+| <span id="unplugged-timed-out"></span>Your iPhone stayed unplugged, so Mobster stopped. | A task you started waited 2 minutes, and nobody plugged the phone back in. **Fix:** Plug it in, then choose **Pick up where it left off** |
+| <span id="not-responding"></span>Your iPhone isn't responding. Unlock it, close Control Center or Siri… | Something covers the app. Mobster presses Home before each task, but can't dismiss everything. **Fix:** Close it on the phone and try again |
+| <span id="face-id"></span>[App] is asking for Face ID. Mobster can't use Face ID… | The app wants Face ID before it shows anything. **Fix:** A task you started waits 2 minutes for you to clear it. Otherwise, open the app on the phone once yourself, then run the task again |
+| <span id="app-locked"></span>[App] is locked on your iPhone. Mobster won't open locked apps… | The app is locked with iOS's Require Face ID. **Fix:** Open it yourself, or touch and hold its icon and choose **Don't Require Face ID** |
+| <span id="app-store-confirm"></span>The App Store wants you to confirm on your iPhone. | A download or purchase needs the side button pressed twice. Mobster never confirms one. **Fix:** Do it on the phone if you meant it |
+
+A task you start in Mobster for Mac, the terminal UI or `mobster chat` waits 2 minutes for an unlock or the cable, then goes on, and looks at the screen before it acts again. For long tasks, lengthen Settings › Display & Brightness › Auto-Lock. `mobster devices lock-probe` shows what Mobster sees on the lock screen and taps nothing.
+
+## Tasks
+
+A task's status says why it ended. [Errors and exit codes](/reference/errors#statuses) lists every status.
+
+| You see | Why, and the fix |
+|---|---|
+| <span id="engine-quiet"></span>Mobster isn't running. An action may have run. Check your iPhone. | Mobster's service stopped answering during a task, for 8 seconds or entirely. **Fix:** Look at your iPhone: the last action may have happened, and Mobster doesn't send it again. Open Mobster again to see how the task ended |
+| <span id="no-key"></span>`✗ Model key  OPENAI_API_KEY is not set` | Mobster's agent has no key. **Fix:** Put `ANTHROPIC_API_KEY=…` or `OPENAI_API_KEY=…` in your env file, then pass `--env-file PATH` or set `MOBSTER_ENV_FILE` in `~/.zshrc` |
+| <span id="env-file-missing"></span>`… does not exist; no keys or settings were loaded from it` | The `--env-file` or `$MOBSTER_ENV_FILE` path is wrong. **Fix:** Check it with `ls -l`, and fix the path |
+| <span id="not-ready"></span>`✗ Not started  Your iPhone is not ready for live tasks` | The terminal UI can't reach Mobster's helper, or has no model key. **Fix:** The hints under it say which: [WebDriverAgent not answering](#wda-not-answering) or [the model key](#no-key) |
+| <span id="needs-text-helper"></span><span id="blocked"></span>No way forward found (`blocked`, `no_progress`) | Nothing on the screen moved the task forward. **Fix:** Look at the phone: the app may need a sign-in, a permission, or a control with no accessibility label. Give the task more detail and run it again |
+| <span id="needs-review"></span>Needs review | The task looked done, but Mobster couldn't confirm it on the screen. The message under it says why, and where to look: the simulator, or the phone by its name. **Fix:** Look at the device before you run it again. In Mobster for Mac, **Looks right** marks it done |
+| <span id="declined"></span>Declined, or Approval expired | You declined an approval, or nobody answered for 10 minutes. That action didn't run. **Fix:** Run the task again when you can answer |
+| <span id="spend-cap"></span>Spend cap reached | The task's model spend reached your cap. **Fix:** Raise it in Settings › Models, with `/cap` in the terminal UI, or with `--spend-cap-usd` |
+| <span id="step-limit"></span>Step limit reached, or Time limit reached | The task needed more steps or time than one run allows. **Fix:** Run it as a long task, `mobster run "…" --execute --long --budget 10m`, or split it in two |
+| <span id="wrong-app"></span>Mobster opens the wrong app | The task didn't name the app. **Fix:** Start the task with it ("In Safari, …"), choose it in the app picker, or write `@safari …` in the terminal UI |
+| <span id="reads-stall"></span>A task stops after a swipe, with no screen read for about 100 seconds | The app stopped answering accessibility reads, usually right after a swipe in a live feed. **Fix:** Close and reopen the app, then run the task again |
+| <span id="missing-controls"></span>An app's controls are missing from the steps | Mobster reads the accessibility tree. Games, maps, canvases and text inside images give it little to read. **Fix:** Do that step yourself, or ask the app's maker for accessibility labels |
+| <span id="slow-tree"></span>A screen read takes 4 seconds, then the steps list text instead of controls | The app answers accessibility reads slowly: TikTok's feed took 29.8 s on an iPhone 15 Pro (iOS 26.0.1, 14 Oct 2026). Mobster waits 4 seconds, then reads that app from screenshots for an hour. **Fix:** Nothing. A read from a screenshot has the text and where it sits, without roles or switch states, and your permission mode still applies to taps that send, post, buy or delete |
+| An app was closed and reopened mid-task | Two screen reads in a row timed out, so Mobster's agent closed the app and opened it again, once per task. **Fix:** Anything the app hadn't saved is gone. Run the task again if it didn't finish |
+
+## Mobster for Mac
+
+<span id="mac"></span>
+
+The **?** button at the foot of the sidebar answers questions about setup, your Claude or OpenAI account, approvals and your plan, offline. For anything else, write to [support@radish.software](mailto:support@radish.software).
+
+<span id="license"></span>
+
+### Your account
+
+Signing in, plans and billing, and your Macs have their own page: [Your Mobster account](/account#troubleshooting). The ones you're most likely to see:
+
+| You see | Fix |
+|---|---|
+| Sign-in timed out. Try again. | Choose the same button again, and finish in the browser within 10 minutes. Or sign in with an email code |
+| Mobster is active on Studio | Mobster runs on one Mac at a time. Choose **Use on this Mac** to move it here |
+| Mobster moved to Studio | You moved Mobster to another Mac. Choose **Move it back** to use it here |
+| This Mac was removed from your account. Sign in to use it again. | This Mac was signed out, or removed at mobster.dev/account. Sign in again |
+| Mobster needs to check your plan | Connect to the internet, then **Try again** |
+| Mobster's account service had a problem | The service didn't answer, and nothing opens until it does. Wait a minute, then **Try again** |
+
+### Setup
+
+| You see | Fix |
+|---|---|
+| Xcode is installed but Setup waits | Open Xcode once so it can finish installing. Mobster checks by itself |
+| Waiting for your iPhone | Plug it in with a cable that carries data, and unlock it. Some cables only charge |
+| Waiting for Trust | Unlock your iPhone, tap **Trust** and enter your passcode |
+| Developer Mode isn't in Settings | Continue: it appears after Mobster installs its helper, and Setup asks again then |
+| Sign in to Xcode first | In Xcode › Settings › Accounts, choose **+** and sign in with your Apple Account |
+| The install didn't finish. | Do what the fix above it says, then **Try again**. **Show details** has the log |
+| Mobster's helper didn't start | On your iPhone, open Settings › General › VPN & Device Management, tap your Apple Account under Developer App, then **Trust** |
+
+<span id="helper-refresh"></span>
+
+### The weekly refresh
+
+A free Apple Account signs Mobster's helper for 7 days at a time. Mobster refreshes it while your iPhone is plugged in and unlocked, and tells you a day before it needs you.
+
+| You see | Fix |
+|---|---|
+| [Name] needs a quick refresh | Choose **Refresh now**. It's quicker than the first install |
+| Plug in your iPhone to refresh | Plug it in and unlock it |
+| Mobster couldn't refresh its helper | Do what the fix under it says, then **Refresh now** in Settings › Advanced |
+
+<span id="voice-unavailable"></span>
+
+### Voice
+
+| You see | Fix |
+|---|---|
+| Voice needs macOS 26 or later | Update macOS, or type the task |
+| Mobster can't hear you | Allow Mobster in System Settings › Privacy & Security › Microphone |
+| Speech recognition is off | Allow Mobster in System Settings › Privacy & Security › Speech Recognition |
+| Voice stopped working | Restart Mobster |
+
+<span id="ai-account"></span>
+
+### Your Claude or OpenAI account
+
+The same messages name OpenAI when that's your account.
+
+| You see | Fix |
+|---|---|
+| Claude didn't accept this key. | Copy it again from the Claude Console. It starts with `sk-ant-` |
+| Your Claude account has no credit yet. | Add credit in the console, then **I've added it** |
+| This key can't use the model Mobster's agent runs on yet. | The line under it says where to fix it. Then **Test again** |
+| Mobster couldn't reach Claude. | Check your internet connection, then try again |
+
+### Still stuck
+
+Quit Mobster (`cmd+q`) and open it again. Setup's logs are in `~/Library/Application Support/app.mobster.desktop/logs`. Read them before you send them: they can hold what was on your screen.
+
+## Checks
+
+Run `mobster sim doctor`, not `mobster doctor`: checks run on a simulator Mobster manages. `mobster sim doctor --fix` creates the simulator and builds WebDriverAgent, once.
+
+On a Mac that hasn't run a check yet, `mobster sim doctor` printed this (18 Oct 2026, Mobster 0.4.0, Xcode 26.4):
+
+```text Output
+Mobster sim doctor
+
+  ✓ Apple silicon     arm64
+  ✓ Xcode             Xcode 26.4 (17E192) at /Applications/Xcode.app
+  ✓ Xcode components  installed
+  ✓ iOS runtime       iOS 26.4
+  ✓ Device type       iPhone 17 Pro
+  ✓ git               /Applications/Xcode.app/Contents/Developer/usr/bin/git
+  ✓ Free space        83 GB free for ~/Library/Application Support/app.mobster.desktop/dev
+  ! WebDriverAgent    not built yet: the first run builds it, once per Xcode version
+                      → mobster sim doctor --fix
+  – Simulators        none yet: the first run creates one
+  ✓ Ports             WebDriverAgent on 127.0.0.1:8310–8349, MJPEG on +1000; 8310 is free
+  – Smart key         not set: launch-only and key-less checks need none; Smart needs your OpenAI or Anthropic key
+
+Ready for `mobster verify`.
+```
+
+A line with `!` or `✗` has its fix under it, after `→`.
+
+| You see | Why, and the fix |
+|---|---|
+| <span id="wda-building"></span>`Building WebDriverAgent …`, then `Still building WebDriverAgent (… so far)` | The first build runs once per Xcode version. On an M5 Max (28 Sep 2026), a first `mobster verify` that built it took 77.7 s and 103.6 s. The first line gives the log path. **Fix:** Wait, or run `mobster sim doctor --fix` ahead of time |
+| <span id="couldnt-run"></span>`couldnt_run`, and the exit code 3 | The result's `reason.class` says why, and `reason.fix` what to do. **Fix:** find the class in the table below |
+| `failed`, class `app_crashed` | The app crashed. The message names the exception and the first frame in your code, such as `CrashTrigger.crashNow() (CrashFixtureApp.swift:11)`. **Fix:** Open the report's Logs and Crash pane. For symbols instead of addresses, build with `DEBUG_INFORMATION_FORMAT=dwarf-with-dsym` ([Logs, crashes and video](/testing#logs-crashes-and-video)) |
+| `failed`, class `app_not_running` | The flow left the app, or it crashed where Mobster reads no log. **Fix:** The result names the app in front at the end, and any alert |
+| `needs_review`, `held_before_flow` | Every expectation already held right after launch, so the run doesn't show the flow works. **Fix:** Add an expectation that holds only after the steps |
+| An element you can see isn't found | It has no accessibility identifier or label Mobster matches, or it's scrolled out of view. **Fix:** Give it an identifier, such as `.accessibilityIdentifier("streak_days")`, or check its label in the report's overlay frame. Scroll to it first |
+| <span id="out-not-writable"></span>`--out: can't write runs to …` | The runs folder isn't writable. **Fix:** Pass a folder you can write to with `--out DIR` |
+| <span id="smart-off"></span>Smart is off in `mobster mcp` | No `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`, an env file that doesn't exist, or `--keyless`. `status` says which. **Fix:** [Turn on Mobster's agent](/agents#turn-on-mobsters-agent) |
+
+| `reason.class` | What happened, and the fix |
+|---|---|
+| `environment` | Xcode isn't installed, or the iOS runtime is missing. **Fix:** Install Xcode from the App Store and open it once. For the runtime, open Xcode › Settings › Components and get iOS |
+| `install` | The `.app` is a device build, or didn't install. **Fix:** Build with `-destination 'generic/platform=iOS Simulator'` |
+| `wda` | Mobster couldn't build, start or read WebDriverAgent. **Fix:** The last error line is in the result; the whole log is `logs/wda-build.log` in Mobster's data folder |
+| `busy` | Every one of Mobster's simulators for that device is held, the Mac has under 4 GB of memory free for another, or its load stayed high for 30 seconds. The message names who holds them. **Fix:** Wait, run `mobster sim list`, or set `MOBSTER_MAX_SIMS` higher |
+| `usage` | The check is invalid, or it has steps and no key. **Fix:** Fix the check, give steps a key ([Steps](/test/steps#add-steps)), or let your coding agent drive through `mobster mcp` |
+| `model` | Mobster's agent had no key for its model, a model failure, or no credit. **Fix:** Check the key and the account's credit |
+
+[Checks](/checks#verdicts-and-exit-codes) has the full precedence.
+
+## Report a problem
+
+Open an [issue](https://github.com/RadishSoftware/mobster/issues/new/choose) with the output of `mobster version` and `mobster doctor`, the task you gave, and the status it ended with. `mobster run … --json > run.jsonl` captures the events of one run.
+
+<Warning>A run's events and Mobster's logs hold the text Mobster read on your screen. Read them before you attach them.</Warning>
+
+For Mobster for Mac, write to [support@radish.software](mailto:support@radish.software). Say what you were doing and what you saw. A screenshot helps.

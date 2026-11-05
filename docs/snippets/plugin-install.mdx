@@ -1,0 +1,16 @@
+The Claude Code plugin adds Mobster's MCP server, the mobster skill, and the `/mobster:verify` and `/mobster:test-pr` commands:
+
+```sh
+/plugin marketplace add RadishSoftware/mobster-plugin
+/plugin install mobster@mobster
+```
+
+If you added the old `RadishSoftware/mobster` marketplace, run `/plugin marketplace remove mobster` first: both are named `mobster`.
+
+Any agent that reads Agent Skills, such as Codex, Cursor or Gemini CLI, gets the skill with:
+
+```sh
+npx skills add RadishSoftware/mobster-plugin
+```
+
+Both need Mobster for Mac: the plugin starts the MCP server inside Mobster.app, and the skill drives its tools.

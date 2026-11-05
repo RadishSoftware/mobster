@@ -19,18 +19,18 @@ cannot be known (a computed import, a file that does not parse), the safety core
 """
 
 import argparse
-from contextlib import suppress
 import hashlib
 import json
 import os
 import re
-import subprocess
 import shutil
 import signal
+import subprocess
 import sys
 import tempfile
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from contextlib import suppress
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent  # --root replaces it: ci-local.sh checks other commits
@@ -89,7 +89,8 @@ def count_suites(table, me):
         pid, args = int(parts[0]), parts[2]
         parents[pid] = int(parts[1])
         # A whole-suite run only: a gate's targeted run (--modules) is small and doesn't count toward the limit.
-        if "python" in os.path.basename(args.split()[0]).lower() and "ci_backend.py" in args and "--modules" not in args:
+        if ("python" in os.path.basename(args.split()[0]).lower() and "ci_backend.py" in args
+                and "--modules" not in args):
             suites.append(pid)
     mine, pid = set(), me
     while pid and pid not in mine:
@@ -161,8 +162,10 @@ def module_keys(python, root, names):
     knobs = sorted((k, v) for k, v in os.environ.items() if k.startswith("MOBSTER_") and k != "MOBSTER_TEST_TIME_SCALE"
                    and not k.startswith("MOBSTER_CI_"))
     runner = [file_hash(Path(__file__).parent, name) for name in ("ci_backend.py", "ci_select.py", "ci_inputs.py")]
-    requirements = [p.relative_to(root).as_posix() for p in sorted(Path(root, "mobile_agent").glob("requirements*.txt"))]
-    common = [version, knobs, runner, *(file_hash(root, p) for p in requirements), *(file_hash(root, p) for p in shared)]
+    requirements = [p.relative_to(root).as_posix()
+                    for p in sorted(Path(root, "mobile_agent").glob("requirements*.txt"))]
+    common = [version, knobs, runner, *(file_hash(root, p) for p in requirements),
+              *(file_hash(root, p) for p in shared)]
     keys = {}
     for name in names:
         paths = reach.get(name)
@@ -184,7 +187,8 @@ def cached_pass(key):
 def store_pass(key, result):
     RESULTS.mkdir(parents=True, exist_ok=True)
     tmp = RESULTS / f"{key}.{os.getpid()}"
-    tmp.write_text(json.dumps({"tests": result["tests"], "skipped": result["skipped"], "date": time.strftime("%Y-%m-%d")}))
+    tmp.write_text(json.dumps({"tests": result["tests"], "skipped": result["skipped"],
+                               "date": time.strftime("%Y-%m-%d")}))
     tmp.replace(RESULTS / key)
 
 
@@ -197,7 +201,9 @@ def run(python, root, module, env, scratch, limit=MODULE_LIMIT):
     # Its own process group, so a module that hangs is stopped with everything it started.
     proc = subprocess.Popen(
         [python, "-c", UNITTEST, module],
-        cwd=root, env=dict(env, HOME=str(home), TMPDIR=str(tmp), **({"MOBSTER_TEST_TIME_SCALE": scale} if scale else {})),
+        cwd=root,
+        env=dict(env, HOME=str(home), TMPDIR=str(tmp), MOBSTER_MEMORY_DIR=str(home / "memory"),
+                 **({"MOBSTER_TEST_TIME_SCALE": scale} if scale else {})),
         stdin=subprocess.DEVNULL,
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, start_new_session=True,
     )
@@ -235,6 +241,27 @@ def run(python, root, module, env, scratch, limit=MODULE_LIMIT):
     }
 
 
+def behind_requirements(python, root):
+    """["cryptography 50.0.1 (pinned 50.0.2)", ...]: the packages ``python`` has at another version than the lock
+    (mobile_agent/requirements.txt). A venv made before a pin moved fails tests that read the pin, with a message about
+    the test, not the venv; this names the venv. Empty when all match,
+    or when the lock or the packages can't be read."""
+    lock = root / "mobile_agent" / "requirements.txt"
+    try:
+        pins = {name.lower().replace("_", "-"): version for name, version in
+                re.findall(r"^([A-Za-z0-9_.\-]+)==([^\s;#]+)", lock.read_text(), re.M)}
+        probe = subprocess.run(
+            [python, "-I", "-c", "import importlib.metadata as m, json, sys; print(json.dumps({n: (lambda v: v)("
+             "next((d.version for d in m.distributions() if d.metadata['Name'].lower().replace('_', '-') == n), None)) "
+             "for n in json.loads(sys.argv[1])}))", json.dumps(sorted(pins))],
+            capture_output=True, text=True, timeout=60, check=True)
+        have = json.loads(probe.stdout)
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return []
+    return [f"{name} {have[name]} (pinned {pins[name]})" for name in sorted(pins)
+            if have.get(name) is not None and have[name] != pins[name]]
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--jobs", type=int, default=MAX_JOBS, help=f"test processes at once, at most {MAX_JOBS}")
@@ -250,6 +277,11 @@ def main():
         print(other_suites())
         return
     args.jobs = max(1, min(args.jobs, MAX_JOBS))
+    behind = behind_requirements(args.python, args.root.resolve())
+    if behind:
+        print("This Python is behind mobile_agent/requirements.txt: " + ", ".join(behind) + ". Run `make venv`, then "
+              "run the tests again.", file=sys.stderr)
+        sys.exit(2)
     with suppress(OSError):
         os.nice(10)
     if not args.modules:
@@ -263,14 +295,23 @@ def main():
     timings = load_timings()
     # Unknown modules (new since the last run) go first: they may be slow.
     longest = max(timings.values(), default=0.0) + 1
-    names.sort(key=lambda name: -timings.get(name, longest))
+    # A pre-merge run (--modules) starts the safety core first, so a red there shows within a minute.
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    try:
+        from ci_select import SAFETY_CORE
+    except ImportError:  # not in the public tree
+        SAFETY_CORE = ()
+    finally:
+        sys.path.pop(0)
+    names.sort(key=lambda name: (bool(args.modules) and name not in SAFETY_CORE, -timings.get(name, longest)))
     # MOBSTER_NO_DEVICES=1: wireless.devicectl, phone_io.files and mobster-wifi-pair raise instead of running
     # (native_helpers.devices_allowed), so no test reaches a phone even outside the sandbox.
     env = dict(os.environ, PYTHONDONTWRITEBYTECODE="1", MOBSTER_NO_DEVICES="1")
 
     keys = {} if RESULTS is None else module_keys(args.python, root, names)
     # --no-result-cache still stores what passes, so the full run after a merge seeds the next gate.
-    hits = {name: hit for name in names if name in keys and not args.no_result_cache and (hit := cached_pass(keys[name]))
+    hits = {name: hit for name in names if name in keys and not args.no_result_cache
+            and (hit := cached_pass(keys[name]))
             and isinstance(hit.get("tests"), int)}
     names = [name for name in names if name not in hits]
 
@@ -292,7 +333,8 @@ def main():
                   f"The first run:\n{result['output']}")
             results[index] = dict(retry, seconds=result["seconds"])
         else:
-            print(f"FAIL {result['module']} ({result['seconds']:.1f}s, returncode {result['returncode']}, and again alone "
+            print(f"FAIL {result['module']} ({result['seconds']:.1f}s, returncode {result['returncode']}, and again "
+                  "alone "
                   f"with returncode {retry['returncode']})\n{retry['output']}", flush=True)
     wall = time.monotonic() - started
     for result in results:

@@ -1,0 +1,357 @@
+{
+"note": "Recorded on the test device (iPhone 15 Pro, iOS 26.0.1), 11 and 12 Oct 2026: the rows the agent saw, scrubbed (album names renamed; the photos map's places left out).",
+"rows": [
+{
+"role": "NavigationBar",
+"label": "Collections",
+"rect": [
+0.0,
+0.07,
+1.0,
+0.06
+]
+},
+{
+"role": "StaticText",
+"label": "Collections",
+"rect": [
+0.04,
+0.07,
+0.5,
+0.05
+]
+},
+{
+"role": "Button",
+"label": "Layout and reorder",
+"rect": [
+0.69,
+0.08,
+0.1,
+0.04
+]
+},
+{
+"role": "Button",
+"label": "Profile",
+"rect": [
+0.83,
+0.07,
+0.11,
+0.05
+]
+},
+{
+"role": "Button",
+"label": "Memories",
+"rect": [
+0.06,
+0.15,
+0.33,
+0.03
+]
+},
+{
+"role": "Image",
+"label": "Forward",
+"rect": [
+0.36,
+0.15,
+0.03,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "Collapse",
+"rect": [
+0.87,
+0.15,
+0.07,
+0.03
+]
+},
+{
+"role": "Image",
+"label": "Drag",
+"rect": [
+0.88,
+0.16,
+0.06,
+0.01
+]
+},
+{
+"role": "Button",
+"label": "Portraits",
+"rect": [
+0.67,
+0.19,
+0.33,
+0.27
+]
+},
+{
+"role": "StaticText",
+"label": "FROM 2025 – 2026",
+"rect": [
+0.71,
+0.42,
+0.27,
+0.01
+]
+},
+{
+"role": "Button",
+"label": "Create a Memory",
+"rect": [
+0.06,
+0.19,
+0.57,
+0.27
+]
+},
+{
+"role": "Image",
+"label": "_gm",
+"rect": [
+0.12,
+0.4,
+0.05,
+0.03
+]
+},
+{
+"role": "StaticText",
+"label": "Type to Create",
+"rect": [
+0.18,
+0.41,
+0.24,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "Pinned",
+"rect": [
+0.06,
+0.49,
+0.24,
+0.03
+]
+},
+{
+"role": "Image",
+"label": "Forward",
+"rect": [
+0.27,
+0.5,
+0.03,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "Edit",
+"rect": [
+0.71,
+0.49,
+0.13,
+0.04
+]
+},
+{
+"role": "Button",
+"label": "Collapse",
+"rect": [
+0.87,
+0.49,
+0.07,
+0.04
+]
+},
+{
+"role": "Image",
+"label": "Drag",
+"rect": [
+0.88,
+0.5,
+0.06,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "Favorites",
+"rect": [
+0.06,
+0.53,
+0.27,
+0.13
+]
+},
+{
+"role": "Image",
+"label": "Love",
+"rect": [
+0.26,
+0.54,
+0.04,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "Recently Saved",
+"rect": [
+0.37,
+0.53,
+0.26,
+0.13
+]
+},
+{
+"role": "Button",
+"label": "Map",
+"rect": [
+0.67,
+0.53,
+0.26,
+0.13
+]
+},
+{
+"role": "Button",
+"label": "Videos",
+"rect": [
+0.97,
+0.53,
+0.03,
+0.13
+]
+},
+{
+"role": "Button",
+"label": "Albums",
+"rect": [
+0.06,
+0.69,
+0.26,
+0.03
+]
+},
+{
+"role": "Image",
+"label": "Forward",
+"rect": [
+0.3,
+0.7,
+0.03,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "Collapse",
+"rect": [
+0.87,
+0.69,
+0.07,
+0.03
+]
+},
+{
+"role": "Image",
+"label": "Drag",
+"rect": [
+0.88,
+0.7,
+0.06,
+0.01
+]
+},
+{
+"role": "Button",
+"label": "MobsterBench Receipts Album, 0 assets.",
+"rect": [
+0.06,
+0.73,
+0.27,
+0.13
+]
+},
+{
+"role": "Button",
+"label": "MobsterBench Dogs Album, 0 assets.",
+"rect": [
+0.37,
+0.73,
+0.26,
+0.13
+]
+},
+{
+"role": "Button",
+"label": "Garden Album, 0 assets.",
+"rect": [
+0.67,
+0.73,
+0.26,
+0.13
+]
+},
+{
+"role": "Button",
+"label": "Recipes Album, 0 assets.",
+"rect": [
+0.97,
+0.73,
+0.03,
+0.13
+]
+},
+{
+"role": "Button",
+"label": "Library",
+"rect": [
+0.06,
+0.91,
+0.25,
+0.07
+]
+},
+{
+"role": "Button",
+"label": "Collections",
+"rect": [
+0.3,
+0.91,
+0.24,
+0.07
+],
+"value": "1",
+"selected": true
+},
+{
+"role": "Image",
+"label": "Album",
+"rect": [
+0.38,
+0.91,
+0.08,
+0.04
+]
+},
+{
+"role": "Button",
+"label": "Search",
+"rect": [
+0.79,
+0.9,
+0.15,
+0.08
+]
+}
+]
+}

@@ -1,0 +1,25 @@
+appId: com.example.shop
+name: Sign in and open the profile
+tags:
+  - smoke
+  - Sign In
+env:
+  EMAIL: sam@example.com
+---
+- launchApp:
+    clearState: true
+- openLink: shop://welcome
+- runFlow:
+    file: subflows/sign-in.yaml
+    env:
+      PASSWORD: correct-horse
+- assertVisible: Welcome back
+- assertNotVisible: Sign in
+- tapOn:
+    id: tab_profile
+- scrollUntilVisible:
+    element:
+      text: Log out
+    direction: DOWN
+- assertVisible:
+    id: profile_email

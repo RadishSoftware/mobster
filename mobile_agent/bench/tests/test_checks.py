@@ -2,9 +2,25 @@
 
 import unittest
 
-from mobile_agent.bench.checks import (Abstains, ActedAtLeast, AnswerIs, Captured, CheckContext, Claimed,
-                                       Fixture, ItemLabels, ItemSet, Literal, OnScreen, Truth, grade, matches,
-                                       norm_bool, norm_filename, norm_number)
+from mobile_agent.bench.checks import (
+    Abstains,
+    ActedAtLeast,
+    AnswerIs,
+    Captured,
+    CheckContext,
+    Claimed,
+    Fixture,
+    ItemLabels,
+    ItemSet,
+    Literal,
+    OnScreen,
+    Truth,
+    grade,
+    matches,
+    norm_bool,
+    norm_filename,
+    norm_number,
+)
 from mobile_agent.bench.fixtures import Fixtures
 from mobile_agent.bench.tests.fakes import FakeProbe, snapshot
 

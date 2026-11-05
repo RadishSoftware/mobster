@@ -1,0 +1,114 @@
+{
+ "devices": [
+  {
+   "architecture": "arm64",
+   "deviceId": "<UDID>",
+   "deviceName": "Mobster · iPhone 17 Pro · iOS 26.4",
+   "modelName": "iPhone 17 Pro",
+   "osBuildNumber": "23E244",
+   "osVersion": "26.4",
+   "platform": "iOS Simulator"
+  }
+ ],
+ "testNodes": [
+  {
+   "children": [
+    {
+     "children": [
+      {
+       "children": [
+        {
+         "children": [
+          {
+           "name": "PlanTests.swift:11: XCTAssertEqual failed: (\"month\") is not equal to (\"year\")",
+           "nodeType": "Failure Message"
+          },
+          {
+           "name": "PlanTests.swift:12: XCTAssertEqual failed: (\"$39.99 / month\") is not equal to (\"$39.99 / year\")",
+           "nodeType": "Failure Message"
+          }
+         ],
+         "duration": "0.26s",
+         "durationInSeconds": 0.2642509937286377,
+         "name": "testAnnualPlanIsBilledYearly()",
+         "nodeIdentifier": "PlanTests/testAnnualPlanIsBilledYearly()",
+         "nodeIdentifierURL": "test://com.apple.xcode/Firefox/FirefoxTests/PlanTests/testAnnualPlanIsBilledYearly",
+         "nodeType": "Test Case",
+         "result": "Failed"
+        },
+        {
+         "duration": "0.00042s",
+         "durationInSeconds": 0.00041997432708740234,
+         "name": "testNamedFallsBackToAnnual()",
+         "nodeIdentifier": "PlanTests/testNamedFallsBackToAnnual()",
+         "nodeIdentifierURL": "test://com.apple.xcode/Firefox/FirefoxTests/PlanTests/testNamedFallsBackToAnnual",
+         "nodeType": "Test Case",
+         "result": "Passed"
+        },
+        {
+         "duration": "0.00043s",
+         "durationInSeconds": 0.00042998790740966797,
+         "name": "testPaywallOffersThreePlans()",
+         "nodeIdentifier": "PlanTests/testPaywallOffersThreePlans()",
+         "nodeIdentifierURL": "test://com.apple.xcode/Firefox/FirefoxTests/PlanTests/testPaywallOffersThreePlans",
+         "nodeType": "Test Case",
+         "result": "Passed"
+        }
+       ],
+       "name": "PlanTests",
+       "nodeIdentifierURL": "test://com.apple.xcode/Firefox/FirefoxTests/PlanTests",
+       "nodeType": "Test Suite",
+       "result": "Failed"
+      },
+      {
+       "children": [
+        {
+         "children": [
+          {
+           "duration": "0.000064s",
+           "durationInSeconds": 6.389617919921875e-05,
+           "name": "Plan(id: \"plan_monthly\", name: \"Monthly\", price: \"$7.99\", period: Firefox.Plan.Period.month, detail: \"Billed every month\", badge: nil), \"$7.99 / month\"",
+           "nodeType": "Arguments",
+           "result": "Passed"
+          },
+          {
+           "duration": "0.0032s",
+           "durationInSeconds": 0.003206014633178711,
+           "name": "Plan(id: \"plan_weekly\", name: \"Weekly\", price: \"$2.99\", period: Firefox.Plan.Period.week, detail: \"Billed every week\", badge: nil), \"$2.99 / week\"",
+           "nodeType": "Arguments",
+           "result": "Passed"
+          }
+         ],
+         "duration": "0.0016s",
+         "durationInSeconds": 0.0016349554061889648,
+         "name": "Each plan reads price and period",
+         "nodeIdentifier": "PriceLineTests/priceLine(plan:line:)",
+         "nodeIdentifierURL": "test://com.apple.xcode/Firefox/FirefoxTests/PriceLineTests/priceLine(plan:line:)",
+         "nodeType": "Test Case",
+         "result": "Passed"
+        }
+       ],
+       "name": "Price lines",
+       "nodeIdentifierURL": "test://com.apple.xcode/Firefox/FirefoxTests/PriceLineTests",
+       "nodeType": "Test Suite",
+       "result": "Passed"
+      }
+     ],
+     "name": "FirefoxTests",
+     "nodeIdentifierURL": "test://com.apple.xcode/Firefox/FirefoxTests",
+     "nodeType": "Unit test bundle",
+     "result": "Failed"
+    }
+   ],
+   "name": "Firefox",
+   "nodeType": "Test Plan",
+   "result": "Failed"
+  }
+ ],
+ "testPlanConfigurations": [
+  {
+   "configurationId": "1",
+   "configurationName": "Test Scheme Action"
+  }
+ ]
+}

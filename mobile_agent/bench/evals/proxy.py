@@ -62,7 +62,8 @@ def validity(entries, outcome="pass_delta", minimum=4):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(prog="python -m mobile_agent.bench.evals.proxy", description=__doc__.split("\n\n")[0])
+    parser = argparse.ArgumentParser(prog="python -m mobile_agent.bench.evals.proxy",
+                                     description=__doc__.split("\n\n")[0])
     parser.add_argument("file")
     parser.add_argument("--outcome", default="pass_delta")
     parser.add_argument("--min", type=int, default=4)
@@ -75,7 +76,8 @@ def main(argv=None):
     for e in entries:
         l3 = e.get("l3") or {}
         print(f"- {e['hypothesis']}: " + (f"L3 {l3.get('batch')} {args.outcome} {l3.get(args.outcome):+.3f}" if
-                                         l3.get(args.outcome) is not None else "no L3 (" + e.get("status", "stopped") + ")"))
+                                          l3.get(args.outcome) is not None
+                                          else "no L3 (" + e.get("status", "stopped") + ")"))
     for row in report["proxies"]:
         if "spearman" in row:
             print(f"  {row['proxy']}: n {row['n']}, Spearman {row['spearman']}, signs agree {row['sign_agreement']}")

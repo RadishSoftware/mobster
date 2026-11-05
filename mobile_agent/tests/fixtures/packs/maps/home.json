@@ -1,0 +1,279 @@
+{
+"note": "Recorded on the test device (iPhone 15 Pro, iOS 26.0.1), 11 and 12 Oct 2026: the rows the agent saw, scrubbed (a recent place renamed; the map's street names left out).",
+"rows": [
+{
+"role": "Button",
+"label": "clear, 52 degrees, Air Quality, 42, Good",
+"rect": [
+0.04,
+0.07,
+0.15,
+0.05
+]
+},
+{
+"role": "Button",
+"label": "Compass",
+"rect": [
+0.83,
+0.3,
+0.12,
+0.06
+],
+"value": "Heading: 308 degrees Northwest"
+},
+{
+"role": "Button",
+"label": "2D view",
+"rect": [
+0.83,
+0.36,
+0.12,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "Map Modes",
+"rect": [
+0.83,
+0.43,
+0.12,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "Tracking",
+"rect": [
+0.83,
+0.49,
+0.12,
+0.06
+],
+"value": "Off"
+},
+{
+"role": "Button",
+"label": "Look Around",
+"rect": [
+0.04,
+0.49,
+0.12,
+0.06
+]
+},
+{
+"role": "Other",
+"label": "ControlContainerViewController.OverlayView",
+"rect": [
+0.0,
+0.07,
+1.0,
+0.48
+]
+},
+{
+"role": "Button",
+"label": "Card controller",
+"rect": [
+0.38,
+0.55,
+0.24,
+0.03
+],
+"value": "Half screen"
+},
+{
+"role": "SearchField",
+"label": "Apple Maps",
+"rect": [
+0.05,
+0.57,
+0.76,
+0.05
+],
+"editable": true
+},
+{
+"role": "Button",
+"label": "Dictate",
+"rect": [
+0.72,
+0.59,
+0.06,
+0.02
+]
+},
+{
+"role": "Image",
+"label": "Search",
+"rect": [
+0.08,
+0.59,
+0.06,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "Dictate",
+"rect": [
+0.72,
+0.59,
+0.06,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "profile",
+"rect": [
+0.83,
+0.57,
+0.11,
+0.05
+]
+},
+{
+"role": "Button",
+"label": "Places",
+"rect": [
+0.06,
+0.65,
+0.2,
+0.03
+]
+},
+{
+"role": "Cell",
+"label": "PinnedItemSection",
+"rect": [
+0.01,
+0.69,
+0.98,
+0.14
+]
+},
+{
+"role": "Button",
+"label": "Home, Add",
+"rect": [
+0.05,
+0.69,
+0.21,
+0.14
+]
+},
+{
+"role": "Image",
+"label": "IconImage",
+"rect": [
+0.05,
+0.69,
+0.21,
+0.09
+]
+},
+{
+"role": "Button",
+"label": "Work, Add",
+"rect": [
+0.28,
+0.69,
+0.2,
+0.14
+]
+},
+{
+"role": "Image",
+"label": "IconImage",
+"rect": [
+0.28,
+0.69,
+0.2,
+0.09
+]
+},
+{
+"role": "Button",
+"label": "Add",
+"rect": [
+0.51,
+0.69,
+0.21,
+0.12
+]
+},
+{
+"role": "Other",
+"label": "GridPaginationButtons",
+"rect": [
+0.01,
+0.69,
+0.98,
+0.14
+]
+},
+{
+"role": "Button",
+"label": "Recents",
+"rect": [
+0.06,
+0.87,
+0.24,
+0.03
+]
+},
+{
+"role": "Button",
+"label": "Golden Gate Bridge, Golden Gate Bridge, San Francisco",
+"rect": [
+0.05,
+0.91,
+0.9,
+0.08
+]
+},
+{
+"role": "Button",
+"label": "IconImage",
+"rect": [
+0.09,
+0.93,
+0.08,
+0.04
+]
+},
+{
+"role": "Button",
+"label": "Golden Gate Bridge, Golden Gate Bridge, San Francisco",
+"rect": [
+0.2,
+0.92,
+0.6,
+0.05
+]
+},
+{
+"role": "Button",
+"label": "More",
+"rect": [
+0.83,
+0.93,
+0.07,
+0.03
+]
+},
+{
+"role": "Button",
+"label": "Statue of Liberty, Liberty Island, New York",
+"rect": [
+0.05,
+0.99,
+0.9,
+0.01
+]
+}
+]
+}

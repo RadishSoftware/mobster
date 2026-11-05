@@ -1,0 +1,41 @@
+{
+  "about": "The blank grammar's cases, read by mobile_agent/tests/test_workflow_starters.py and dashboard/src/lib/starters.test.ts, so the agent and the Mac app read steps the same way.",
+  "cases": [
+    {"text": "Scroll {topic} Reels for {10} minutes and tell me what you learned",
+     "blanks": [{"name": "topic", "default": null}, {"name": "minutes", "default": "10"}],
+     "values": {"topic": "basketball"},
+     "filled": "Scroll basketball Reels for 10 minutes and tell me what you learned"},
+    {"text": "Scroll {topic: basketball} Reels for {minutes: 10} minutes",
+     "blanks": [{"name": "topic", "default": "basketball"}, {"name": "minutes", "default": "10"}],
+     "values": {"Minutes": "3"},
+     "filled": "Scroll basketball Reels for 3 minutes"},
+    {"text": "Text {person} that I'm here, then ask {Person} about {time: 7:30}",
+     "blanks": [{"name": "person", "default": null}, {"name": "time", "default": "7:30"}],
+     "values": {"person": "  Sam   Lee "},
+     "filled": "Text Sam Lee that I'm here, then ask Sam Lee about 7:30"},
+    {"text": "Keep {{braces}} and }} and { lone, and {not a blank!}",
+     "blanks": [],
+     "values": {},
+     "filled": "Keep {braces} and } and { lone, and {not a blank!}"},
+    {"text": "Read {5}",
+     "blanks": [{"name": "number", "default": "5"}],
+     "values": {},
+     "filled": "Read 5"},
+    {"text": "Find a café near {ville: Montréal}\nThen list {count: 3} of them",
+     "blanks": [{"name": "ville", "default": "Montréal"}, {"name": "count", "default": "3"}],
+     "values": {},
+     "filled": "Find a café near Montréal\nThen list 3 of them"},
+    {"text": "Check {app name: Instagram} for new {thing}",
+     "blanks": [{"name": "app name", "default": "Instagram"}, {"name": "thing", "default": null}],
+     "values": {"thing": "DMs"},
+     "filled": "Check Instagram for new DMs"},
+    {"text": "Sign in as {user: Sam} with ${TEST_PASSWORD}",
+     "blanks": [{"name": "user", "default": "Sam"}],
+     "values": {},
+     "filled": "Sign in as Sam with ${TEST_PASSWORD}"}
+  ],
+  "missing": [
+    {"text": "Scroll {topic} Reels for {10} minutes", "values": {}, "names": ["topic"]},
+    {"text": "Text {person} about {plan}", "values": {"plan": "dinner"}, "names": ["person"]}
+  ]
+}

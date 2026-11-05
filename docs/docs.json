@@ -1,0 +1,473 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "maple",
+  "name": "Mobster",
+  "description": "Test and automate apps on real iPhones. Run tasks in your apps, signed in as you, over USB from your Mac.",
+  "colors": {
+    "primary": "#5B41E8",
+    "light": "#A493FF",
+    "dark": "#6E56F6"
+  },
+  "background": {
+    "color": {
+      "light": "#F8F8F8",
+      "dark": "#121212"
+    }
+  },
+  "logo": {
+    "light": "/brand/logo/lockup-light.svg",
+    "dark": "/brand/logo/lockup-dark.svg"
+  },
+  "favicon": "/brand/favicon/favicon.svg",
+  "fonts": {
+    "family": "Mobster Sans",
+    "source": "/fonts/google-sans-flex.woff2",
+    "format": "woff2"
+  },
+  "icons": {
+    "library": "lucide"
+  },
+  "appearance": {
+    "default": "system"
+  },
+  "styling": {
+    "codeblocks": {
+      "theme": "css-variables"
+    }
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "Support",
+        "href": "mailto:support@radish.software"
+      },
+      {
+        "label": "GitHub",
+        "href": "https://github.com/RadishSoftware/mobster"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Get Mobster",
+      "href": "https://mobster.dev"
+    }
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Get started",
+        "icon": "rocket",
+        "groups": [
+          {
+            "group": "Start",
+            "pages": [
+              "index",
+              "quickstart/mac",
+              "quickstart/test",
+              "quickstart/cli"
+            ]
+          },
+          {
+            "group": "Concepts",
+            "pages": [
+              "how-it-works",
+              "safety",
+              "models-and-keys",
+              "privacy",
+              "security",
+              "requirements"
+            ]
+          },
+          {
+            "group": "Plans and help",
+            "pages": [
+              "account",
+              "pricing",
+              "team",
+              "console",
+              "enterprise",
+              "faq",
+              "troubleshooting",
+              {
+                "group": "Error messages",
+                "pages": [
+                  "troubleshooting/unable-to-find-a-destination",
+                  "troubleshooting/developer-mode-disabled",
+                  "troubleshooting/timed-out-while-enabling-automation-mode",
+                  "troubleshooting/pairing-dialog-response-pending",
+                  "troubleshooting/invalid-hostid",
+                  "troubleshooting/invalid-code-signature",
+                  "troubleshooting/device-was-not-unlocked",
+                  "troubleshooting/maximum-number-of-apps-for-free-development",
+                  "troubleshooting/maximum-app-id-limit",
+                  "troubleshooting/failed-registering-bundle-identifier",
+                  "troubleshooting/signing-requires-a-development-team",
+                  "troubleshooting/no-account-for-team",
+                  "troubleshooting/no-space-left-on-device",
+                  "troubleshooting/could-not-resolve-host",
+                  "troubleshooting/webdriveragent-is-not-answering",
+                  "troubleshooting/the-encrypted-link-isnt-up-yet"
+                ]
+              },
+              "feedback",
+              "uninstall"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Test your app",
+        "icon": "list-checks",
+        "groups": [
+          {
+            "group": "Run checks",
+            "pages": [
+              "projects",
+              "testing",
+              "checks",
+              "accessibility",
+              "test/steps",
+              "fixtures",
+              "deep-links",
+              "simulators",
+              "android",
+              "maestro-import"
+            ]
+          },
+          {
+            "group": "Run them on every change",
+            "pages": [
+              "ci",
+              "ci/github-app",
+              "ci/github-hosted",
+              "ci/xcode-cloud",
+              "ci/codemagic",
+              "ci/bitrise",
+              "ci/circleci",
+              "ci/gitlab",
+              "ci/mac-runner"
+            ]
+          },
+          {
+            "group": "Your stack",
+            "pages": [
+              "dev/expo",
+              "dev/xcode",
+              "dev/recipes",
+              "dev/app-review"
+            ]
+          },
+          {
+            "group": "App Store",
+            "pages": [
+              "dev/app-store-connect",
+              "dev/crashes",
+              "dev/screenshots"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Run tasks on your phone",
+        "icon": "smartphone",
+        "groups": [
+          {
+            "group": "Run a task",
+            "pages": [
+              "mac/tour",
+              "conversations",
+              "results",
+              "waiting",
+              "memory",
+              "files",
+              "xray",
+              "mac/shortcuts"
+            ]
+          },
+          {
+            "group": "Repeat it",
+            "pages": [
+              "workflows",
+              "schedules",
+              "triggers",
+              "launchers",
+              "content-queue"
+            ]
+          },
+          {
+            "group": "Profiles and apps",
+            "pages": [
+              "profiles",
+              "app-packs"
+            ]
+          },
+          {
+            "group": "Your iPhone",
+            "pages": [
+              "device-setup",
+              "devices",
+              "phones",
+              "capabilities",
+              "watch",
+              "wifi",
+              "soak-test"
+            ]
+          },
+          {
+            "group": "Settings",
+            "pages": [
+              "mac/settings"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Connect agents and tools",
+        "icon": "plug",
+        "groups": [
+          {
+            "group": "Your coding agent",
+            "pages": [
+              "agents",
+              "agents/claude-code",
+              "agents/cursor",
+              "agents/plugin-and-skill",
+              "agents/editors",
+              "agents/windsurf",
+              "agents/codex",
+              "agents/opencode",
+              "agents/gemini-cli",
+              "agents/copilot-cli",
+              "mcp-server",
+              "agents/instructions",
+              "agents/editor-extension",
+              "agents/setup"
+            ]
+          },
+          {
+            "group": "Apps and tools",
+            "pages": [
+              "app-api",
+              "connectors",
+              "plugins",
+              "webhooks",
+              "zapier"
+            ]
+          },
+          {
+            "group": "From anywhere",
+            "pages": [
+              "remote",
+              "remote/assistants"
+            ]
+          },
+          {
+            "group": "In the terminal",
+            "pages": [
+              "tui",
+              "scripting"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Reference",
+        "icon": "book-open",
+        "groups": [
+          {
+            "group": "CLI",
+            "pages": [
+              "reference/cli"
+            ]
+          },
+          {
+            "group": "MCP",
+            "pages": [
+              "reference/mcp-tools",
+              "reference/app-api",
+              "reference/parity"
+            ]
+          },
+          {
+            "group": "Settings and errors",
+            "pages": [
+              "configuration",
+              "reference/errors"
+            ]
+          },
+          {
+            "group": "Inside Mobster",
+            "pages": [
+              "architecture",
+              "benchmarks"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Changelog",
+        "icon": "history",
+        "pages": [
+          "changelog"
+        ]
+      }
+    ]
+  },
+  "redirects": [
+    {
+      "source": "/cli",
+      "destination": "/reference/cli"
+    },
+    {
+      "source": "/troubleshooting/install",
+      "destination": "/troubleshooting#install"
+    },
+    {
+      "source": "/troubleshooting/iphone",
+      "destination": "/troubleshooting#iphone"
+    },
+    {
+      "source": "/troubleshooting/tasks",
+      "destination": "/troubleshooting#tasks"
+    },
+    {
+      "source": "/troubleshooting/mac",
+      "destination": "/troubleshooting#mac"
+    },
+    {
+      "source": "/troubleshooting/checks",
+      "destination": "/troubleshooting#checks"
+    },
+    {
+      "source": "/voice",
+      "destination": "/mac/shortcuts#voice"
+    },
+    {
+      "source": "/transfers",
+      "destination": "/files#photos-and-videos"
+    },
+    {
+      "source": "/accounts",
+      "destination": "/profiles"
+    },
+    {
+      "source": "/mac-app",
+      "destination": "/quickstart/mac"
+    },
+    {
+      "source": "/getting-started",
+      "destination": "/quickstart/cli"
+    },
+    {
+      "source": "/verify",
+      "destination": "/quickstart/test"
+    },
+    {
+      "source": "/threads",
+      "destination": "/conversations"
+    }
+  ],
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "claude",
+      "chatgpt",
+      {
+        "title": "Add Mobster to Cursor",
+        "description": "Add Mobster for Mac's MCP server to Cursor",
+        "icon": "plug",
+        "href": "cursor://anysphere.cursor-deeplink/mcp/install?name=mobster&config=eyJjb21tYW5kIjoiL0FwcGxpY2F0aW9ucy9Nb2JzdGVyLmFwcC9Db250ZW50cy9NYWNPUy9tb2JzdGVyLWFnZW50IiwiYXJncyI6WyJtY3AiXX0="
+      }
+    ]
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/RadishSoftware/mobster",
+      "website": "https://mobster.dev"
+    },
+    "links": [
+      {
+        "header": "Product",
+        "items": [
+          {
+            "label": "Mobster for Mac",
+            "href": "https://mobster.dev"
+          },
+          {
+            "label": "The mobster command",
+            "href": "/quickstart/cli"
+          },
+          {
+            "label": "Pricing",
+            "href": "/pricing"
+          },
+          {
+            "label": "Changelog",
+            "href": "/changelog"
+          }
+        ]
+      },
+      {
+        "header": "Resources",
+        "items": [
+          {
+            "label": "Connectors",
+            "href": "https://mobster.dev/connectors"
+          },
+          {
+            "label": "Compare",
+            "href": "https://mobster.dev/compare"
+          },
+          {
+            "label": "Blog",
+            "href": "https://mobster.dev/blog"
+          },
+          {
+            "label": "GitHub",
+            "href": "https://github.com/RadishSoftware/mobster"
+          },
+          {
+            "label": "Troubleshooting",
+            "href": "/troubleshooting"
+          },
+          {
+            "label": "Support",
+            "href": "mailto:support@radish.software"
+          }
+        ]
+      },
+      {
+        "header": "Legal",
+        "items": [
+          {
+            "label": "Privacy",
+            "href": "https://mobster.dev/privacy"
+          },
+          {
+            "label": "Terms",
+            "href": "https://mobster.dev/terms"
+          }
+        ]
+      }
+    ]
+  },
+  "errors": {
+    "404": {
+      "redirect": false,
+      "title": "This page moved or never existed",
+      "description": "Start from the [quickstarts](/quickstart/mac), [Add Mobster to your agent](/agents), [Troubleshooting](/troubleshooting) or the [CLI reference](/reference/cli), or search with ⌘K."
+    }
+  },
+  "seo": {
+    "metatags": {
+      "canonical": "https://docs.mobster.dev",
+      "og:image": "https://docs.mobster.dev/brand/social/og/docs-1200x630.jpg",
+      "og:image:width": "1200",
+      "og:image:height": "630",
+      "og:image:alt": "Mobster docs, under the Swipe's three bands cut from a violet glaze",
+      "twitter:card": "summary_large_image",
+      "twitter:image": "https://docs.mobster.dev/brand/social/og/docs-1200x630.jpg"
+    }
+  }
+}

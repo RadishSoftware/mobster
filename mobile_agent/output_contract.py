@@ -59,10 +59,12 @@ def validate_schema(schema):
             raise ValueError("Only JSON Schema Draft 2020-12 is supported")
         if "object" in kinds:
             properties = node.get("properties", {})
-            if not isinstance(properties, dict) or len(properties) > 40 or node.get("additionalProperties") is not False:
+            if (not isinstance(properties, dict) or len(properties) > 40
+                    or node.get("additionalProperties") is not False):
                 raise ValueError("Objects require bounded properties and additionalProperties:false")
             required = node.get("required", [])
-            if not isinstance(required, list) or any(not isinstance(key, str) or key not in properties for key in required):
+            if (not isinstance(required, list)
+                    or any(not isinstance(key, str) or key not in properties for key in required)):
                 raise ValueError("Required properties must have a defined schema")
             for child in properties.values():
                 inspect(child, depth + 1)

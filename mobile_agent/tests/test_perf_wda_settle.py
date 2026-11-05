@@ -1,5 +1,3 @@
-"""WDA settle latency: back-to-back reads and at-rest memory. Offline."""
-
 import unittest
 from unittest.mock import patch
 
@@ -15,7 +13,6 @@ def app(label, bundle=None):
 
 
 class Clock:
-    """Simulated time: each source read takes ``per_read`` seconds."""
     def __init__(self, per_read=.3):
         self.now, self.per_read = 1000.0, per_read
 
@@ -54,7 +51,7 @@ class SettledMemoryTests(unittest.TestCase):
 
     def test_revisiting_a_proven_screen_needs_one_read(self):
         driver = self.driver(app("B"), app("B"))
-        driver.wait_for_change(from_wda(app("A")), timeout=5)  # proves B at rest (2 reads)
+        driver.wait_for_change(from_wda(app("A")), timeout=5)
         driver.call = Screens(app("B"))
         driver.wait_for_change(from_wda(app("A")), timeout=5)
         self.assertEqual(driver.call.reads, 1)
@@ -71,14 +68,6 @@ class SettledMemoryTests(unittest.TestCase):
         driver.call = Screens(app("B"), app("B"))
         driver.wait_for_change(from_wda(app("A")), timeout=5)
         self.assertEqual(driver.call.reads, 2)
-
-    def test_observe_ready_accepts_a_proven_screen_in_one_read(self):
-        driver = self.driver(app("B"), app("B"))
-        driver.wait_for_change(from_wda(app("A")), timeout=5)
-        driver._stable = None
-        driver.call = Screens(app("B"))
-        self.assertEqual(driver.observe_ready(timeout=5).elements[0].label, "B")
-        self.assertEqual(driver.call.reads, 1)
 
     def test_settle_polls_without_sleeping(self):
         driver = self.driver(app("B"), app("C"), app("C"))

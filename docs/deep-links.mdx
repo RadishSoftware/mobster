@@ -1,0 +1,120 @@
+---
+title: "Deep links"
+sidebarTitle: "Deep links"
+keywords: ["deep link", "universal link", "url scheme", "associated domains", "links.yaml", "mobster links", "open link", "expo scheme"]
+description: "List your app's deep links and check that each one still lands on its screen, and open them by name in a check's steps."
+icon: "link"
+---
+
+A project's deep links are the addresses that open your app on a screen: `myapp://cart`, `https://example.com/invite`. `mobster links` lists the ones your project has and opens each on a simulator to see where it lands. A check's steps can then say `open cart` instead of the address.
+
+## Where the list comes from
+
+Mobster merges four sources and lists an exact address once. Names ignore case; URL paths and query strings keep their case. An ambiguous name refuses the run:
+
+| Source | What it gives |
+|---|---|
+| `.mobster/links.yaml` | The links you name, each with the title its screen should show |
+| The Expo config | `scheme`, and `ios.associatedDomains` (`app.json`, or `npx expo config` for an `app.config.*`) |
+| The Xcode project | Each URL scheme in an `Info.plist` (`CFBundleURLTypes`) and each `applinks:` domain in an `.entitlements` file |
+| Learned links | A link a check opened successfully, kept in `.mobster/links-learned.json` |
+
+```sh
+mobster links list
+```
+
+```text
+cart      myapp://cart            links.yaml  "Your cart"
+myapp     myapp://                xcode
+example   https://example.com/    xcode
+orders 42 myapp://orders/42       learned
+```
+
+A scheme or a domain alone (`myapp://`) opens the app and no screen in it, so there is no title to compare. `--json` prints the same list, with `screen: false` for those.
+
+Write your own in `.mobster/links.yaml`:
+
+```yaml
+links:
+  - name: cart
+    url: myapp://cart
+    title: Your cart
+  - name: profile
+    url: myapp://me
+    title: Profile
+```
+
+`name: address` also works for a link with no title. Mobster never opens `javascript:`, `data:`, `file:` and `itms-services:` links, and `check` never opens a link that acts as it opens (a call, a shortcut).
+
+Mobster learns only custom schemes. It doesn't keep web pages, and it keeps the newest 50. Learned links are plain facts about the project; when the memory store lands they move there.
+
+## Check that each link lands
+
+```sh
+mobster links check                         # every link, on each check's simulator
+mobster links check cart --sim "iPhone 17 Pro"
+```
+
+```text
+Link: cart: landed on "Your cart"
+✓ passed  Link: cart on iPhone 17 Pro
+✗ failed  Link: profile on iPhone 17 Pro
+    Profile wasn't on screen
+Link: profile: landed on "Sign in"
+```
+
+After these lines the command prints the counts with the run's duration, and where the report is.
+
+Each link becomes a check that launches your app with the address and expects its title. It passes when the screen shows the title, and fails with a screenshot of the screen it landed on when it doesn't. The run is `mobster test`'s: the reports, JUnit and the failure's frame are in `.mobster/test-results/`, and `results.json` has the landing screen's title in `screen.title`. The exit code is 0 when every link landed, 1 when one didn't and 3 when Mobster couldn't run.
+
+- A link with no title opens in your app, and the run reports "needs review" with the landing screen's title. Add that title to `links.yaml` to make it a pass or fail.
+- Mobster reads the app's bundle ID from the Expo config or the Xcode project. Pass `--bundle com.example.app`, or `--app PATH` to install a built `.app`.
+- `--device` runs it on an iPhone, as it does for `mobster test`.
+
+## Open a link by name in a step
+
+```yaml
+steps:
+  - open cart
+  - tap Checkout
+```
+
+A step that says `open <name>`, `open link <name>` or `open the deep link <name>` for a link in the list becomes `Open the link myapp://cart` when the run starts. A name that isn't in the list is left as written, so `open Settings` still opens the Settings app. Mobster reads `links.yaml`, the Xcode project, `app.json` and the learned links for this; it doesn't run Node.
+
+## The API
+
+| Route | Auth | Answer |
+|---|---|---|
+| `GET /api/tests/links?project=/abs/path` | token | `{links: [{name, url, source, title, screen, last}]}` |
+| `POST /api/tests/links` `{project, name, url, title?}` | app | `201 {link}`, saved in `.mobster/links.yaml` |
+| `DELETE /api/tests/links?project=…&name=…` | app | `{removed}` |
+
+The GET route reads static project files only. It does not evaluate `app.config.js` or `app.config.ts`; `mobster links list` can evaluate those through the Expo CLI.
+
+Updates use `.mobster/.links.lock` to keep concurrent writers from dropping links. Keep that empty lock file out of version control.
+
+Saving rewrites `links.yaml` as the `links:` list, so a comment in the file is lost. No route opens a link on a simulator; `mobster links check` does, and so does **Check links** on a project's page with `MOBSTER_EXPERIMENTAL_TESTS_PAGE=1`, as the project's run (`POST /api/projects/{id}/runs` with `{links: true}`).
+
+`last` is the link's newest check, `{status, device, at}`, from the project's [history](/testing#see-which-checks-are-flaky), or `null` when it was never checked.
+
+## Deterministic path first (experimental)
+
+With `MOBSTER_EXPERIMENTAL_INTENTS=1`, Mobster reads what the apps on a simulator declare and opens a link before it taps. Nothing changes without the flag.
+
+```sh
+MOBSTER_EXPERIMENTAL_INTENTS=1 mobster intents harvest
+```
+
+```text
+Things: things://  things.example.com  discovered
+1 apps declare links.
+```
+
+- **The atlas.** `mobster intents harvest` reads each app's `CFBundleURLTypes` (schemes) and `applinks:` domains through `simctl`, fetches each domain's `apple-app-site-association` over https, and keeps the result under `link-atlas/` in Mobster's data folder. `--no-network` skips the fetch, `--force` reads again inside a day. A domain that doesn't answer is logged, and the command goes on. A check on a simulator refreshes the atlas when the simulator is ready, in the background.
+- **Discovered is not verified.** The atlas sits under the list above. `verified` stays for links opened on a real iPhone, with a date.
+- **Link first.** When a check's request names exactly one installed app, its first turn opens that app's link instead of asking the model for the first action. The link goes through the same rule as any other: another app's link asks once per app, `tel:`, `sms:`, `mailto:` and running or importing a shortcut ask every time, and `javascript:`, `data:`, `file:` and `itms-services:` links are never opened. A request that names no app, or two, or an app that isn't installed, goes to the model as usual. Links marked best effort aren't taken first.
+- **In the reports.** `results.json`, the JUnit properties `linkFirstSteps` and `modelCallsSaved`, the HTML report and `mobster test`'s summary count the link-first steps and the model calls they saved.
+- **x-callback-url.** `x-success`, `x-error` and `x-cancel` can point at `mobster-callback://<token>/<status>`, so an app hands control back with no screen read. The runner doesn't own that scheme yet, so a callback isn't received (26 Oct 2026).
+- **Shortcuts.** `shortcuts://x-callback-url/run-shortcut?name=…` runs a shortcut you made and asks first. Mobster doesn't write a `.shortcut` file: iOS imports one only from a file you approve in Shortcuts, and the runner can't approve it (26 Oct 2026).
+
+Real-iPhone proofs are pending, and a real iPhone has no atlas yet: `harvest` reads simulators.

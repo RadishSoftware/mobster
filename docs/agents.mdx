@@ -1,0 +1,183 @@
+---
+title: "Add Mobster to your agent"
+sidebarTitle: "Add to your agent"
+description: "Add Mobster's MCP server to every detected MCP client on your Mac with one command. Connect with Claude Code or Codex."
+icon: "plug"
+keywords: ["mcp", "claude code", "codex", "cursor", "vs code", "add to claude code", "mcp server", "coding agent"]
+"og:image": "https://mobster.dev/og/docs/agents-mcp.jpg"
+"og:image:alt": "Add Mobster to your agent, beside a jade glaze well"
+"twitter:image": "https://mobster.dev/og/docs/agents-mcp.jpg"
+---
+
+With `mobster mcp`, your agent reads the screen on a simulator or your iPhone, taps and types, and checks its UI changes against the assertions it declares. Claude on the web and ChatGPT connect through [Mobster Remote](/remote) instead.
+
+## Add it
+
+```sh
+mobster mcp install --all
+```
+
+It adds the server to every client it finds on this Mac. On a Mac with Cursor, VS Code, Claude Desktop and Xcode, it printed this (18 Oct 2026, Mobster 0.4.0):
+
+```text
+Mobster's MCP server: .../.local/bin/mobster mcp
+  Cursor          added      ~/.cursor/mcp.json
+  VS Code         added      ~/Library/Application Support/Code/User/mcp.json
+  Claude Desktop  added      ~/Library/Application Support/Claude/claude_desktop_config.json
+  ...
+Restart Claude Desktop, Cursor, VS Code and Xcode to load the change.
+New sessions of the other clients pick it up. Check it with `mobster mcp doctor`.
+```
+
+It writes the absolute path of `mobster`, because apps opened from the Dock don't see your shell's `PATH`. Claude Code and Codex are added with their own `mcp add` commands. Other files keep their comments and get a `.mobster-backup` copy. It never writes a key. Running it again changes nothing. `--dry-run` prints the change without writing it. `--remove` removes Mobster from the client's config. [`mobster mcp install`](/reference/cli#mobster-mcp-install) lists every flag.
+
+If your shell says `command not found`, [put `mobster` on your `PATH`](/quickstart/cli), or add it from Mobster for Mac, below.
+
+Each agent has its own page, with what Mobster writes and how to check it:
+
+<CardGroup cols={4}>
+  <Card title="Claude Code" icon="/images/marks/claude.svg" href="/agents/claude-code" />
+  <Card title="Cursor" icon="/images/marks-ink/cursor.svg" href="/agents/cursor" />
+  <Card title="Codex CLI" icon="/images/marks-ink/codex.svg" href="/agents/codex" />
+  <Card title="Windsurf" icon="/images/marks-ink/windsurf.svg" href="/agents/windsurf" />
+  <Card title="Gemini CLI" icon="/images/marks-ink/gemini-cli.svg" href="/agents/gemini-cli" />
+  <Card title="Copilot CLI" icon="/images/marks-ink/copilot.svg" href="/agents/copilot-cli" />
+  <Card title="opencode" icon="/images/marks/opencode.svg" href="/agents/opencode" />
+  <Card title="Editor extension" icon="/images/marks/vscode.svg" href="/agents/editor-extension" />
+  <Card title="Editors and Xcode" icon="square-terminal" href="/agents/editors" />
+</CardGroup>
+
+Your coding agent can run these steps for you. Paste this prompt into it, in your app's project folder:
+
+<Prompt description="**Set up Mobster for me.**" actions={["copy", "cursor"]}>
+Set up Mobster for me. Fetch https://docs.mobster.dev/agents/setup.md and follow it step by step. Ask me before you touch an iPhone, and stop if a step fails.
+</Prompt>
+
+## Add it from Mobster for Mac
+
+<Steps>
+  <Step title="Open Mobster for Mac">
+    [Get Mobster for Mac](https://mobster.dev/download), drag it to Applications and open it.
+  </Step>
+  <Step title="Press Add">
+    Open Settings › Connectors. Under **Use Mobster from…**, press **Add** beside Claude Code or Codex.
+  </Step>
+  <Step title="Start a new session">
+    Claude Code and Codex load the server in their next session.
+  </Step>
+</Steps>
+
+**Add** writes one entry into the client's MCP settings, with the agent inside Mobster for Mac as the command, so there's nothing else to install. [What Add writes](/mcp-server#add-it-from-the-mac-app)
+
+## Check that it works
+
+Ask your agent:
+
+```text
+Call Mobster's status tool.
+```
+
+It answers with Mobster's version, whether Smart (Mobster's own agent) is on, where runs go and the simulator setup. This is what `status` returned on 18 Oct 2026 (Mobster 0.4.0 from source, Xcode 26.4, no key, the server started in a project folder named `YourApp`):
+
+```text
+Mobster 0.4.0. Smart: off (no OpenAI or Anthropic key; set OPENAI_API_KEY or ANTHROPIC_API_KEY, or pass --env-file).
+Runs: .../YourApp/.mobster/runs
+Open run: none
+Xcode: 26.4 (17E192)
+Default simulator: iPhone 17 Pro, iOS 26.4
+WebDriverAgent build: not built yet (the first run builds it, about a minute)
+```
+
+If your agent lists no `mobster` tools, run `mobster mcp doctor` in a terminal. It starts the server the way your client does, calls `status`, and names the step that fails.
+
+
+## Add it by hand
+
+For Claude Code or Codex, run its own command:
+
+```sh
+# Claude Code, for every project
+claude mcp add --scope user mobster -- /Applications/Mobster.app/Contents/MacOS/mobster-agent mcp
+# Codex
+codex mcp add mobster -- /Applications/Mobster.app/Contents/MacOS/mobster-agent mcp
+```
+
+Most other clients take this entry in a JSON file:
+
+```json ~/.cursor/mcp.json
+{
+  "mcpServers": {
+    "mobster": {
+      "command": "/Applications/Mobster.app/Contents/MacOS/mobster-agent",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+| Client | File, and the key the entry goes under |
+|---|---|
+| Cursor | `~/.cursor/mcp.json`, `mcpServers` |
+| Claude Desktop | `~/Library/Application Support/Claude/claude_desktop_config.json`, `mcpServers` |
+| VS Code | `.vscode/mcp.json`, `servers`, with `"type": "stdio"` |
+| Gemini CLI | `~/.gemini/settings.json`, `mcpServers` |
+| Windsurf | `~/.config/devin/mcp_config.json`, `mcpServers` |
+| Copilot CLI | `~/.copilot/mcp-config.json`, `mcpServers`, with `"type": "local"` and `"tools": ["*"]` |
+| Codex CLI | `~/.codex/config.toml`, `[mcp_servers.mobster]`, in TOML |
+| Cline | `~/.cline/data/settings/cline_mcp_settings.json`, `mcpServers`, with `autoApprove` left empty |
+| oh-my-pi | `~/.omp/agent/mcp.json`, `mcpServers` |
+| Amp | `~/.config/amp/settings.json`, `amp.mcpServers` (one key with a dot in it) |
+| Zed | `~/.config/zed/settings.json`, `context_servers` |
+| opencode | `~/.config/opencode/opencode.json`, `mcp`, with `"type": "local"` and the command and `mcp` in one `command` list |
+| Goose | `~/.config/goose/config.yaml`, `extensions`, in YAML with `cmd` and `args` |
+
+`mobster mcp install <client> --dry-run` prints the exact entry for any of them. If you keep Mobster in `~/Applications`, the command is `/Users/you/Applications/Mobster.app/Contents/MacOS/mobster-agent`. See [Which clients are tested](/mcp-server#which-clients-are-tested) for the clients used in a real session.
+
+## Turn on Mobster's agent
+
+Without a key, your agent drives with its own model and Mobster calls no model. With your Claude or OpenAI key, `verify_start` also takes `smart`, and Mobster's agent runs a check's steps itself. When you add Mobster from the Mac app and the app holds your key, the server already uses it.
+
+From the terminal, keep the key in a file only you can read, and add the server with it:
+
+```sh
+mkdir -p ~/.config/mobster
+echo 'ANTHROPIC_API_KEY=…' > ~/.config/mobster/agent.env
+chmod 600 ~/.config/mobster/agent.env
+mobster mcp install --all --env-file ~/.config/mobster/agent.env
+```
+
+The clients' configs name the file, never the key. `status` then starts with `Mobster 0.4.0. Smart: on (claude-sonnet-5-5, on the user's Anthropic key).` Never put a key in a config file that lives in a repository.
+
+## Keep it to the devices you choose
+
+<Warning>
+  Your client approves a tool, not a device: allowing `tap` for simulator work allows it on your iPhone too.
+</Warning>
+
+Name the iPhones the server may drive with `--allow-device`. Any other real iPhone is refused, and simulators are always allowed:
+
+```sh
+mobster mcp install --all --allow-device "Test iPhone"
+```
+
+## Search these docs from your agent
+
+These docs have their own MCP server, separate from `mobster mcp`. It searches these pages and never touches a phone:
+
+```sh
+claude mcp add --transport http mobster-docs https://docs.mobster.dev/mcp
+```
+
+## Next
+
+<CardGroup cols={3}>
+  <Card title="MCP server" icon="bot" href="/mcp-server">
+    The key-less and Smart loops, devices and timeouts.
+  </Card>
+  <Card title="MCP tools" icon="wrench" href="/reference/mcp-tools">
+    Every tool, its arguments, and whether it acts on a device.
+  </Card>
+  <Card title="Instructions for your agent" icon="file-text" href="/agents/instructions">
+    A block to paste into `CLAUDE.md` or `AGENTS.md`.
+  </Card>
+</CardGroup>

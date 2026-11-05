@@ -1,0 +1,440 @@
+{
+"note": "Recorded on the test device (iPhone 15 Pro, iOS 26.0.1), 11 Oct 2026: the rows the agent saw, scrubbed (the account's name, the phone's name; serial and model numbers dropped). The same screen read by Vision OCR (iPhone Mirroring's reading).",
+"rows": [
+{
+"text": "10:08€",
+"confidence": 1,
+"rect": [
+0.0949,
+0.025,
+0.1764,
+0.0205
+]
+},
+{
+"text": ".1l-",
+"confidence": 0.5,
+"rect": [
+0.7085,
+0.025,
+0.1186,
+0.0219
+]
+},
+{
+"text": "814",
+"confidence": 1,
+"rect": [
+0.8508,
+0.0282,
+0.0712,
+0.0156
+]
+},
+{
+"text": "Battery",
+"confidence": 1,
+"rect": [
+0.1864,
+0.1377,
+0.1559,
+0.0219
+]
+},
+{
+"text": "Q",
+"confidence": 1,
+"rect": [
+0.0814,
+0.5853,
+0.0441,
+0.0219
+]
+},
+{
+"text": "Battery Percentage",
+"confidence": 1,
+"rect": [
+0.1864,
+0.2003,
+0.3966,
+0.0219
+]
+},
+{
+"text": "Battery",
+"confidence": 1,
+"rect": [
+0.1864,
+0.2238,
+0.122,
+0.0172
+]
+},
+{
+"text": "Battery Health",
+"confidence": 1,
+"rect": [
+0.1863,
+0.2704,
+0.2986,
+0.0242
+]
+},
+{
+"text": "Battery",
+"confidence": 1,
+"rect": [
+0.1814,
+0.2936,
+0.1287,
+0.0193
+]
+},
+{
+"text": "Battery Health",
+"confidence": 1,
+"rect": [
+0.1864,
+0.3427,
+0.3017,
+0.0219
+]
+},
+{
+"text": "Battery → Battery Health",
+"confidence": 1,
+"rect": [
+0.1831,
+0.3662,
+0.4068,
+0.0172
+]
+},
+{
+"text": "Optimized Battery Charging",
+"confidence": 1,
+"rect": [
+0.1864,
+0.4131,
+0.5695,
+0.0235
+]
+},
+{
+"text": "Battery → Charging",
+"confidence": 1,
+"rect": [
+0.1831,
+0.4382,
+0.3186,
+0.0172
+]
+},
+{
+"text": "Charging",
+"confidence": 1,
+"rect": [
+0.1862,
+0.4848,
+0.1903,
+0.0242
+]
+},
+{
+"text": "Battery",
+"confidence": 1,
+"rect": [
+0.1831,
+0.5102,
+0.122,
+0.0156
+]
+},
+{
+"text": "Damar Mada",
+"confidence": 1,
+"rect": [
+0.1864,
+0.5587,
+0.2508,
+0.0141
+]
+},
+{
+"text": "Battery",
+"confidence": 1,
+"rect": [
+0.1456,
+0.5834,
+0.1631,
+0.0272
+]
+},
+{
+"text": "Q",
+"confidence": 1,
+"rect": [
+0.0441,
+0.6839,
+0.0373,
+0.0188
+]
+},
+{
+"text": "W",
+"confidence": 1,
+"rect": [
+0.1322,
+0.6808,
+0.0542,
+0.0235
+]
+},
+{
+"text": "E",
+"confidence": 1,
+"rect": [
+0.2407,
+0.6823,
+0.0339,
+0.0203
+]
+},
+{
+"text": "R",
+"confidence": 1,
+"rect": [
+0.3356,
+0.6823,
+0.0407,
+0.0203
+]
+},
+{
+"text": "T",
+"confidence": 1,
+"rect": [
+0.4339,
+0.6823,
+0.0407,
+0.0203
+]
+},
+{
+"text": "Y",
+"confidence": 1,
+"rect": [
+0.5322,
+0.6839,
+0.0373,
+0.0188
+]
+},
+{
+"text": "U",
+"confidence": 1,
+"rect": [
+0.6271,
+0.6808,
+0.0441,
+0.0219
+]
+},
+{
+"text": "-",
+"confidence": 1,
+"rect": [
+0.7254,
+0.6808,
+0.0508,
+0.0266
+]
+},
+{
+"text": "P",
+"confidence": 1,
+"rect": [
+0.9254,
+0.6823,
+0.0373,
+0.0203
+]
+},
+{
+"text": "S",
+"confidence": 1,
+"rect": [
+0.1898,
+0.7449,
+0.0407,
+0.0219
+]
+},
+{
+"text": "D",
+"confidence": 1,
+"rect": [
+0.2881,
+0.7449,
+0.0373,
+0.0203
+]
+},
+{
+"text": "F",
+"confidence": 1,
+"rect": [
+0.3898,
+0.7449,
+0.0339,
+0.0203
+]
+},
+{
+"text": "G",
+"confidence": 1,
+"rect": [
+0.4814,
+0.7449,
+0.0407,
+0.0203
+]
+},
+{
+"text": "H",
+"confidence": 1,
+"rect": [
+0.5797,
+0.7449,
+0.0407,
+0.0219
+]
+},
+{
+"text": "J",
+"confidence": 1,
+"rect": [
+0.678,
+0.7449,
+0.0373,
+0.0203
+]
+},
+{
+"text": "L",
+"confidence": 1,
+"rect": [
+0.878,
+0.7449,
+0.0339,
+0.0219
+]
+},
+{
+"text": "Z",
+"confidence": 1,
+"rect": [
+0.1898,
+0.8075,
+0.0407,
+0.0235
+]
+},
+{
+"text": "X",
+"confidence": 1,
+"rect": [
+0.2847,
+0.8075,
+0.0441,
+0.0235
+]
+},
+{
+"text": "C",
+"confidence": 1,
+"rect": [
+0.3864,
+0.8091,
+0.0407,
+0.0203
+]
+},
+{
+"text": "V",
+"confidence": 1,
+"rect": [
+0.4814,
+0.8075,
+0.0441,
+0.0235
+]
+},
+{
+"text": "B",
+"confidence": 1,
+"rect": [
+0.5831,
+0.8075,
+0.0373,
+0.0219
+]
+},
+{
+"text": "N",
+"confidence": 1,
+"rect": [
+0.6746,
+0.8075,
+0.0407,
+0.0235
+]
+},
+{
+"text": "M",
+"confidence": 1,
+"rect": [
+0.7559,
+0.8075,
+0.0644,
+0.0235
+]
+},
+{
+"text": "123",
+"confidence": 1,
+"rect": [
+0.0339,
+0.8732,
+0.0847,
+0.0188
+]
+},
+{
+"text": "Q",
+"confidence": 1,
+"rect": [
+0.8441,
+0.8717,
+0.0441,
+0.0203
+]
+},
+{
+"text": "A",
+"confidence": 1,
+"rect": [
+0.7051,
+0.8905,
+0.0203,
+0.0125
+]
+}
+],
+"hash": "search-results",
+"window": {
+"w": 589,
+"h": 1278
+}
+}

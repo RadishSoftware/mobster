@@ -1,0 +1,10 @@
+{
+ "name": "Reorder coffee to the cart",
+ "appId": null,
+ "engine": "smart",
+ "goal": "Open the Amazon app, find my most recent order of coffee beans, and add the same item, same size and quantity, to the cart. Stop at the cart and tell me the price: do not check out or place the order.",
+ "outputFormat": "auto",
+ "cron": "0 9 * * SUN",
+ "timezone": "America/Los_Angeles",
+ "enabled": false
+}

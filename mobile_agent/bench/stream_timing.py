@@ -127,7 +127,8 @@ def assemble(events, clock=time.monotonic, started=None):
                                                     if v is not None})
         elif kind == "error":
             error = data.get("error") or {}
-            raise StreamError(f"HTTP 529; Anthropic stream error: {error.get('type')}: {str(error.get('message'))[:200]}")
+            raise StreamError(f"HTTP 529; Anthropic stream error: {error.get('type')}: "
+                              f"{str(error.get('message'))[:200]}")
         elif kind == "message_stop":
             break
     timing["total_ms"] = round((clock() - started) * 1000)
@@ -180,7 +181,8 @@ class TimedAnthropicChat(AnthropicChat):
                     if own:
                         self.connection = None
                     if isinstance(error, TimeoutError) or reopened:
-                        raise AnthropicError(f"HTTP {type(error).__name__}; Anthropic request outcome unknown") from None
+                        raise AnthropicError(f"HTTP {type(error).__name__}; "
+                                             "Anthropic request outcome unknown") from None
                     reopened = True
                     continue
                 if status in (429, 529) and tries < RATE_LIMIT_RETRIES and (status == 529 or wait is not None):

@@ -1,17 +1,4 @@
-"""The one secret filter (seam S2.1). Frozen: a change may only widen what it catches.
-
-Memory's facts and proposals, conversations' stored notes, harness's checkpoints and anything a listener keeps use
-it; nobody builds their own.
-
-- ``is_secret(text)``: True when the text holds, or talks about, something that must never be stored: a password,
-  passcode or PIN (the word, or "code is 4821"), a 6–8-digit one-time code, a Luhn-valid card number, a US Social
-  Security number's shape, an IBAN, an API key's shape (sk-, sk_/rk_ live and test, ghp_,
-  github_pat_, xox?-, AKIA/ASIA, AIza, a JWT, a Google ya29. or 1//0 token), a Bearer token, the value in
-  ``NAME_API_KEY=``, ``NAME_TOKEN=`` and ``NAME_SECRET=`` lines, an email
-  with a password beside it, or agent_hooks.MASK itself (something already masked).
-- ``redact(text)``: each of those values replaced by agent_hooks.MASK; the word "password" stays, its value goes.
-  Idempotent: ``redact(redact(t)) == redact(t)``.
-"""
+"""The one secret filter, frozen: a change may only widen what it catches."""
 
 import re
 
@@ -23,8 +10,7 @@ _WORDS = (r"(?:(?i:\b(?:password|passcode|passwd|pass\s?word|pin\s?code|pin\s?nu
           r"verification\s+code|security\s+code|cvv|cvc|pin(?=\s*(?:is\b|was\b|:|=))))|\bPIN\b)")
 # A quoted passphrase is one value, including escaped quotes and punctuation attached to its closing quote.
 _VALUE = r'''(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')[^\s,;]*|[^\s,;]+'''
-# "password: hunter2", "password for the gym is hunter2" (a value after is/was/:/=, up to four words later), or a
-# value straight after the word that looks like one (has a digit or a symbol): "my password hunter2!".
+# A value after is/was/:/= within four words, or right after the word with a digit or symbol ("password hunter2!").
 KEYWORD_VALUE = re.compile(_WORDS + r"(?:(?:\s+[\w'’]+){0,4}?\s*(?:\bis\b|\bwas\b|:|=)\s*(" + _VALUE + r")"
                            r"|\s+((?=[^\s,;]*(?:[\d_]|[^\w\s]))(?:" + _VALUE + r")))")
 KEYWORD = re.compile(_WORDS)
@@ -39,15 +25,18 @@ API_KEY = re.compile(r"\b(?:sk-(?:ant-)?[A-Za-z0-9_-]{16,}|[sr]k_(?:live|test)_[
                      r"gho_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|xox[abprs]-[A-Za-z0-9-]{10,}|"
                      r"(?:AKIA|ASIA)[A-Z0-9]{16}|AIza[A-Za-z0-9_-]{30,}|sb_secret_[A-Za-z0-9_-]{16,}|"
                      r"whsec_[A-Za-z0-9+/=_-]{16,}|re_[A-Za-z0-9_]{16,}|mob_(?:at|rt|rk|dk)_[A-Za-z0-9_-]{16,}|"
+                     r"mob_ci_[A-Za-z0-9_-]{30}_[A-Za-z0-9_-]{43}(?![A-Za-z0-9_-])|"
                      r"eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]*|ya29\.[A-Za-z0-9_-]{20,})|"
                      r"(?<![\w/])1//0[A-Za-z0-9_-]{20,}")
-# "Authorization: Bearer abc123...": the token goes, the word stays. A token has a digit or mixed case, so
-# "Bearer authentication" in a sentence stays.
-BEARER = re.compile(r"\b[Bb]earer\s+((?=[A-Za-z0-9._~+/=-]*(?:\d|[a-z][A-Za-z0-9._~+/=-]*[A-Z]))[A-Za-z0-9._~+/=-]{12,})")
+# "Authorization: Bearer abc123...": the token goes, the word stays.
+BEARER = re.compile(r"\b[Bb]earer\s+((?=[A-Za-z0-9._~+/=-]*(?:\d|[a-z][A-Za-z0-9._~+/=-]*[A-Z]))"
+                    r"[A-Za-z0-9._~+/=-]{12,})")
 # "OPENAI_API_KEY=value", "GH_TOKEN='value'", "APP_SECRET=value": the name stays, the value goes.
 ENV_VALUE = re.compile(r"\b(?:[A-Z][A-Z0-9]*_)*(?:API_KEY|TOKEN|SECRET)\s*=\s*[\"']?([^\s\"',;]+)")
 EMAIL_PASSWORD = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+(?:\s*[:/|]\s*|\s+(?:and|with|pw|pwd)\s+)("
                             + _VALUE + r")", re.I)
+IMAGE_DATA = re.compile(r"data:image/(?:png|jpeg|webp);base64,(?:[A-Za-z0-9+/]{4})*"
+                        r"(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?\Z")
 
 
 def _luhn(digits):
@@ -112,12 +101,11 @@ def redact(text):
 
 
 def redact_deep(value, depth=0):
-    """``value`` (JSON-shaped) with ``redact`` applied to every string in it, keys kept. Long unbroken blobs
-    (an inlined picture) pass through, and so does everything past 8 levels."""
-    if isinstance(value, str):
-        return value if len(value) > 4096 and " " not in value[:4096] else redact(value)
+    """Redact JSON-shaped data, masking omitted subtrees beyond eight levels."""
     if depth > 8:
-        return value
+        return MASK
+    if isinstance(value, str):
+        return value if len(value) > 4096 and IMAGE_DATA.fullmatch(value) else redact(value)
     if isinstance(value, dict):
         return {key: redact_deep(item, depth + 1) for key, item in value.items()}
     if isinstance(value, (list, tuple)):

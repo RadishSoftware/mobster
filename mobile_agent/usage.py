@@ -1,25 +1,13 @@
-"""Durable workspace usage independent of the bounded task history.
-
-Rows contain only call identity, provider, numeric usage and price snapshots.
-The caller writes them in the SAME transaction as the corresponding run event.
-Historical uninstrumented calls and external account usage are not invented.
-
-``billing`` says whose bill a call is on: "plan" (a subscription: Claude Code on a Claude plan, Codex on a ChatGPT
-plan, a plan from Settings › Models) or "api_key". A plan call costs 0 (``cost_nanodollars``) and carries what the same
-tokens would cost at list price in ``api_equivalent_nanodollars``, which is never counted as spend. ``input_tokens``
-counts every prompt token, cache reads and writes included; ``cache_read_tokens`` and ``cache_write_tokens`` say how
-many of them were.
-"""
+"""Durable workspace usage independent of the bounded task history."""
 
 import json
 import time
-
 from datetime import datetime
 
 from .costs import NANODOLLARS
 
 # Who priced a call: Jev, Gemini on Vertex, an OpenAI-compatible helper, OpenAI or Anthropic (the Smart engine), or
-# a plan or provider from Settings › Models (harness_api.model_routes; a plan call costs 0).
+# a plan or provider from Settings › Models (harness_api.EngineHooks.model_routes; a plan call costs 0).
 # The coding agents a task can run on (ai_plans.AGENT_ENGINES) record their runs under their own names.
 PROVIDERS = frozenset({"typesafe", "google", "helper", "openai", "anthropic", "claude_code", "codex", "gemini"})
 BILLINGS = frozenset({"plan", "api_key"})
@@ -30,8 +18,8 @@ MAX_COUNT = 9_007_199_254_740_991
 
 
 def known_provider(provider):
-    from .harness_api import model_routes
-    return provider in PROVIDERS or model_routes().get(provider) is not None
+    from .harness_api import hooks
+    return provider in PROVIDERS or hooks().model_routes().get(provider) is not None
 
 
 def initialize(connection):
@@ -59,6 +47,7 @@ def _count(value):
 
 
 def record_call(connection, run_id, event):
+    """Called in the same transaction as the run event it records."""
     kind = event.get("event")
     if kind == "agent_limits":
         record_limits(connection, event)
@@ -101,8 +90,8 @@ LIMIT_STATUSES = frozenset({"allowed", "allowed_warning", "rejected"})
 
 
 def record_limits(connection, event):
-    """Keep the newest limit signal an agent's run reported (ai_plans.cli.limit_signal's shape). Anything malformed
-    is dropped: a limit reading is a hint, never a reason to stop a run."""
+    """Keep the newest limit signal an agent's run reported (ai_plans.cli.limit_signal's shape). Anything malformed is
+    dropped: a limit reading is a hint, never a reason to stop a run."""
     provider, limits = event.get("agent"), event.get("limits")
     if provider not in PROVIDERS or not isinstance(limits, dict) or limits.get("status") not in LIMIT_STATUSES:
         return
@@ -187,8 +176,9 @@ def spend_since(connection, since_ms):
 
 
 def plan_since(connection, since_ms):
-    """Tokens on the person's plans since ``since_ms`` and what they'd cost at list price: {"tokens", "apiEquivalentUsd"}
-    (None where nothing was reported). Included in the plan, so never spend."""
+    """Tokens on the person's plans since ``since_ms`` and what they'd cost at list price: {"tokens",
+    "apiEquivalentUsd"}
+    (None where nothing was reported)."""
     tokens, equivalent = connection.execute("""SELECT sum(total_tokens),sum(api_equivalent_nanodollars)
         FROM usage_calls WHERE started_at>=? AND billing='plan'""", (since_ms,)).fetchone()
     return {"tokens": tokens, "apiEquivalentUsd": equivalent / NANODOLLARS if equivalent is not None else None}

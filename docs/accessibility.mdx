@@ -1,0 +1,87 @@
+---
+title: "Accessibility audit"
+sidebarTitle: "Accessibility"
+keywords: ["accessibility", "a11y", "voiceover", "tap target", "44 pt", "dynamic type", "labels", "baseline", "ci", "junit"]
+description: "Audit observed accessibility XML for missing labels, small tap targets and clipped text, and let CI fail only on new findings."
+icon: "eye"
+---
+
+`mobster test --a11y` audits the accessibility XML Mobster reads during a check, including reads made while Smart navigates or a recorded path replays. It requests the attributes needed for the audit in those same WebDriverAgent source calls. It calls no model and sends nothing off your Mac. A screen with the same accessibility evidence is audited once.
+
+Those fuller source calls can take longer than Mobster's usual fast screen reads; their cost depends on the app and device.
+
+The audit covers XML reads, including transitions Mobster observes without saving a frame. It does not continuously monitor every displayed frame. A finding from a read without a saved frame has no frame link. When a required screen read fails, falls back to pixels, or is still in flight at the verdict, `screenCoverage.complete` is `false`; a strict audit needs review instead of passing. Warning audits still report their findings without changing the check verdict.
+
+```sh
+mobster test --a11y            # report findings as warnings; the checks still pass
+mobster test --a11y=strict     # a new finding fails its check
+```
+
+A check turns it on by itself with `a11y: warn` or `a11y: strict` in its file. `--a11y` applies to every check; a check that says `strict` stays strict. The older `audit: a11y` also stays strict.
+
+## The rules
+
+| Finding | What it finds |
+|---|---|
+| `control-no-label` | A button, switch, link, slider, stepper or text field with no label. A text field's placeholder counts; an identifier doesn't, because VoiceOver doesn't read it |
+| `label-unhelpful` | A control or image labelled `button`, `image`, `icon`, a file name such as `icon_close.png`, or a code name such as `ic_close` |
+| `duplicate-label` | Two or more buttons, links or switches on one screen with the same label, so VoiceOver reads them alike |
+| `image-no-label` | An image with no label that isn't inside a labelled control |
+| `target-too-small` | A button, link or switch under 44 by 44 pt |
+| `unreachable-element` | A labelled, enabled control whose frame is wholly off the screen and in no scroll view |
+| `text-clipped` | Only when the check sets `conditions.content_size` to `extra-large` or larger: text whose frame crosses the screen's side edges or leaves its container |
+
+`text-clipped` reads frames, not pixels. Text that truncates inside a frame of the right size isn't found, so a clean run is not proof that Dynamic Type works.
+
+Mobster doesn't audit colour contrast. The tree has no colours, and the pixels of a screenshot under translucent bars, images and gradients don't give a foreground and background you can trust, so a number would be a guess.
+
+## Warnings, failures and the baseline
+
+Each finding has a `level` in `results.json`:
+
+- `warn`: reported, the check passes. This is the level of `--a11y`.
+- `fail`: with `--a11y=strict`, the check fails with `reason.class` `finding`.
+- `known`: the finding is in the project's baseline. It is listed and never fails.
+
+A project with existing problems starts clean by recording them:
+
+```sh
+mobster test --a11y --update-a11y-baseline
+```
+
+```text
+Accessibility: 0 new, 14 warnings, 0 in the baseline
+Wrote .mobster/a11y-baseline.json with 14 findings.
+```
+
+Commit `.mobster/a11y-baseline.json`. From then on `mobster test --a11y=strict` in CI fails only on a finding that isn't in it:
+
+```text
+Accessibility: 1 new, 0 warnings, 13 in the baseline
+```
+
+A baseline entry is a JSON-encoded tuple of the check's file, the rule, and the element's role, label and identifier. It ignores the element's position, so a layout shift doesn't make an old finding new. Fix an element and its finding disappears; the next `--update-a11y-baseline` drops its entry. A baseline file that isn't valid stops the run. Pass `--update-a11y-baseline` to replace it with the current findings.
+
+## Apple's audit on a real iPhone
+
+`audit: ax-device` in a check runs Apple's own accessibility audit on the iPhone, for what the tree can't show: colour contrast, hit regions, missing element descriptions, clipped text and Dynamic Type. It calls no model and sends nothing off your Mac. It is experimental and off until you set `MOBSTER_EXPERIMENTAL_AUDIT=1`.
+
+It works on a real iPhone only. The audit runs in the phone's `axAuditDaemon` service, and a simulator has none. On a simulator the check adds one review finding that says so, and `audit: a11y` (the tree audit above) is what covers the screen. Mobster doesn't audit contrast on a simulator.
+
+Mobster asks for the audit with `pymobiledevice3 developer accessibility run-audit`. `pymobiledevice3` (GPL-3.0-or-later) is a separate program that you install yourself: `pipx install pymobiledevice3`. Mobster runs it over the tunnel macOS keeps to an iPhone paired for development, reads the JSON it prints, and never imports or bundles it. Without it, the check adds one `device-audit-no-tool` review finding that says how to install it, and audits nothing.
+
+The phone must run iOS 17 or later, be paired with this Mac for development, be unlocked, be in Developer Mode and have the developer disk image mounted. Mobster never pairs a phone for this. A phone that misses one of these gives one `device-audit-unavailable` review finding instead of a failure. The finding names the reason, such as `pymobiledevice3 exited 1`, and never carries the program's own output. Findings carry `level: review`, so a run with any ends `needs_review`. A screen is audited once, up to 30 screens a run. Each command gets 45 seconds, and the first screen of a run also asks the phone which audits it supports.
+
+Each finding has an `id` (`device-contrast`, `device-hit-region`, `device-description`, `device-element-detection`, `device-text-clipped`, `device-dynamic-text`), a `guideline`, the `rect` in points and the `frame`.
+
+Not measured yet: no real phone was available for the build of this feature, so the timing per screen is untested on hardware. The tests feed it the JSON shape `pymobiledevice3` prints, not output recorded from a phone.
+
+## Where findings go
+
+- **`results.json`**: each device result's `findings` lists `id`, `audit`, `guideline`, `level`, `key`, `message`, the `element` (`role`, `label`, `identifier`, `rect` in points) and the `frame` when one was saved.
+- **Each run's `result.json`**: `screenCoverage` reports `complete` and `a11yScreens` for that run's audited XML evidence.
+- **The HTML report**: a tag in the header counts new findings, warnings and baseline entries, and each check's page lists findings with a frame when one was saved.
+- **`junit.xml`**: one extra `<testcase>` per finding in the device's `<testsuite>`, named `<check>: <rule>, <element>`. A `fail` finding has a `<failure type="accessibility">`; a `warn` finding passes and carries `Warning: …` in `<system-out>`; a `known` finding gets no case.
+- **The terminal**: one `Accessibility:` line after the counts.
+
+This page's commands run on simulators and on `--device` iPhones. `mobster test pr` doesn't take `--a11y`; put `a11y:` in the checks it runs.

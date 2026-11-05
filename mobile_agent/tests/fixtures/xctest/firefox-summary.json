@@ -1,0 +1,50 @@
+{
+ "devicesAndConfigurations": [
+  {
+   "device": {
+    "architecture": "arm64",
+    "deviceId": "<UDID>",
+    "deviceName": "Mobster · iPhone 17 Pro · iOS 26.4",
+    "modelName": "iPhone 17 Pro",
+    "osBuildNumber": "23E244",
+    "osVersion": "26.4",
+    "platform": "iOS Simulator"
+   },
+   "expectedFailures": 0,
+   "failedTests": 1,
+   "passedTests": 4,
+   "skippedTests": 0,
+   "testPlanConfiguration": {
+    "configurationId": "1",
+    "configurationName": "Test Scheme Action"
+   }
+  }
+ ],
+ "environmentDescription": "Firefox · Built with macOS 26.5.1",
+ "expectedFailures": 0,
+ "failedTests": 1,
+ "finishTime": 1792882007.476,
+ "passedTests": 3,
+ "result": "Failed",
+ "skippedTests": 0,
+ "startTime": 1792881988.615,
+ "statistics": [
+  {
+   "subtitle": "2 test runs",
+   "title": "1 test ran with dynamic parameters"
+  }
+ ],
+ "testFailures": [
+  {
+   "failureText": "XCTAssertEqual failed: (\"month\") is not equal to (\"year\")",
+   "targetName": "FirefoxTests",
+   "testIdentifier": 1,
+   "testIdentifierString": "PlanTests/testAnnualPlanIsBilledYearly()",
+   "testIdentifierURL": "test://com.apple.xcode/Firefox/FirefoxTests/PlanTests/testAnnualPlanIsBilledYearly",
+   "testName": "testAnnualPlanIsBilledYearly()"
+  }
+ ],
+ "title": "Test - Firefox",
+ "topInsights": [],
+ "totalTestCount": 4
+}

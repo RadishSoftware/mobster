@@ -1,0 +1,246 @@
+---
+title: "Connect an assistant"
+"og:title": "Connect an assistant to Mobster Remote"
+sidebarTitle: "Assistants"
+description: "Where to add Mobster's Remote URL in Claude, ChatGPT, Poke, Raycast and Grok, and how the xAI, OpenAI and Anthropic APIs use a Remote key."
+icon: "plug-zap"
+keywords: ["claude custom connector", "chatgpt custom mcp server", "poke integration", "raycast mcp", "grok connector", "grok bot", "xai api mcp", "openai responses mcp", "anthropic mcp connector"]
+---
+
+Every assistant uses the same URL:
+
+```text
+https://remote.mobster.dev/mcp
+```
+
+Turn on Remote in Mobster for Mac first ([Turn it on](/remote#turn-it-on)). An assistant that signs in sends you to Mobster's sign-in page, where you sign in with the account Mobster uses (Apple, Google, GitHub or an email code) and choose the iPhone, then Mobster asks you on your Mac before the app is connected ([Connect an app](/remote#connect-an-app)). An assistant that takes only a key uses a [Remote key](/remote#remote-keys) you make in Mobster for Mac. Either way, approvals for sends, buys, posts and deletes stay in Mobster on your Mac.
+
+An assistant on the same Mac as Mobster, such as Claude Desktop or Claude Code, doesn't need Remote: it can use Mobster's local MCP server ([Add Mobster to your agent](/agents)).
+
+<Note>
+  The 14 Oct 2026 test record shows a 401 response to an unauthenticated MCP request at remote.mobster.dev. That response points to OAuth resource metadata. The record also shows successful client registration with ChatGPT's return address. End-to-end connections from these assistants remain untested. Follow the vendor instructions below, read on 8 Oct 2026. Each section names its source. Each is marked "not yet run by us". If a step looks different for you, write to [support@radish.software](mailto:support@radish.software).
+</Note>
+
+| Assistant | Where you add Mobster | How it connects |
+|---|---|---|
+| <img src="/images/marks/claude.svg" alt="" className="mob-mark" />[Claude](#claude), on the web, Desktop and mobile | Customize › Connectors | Sign-in, on every plan |
+| <img src="/images/marks/claude.svg" alt="" className="mob-mark" />[Claude Code](#claude-code), on another computer | `claude mcp add` | Sign-in |
+| <img src="/images/marks-ink/openai.svg" alt="" className="mob-mark" />[ChatGPT](#chatgpt) | ChatGPT Plugins | Sign-in, on the web, on some plans |
+| [Poke](#poke) | poke.com/integrations/new | Sign-in or a Remote key |
+| <img src="/images/marks/raycast.svg" alt="" className="mob-mark" />[Raycast](#raycast) | Install MCP Server | Sign-in |
+| <img src="/images/marks-ink/grok.svg" alt="" className="mob-mark" />[Grok](#grok) | grok.com/connectors | Likely; its sign-in isn't documented |
+| <img src="/images/marks-ink/grok.svg" alt="" className="mob-mark" />[Grok Bot](#grok-bot) | `grok mcp add` | Likely; sign-in |
+| <img src="/images/marks-ink/xai.svg" alt="" className="mob-mark" />[The xAI API](#the-xai-api) | The remote MCP tool | A Remote key |
+| <img src="/images/marks-ink/openai.svg" alt="" className="mob-mark" />[The OpenAI API](#the-openai-api) | The Responses API's `mcp` tool | A Remote key |
+| <img src="/images/marks-ink/anthropic.svg" alt="" className="mob-mark" />[The Anthropic API](#the-anthropic-api) | The MCP connector | A Remote key |
+
+## Claude
+
+Claude on the web, Claude Desktop and the Claude apps for iPhone and Android share their connectors. Every call comes from Anthropic's cloud (`160.79.104.0/21`), even from the phone app, which is why Claude needs Remote to reach Mobster on your Mac.
+
+<Steps>
+  <Step title="Add the connector">
+    In Claude, go to **Customize › Connectors**, choose **+ Add**, then **Add custom connector**. On a Team or Enterprise plan, an Owner adds it for the organization in **Organization settings › Connectors** (**Add**, then **Custom**, then **Web**), and you choose **Connect** beside it in Customize › Connectors.
+  </Step>
+  <Step title="Enter the URL">
+    Name it Mobster and enter `https://remote.mobster.dev/mcp`. If the dialog asks how people sign in, choose **Sign in now**, and for the OAuth client choose **Use Claude's published identity**. Leave the client ID, the secret and the request headers empty. Choose **Add**.
+  </Step>
+  <Step title="Sign in and allow it">
+    Claude opens "Connect Claude to Mobster". Sign in, choose the iPhone and **Continue**, then choose **Allow** in Mobster on your Mac.
+  </Step>
+  <Step title="Use it in a chat">
+    In a chat, **+** › **Connectors** turns Mobster on or off for that conversation. Ask for a task: "Use Mobster to check what's on my calendar tomorrow."
+  </Step>
+</Steps>
+
+The Free plan allows one custom connector. Remove it in Customize › Connectors, and remove Claude in Mobster's Settings › Remote too.
+
+Checked against Anthropic's docs on 8 Oct 2026 ("Add a connector that isn't in the directory" and "Authentication for connectors"); not yet run by us.
+
+### Claude Code
+
+On the Mac where Mobster runs, add `mobster mcp` instead ([Add Mobster to your agent](/agents)): it's local and needs no Remote. On another computer:
+
+```sh
+claude mcp add --transport http mobster https://remote.mobster.dev/mcp
+```
+
+Then run `/mcp` in Claude Code and sign in in the browser. Claude Code signs in from a program on your computer, so Mobster's sheet says "A program on the computer you signed in from" instead of a domain. Checked against Anthropic's Claude Code docs on 8 Oct 2026; not yet run by us.
+
+## ChatGPT
+
+ChatGPT connects to custom MCP servers on the web, and only by signing in: it can't send a key.
+
+<Steps>
+  <Step title="Add a custom MCP server">
+    Open [ChatGPT Plugins](https://chatgpt.com/plugins), choose the plus button, then **Add custom MCP server**.
+  </Step>
+  <Step title="Fill it in">
+    Name it Mobster and give it a description, such as "Runs tasks on my iPhone". Under **Connection**, choose **Public endpoint** and enter `https://remote.mobster.dev/mcp`. For authentication, choose OAuth.
+  </Step>
+  <Step title="Create it">
+    Read the warning, choose **I understand and want to continue**, then **Create as a plugin**. ChatGPT shows Mobster's tools.
+  </Step>
+  <Step title="Sign in and allow it">
+    Sign in on "Connect ChatGPT to Mobster", choose the iPhone and **Continue**, then choose **Allow** in Mobster on your Mac.
+  </Step>
+</Steps>
+
+OpenAI's pages don't name the plans that can add custom MCP servers, and guides from September 2026 disagree: Business and Enterprise or Edu workspaces can, and Plus and Pro may not. Your workspace's policy applies too. If ChatGPT doesn't offer **Add custom MCP server**, your plan or workspace doesn't allow it yet.
+
+Checked against OpenAI's docs on 8 Oct 2026 ("Connect from ChatGPT" and the Apps SDK's authentication page); not yet run by us.
+
+## Poke
+
+Poke can sign in or use a key. Signing in needs nothing copied: you allow Poke on your Mac like any other app.
+
+<Steps>
+  <Step title="Add the integration">
+    Open [poke.com/integrations/new](https://poke.com/integrations/new?name=Mobster&url=https%3A%2F%2Fremote.mobster.dev%2Fmcp), which fills in the name and the URL. Or enter them yourself: **Name** Mobster, **MCP Server URL** `https://remote.mobster.dev/mcp`.
+  </Step>
+  <Step title="Choose how it signs in">
+    To sign in, leave **API Key** empty. To use a key, make a [Remote key](/remote#remote-keys) named Poke and paste it into **API Key**.
+  </Step>
+  <Step title="Create it">
+    Choose **Create Integration**. Poke connects and finds Mobster's tools. If it signs in, allow it in Mobster on your Mac.
+  </Step>
+</Steps>
+
+From a terminal, the same with Poke's command line:
+
+```sh
+npx poke@latest mcp add https://remote.mobster.dev/mcp -n "Mobster"
+npx poke@latest mcp add https://remote.mobster.dev/mcp -n "Mobster" -k "$MOBSTER_REMOTE_KEY"
+```
+
+The first signs in. The second uses a Remote key, which Poke sends as `Authorization: Bearer`. Never put the key in Poke's link: links end up in browser history.
+
+Poke reads your texts and email. That's why Mobster never asks for approvals there: when Poke says a task is waiting for you, answer it in Mobster on your Mac.
+
+Checked against Poke's docs on 8 Oct 2026 ("MCP Servers"); not yet run by us.
+
+## Raycast
+
+<Steps>
+  <Step title="Open Install MCP Server">
+    In Raycast on your Mac, search for **Install MCP Server**, or use **Install New Server** in Manage MCP Servers.
+  </Step>
+  <Step title="Fill in the form">
+    **Name** Mobster, **Transport** HTTP, **URL** `https://remote.mobster.dev/mcp`, **OAuth Type** Dynamic. Leave **HTTP Headers** empty.
+  </Step>
+  <Step title="Install and sign in">
+    Choose **Install MCP Server** (⌘↵), then **Sign In**. Allow Raycast in Mobster on your Mac.
+  </Step>
+</Steps>
+
+Raycast for iOS takes HTTP servers too.
+
+Checked against the Raycast manual on 8 Oct 2026 ("Model Context Protocol"); not yet run by us.
+
+## Grok
+
+On grok.com, open [Connectors](https://grok.com/connectors), choose **New Connector**, then **Custom**. Enter `https://remote.mobster.dev/mcp` and complete the sign-in it asks for.
+
+xAI's page doesn't say which sign-in the form offers. If it offers to sign in, do that and allow Grok in Mobster on your Mac. If it asks for a key or a header, make a [Remote key](/remote#remote-keys) and send it as `Authorization: Bearer` and the key. xAI says connectors are open to every Grok user; on Business and Enterprise plans, an admin provisions a connector in the cloud console before members can use it.
+
+Likely to work. Checked against xAI's docs on 8 Oct 2026 ("Connectors"); not yet run by us.
+
+## Grok Bot
+
+In a terminal on a computer where Grok Bot is set up:
+
+```sh
+grok mcp add --transport http mobster https://remote.mobster.dev/mcp
+```
+
+Mobster then shows in the Bot's connector marketplace. Install it there, sign in in the browser, and allow Grok in Mobster on your Mac.
+
+Grok Bot's Mac app can also run commands on your Mac (Settings › General › Bot › **Execution on Local Computer**, which asks every time by default). On the Mac where Mobster runs, it can hand Mobster a task with [`mobster chat`](/reference/cli#mobster-chat) and no Remote at all. Approvals for that task still wait in Mobster on your Mac.
+
+Likely to work. Checked against Arcade's Grok Bot guide (11 Sep 2026, updated 30 Sep 2026) and xAI's Grok Bot docs on 8 Oct 2026; not yet run by us.
+
+## The xAI API
+
+xAI's Responses API calls remote MCP servers itself, with a token in `authorization`. Use a [Remote key](/remote#remote-keys):
+
+```sh
+curl -s https://api.x.ai/v1/responses \
+  -H "Authorization: Bearer $XAI_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "grok-4.7",
+    "input": "Use Mobster to check what is on my calendar tomorrow.",
+    "tools": [{
+      "type": "mcp",
+      "server_url": "https://remote.mobster.dev/mcp",
+      "server_label": "mobster",
+      "authorization": "'"$MOBSTER_REMOTE_KEY"'"
+    }]
+  }'
+```
+
+xAI describes `authorization` as "a token that will be set in the Authorization header" and doesn't say whether it adds `Bearer`. Mobster takes a Remote key in the `Authorization` header with or without `Bearer`, so either works. In xAI's own Python SDK, the `mcp()` helper takes the same `server_url`, `server_label` and `authorization`.
+
+Checked against xAI's docs on 8 Oct 2026 ("Remote MCP tools"); not yet run by us.
+
+## The OpenAI API
+
+The Responses API's `mcp` tool calls remote MCP servers from OpenAI's side. Put a [Remote key](/remote#remote-keys) in `authorization`, without `Bearer`:
+
+```py
+import os
+from openai import OpenAI
+
+client = OpenAI()
+response = client.responses.create(
+    model="gpt-6-astra",
+    tools=[{
+        "type": "mcp",
+        "server_label": "mobster",
+        "server_url": "https://remote.mobster.dev/mcp",
+        "authorization": os.environ["MOBSTER_REMOTE_KEY"],
+        "require_approval": "never",
+    }],
+    input="Use Mobster to check what's on my calendar tomorrow.",
+)
+print(response.output_text)
+```
+
+Without `"require_approval": "never"`, the API stops before each call to Mobster and waits for your code to approve sharing data with it. Mobster's own approvals don't change: a send, buy, post or delete still waits for you in Mobster on your Mac. OpenAI says it doesn't store what you put in `authorization`.
+
+Checked against OpenAI's docs on 8 Oct 2026 ("MCP and connectors"); not yet run by us.
+
+## The Anthropic API
+
+The Messages API's MCP connector calls remote MCP servers from Anthropic's side. It needs the server in `mcp_servers`, an `mcp_toolset` that names it, and the `mcp-client-2025-11-20` beta. Put a [Remote key](/remote#remote-keys) in `authorization_token`:
+
+```py
+import os
+import anthropic
+
+client = anthropic.Anthropic()
+response = client.beta.messages.create(
+    model="claude-opus-5-5",
+    max_tokens=16000,
+    betas=["mcp-client-2025-11-20"],
+    mcp_servers=[{
+        "type": "url",
+        "url": "https://remote.mobster.dev/mcp",
+        "name": "mobster",
+        "authorization_token": os.environ["MOBSTER_REMOTE_KEY"],
+    }],
+    tools=[{"type": "mcp_toolset", "mcp_server_name": "mobster"}],
+    messages=[{"role": "user", "content": "Use Mobster to check what's on my calendar tomorrow."}],
+)
+for block in response.content:
+    if block.type == "text":
+        print(block.text)
+```
+
+Checked against Anthropic's API docs on 8 Oct 2026 (the MCP connector); not yet run by us.
+
+## Other assistants
+
+Any assistant that takes a remote MCP server URL and signs in with OAuth 2.1 (Client ID Metadata Documents or Dynamic Client Registration, with PKCE), or sends a fixed `Authorization: Bearer` header, can connect the same way. Mobster also recognizes Le Chat, Perplexity and Gemini by their domains. We haven't run Mobster Remote with any of them.
+
+An assistant with no way to add an MCP server or a tool by URL can't connect until it has one.

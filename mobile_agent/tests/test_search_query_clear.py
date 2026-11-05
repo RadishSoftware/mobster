@@ -1,10 +1,10 @@
-"""A search field holding an earlier query is emptied before the new one is typed. Offline."""
-
 import unittest
+from unittest.mock import patch
 
 from mobile_agent.drivers import WDA
-from mobile_agent.driver_guards import DriverRejection
 from mobile_agent.state import Element, Snapshot
+from mobile_agent.transport import Deadline, TransportError
+from mobile_agent.wda.guards import DriverRejection
 
 
 class Recorder(WDA):
@@ -35,23 +35,11 @@ class SearchClearTests(unittest.TestCase):
         driver.execute("TYPE_SUBMIT", field, snapshot, text="Locker code", timeout=10)
         return [path for _, path, _ in driver.calls], driver.calls
 
-    def test_an_earlier_query_is_cleared_before_typing(self):
+    def test_an_earlier_query_is_cleared_and_the_new_one_typed_without_a_focusing_tap(self):
         paths, calls = self.paths("MobsterBench Note")
-        self.assertEqual(paths[:2], ["/elements", "/element/E1/clear"])
-        # Found by name ("name": WDA answers HTTP 500 to "identifier"), and re-found by the same query
-        # after the clear, when its value is gone.
+        self.assertEqual(paths, ["/elements", "/element/E1/clear", "/wda/keys"])
         self.assertIn("name == 'Search' OR label == 'Search'", calls[0][2]["value"])
-        self.assertEqual(paths[-1], "/wda/keys")
-
-    def test_a_cleared_query_is_typed_without_a_focusing_tap(self):
-        # The clear focused the field: no tap and no keyboard wait (mem-015 paid both per Mail search).
-        driver = Recorder()
-        field = Element("f", "Search Mail", "SearchField", (.08, .92, .68, .05), value="CityRide", locator="/field",
-                        editable=True, actions=("TAP", "TYPE"))
-        snapshot = Snapshot([field], "Search", 393, 852, "wda", bundle_id="com.example.mail")
-        driver.execute("TYPE_SUBMIT", field, snapshot, text="DL1358", timeout=10)
-        self.assertEqual([path for _, path, _ in driver.calls], ["/elements", "/element/E1/clear", "/wda/keys"])
-        self.assertEqual(driver.calls[-1][2], {"value": ["DL1358", "\n"]})
+        self.assertEqual(calls[-1][2], {"value": ["Locker code", "\n"]})
 
     def test_the_value_finds_the_field_only_when_name_and_kind_are_not_unique(self):
         driver = Recorder()
@@ -93,21 +81,14 @@ class SearchClearTests(unittest.TestCase):
         self.assertIn("value BEGINSWITH 'Fiction:\n- Dune'", predicates[-1])
         self.assertEqual(driver.calls[-1][1], "/element/E1/clear")
 
-    def test_an_empty_field_or_its_placeholder_is_typed_into_directly(self):
+    def test_an_empty_field_its_placeholder_or_another_kind_of_field_is_typed_into_directly(self):
         for value in ("", "Search"):
             self.assertEqual(self.paths(value)[0], ["/wda/keys"])
-
-    def test_other_fields_keep_their_text(self):
         self.assertEqual(self.paths("Dear Sam,", role="TextField")[0], ["/wda/keys"])
-
-
-if __name__ == "__main__":
-    unittest.main()
 
 
 class ElementTypingTests(unittest.TestCase):
     def test_a_failed_typing_dispatch_never_falls_back_to_keystrokes(self):
-        from mobile_agent.transport import TransportError
         for operation in ("TYPE", "TYPE_SUBMIT"):
             with self.subTest(operation=operation):
                 driver = Recorder()
@@ -129,7 +110,6 @@ class ElementTypingTests(unittest.TestCase):
                 self.assertEqual([path for _, path, _ in driver.calls], ["/elements", "/element/E1/value"])
 
     def test_a_failed_read_only_lookup_can_use_the_focusing_route(self):
-        from mobile_agent.transport import TransportError
         driver = Recorder()
         self.addCleanup(driver.close)
         field = Element("f", "Message", "TextField", (.1, .2, .8, .05), editable=True,
@@ -149,7 +129,6 @@ class ElementTypingTests(unittest.TestCase):
         self.assertEqual([path for _, path, _ in driver.calls], ["/elements", "/actions", "/wda/keys"])
 
     def test_an_unfocused_text_view_is_typed_through_the_element(self):
-        # mem-041: a coordinate tap left focus in the title and the body went there.
         driver = Recorder()
         body = Element("b", "notes_body_editor", "TextView", (.05, .3, .9, .5), editable=True,
                        actions=("TAP", "TYPE", "TYPE_SUBMIT"))
@@ -157,7 +136,6 @@ class ElementTypingTests(unittest.TestCase):
         driver.execute("TYPE", body, snapshot, text="line one\nline two", timeout=10)
         paths = [path for _, path, _ in driver.calls]
         self.assertEqual(paths, ["/elements", "/element/E1/value"])
-        # WDA 16.12 rejects an "identifier" predicate: the field is found by name.
         self.assertIn("name == 'notes_body_editor'", driver.calls[0][2]["value"])
         self.assertEqual(driver.calls[-1][2], {"value": "line one\nline two"})
 
@@ -181,11 +159,11 @@ class ElementTypingTests(unittest.TestCase):
         driver = Recorder()
         answers = {"/element/active": {"ELEMENT": "A1"}, "/element/A1/rect": rect}
         recorded = driver.call
-        driver.call = lambda method, path, body=None, timeout=10: answers.get(path) or recorded(method, path, body, timeout)
+        driver.call = lambda method, path, body=None, timeout=10: (answers.get(path)
+                                                                   or recorded(method, path, body, timeout))
         return driver
 
     def test_with_the_keyboard_on_another_field_focus_moves_before_typing(self):
-        # mem-048: the keyboard was up for the title, and the note body was typed into it.
         driver = self.focused({"x": 20, "y": 128, "width": 353, "height": 40})
         body, snapshot = self.notes_screen()
         driver.execute("TYPE", body, snapshot, text="Top colleagues", timeout=10)
@@ -204,12 +182,17 @@ class ReplaceTextTests(unittest.TestCase):
                        actions=("TAP", "TYPE", "TYPE_SUBMIT"))
 
     def test_one_lookup_then_clear_and_type_on_the_same_element(self):
-        # SET_TEXT used to clear (a lookup), read the screen, and type as a TYPE (another lookup).
         driver = Recorder()
         self.assertTrue(driver.replace_text(self.field("Map"), "Books to Read"))
         self.assertEqual([path for _, path, _ in driver.calls], ["/elements", "/element/E1/clear", "/element/E1/value"])
         self.assertIn("name == 'notes_title_field'", driver.calls[0][2]["value"])
         self.assertEqual(driver.calls[-1][2], {"value": "Books to Read"})
+
+    def test_a_filled_search_field_takes_keystrokes_where_its_clear_left_focus(self):
+        driver = Recorder()
+        self.assertTrue(driver.replace_text(self.field("CityRide", role="SearchField", label="Search Mail"), "DL1358"))
+        self.assertEqual([path for _, path, _ in driver.calls], ["/elements", "/element/E1/clear", "/wda/keys"])
+        self.assertEqual(driver.calls[-1][2], {"value": ["DL1358"]})
 
     def test_an_empty_field_or_its_placeholder_is_not_cleared(self):
         for value in ("", "notes_title_field"):
@@ -217,15 +200,7 @@ class ReplaceTextTests(unittest.TestCase):
             self.assertTrue(driver.replace_text(self.field(value), "Books"))
             self.assertEqual([path for _, path, _ in driver.calls], ["/elements", "/element/E1/value"])
 
-    def test_a_filled_search_field_takes_keystrokes_where_its_clear_left_focus(self):
-        # Mail's search in mem-015: each new query paid three lookups, two reads and a focusing tap.
-        driver = Recorder()
-        self.assertTrue(driver.replace_text(self.field("CityRide", role="SearchField", label="Search Mail"), "DL1358"))
-        self.assertEqual([path for _, path, _ in driver.calls], ["/elements", "/element/E1/clear", "/wda/keys"])
-        self.assertEqual(driver.calls[-1][2], {"value": ["DL1358"]})
-
     def test_a_failed_clear_never_continues_typing_or_requests_a_fallback(self):
-        from mobile_agent.transport import TransportError
         for role in ("TextField", "SearchField"):
             driver = Recorder()
             recorded = driver.call
@@ -241,7 +216,6 @@ class ReplaceTextTests(unittest.TestCase):
             self.assertEqual([path for _, path, _ in driver.calls], ["/elements", "/element/E1/clear"])
 
     def test_a_failed_clear_never_repeats_through_the_active_field(self):
-        from mobile_agent.transport import TransportError
         driver = Recorder()
         recorded = driver.call
 
@@ -259,7 +233,7 @@ class ReplaceTextTests(unittest.TestCase):
 
     def test_empty_search_fields_unnamed_or_ambiguous_fields_are_left_to_the_caller(self):
         driver = Recorder()
-        for value in ("", "Search"):  # nothing to clear: focus needs the caller's tap
+        for value in ("", "Search"):
             self.assertFalse(driver.replace_text(self.field(value, role="SearchField", label="Search"), "x"))
         self.assertFalse(driver.replace_text(self.field("q", label=""), "x"))
         self.assertEqual(driver.calls, [])
@@ -275,20 +249,16 @@ class ParkedKeyboardWaitTests(unittest.TestCase):
         self.addCleanup(WDA._parked_keyboards.discard, "http://127.0.0.1:8100")
 
     def reads(self, keyboard):
-        from unittest.mock import patch
-        from mobile_agent.transport import Deadline
         driver = Recorder()
         field = Element("f", "Search", "SearchField", (.08, .1, .68, .05), editable=True, actions=("TAP", "TYPE"))
         seen = []
         driver.observe = lambda timeout=10: seen.append(1) or Snapshot(
             [field], "", 393, 852, "wda", keyboard=keyboard)
-        with patch("mobile_agent.wda_text.WDA_KEYBOARD_WAIT_SECONDS", .3):
+        with patch("mobile_agent.wda.text.WDA_KEYBOARD_WAIT_SECONDS", .3):
             self.assertTrue(driver._await_keyboard(Deadline(5)))
         return len(seen)
 
     def test_a_hardware_keyboard_is_learned_and_then_read_once(self):
-        # Simulators in hardware-keyboard mode never raise one: every focusing tap paid half the
-        # keyboard wait in reads (1-2 reads of ~1 s on a long list).
         self.assertGreater(self.reads("parked"), 1)
         self.assertEqual(self.reads("parked"), 1)
 
@@ -296,3 +266,7 @@ class ParkedKeyboardWaitTests(unittest.TestCase):
         WDA._parked_keyboards.add("http://127.0.0.1:8100")
         self.assertEqual(self.reads("visible"), 1)
         self.assertNotIn("http://127.0.0.1:8100", WDA._parked_keyboards)
+
+
+if __name__ == "__main__":
+    unittest.main()

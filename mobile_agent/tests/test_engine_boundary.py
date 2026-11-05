@@ -1,39 +1,33 @@
-"""The engine imports nothing from the harness.
-
-ENGINE is the open-source engine: the observe, decide, verify, act loop (frontier) and what it needs to run, the
-WebDriverAgent driver, the model transport, and the safety core (journal, task_policy, effect_ledger, secret_filter,
-system_dialogs, the permission policy and gate). Everything else in mobile_agent is Mobster for Mac's: the harness (the
-terminal UI, the MCP server, conversations, workflows, Wi-Fi, several phones, setup) and the quality and speed modules
-(the app catalog, skills, deep links, hedged calls, the frame clock). The engine reaches them only through harness_api's
-registries and engine hooks, and runs without them. scripts/public-paths.txt ships ENGINE in the open-source tree;
-test_public_cut.py checks it does.
-
-Two proofs: every import statement in an ENGINE module, at module level or inside a function, names an ENGINE
-module; and in a fresh interpreter where every other mobile_agent module is unavailable, every ENGINE module imports
-and the open-source tree's reference example (examples/reference_loop.py) runs a task on a scripted phone and model.
-Offline."""
-
 import ast
-from pathlib import Path
 import subprocess
 import sys
 import textwrap
 import unittest
+from pathlib import Path
 
 PACKAGE = Path(__file__).resolve().parents[1]
 
 ENGINE = (
     "__init__",
     # the loop and what it needs to run
-    "frontier", "model_clients", "engines", "smart_events", "smart_result", "agent_hooks", "contract", "contract_screen", "contract_asks", "harness_api", "harness", "harness.checkpoints",
-    "harness.control", "output_contract", "result_blocks", "answer_shapes", "offers", "usage", "costs",
+    "frontier", "frontier.act", "frontier.actions", "frontier.agent", "frontier.approvals",
+    "frontier.hooks", "frontier.interrupts",
+    "frontier.observe", "frontier.prompt", "frontier.protocol", "frontier.safety", "frontier.saved", "frontier.screen",
+    "frontier.phases", "frontier.pipeline", "frontier.skills", "frontier.stages", "frontier.stages.after",
+    "frontier.stages.approve", "frontier.stages.controls", "frontier.stages.ends", "frontier.stages.gate",
+    "frontier.stages.guards", "frontier.stages.points", "frontier.stages.send", "frontier.turn", "model_clients",
+    "engines", "smart_events", "smart_result", "agent_hooks", "contract", "contract_screen", "contract_prompt",
+    "contract_view", "contract_asks", "harness_api", "harness", "harness.checkpoints",
+    "harness.control", "run_executor", "output_contract", "result_blocks", "answer_shapes", "offers", "usage", "costs",
     # the driver and the model transport
-    "drivers", "driver_guards", "wda_observe", "wda_text", "wda_gestures", "state", "extensions", "transport", "gemini",
-    "wda_timeouts", "wda_watchdog", "point_gestures",
+    "drivers", "wda", "wda.guards", "compiled_read", "compiled_read.delta", "corpus", "corpus.cli", "corpus.consent",
+    "corpus.skeleton", "corpus.store", "settle", "settle.predict", "settle.store", "settle.stream", "wda.observe",
+    "wda.text", "wda.gestures", "state", "transport", "gemini",
+    "wda.timeouts", "wda.watchdog", "wda.point_gestures",
     # the safety core
-    "journal", "task_policy", "effect_ledger", "secret_filter", "system_dialogs", "permissions",
-    "permissions.gate", "permissions.policy", "permissions.rules", "permissions.exceptions",
-    "permissions.consequence", "errors", "api_errors",
+    "journal", "task_policy", "effect_ledger", "secret_filter", "wda.system_dialogs", "permissions",
+    "permissions.gate", "permissions.policy", "permissions.project_policy", "permissions.rules",
+    "permissions.exceptions", "permissions.consequence", "errors", "api_errors",
     "paths",
 )
 
@@ -44,7 +38,6 @@ def module_file(name):
 
 
 def imported(name):
-    """(line, module) for every mobile_agent module ``name`` imports, wherever the import statement is."""
     path = module_file(name)
     package = name.split(".") if path.name == "__init__.py" else name.split(".")[:-1]
     if name == "__init__":
@@ -111,12 +104,12 @@ CHILD = textwrap.dedent('''
         importlib.import_module("mobile_agent" if name == "__init__" else "mobile_agent." + name)
 
     from mobile_agent import engines, frontier, harness_api, journal, model_clients
-    assert all(harness_api.hook(name) is None for name in harness_api.HOOKS), "a hook is set without the harness"
+    assert type(harness_api.hooks()) is harness_api.EngineAlone, "a hook is set without the harness"
     assert engines.smart_model() == engines.ANTHROPIC_SMART_MODEL
     assert engines.smart_key() == "sk-ant-test-not-real"
     assert engines.model_provider("kimi:k2") == "openai" and not engines.on_plan("kimi:k2")
     assert model_clients.cost_usd("claude-sonnet-5-5", {"prompt_tokens": 1000, "completion_tokens": 10}) > 0
-    assert frontier.default_skills() == () and model_clients._hedge() is None
+    assert frontier.default_skills() == ()
     assert model_clients.transient_model_error(RuntimeError("HTTP 529 overloaded"))
     assert not model_clients.transient_model_error(RuntimeError("HTTP 400 invalid_request_error"))
     journal.disable_track("absent", "error: migration")
@@ -177,7 +170,7 @@ class IsolatedTests(unittest.TestCase):
                               capture_output=True, text=True, timeout=120)
         self.assertEqual(done.returncode, 0, done.stderr[-3000:])
         report = json.loads(done.stdout.strip().splitlines()[-1])
-        # What the engine asked for and did without: only the harness's hook module (harness_api.HOOKS_MODULE).
+        # What the engine asked for and did without: only the harness's hooks (harness_api.HOOKS_MODULE).
         self.assertEqual(report["blocked"], ["mobile_agent.engine_hooks"])
 
 

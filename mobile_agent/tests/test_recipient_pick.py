@@ -1,14 +1,10 @@
-"""Who a message goes to is the request's person, picked by name, never an address made of the name. MobsterBench Real,
-12 Oct, on a real iPhone: Messages' contact search showed no suggestions yet, Return in the To field turned the typed
-name into an address of its own (the name squashed into one lowercase word), and the message was about to go there.
-The card named that address, so the person would have declined, but the agent shouldn't pick it. Offline."""
-
 import os
 import unittest
 from types import SimpleNamespace as NS
 from unittest.mock import patch
 
 from mobile_agent import contract as K
+from mobile_agent import drivers
 from mobile_agent.frontier import FrontierAgent, prompt_text
 from mobile_agent.state import Element, Snapshot
 
@@ -42,7 +38,8 @@ class ReturnInTheToFieldTests(unittest.TestCase):
         gate = c.check("SUBMIT", field, shot(field), "Messages")
         self.assertFalse(gate.allowed)
         self.assertIn("an address of its own", gate.reason)
-        self.assertFalse(c.check("TYPE_SUBMIT", to_field(""), shot(to_field("")), "Messages", text="Jordan Lee").allowed)
+        self.assertFalse(c.check("TYPE_SUBMIT", to_field(""), shot(to_field("")), "Messages",
+                                 text="Jordan Lee").allowed)
 
     def test_return_on_a_phone_number_or_an_email_goes_ahead(self):
         c = contract()
@@ -104,19 +101,17 @@ class SendToAMadeAddressTests(unittest.TestCase):
 
     def test_the_contact_or_another_person_goes_to_the_card(self):
         self.assertTrue(self.send("To:￼Jordan Lee").allowed)
-        self.assertTrue(self.send("To:￼Sam Rivera").allowed)  # the card names both; the person decides
+        self.assertTrue(self.send("To:￼Sam Rivera").allowed)
 
 
 class LoopTests(unittest.TestCase):
-    """Smart's loop on the recorded shape: no suggestions yet, then Return in the To field."""
-
     def test_return_on_the_typed_name_is_refused_and_the_model_told_to_pick_the_row(self):
         to = Element("7", "To:", "TextField", (.08, .16, .85, .06), editable=True, value="Jordan Lee",
                      actions=("TAP", "TYPE", "TYPE_SUBMIT", "SUBMIT"))
         sheet = Snapshot([Element("1", "New Message", "Button", (.32, .1, .37, .02)), to],
                          "", 400, 800, "synthetic_fixture", bundle_id="com.apple.MobileSMS")
 
-        class Phone:
+        class Phone(drivers.Driver):
             def __init__(self):
                 self.actions = []
 
@@ -125,6 +120,9 @@ class LoopTests(unittest.TestCase):
 
             def execute(self, operation, target, snapshot, text=None, timeout=10):
                 self.actions.append((operation, getattr(target, "label", target)))
+
+            def close(self):
+                pass
 
         class Model:
             def __init__(self):

@@ -1,0 +1,131 @@
+---
+title: "Profiles"
+sidebarTitle: "Profiles"
+description: "Map each social media profile to the iPhone it's signed in on. Tasks go to the right phone, and Mobster checks the profile on screen before it posts."
+icon: "at-sign"
+keywords: ["profiles", "accounts", "social accounts", "handle", "@handle", "instagram", "tiktok", "threads", "linkedin", "brand voice", "signature", "several profiles", "as @getmobster"]
+---
+
+Name each profile you run, such as `@getmobster` on Instagram, and say which iPhone it's signed in on. A task for `@getmobster` then runs on that phone, starts in Instagram, and goes out as `@getmobster`.
+
+A profile is a handle on a social app. Your Mobster account, the one you sign in to Mobster with, is a different thing: it lives in Settings › Account ([Account](/account)).
+
+## The Profiles page
+
+**Profiles** lists the profiles you run by the iPhone each is signed in on: one section per phone, with its profiles as rows (the app's icon, the handle, the app and how replies sound). It is a page in Settings (**Profiles** in the Your devices group, at `/settings/profiles`), and ⌘K and **Manage profiles…** in the task box's profile chip open it there. A phone that isn't connected says **Not connected**, and its profiles' tasks wait for it.
+
+- **Move a profile to another phone:** drag its row onto that phone's section, or choose **Move to** in its **⋯** menu. Press `esc` to put a dragged profile back. Losing window focus also cancels the drag. Moving a profile assigns its phone; it does not sign in for you.
+- **Add a profile:** **Add a profile** at the top of the page. Its form asks which iPhone it's signed in on.
+- **Open a profile:** click its row, and its page opens in Settings. The profile's row under **Profiles** in the sidebar opens the same page beside your work. Its page has four tabs:
+  - **Queue**, the page it opens on: its posts in the [content queue](/content-queue).
+  - **Schedule**: what will happen as it, soonest first. That's its posts with a time, and its saved tasks with a schedule.
+  - **Runs**: the tasks that ran as it, newest first.
+  - **About**: what Mobster knows about writing as it, each with where it came from. That's its voice, signature, links, values and phone settings (**You**), the check Mobster makes on screen before it posts (**Mobster**), and what your [memory](/memory) holds about its app.
+
+  **Edit** opens its form in place, and **Use in a task** starts a task as it in the task box. Each tab has its own address, such as `/profiles/<id>/runs`, or `/settings/profiles/<id>/runs` in Settings.
+
+## Run a task on every profile
+
+**Run on every profile** opens a panel under the page's title. Write what to do as each profile, such as "Reply to new comments on my last 5 posts", untick the profiles to leave out, and choose **Run on 6 profiles**. Mobster starts them as one group, one task for each profile, each in its own app on the iPhone it's signed in on (the same request as the API's, under [Several profiles at once](#several-profiles-at-once)). Profiles on different phones start together, and profiles that share a phone go one after another. The panel lists each profile with **Open** once its task has started, `Starts on Studio iPhone after the profile ahead of it` while it waits its turn, or why it didn't start. Nothing is retried. If Mobster doesn't answer, the panel says it can't tell whether the group started; **Run** again sends the same request, which never starts it twice. Sending follows each task’s permission mode.
+
+## Add a profile
+
+Choose **Add a profile** on the Profiles page, or **+** beside **Profiles** in the sidebar. Once it's added, its page opens with two next steps: **Queue a post** opens the task box as the profile to draft its first post, and **Make it weekly** starts a saved task as it, every Monday at 9:00, for you to finish. Each profile has:
+
+- **Handle** and **App**: `@getmobster` on Instagram. The same handle can be on several apps, once per app.
+- **iPhone it's signed in on**: tasks for this profile run on this phone. **Default iPhone** uses the iPhone a task would use anyway. When you forget a phone, its profiles move to **Default phone**.
+- **How replies should sound**: notes Mobster's agent reads before it writes as this profile ("Warm and short. First names. No emoji.").
+- **Signature** and **Links**, such as Pricing and `https://mobster.dev/pricing`.
+- **Values**: any other name and value a task fills in, such as `caption`.
+- **Region, language and time zone** (optional): what the phone should be set to, such as `US`, `en` and `America/Chicago`.
+
+Profiles don't keep passwords, card numbers or API keys, and Mobster refuses a value that looks like one. A discount code ("Use code MOBSTER20") is fine.
+
+## Run a task as a profile
+
+- **In the task box**, write the handle: "Reply to my new comments as @getmobster". The profile chip beside the **+** picks it up. Choose another profile there, or **No profile**.
+- **In a conversation**, the next task keeps the profile the last one used, so "now reply to the next one" stays `@getmobster`.
+- **From an agent**, pass `profile` to `phone_task` ([MCP tools](/mcp-server)). `list_profiles` names your profiles.
+- **In a workflow**, save it with `account`, the API's name for a profile ([Schedules and workflows](/schedules)).
+
+## Values in a task
+
+Write a value's name in braces and each profile fills in its own: `Post today's photo with the caption {caption} and {link}`.
+
+| Placeholder | Becomes |
+|---|---|
+| `{handle}` | `@getmobster` |
+| `{signature}` | the signature |
+| `{link}` | the first link |
+| `{shop}`, `{sale page}` | the link with that name |
+| `{caption}` | the value with that name |
+
+Braces around any other word stay as they are.
+
+## The check before posting
+
+Before Mobster's agent posts, replies, comments, reacts or sends a message in the profile's app, it confirms which profile is signed in. It reads the app's own profile screen, the one with **Edit profile**, and looks for the handle at the top. The run shows this step as **Check the profile**.
+
+- **The profile matches.** The task goes on. In Ask before acting, the approval says **As @getmobster on Instagram**.
+- **Another profile is signed in.** The task stops before anything is sent: "This would post as @sam.personal, not @getmobster. Mobster stopped before posting."
+- **Mobster can't tell.** The post waits while the agent opens the profile screen. After three tries the task stops: "Mobster couldn't confirm on screen that @getmobster is signed in to Instagram, so it stopped before posting."
+
+### Before a task starts
+
+A task for a profile starts only if the profile has no security check waiting and the phone's region, language and time zone match what the profile expects. A value Mobster can't read doesn't stop the task, and it can't read the phone's language yet. Otherwise the task doesn't start and nothing is done: the message names both values and what to change. [Devices and health](/phones) has the details, the alerts for a signed-out or challenged profile, and **Mark as handled**.
+
+Mobster never switches profiles inside an app. Switch on the phone, then run the task again. Someone else's profile (one with **Follow** or **Message**) never counts as yours.
+
+Mobster fixes a profile's handle, app, phone, writing notes and values when it admits a task, including a task waiting in the phone queue. Editing or removing the saved profile afterward does not change that task or cancel it. A new task uses the edited profile. Reusing a request key after editing the profile is refused as a different request; inspect the original task before sending a new one. When pickup is available, it keeps the original profile context and checks the signed-in profile again. Older tasks without a captured profile context cannot be picked up safely.
+
+## Several profiles at once
+
+`POST /api/accounts/runs` starts one task per profile, each on its own phone:
+
+```sh
+curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"accounts": ["@getmobster", "@getmobster on TikTok"], "goal": "Post {caption} from my latest photo", "engine": "smart"}' \
+  http://127.0.0.1:8765/api/accounts/runs
+```
+
+**Run on every profile** is the same request as one task. `POST /api/runs` with `"profiles": "all"` (or a list of ids and handles) and a `goal` starts one run per profile on that profile's phone, as one group (`GET /api/groups/<id>`), with one result per profile in its summary. MCP's `phone_task` takes the same `profiles`.
+
+```sh
+curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -H "Idempotency-Key: $(uuidgen)" \
+  -d '{"profiles": "all", "goal": "Reply to my unread comments"}' http://127.0.0.1:8765/api/runs
+```
+
+- It runs on Mobster's agent only, which confirms each profile on screen before it posts or sends, and keeps each profile's pace and its phone's lock.
+- Profiles on different phones start together. Profiles that share a phone run one after another, in the order you give, because a phone does one task at a time. A phone that is locked or busy, a profile with no phone, or a profile at its pace limit is that profile's result, and the others go on.
+- Nothing is retried. The same Idempotency-Key is the same group, and a profile whose run ended with an unknown outcome is not started again.
+
+`POST /api/accounts/runs` starts one task per profile with no group.
+
+A phone runs one task at a time, so on that route two profiles on the same phone are refused up front. A phone that can't start says why in its row, and the others run.
+
+Every task as a profile keeps the profile's pace (a daily limit and a gap for posts, messages, comments, follows and likes) and stops on an app's captcha or verification, pausing the profile: [Content queue › Pacing](/content-queue#pacing). If Mobster cannot read the profile's pacing settings or history, it stops before acting.
+
+To post a list of photos and videos across your profiles, each at its own time, use the [Content queue](/content-queue): it sends each post's media to its profile's phone first, and posts on several phones at once.
+
+## The profiles API
+
+Profiles were called Accounts when they shipped, in 0.4.0. The API kept that name, so every script that calls it works as before: the routes are under `/api/accounts`, and a run, a message and a workflow name a profile with `account`.
+
+| Route | What it does |
+|---|---|
+| `GET /api/accounts` | every profile, with `display` ("@getmobster on Instagram") |
+| `POST /api/accounts` | add one: `{handle, app: {bundleId, name}, device?, notes?, signature?, links?, variables?, region?, language?, timezone?}` |
+| `POST /api/accounts/{id}` | change any of those fields; `device: null` sends it to the default phone |
+| `DELETE /api/accounts/{id}` | remove it |
+| `POST /api/accounts/runs` | one task per profile, as above |
+
+`POST /api/runs` and a conversation's message take `account`: a profile's id, `@getmobster`, or `@getmobster on Instagram` when the handle is on two apps. Profiles are kept in `accounts.json` beside the task history, the same file 0.4.0 wrote. Mobster Remote and MCP can read the list but never change it.
+
+## Names from 0.4.0
+
+| 0.4.0 | Now |
+|---|---|
+| Settings › Accounts | Settings › Profiles, at `/settings/profiles`. A link to `/profiles`, `/settings#accounts` or `/settings#profiles` opens it. |
+| MCP `list_accounts` | `list_profiles`. `list_accounts` still works and answers `{accounts: [...]}`; it is deprecated. |
+| `phone_task`'s `account` | `profile`. `account` still works; it is deprecated. |
+| The `CHECK_ACCOUNT` step | `CHECK_PROFILE`. Runs from 0.4.0 show it as **Check the profile** too. |

@@ -1,0 +1,122 @@
+---
+title: "Devices and health"
+sidebarTitle: "Devices"
+description: "The Mac app's Devices page: add, set up and manage every iPhone, iPad and simulator Mobster can drive, and see how it's connected, its screen, the profiles on it, its last good task and what needs you. Alerts reach you when a device is unplugged, locked, signed out or challenged."
+icon: "smartphone"
+keywords: ["devices", "phones", "ipad", "add a device", "setup", "fleet", "health", "alerts", "unplugged", "locked", "signed out", "security check", "challenge", "region", "language", "time zone", "several iphones"]
+---
+
+Open the device chip at the foot of the sidebar and choose **Manage devices**, or open **Settings › Devices** or **Devices** in ⌘K, to see every device Mobster can drive in one place. It opens inside Settings, with Settings' sections beside it. It shows each device's state, its screen, its setup, the profiles on it and what needs you. Mobster tells you when something needs you, even with the window in the background. The line under the title counts the devices and how many need you ("3 devices, 1 needs you"), or says they're all ready.
+
+This page is the Mac app's Devices page. [Several phones](/devices) covers what Mobster does with more than one device: states, ports, sharing a phone and one task on several phones.
+
+## Add a device
+
+After the first run, the Devices page is the one place where you add a device and finish setting one up. There is no Setup page.
+
+1. Choose **Add a device** (top right of the Devices page, File › Add Device…, or `⌘⇧N`). It opens its own page beside Devices, and **Cancel** takes you back to where you were. The page shows the ways to connect as tiles: **With a cable**, where every device starts, and **Over Wi-Fi**, which says whether Wi-Fi works on this Mac ([Wi-Fi](/wifi)). Under them, it lists what happens next, step by step.
+2. Plug the iPhone or iPad into this Mac with a cable and unlock it. Mobster finds it by itself. With more than one new device plugged in, it asks which one you're adding and never picks for you. If the device you're adding is unplugged partway, it asks again. If nothing shows up, **Device not showing up?** in the cable's tile lists what to check: a cable that carries data, the device unlocked, Trust tapped, no hub between.
+3. Follow the rows: Xcode, Trust, Developer Mode, then Mobster's helper, which installs by itself. Each row says what to press. The page walks the first run's own checklist, live, and checks the device every 2 seconds.
+4. With Wi-Fi for iPhones on, the last row is **Wi-Fi**. Mobster turns the phone's Wi-Fi switch on right after Trust. Once the helper runs and the encrypted link is up, the row says to unplug it ([Wi-Fi](/wifi#adding-an-iphone-with-wi-fi-on)).
+
+Setting up uses the cable, and the devices you have keep working meanwhile. The install can take 10 minutes the first time: choose **Keep working**, and Mobster tells you when the device is ready.
+
+A device that isn't set up shows the one step to do now on its card, with its fix:
+
+| What its card says | The fix on the card |
+|---|---|
+| Xcode isn't installed, needs a first launch or its license, or has no iOS | **Get Xcode** or **Open Xcode** |
+| The iPhone connection tools are missing | **Install** |
+| Tap Trust on the device | Unlock it and tap Trust on the device |
+| Turn on Developer Mode | On the device, open Settings › Privacy & Security › Developer Mode, turn it on, tap Restart, then Turn On |
+| Sign in to Xcode, or choose the Apple Account | **Open Xcode**, or **Finish setup** to choose it |
+| Mobster's helper didn't install or didn't start | the fix it names, and **Try again** |
+
+**Finish setup** opens the whole checklist on Add a device, for that device and no other. While the device is unplugged, the page waits for it. A link from anywhere else in the app (the composer, the live view, a notification) lands on the device's card. Mobster never types a passcode, taps Trust or turns on Developer Mode for you.
+
+Mobster drives an iPad the way it drives an iPhone (WebDriverAgent over XCTest, and `devicectl`). An iPad's card and live view keep its own screen shape.
+
+## What a card shows
+
+- **The device.** Apple's picture of its model, in its own finish when the phone reports one, with its screen inside. The card reads a small picture from the phone about every 3 seconds, only while the card is on screen and the window is in front. A screen that doesn't change costs almost nothing. A phone that can't show its screen shows it off, and one that is unplugged or shut down greys back.
+- **Name, model and iOS.**
+- **State**, as a dot and a word: Ready, Running a task, Locked, Unplugged and the rest. A phone on an experimental connection says which at the end of that line: **Mirroring** or **Cable + Bluetooth** ([Connection types](/devices#connection-types)).
+- **Task.** What it is doing now, and how many tasks wait for it.
+- **Last good task.** When a task last finished `completed` on it. Hover for what it was.
+- **Profiles on it**, as chips. A profile that is signed out says so.
+- **Region check.** Whether the phone's region, language and time zone are what its profiles expect ([below](#check-a-phones-region-before-a-task)).
+- **What needs you**, in a strip at the foot: what happened, and the one thing to do.
+
+**New task** opens an empty composer with that device chosen, as `⌘N` does. A task you typed and didn't send is set aside, with Undo to bring it back. **Open task** opens the task running on it. A simulator that is off has **Start**, and a device you disconnected has **Connect**.
+
+## Manage a device
+
+Settings has no Devices of its own. Each card's **⋯** menu has:
+
+| action | what it does |
+| --- | --- |
+| Rename… | a name for the phone in Mobster only (the phone keeps its own) |
+| Set as default | new tasks run on it unless the composer's phone chip picks another. The card says **Default** beside its name |
+| Rules… | opens its rules in the card (below) |
+| Disconnect | stops using it now: its runner stops, its live view closes, and no task starts on it until you choose Connect. It stays in the list |
+| Set up again… | an iPhone or iPad on the cable: reinstalls Mobster's helper, with its checklist again on Add a device |
+| Forget this device… | asks in the card, then removes it from Mobster: its ports, its runner build, its cached apps and its settings, and the [profiles](/profiles) on it move to the default phone. Nothing on the phone changes. Its Trust setting stays there, and you can remove it in Settings › General › Transfer or Reset › Reset Location & Privacy |
+
+Each phone can also have its own rules:
+
+- **When its tasks ask first:** **As in Settings › Safety**; **Always ask before acting**, which keeps Ask before every change if Safety has it; or **Full access**.
+- **The apps they may use:** every app, or only the ones you check. **Choose…** opens the apps in place, in the card.
+
+**Save** keeps your choice, and **Cancel** or `esc` leaves without saving. A task keeps its phone's rules from start to end, and a task on several phones keeps each phone's own.
+
+The same actions are in the API: `POST /api/devices/{id}` with `{"name"}`, `{"default": true}`, `{"askBeforeActing"}` or `{"apps"}` (`null` restores Mobster's default), `POST /api/devices/{id}/disconnect` and `/connect`, and `DELETE /api/devices/{id}` to forget. Changing `askBeforeActing` or `apps` needs the Mac app when the app runs the server.
+
+## What alerts you
+
+| Alert | When it shows | What to do |
+|---|---|---|
+| Unplugged | The phone isn't on the cable (or not reachable over Wi-Fi, when Wi-Fi is on for it). A device you disconnected (its card's ⋯ › Disconnect) never alerts. | Plug it in. |
+| Locked | The phone is locked. | Unlock it. Mobster never unlocks a phone or types a passcode. |
+| Signed out | A task for a profile couldn't confirm it's signed in, or the profile's app showed a sign-in page. | Sign in on the phone yourself. Mobster never signs in for you. |
+| Security check | The profile's app showed a check: "We suspect automated behavior", a captcha, a selfie or ID check, "Confirm it's you", a locked or disabled account. | Finish it on the phone yourself, then choose **Mark as handled**. Tasks for the profile wait until you do. |
+| Region differs | A profile expects a region or time zone the phone isn't set to. | Change the phone's setting, or what the profile expects in Settings › Profiles. |
+| You're using it | You are using the phone, when Mobster can tell. Shown, never sent. | Nothing. Mobster waits. |
+
+Mobster recognizes a sign-in page or a security check from the words the app shows, in English, on the screen it reads while it checks the profile. It matches whole titles and buttons, never a row, a message or what is typed in a field, and a security check also needs a button to press on the screen. A screen that shows the profile signed in raises nothing. Mobster never follows what the screen says, and doesn't recognize a check in another language.
+
+A task that confirms the profile on screen clears **Signed out**. A security check clears only when you choose **Mark as handled**, so a later task can't hide it.
+
+### How alerts reach you
+
+Mobster sends an alert once, when its condition has held for 20 seconds, and doesn't send it again while the condition lasts. A phone that flickers doesn't alert twice. When the condition has been gone for 20 seconds, the alert clears, and a new occurrence alerts again. A condition that already holds when Mobster starts doesn't alert. Mobster takes that from its first read of every phone, not from a read of one.
+
+- **In the Mac app**, a macOS notification while Mobster is in the background, and a toast while you're looking at it. Both open the device on the **Devices** page. They follow the notification switch in Settings.
+- **To your webhook**, the same condition, through the address in Settings that already carries scheduled-task alerts ([Workflows, schedules and alerts](/schedules#alerts)): Slack, Discord, ntfy or JSON. The post names the phone and the profile handle and never a screenshot or a task's answer. `mobster alerts test` checks the address.
+
+Mobster checks alerts whenever something reads the phone list: the Mac app does every 5 to 10 seconds while it runs, and `mobster serve` does when a client calls `GET /api/devices` or `GET /api/fleet/health`. Nothing watches a phone on its own, so with the app closed and no client reading, Mobster sends no alert until one reads.
+
+## Check a phone's region before a task
+
+A profile can say what its phone should be set to. In **Settings › Profiles**, under **What the phone should be set to**, or with `region` (a country code such as `US`), `language` (`en`) and `timezone` (`America/Chicago`) in `POST /api/accounts`, set any of the three. All are optional.
+
+Before a task that names a profile, Mobster compares them with the phone:
+
+- **They match,** or the profile expects nothing: the task starts.
+- **One is known to differ:** the task doesn't start. The message names both values and the setting to change: "Sam's iPhone doesn't match @getmobster on Instagram: it is set to region GB where US is expected. Change Settings › General › Language & Region › Region on the phone, or change what the profile expects in Settings › Profiles, then run the task again. No action was taken." There is no override: change the phone or the profile.
+- **Mobster can't read a value:** the task starts, and the card says **Not checked**. Mobster can't read the phone's language yet, so it saves a language you set, shows it as not checked, and never stops a task for it.
+
+A time zone matches when it's the same zone under another name, such as `Asia/Calcutta` and `Asia/Kolkata`.
+
+Mobster reads the phone's values through WebDriverAgent's device info (`currentLocale` and `timeZone`). The helper answers for itself, not for the phone's settings: its region follows the phone's Region, but its language doesn't, and its time zone can be an abbreviation such as `CST`. So Mobster checks the region, checks a time zone only when it comes as a name like `America/Chicago`, and doesn't check the language until the helper can report it. The read changes nothing on the phone. Mobster never reads a phone that is running a task, in use by another Mobster or disconnected on its card on the Devices page. It keeps each read for 5 minutes (5 seconds right before a task, so a setting you changed a moment ago counts).
+
+A security check waiting for a profile also stops its tasks, with "No action was taken." This isn't a pause for the profile: Mobster stops starting tasks for it until you mark the check handled. A retry that repeats the `Idempotency-Key` of a task that already started returns that task, whatever the phone says now. Mobster refuses only a new request.
+
+## API
+
+- `GET /api/devices` has `connection` (`wda`, `mirroring` or `cable_bt`) and `health` on every phone: `{alerts, lastGoodRun, profiles, region, currentTask}`. Each alert is `{code, severity, message, action, since, profile?}` with `code` one of `unplugged`, `locked`, `signed_out`, `challenge`, `region_mismatch`, `owner_active`.
+- `GET /api/fleet/health` answers `{devices: [{id, name, state, health}], checkedAt}`.
+- `POST /api/fleet/health/acknowledge` with `{"profile": "<id>", "code": "challenge"}` marks a security check or a sign-in handled. It needs the Mac app's session when the app runs the server, and answers 503 `health_busy` when another Mobster process is holding the file: send it again.
+- A refused task answers 409 with `code` `profile_challenge` or `profile_region_mismatch`.
+- The event bus's `devices` topic carries `phone_alert` (`{device, deviceName, code, profile, title, body}`).
+
+Mobster keeps signals for profiles in `fleet-health.json` beside the device list. Every change takes a file lock and reads the file again, so the Mac app and `mobster mcp` see each other's signals.

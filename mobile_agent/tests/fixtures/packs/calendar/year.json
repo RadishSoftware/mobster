@@ -1,0 +1,225 @@
+{
+"note": "Recorded on the test device (iPhone 15 Pro, iOS 26.0.1), 11 and 12 Oct 2026: the rows the agent saw, scrubbed (personal events renamed).",
+"rows": [
+{
+"role": "NavigationBar",
+"label": "YearViewContainerView",
+"rect": [
+0.0,
+0.07,
+1.0,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "Search",
+"rect": [
+0.71,
+0.08,
+0.1,
+0.04
+]
+},
+{
+"role": "Button",
+"label": "Add",
+"rect": [
+0.85,
+0.08,
+0.1,
+0.04
+]
+},
+{
+"role": "Button",
+"label": "October 2025",
+"rect": [
+0.06,
+0.0,
+0.28,
+0.13
+]
+},
+{
+"role": "Button",
+"label": "November 2025",
+"rect": [
+0.36,
+0.0,
+0.28,
+0.13
+]
+},
+{
+"role": "Button",
+"label": "December 2025",
+"rect": [
+0.66,
+0.0,
+0.28,
+0.13
+]
+},
+{
+"role": "StaticText",
+"label": "2026",
+"rect": [
+0.06,
+0.14,
+0.25,
+0.05
+]
+},
+{
+"role": "Button",
+"label": "January 2026",
+"rect": [
+0.06,
+0.21,
+0.28,
+0.18
+]
+},
+{
+"role": "Button",
+"label": "February 2026",
+"rect": [
+0.36,
+0.21,
+0.28,
+0.18
+]
+},
+{
+"role": "Button",
+"label": "March 2026",
+"rect": [
+0.66,
+0.21,
+0.28,
+0.18
+]
+},
+{
+"role": "Button",
+"label": "April 2026",
+"rect": [
+0.06,
+0.38,
+0.28,
+0.18
+]
+},
+{
+"role": "Button",
+"label": "May 2026",
+"rect": [
+0.36,
+0.38,
+0.28,
+0.18
+]
+},
+{
+"role": "Button",
+"label": "June 2026",
+"rect": [
+0.66,
+0.38,
+0.28,
+0.18
+]
+},
+{
+"role": "Button",
+"label": "July 2026",
+"rect": [
+0.06,
+0.56,
+0.28,
+0.18
+]
+},
+{
+"role": "Button",
+"label": "August 2026",
+"rect": [
+0.36,
+0.56,
+0.28,
+0.18
+]
+},
+{
+"role": "Button",
+"label": "September 2026",
+"rect": [
+0.66,
+0.56,
+0.28,
+0.18
+]
+},
+{
+"role": "Button",
+"label": "Current month, October 2026",
+"rect": [
+0.06,
+0.74,
+0.28,
+0.17
+]
+},
+{
+"role": "Button",
+"label": "November 2026",
+"rect": [
+0.36,
+0.74,
+0.28,
+0.17
+]
+},
+{
+"role": "Button",
+"label": "December 2026",
+"rect": [
+0.66,
+0.74,
+0.28,
+0.17
+]
+},
+{
+"role": "Button",
+"label": "Today",
+"rect": [
+0.08,
+0.92,
+0.16,
+0.05
+]
+},
+{
+"role": "Button",
+"label": "Calendars",
+"rect": [
+0.61,
+0.92,
+0.15,
+0.05
+]
+},
+{
+"role": "Button",
+"label": "Inbox",
+"rect": [
+0.79,
+0.92,
+0.12,
+0.05
+]
+}
+]
+}

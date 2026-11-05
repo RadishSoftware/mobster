@@ -18,9 +18,9 @@ Sets (each item carries ``task`` and its ``half``; see sets.py):
 
 import argparse
 import collections
+import hashlib
 import json
 import pathlib
-import hashlib
 import random
 import re
 
@@ -62,7 +62,8 @@ def listing_lines(text):
     if at < 0:
         return []
     body = text[at:].split("\n", 1)[1] if "\n" in text[at:] else ""
-    cut = [body.find(m) for m in ("\n\nRecent actions", "\n\nScreen elements:", "\n\nTask contract") if body.find(m) >= 0]
+    cut = [body.find(m) for m in ("\n\nRecent actions", "\n\nScreen elements:", "\n\nTask contract")
+           if body.find(m) >= 0]
     return [line for line in (body[: min(cut)] if cut else body).splitlines() if line.strip()]
 
 
@@ -109,8 +110,6 @@ def label_index(paths):
     return out
 
 
-# -- done ------------------------------------------------------------------------------------------------------
-
 def done_item(run, writer, labels):
     folder = pathlib.Path(run.folder)
     prompts = _prompts(folder)
@@ -147,20 +146,18 @@ def done_item(run, writer, labels):
                       "adjudicated_pass": bool(run.passed) or lab.get("cause") == "judge_miss"}}
 
 
-# -- value -----------------------------------------------------------------------------------------------------
-
-def _plain(text):
+def plain(text):
     return re.sub(r"[^a-z0-9.$%:/@+-]+", " ", str(text or "").casefold()).strip()
 
 
 def value_parts(value):
     """The comparable pieces of a value: "P 5g, C 27g, F 3g" -> ["p 5g", "c 27g", "f 3g"]."""
-    parts = [_plain(p) for p in re.split(r"[;,\n]| and ", str(value or "")) if _plain(p)]
-    return parts or ([_plain(value)] if _plain(value) else [])
+    parts = [plain(p) for p in re.split(r"[;,\n]| and ", str(value or "")) if plain(p)]
+    return parts or ([plain(value)] if plain(value) else [])
 
 
 def on_screen(value, lines):
-    hay = _plain(" ".join(lines))
+    hay = plain(" ".join(lines))
     parts = value_parts(value)
     return bool(parts) and all(p in hay for p in parts)
 
@@ -202,8 +199,6 @@ def value_items(run, writer, rng):
                             "gold": None, "kind": "not_shown"})
     return out
 
-
-# -- golden turns ------------------------------------------------------------------------------------------------
 
 def _gold(action, target=None):
     return {"op": action.op, "label": action.label, "text": action.text, "app": action.app, "target": target}
@@ -312,9 +307,8 @@ def golden_items(runs, writer, per_task=24, seed=20261010):
     return out
 
 
-# -- grounding ------------------------------------------------------------------------------------------------------
-
-GROUND_ROW = re.compile(r'^(e\d+) (\S+) (?:"((?:[^"\\]|\\.)*)"|\(no label[^)]*\))(.*?)@(\d+),(\d+),(\d+),(\d+)\s*$', re.M)
+GROUND_ROW = re.compile(r'^(e\d+) (\S+) (?:"((?:[^"\\]|\\.)*)"|\(no label[^)]*\))(.*?)@(\d+),(\d+),(\d+),(\d+)\s*$',
+                        re.M)
 ORDINALS = ("first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth")
 TAPPABLE = frozenset({"Button", "Cell", "Link", "TextField", "SearchField", "Switch", "Tab", "MenuItem", "Image"})
 
@@ -370,8 +364,7 @@ def intents(rows, rng):
 
 
 def grounding_items(runs, writer, per_screen=2, seed=20261010):
-    """Intents on recorded screens (one visit per screen per task), with the screenshot. Also each single-TAP turn's
-    own words (the planner's thought) with the element it tapped (kind "thought": the planner's pick, not truth)."""
+    """Intents on recorded screens (one visit per screen per task), with the screenshot."""
     rng = random.Random(seed)
     out, seen = [], set()
     for run in runs:
@@ -403,8 +396,6 @@ def grounding_items(runs, writer, per_screen=2, seed=20261010):
     return out
 
 
-# -- the finishing turn ------------------------------------------------------------------------------------------
-
 def finish_items(runs, done_set):
     """Each ending of a frozen DONE set, as the finishing turn the model saw: the final DONE turn's prompt and
     screenshot, with the DONE set's labels (should it have finished here)."""
@@ -425,8 +416,6 @@ def finish_items(runs, done_set):
                     "alternatives": [], "wrong": None, "screen": None})
     return out
 
-
-# -- commit classification ---------------------------------------------------------------------------------------
 
 COMPILED = re.compile(r"^(COMMIT|FORBID) (\S+) \(([^)]*)\): (.*?) \| quote=(.*)$")
 
@@ -455,7 +444,8 @@ def commit_items(runs, replay, labels):
     from ..guard_replay import decisions
     from ..iosworld_stats import commit_requested
     compiled = replay.get("compiled") or {}
-    blamed = {(row.get("task"), row.get("arm"), row.get("run")) for row in labels if row.get("cause") == "guard_refusal"}
+    blamed = {(row.get("task"), row.get("arm"), row.get("run")) for row in labels
+              if row.get("cause") == "guard_refusal"}
     out = {}
     for run in runs:
         if run.task not in compiled or not (pathlib.Path(run.folder) / "prompts.jsonl").exists():
@@ -475,8 +465,6 @@ def commit_items(runs, replay, labels):
                 item["required"] = True
     return list(out.values())
 
-
-# -- contract quality ---------------------------------------------------------------------------------------------
 
 def contract_items(runs):
     """One item per task: the request, its apps, and the judge's rubric criteria (with how many judged runs failed
@@ -511,8 +499,6 @@ def contract_items(runs):
                     "recorded": recorded[:4]})
     return [o for o in out if o["apps"]]
 
-
-# -- the command --------------------------------------------------------------------------------------------------
 
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="python -m mobile_agent.bench.evals.build")

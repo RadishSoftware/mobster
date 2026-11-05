@@ -1,8 +1,8 @@
 """Typed user-policy questions; inferred output never grants action authority."""
 
+import re
 from dataclasses import replace
 from enum import StrEnum
-import re
 
 
 class RiskTier(StrEnum):
@@ -28,8 +28,7 @@ SIDE_EFFECT_CONTROL = re.compile(
     re.I)
 
 
-# Roles whose tap only moves between screens. Switches, sliders, pickers,
-# steppers, segmented controls and text inputs change state and are excluded.
+# Roles whose tap only moves between screens.
 NAVIGATION_TAP_ROLES = frozenset({"Button", "Cell", "Link", "StaticText", "Image", "Icon", "Other"})
 # Verbs that make even a plain button state-changing; any match keeps the verifier.
 STATE_CHANGING_LABEL = re.compile(
@@ -42,9 +41,7 @@ STATE_CHANGING_LABEL = re.compile(
     re.I)
 
 
-# Keys of an on-screen keypad (Calculator, a PIN or dial pad): each press is input, like a
-# typed character, not an effect to verify or de-duplicate ("5 × 5" presses 5 twice; the
-# duplicate-effect guard stopped text.calc_multiply). Commit keys ("Call") are not here.
+# Keys of an on-screen keypad (Calculator, a PIN or dial pad): each press is input, not an effect to de-duplicate.
 KEYPAD_KEY = re.compile(r"^(\d|[+\-×x*÷/=.%,]|plus|minus|add|subtract|multiply|times|divide|equals|decimal|point|"
                         r"percent|clear|all clear|delete|backspace|negate|change sign|"
                         r"zero|one|two|three|four|five|six|seven|eight|nine)$", re.I)
@@ -54,17 +51,14 @@ def is_keypad_key(operation, role, label):
     return operation == "TAP" and role in ("Key", "Button") and bool(KEYPAD_KEY.match((label or "").strip()))
 
 
-# The lock screen's passcode keypad: SpringBoard's own digit keys ("1", "2, A B C" ...). The model never acts on
-# it: Mobster handles the lock screen itself (lockscreen.py), and every model tap there is refused (B2: a run
-# tapped around the passcode screen, and the lock screen's Now Playing card).
+# SpringBoard's passcode keypad: lockscreen.py handles the lock screen, and every model tap there is refused.
 SPRINGBOARD_BUNDLE = "com.apple.springboard"
 _DIGIT_KEY = re.compile(r"^\s*(\d)(?!\d)")
 _PASSCODE_MARKER = re.compile(r"\b(enter passcode|passcode|emergency|touch id|face id)\b", re.I)
 
 
 def springboard_keypad(snapshot):
-    """True when ``snapshot`` is SpringBoard showing a digit keypad: at least six distinct digit keys, with a
-    passcode marker ("Enter Passcode", "Emergency") or all ten digits. Errs toward True: it only refuses."""
+    """True when ``snapshot`` is SpringBoard showing a digit keypad. Errs toward True: it only refuses."""
     if getattr(snapshot, "bundle_id", "") != SPRINGBOARD_BUNDLE:
         return False
     digits, marked = set(), False
@@ -78,10 +72,7 @@ def springboard_keypad(snapshot):
     return len(digits) >= 10 or len(digits) >= 6 and marked
 
 
-# Controls whose tap commits something the user would want to see first:
-# money, messages, publishing and deletion. Narrower than SIDE_EFFECT_CONTROL,
-# which also covers routine commits like "Done" and "Save" in Settings.
-# The words are regex fragments; contract.COMMIT_WORDS is built from them.
+# Controls whose tap commits something the user would want to see first: money, messages, publishing and deletion.
 COMMIT_CONTROL_WORDS = (
     "send", "post", "publish", "reply", "comment", "share", "tweet", "buy", "purchase", "order", "pay", "checkout",
     "place order", "transfer", "donate", "tip", "subscribe", "book", "reserve", "delete", "erase", "remove", "reset",
@@ -95,12 +86,7 @@ SHEET_OPENERS = frozenset({"share", "share…", "share..."})
 
 APPROVAL_OPERATIONS = frozenset({"TAP", "SUBMIT", "TYPE_SUBMIT"})
 
-# Controls that put something out in the world beyond COMMIT_CONTROL's words, for "ask before acting"
-# only (COMMIT_CONTROL also steers navigation and the action check, so it stays as it is): a ride
-# request, the trash, clearing a list, answering an invite, joining or leaving a group, blocking,
-# reporting, unsubscribing, an App Store Get, a rental, a mail archive. Each exclusion is a control
-# of the same word that only opens, reads or edits ("Request Desktop Website", "Clear text",
-# "Get Directions"). The PM probe of 26 Sep found every one of these went through unasked.
+# Commits beyond COMMIT_CONTROL's words, for "ask before acting" only; a lookahead spares a control that opens.
 APPROVAL_COMMIT = re.compile(
     r"\b(?:request(?!\s+(?:desktop|mobile)\b)|(?:move\s+to\s+)?trash|"
     r"clear(?!\s+(?:text|search|query|field|filters?|selection)\b)|accept|decline|join|leave|"
@@ -113,22 +99,14 @@ APPROVAL_COMMIT = re.compile(
 APPROVAL_ACT_ALIASES = {"move to trash": "trash", "mark as junk": "junk", "mark as spam": "junk", "hang up": "end call"}
 
 
-# Roles whose label is what they show, not what a tap on them does: a list row (the reminder "Call the dentist",
-# a message preview), text, a field, a picture. QA on f27d229: tapping the reminder "Call the dentist, Incomplete"
-# asked "Place this call?". Only a tap reads a label this way: Return in a field does what the field's label says
-# ("Reply to Sam" sends the reply), so a submit never passes the role.
+# Roles whose label is what they show, not what a tap on them does.
 CONTENT_ROLES = frozenset({"Cell", "StaticText", "TextField", "TextView", "SecureTextField", "SearchField", "Image",
                            "Icon"})
 # A tap on a field only focuses it, whatever its label ("Order more coffee filters", "Comment").
 EDITABLE_ROLES = frozenset({"TextField", "TextView", "SecureTextField", "SearchField"})
 # The state iOS appends to a reminder's row ("Buy oat milk, Incomplete"): that label is always content.
 ROW_STATE = re.compile(r",\s*(?:Incomplete|Completed)$", re.I)
-# Acts that name a person or a chore in a row's words as often as they name a control ("Call the dentist",
-# "Follow up with Dana", "Reply to Sam's note"): in content they count only in a label of at most CONTROL_WORDS
-# words ("Call", "Call Sam", "Reply All"). Every other act counts in content at any length: money, messages,
-# posts and deletions ("Place your order", "Confirm and pay", "Send My Current Location", "Transfer to Checking",
-# "Block this Caller", "Erase All Content and Settings"). Review 2 of #41 found those four money and message rows
-# going through unasked when only deletions counted at any length.
+# Acts a row names as often as a control ("Call the dentist"): in content, only in labels of CONTROL_WORDS words.
 TALK_ACTS = frozenset({"call", "dial", "facetime", "reply", "comment", "follow"})
 CONTROL_WORDS = 2
 # The checkout button's own words, which COMMIT_CONTROL's "place order" does not read.
@@ -141,14 +119,7 @@ UNSEND = re.compile(r"\b(?:unsend|undo send)\b", re.I)
 
 
 def commit_label(label, role=None):
-    """The commit a control's own label names, as it reads in the label, or None.
-
-    A control (a Button, a Link, any role but CONTENT_ROLES; None counts as one) names it anywhere in its label
-    ("Pay with Apple Pay", "Place Order · $42.00"). Content counts only when its label reads like a control's:
-    the commit word first and no comma (iOS joins a row's parts with commas), and for TALK_ACTS at most
-    CONTROL_WORDS words ("Call Sam", not "Call the dentist"). A field (EDITABLE_ROLES) never names one: a tap
-    there only focuses it. A reminder's row ("Call the dentist, Incomplete") never names one, whatever its role.
-    A spurious ask on a plain row ("Pay the rent on Friday") is the safe failure; a missed one is not."""
+    """The commit a control's label names, or None; a spurious ask on a plain row is the safe failure."""
     label = " ".join((label or "").split())
     if ROW_STATE.search(label):
         return None
@@ -185,15 +156,7 @@ def same_words(a, b):
 
 
 def approval_subject(elements, target):
-    """The element whose label and role "ask before acting" reads for a tap on ``target``.
-
-    A tap lands on the control that holds what it hits. WebKit exposes a checkout <button> as a Button with a
-    StaticText of the same label inside, both tap targets, and Fast may pick the text: review 2 of #41 saw
-    "Place your order" go through unasked that way. So content (CONTENT_ROLES) under a control reads as that
-    control: of the controls whose frame holds the tap point, the one with the same label, else the innermost.
-    A control that names no commit leaves the content its own reading, so a commit is never read away. Content
-    with no control around it, inside a row whose label reads as a row (a comma, a reminder's state), reads as
-    that row: the title "Pay the rent" inside "Pay the rent, Incomplete" is the reminder, not a payment."""
+    """The element "ask before acting" reads for a tap on ``target``; a commit is never read away."""
     if target is None or target.role not in CONTENT_ROLES or target.role in EDITABLE_ROLES:
         return target
     point = target.tap_point
@@ -221,22 +184,7 @@ def label_role(operation, role):
 
 
 def approval_kind(operation, label, *, risk_tier, uncertain=False, role=None):
-    """What "ask before acting" asks about this action: "commit", "unsure" or None.
-
-    "commit": the action puts something out in the world. Only a tap, a submit or typing followed
-    by Return can, and only when the control's own label names a commit (Send, Buy, Post, Delete,
-    Request, Trash, Clear All, Accept, Unsubscribe, Get...: COMMIT_CONTROL and APPROVAL_COMMIT; for a
-    tap on a row or text of ``role``, only as ``commit_label`` says) or it is a submit in a task whose
-    wording is a side effect (a message, a post). A submit reads the field's label whatever its role:
-    Return in "Reply to Sam" sends the reply.
-    "unsure": the model or its action check could not establish this step (``uncertain``), so the
-    user decides whether it continues; it never reads as a commit.
-
-    A high side-effect score alone does not ask: the audit of 26 Sep saw "Tap New Reminder"
-    (which opens a form and commits nothing) put to the user while the step that saved the
-    reminder went through. Such a tap still passes the action check, which is the safety net.
-    Scrolling, navigation and typing without Return never ask as a commit.
-    """
+    """What "ask before acting" asks: "commit", "unsure" or None; scrolling and typing without Return never commit."""
     if operation in APPROVAL_OPERATIONS and (
             commit_label(label, label_role(operation, role))
             or operation in {"SUBMIT", "TYPE_SUBMIT"} and risk_tier == RiskTier.SIDE_EFFECT.value):
@@ -282,11 +230,7 @@ def _act(match):
 
 
 def commit_act(label, request="", role=None, operation="TAP"):
-    """The commit a control performs, as one lowercase verb ("send", "place order"), or "submit".
-
-    The request is read only for COMMIT_CONTROL's words: "Get the iOS version" asks for no App Store Get.
-    ``role`` as in ``commit_label``, for a tap only (``label_role``): a row's words name no act.
-    """
+    """The commit a control performs, as one lowercase verb ("send", "place order"), or "submit"."""
     named = commit_label(label, label_role(operation, role))
     if named:
         return _act(named)
@@ -325,17 +269,7 @@ def action_risk_tier(operation, target_label="", goal=""):
     return RiskTier.NAVIGATION
 
 
-# --- Compiled loops (loops.py) -------------------------------------------------
-
-
-# -- actions the request itself asks for ---------------------------------------------------
-#
-# The action verifier is conservative: UNCLEAR ends the run. That is right for a request that
-# asks only to look (MobsterBench's questions), and wrong for one that asks to change things:
-# on iOSWorld (24 Sep smoke) "archive a QuickBite receipt" and "Send $32.50 to Maya Patel"
-# ended at the verifier's UNCLEAR on the very controls named in the request. An UNCLEAR is no
-# evidence of a wrong effect; the request's own words are evidence of the right one.
-
+# The verifier's UNCLEAR ends a run; the request's own words are evidence that the act it names is the right one.
 PROHIBITION_SENTENCE = re.compile(r"[^.!?]*\b(?:do not|don't|never|without|only look)\b[^.!?]*(?:[.!?]|$)", re.I)
 CHANGE_REQUEST = re.compile(
     r"\b(add|log|create|write|compose|draft|send|reply|message|share|post|book|reserve|order|buy|purchase|"
@@ -361,8 +295,7 @@ def _inflections(word):
     return {word, word + "s", word + "d", word + "ed", stem + "ing", stem + "ed", word + "ment", stem + "ion"}
 
 
-# Acts that are the same request in other words: "order a cake" is completed by "Go to
-# checkout" (iOSWorld multi-006, 24 Sep: refused three times as an unrequested act).
+# Acts that are the same request in other words.
 ACT_SYNONYMS = (
     {"order", "checkout", "purchase", "buy", "pay", "place"},
     {"book", "reserve", "reservation", "confirm"},
@@ -385,13 +318,7 @@ def synonyms(act):
 
 
 def requested_by(request, operation, role, label):
-    """Whether this action is one the request's own words ask for (never for a look-only request).
-
-    Text into a search field is a search. Text elsewhere needs the request to ask for
-    writing ("message", "add a note"). A tap on a control whose label names an act
-    ("Archive", "Send", "Pay") needs that act in the request; a tap on a control that names
-    no act is navigation.
-    """
+    """Whether this action is one the request's own words ask for (never for a look-only request)."""
     if not asks_for_changes(request):
         return False
     asked = asked_part(request).casefold()

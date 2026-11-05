@@ -1,0 +1,26 @@
+---
+title: "No Account for Team"
+sidebarTitle: "No Account for Team"
+description: "Xcode's sign-in for your Apple team lapsed. Sign in again in Xcode and build again."
+icon: "triangle-alert"
+keywords: ["Xcode accounts", "team", "sign in", "xcodebuild"]
+"article:modified_time": "2026-10-26"
+---
+
+You see this: `xcodebuild` prints `error: No Account for Team "<your team id>". Add a new account in Accounts settings or verify that your accounts have valid credentials.` Mobster shows `Sign in again in Xcode › Settings › Accounts`.
+
+## Why it happens
+
+The team is chosen, but Xcode's session for it expired. It is the likeliest way a helper refresh fails days after it worked.
+
+## Fix
+
+1. Open **Xcode › Settings › Accounts**.
+2. Sign in to your Apple Account again and select the team.
+3. Choose **Check again** in Mobster for Mac, or build again.
+
+## Check it worked
+
+The build finishes and `mobster doctor` prints no `✗` line for the runner.
+
+Checked 26 Oct 2026 against Mobster 0.4.0. Back to [Troubleshooting](/troubleshooting#iphone).

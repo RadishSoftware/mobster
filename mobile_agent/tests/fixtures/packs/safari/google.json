@@ -1,0 +1,360 @@
+{
+"note": "Recorded on the test device (iPhone 15 Pro, iOS 26.0.1), 11 Oct 2026: the rows the agent saw (a public web search).",
+"rows": [
+{
+"role": "Link",
+"label": "Go to Google Home",
+"rect": [
+0.39,
+0.07,
+0.23,
+0.08
+]
+},
+{
+"role": "Link",
+"label": "Sign in",
+"rect": [
+0.82,
+0.09,
+0.11,
+0.02
+]
+},
+{
+"role": "StaticText",
+"label": "Sign in",
+"rect": [
+0.82,
+0.09,
+0.11,
+0.02
+]
+},
+{
+"role": "Other",
+"label": "Main menu",
+"rect": [
+0.0,
+0.07,
+0.15,
+0.08
+]
+},
+{
+"role": "Button",
+"label": "Google Search",
+"rect": [
+0.04,
+0.14,
+0.12,
+0.06
+]
+},
+{
+"role": "TextField",
+"label": "Google Search",
+"rect": [
+0.16,
+0.15,
+0.54,
+0.03
+],
+"value": "what year did the Golden Gate Bridge open",
+"editable": true
+},
+{
+"role": "StaticText",
+"label": "what year did the Golden Gate Bridge open",
+"rect": [
+0.16,
+0.15,
+0.79,
+0.02
+]
+},
+{
+"role": "StaticText",
+"label": "what year did the Golden Gate Bridge open",
+"rect": [
+0.16,
+0.15,
+0.79,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "Search by voice",
+"rect": [
+0.7,
+0.14,
+0.12,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "Search using your camera or photos",
+"rect": [
+0.82,
+0.14,
+0.12,
+0.06
+]
+},
+{
+"role": "Link",
+"label": "AI Mode",
+"rect": [
+0.04,
+0.21,
+0.14,
+0.02
+]
+},
+{
+"role": "StaticText",
+"label": "AI Mode",
+"rect": [
+0.04,
+0.21,
+0.14,
+0.02
+]
+},
+{
+"role": "Link",
+"label": "All",
+"rect": [
+0.24,
+0.21,
+0.04,
+0.02
+]
+},
+{
+"role": "Link",
+"label": "All",
+"rect": [
+0.24,
+0.21,
+0.04,
+0.02
+]
+},
+{
+"role": "StaticText",
+"label": "All",
+"rect": [
+0.24,
+0.21,
+0.04,
+0.02
+]
+},
+{
+"role": "Link",
+"label": "Images",
+"rect": [
+0.35,
+0.21,
+0.12,
+0.02
+]
+},
+{
+"role": "StaticText",
+"label": "Images",
+"rect": [
+0.35,
+0.21,
+0.12,
+0.02
+]
+},
+{
+"role": "Link",
+"label": "News",
+"rect": [
+0.52,
+0.21,
+0.09,
+0.02
+]
+},
+{
+"role": "StaticText",
+"label": "News",
+"rect": [
+0.52,
+0.21,
+0.09,
+0.02
+]
+},
+{
+"role": "Link",
+"label": "Forums",
+"rect": [
+0.67,
+0.21,
+0.13,
+0.02
+]
+},
+{
+"role": "StaticText",
+"label": "Forums",
+"rect": [
+0.67,
+0.21,
+0.13,
+0.02
+]
+},
+{
+"role": "Link",
+"label": "Videos",
+"rect": [
+0.85,
+0.21,
+0.12,
+0.02
+]
+},
+{
+"role": "StaticText",
+"label": "Videos",
+"rect": [
+0.85,
+0.21,
+0.12,
+0.02
+]
+},
+{
+"role": "StaticText",
+"label": "Search Results",
+"rect": [
+0.0,
+0.26,
+0.24,
+0.02
+]
+},
+{
+"role": "StaticText",
+"label": "Searching",
+"rect": [
+0.04,
+0.27,
+0.19,
+0.02
+]
+},
+{
+"role": "StaticText",
+"label": "Thinking a little longer",
+"rect": [
+0.04,
+0.27,
+0.42,
+0.02
+]
+},
+{
+"role": "Other",
+"label": "Generating",
+"rect": [
+0.04,
+0.32,
+0.92,
+0.32
+],
+"value": "50.00"
+},
+{
+"role": "StaticText",
+"label": "People also ask",
+"rect": [
+0.04,
+0.69,
+0.34,
+0.03
+]
+},
+{
+"role": "Button",
+"label": "What happened on the Golden Gate Bridge in 1987?",
+"rect": [
+0.04,
+0.73,
+0.92,
+0.08
+]
+},
+{
+"role": "Button",
+"label": "How many years did it take to make the Golden Gate Bridge?",
+"rect": [
+0.04,
+0.8,
+0.92,
+0.08
+]
+},
+{
+"role": "Button",
+"label": "Back",
+"rect": [
+0.08,
+0.9,
+0.12,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "Page Menu",
+"rect": [
+0.24,
+0.91,
+0.1,
+0.05
+]
+},
+{
+"role": "TextField",
+"label": "Address",
+"rect": [
+0.35,
+0.92,
+0.32,
+0.03
+],
+"value": "what year did the Golden Gate Bridge open",
+"editable": true
+},
+{
+"role": "Button",
+"label": "Voice Search",
+"rect": [
+0.69,
+0.92,
+0.04,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "More",
+"rect": [
+0.79,
+0.9,
+0.12,
+0.06
+]
+}
+]
+}

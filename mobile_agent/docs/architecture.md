@@ -61,7 +61,7 @@ Every task ends in `frontier.FrontierAgent.run`, built by `engines.build_frontie
   (`tui/session.py`) and draws its runs with Textual (`tui/app.py`). It adds nothing to a
   run: tasks, events, approvals, Stop and settings are the Runtime's own. `narrate.Narrator`
   turns the agent's `frontier_decision` and `frontier_action` events into readable steps.
-- **API** (`server.py`). `Runtime.create` admits a task. It validates the request, resolves the
+- **API** (`server.py`, `runtime_*.py`). `Runtime.create` admits a task. It validates the request, resolves the
   `Idempotency-Key` against the journal, takes a device lease or a `pool.DevicePool` slot, and
   writes the run to the journal. `Runtime.work` then calls `Runtime.run_smart`, which takes the
   model client (`Runtime.smart_client`), builds the driver and checks the phone
@@ -101,7 +101,7 @@ the `DRIVERS` registry:
 | --- | --- | --- |
 | `WDA` | WebDriverAgent over USB (`iproxy`, API port 8100, MJPEG port 9100) | the supported path; Mobster for Mac sets it up ([Device setup](https://docs.mobster.dev/device-setup)) |
 
-`extensions.py` is the one place optional code plugs in: an extension package may register
+`harness_api.hooks()` is the one place optional code plugs in: an optional `mobile_agent.private` package may register
 further drivers (`drivers.register_driver`), snapshot sources, command-line flags and a server runtime. The public package ships
 none, and the agent behaves the same without one.
 
@@ -171,11 +171,11 @@ A read taken mid-animation is not a decision input.
   premature settles. `MOBSTER_FRAME_CLOCK_LOG` and `MOBSTER_FRAME_CLOCK_TRACE` log its decisions.
 - Scrolls use a "glide", a W3C drag with a decelerating end that moves an exact distance with
   no fling (`WDA_GLIDE_SEGMENTS`, `WDA._glide_ok`). `MOBSTER_GLIDE=0` turns it off.
-  `wda_gestures.clear_stroke_start` moves a swipe's start off sliders and switches.
+  `wda.gestures.clear_stroke_start` moves a swipe's start off sliders and switches.
 
 ## Mobster's agent
 
-`frontier.FrontierAgent` (module docstring in `frontier.py`) runs the loop. Its model client comes
+`frontier.FrontierAgent` (`mobile_agent/frontier/`) runs the loop. Its model client comes
 from `model_clients.chat_client`: `AnthropicChat` for `claude-*`, `OpenAIChat` for OpenAI models,
 `GeminiChat` for `gemini-*`, or a provider saved in Settings › Models.
 
@@ -191,6 +191,12 @@ from `model_clients.chat_client`: `AnthropicChat` for `claude-*`, `OpenAIChat` f
 - **Action chunks.** One call returns 1 to `MAX_CHUNK` (6) actions from `frontier.OPERATIONS`.
   Later actions name their target by exact label. A chunk runs until a target is missing or an
   action changes nothing, and then the model sees the new screen.
+- **The turn.** `FrontierAgent._run` is `begin`, then per turn `admit`, `observe`, `decide`, `absorb` and `act`,
+  then `close` (`frontier/phases.py`), each taking the agent and a `Turn` (`frontier/turn.py`; what the run has done
+  is `agent.run_state`). `act` sends each action of the chunk through `pipeline.dispatch`: `STAGES`, one function per
+  decision in `frontier/stages/`, each returning `"next"`, `"stop"`, `"end"` or `None` to pass the action on.
+  Stop, Stop after, pause, a message and the deadline are honoured in `interrupts.check`: at the top of a turn,
+  before each action and after a wait for a person. `tests/test_tape.py` replays recorded runs byte for byte.
 - **Extra operations.** `SET_TEXT` clears a field (`WDA.clear_text`) and then types.
   `DISMISS` taps the first point in `DISMISS_POINTS` that no element covers. `READ_LIST` and
   `SCROLL_TO` are macros: code loops over the screen with no model call per swipe. `TAP_XY`
@@ -203,6 +209,18 @@ from `model_clients.chat_client`: `AnthropicChat` for `claude-*`, `OpenAIChat` f
   (`FrontierAgent(saved_program=...)`) through the same per-action path: guards, the contract's
   commit check, approvals and the journal. Parts of saved programs (`program_parts`, `learned/parts.py`) may run at a
   planning point. The record and replay engine is `replay_core/`.
+- **Compiled reading** (`compiled_read/`, `MOBSTER_EXPERIMENTAL_COMPILED_READ=1`, off by default). Three hooks, each a
+  few lines in the module that owns the step. *Extractors* (`extractors.py`, called from `app_api/screen.py`): a screen
+  the model read into rows is read again by code when its skeleton (line roles, hashed labels where no value came from)
+  is the same; the confidence check is that skeleton plus a number field still being a number, and a miss goes to the
+  model. *Token delta* (`delta.py`, called from `frontier/prompt.py`): the first full screen of a run is the reference,
+  sent once in the prompt's cached part; later turns send the lines that changed and `eN = reference eM` for the ones
+  that only moved, so every element stays listed and an alias still means one element of the current screen. A new app,
+  a screen sharing under half its lines with the reference, or a diff over 60% of the whole screen is sent whole and
+  becomes the reference. *Route corpus* (`routes.py`, `Programs(version=...)`): a saved program is stored under the
+  app's version and offered only for it (or when it has none). `shareable` is the hashes-only record a later opt-in
+  sharing lane can send. The extractor store is a `replay_core` path of kind `extractor` in the data folder's
+  `replays/extractors/`; no screen text reaches it. Measured numbers: `docs/configuration.mdx`.
 - **Cost cap.** `model_clients.cost_usd` prices usage from the `PRICES` list-price table, and the run
   stops at `max_cost_usd` (status `spend_cap`). `bench/iosworld.py` scales each task's cap with
   the apps it spans, at most `MAX_TASK_COST_USD` ($0.60; `task_cost_cap`).
@@ -229,7 +247,7 @@ not sent again.
 
 ## The task contract and the DONE gate
 
-`contract.py` (its module docstring has the details) is proof-gated completion.
+`contract.py` is proof-gated completion.
 
 - **Compile.** One text-only call (`contract.compile_contract`), run while the first screen is
   read, turns the request into typed items: READ a source, WRITE a value, COMMIT an act other
@@ -252,7 +270,14 @@ not sent again.
 1. **Admission** (`Runtime.create`). The request is validated and deduplicated by
    `Idempotency-Key`. The phone is leased (`journal.Lease.device` or `DevicePool.acquire`). The
    run is written to the private SQLite journal (`journal.Journal`, WAL, intent durable
-   before any mutation).
+   before any mutation). So a layer that answers a keyed start and finds no journal row under the
+   key may say `"started": false` (`api_errors.nothing_started`): the conversation routes
+   (`threads/service.py` `start`, and `start_group` by its group key, except the 409 for a group no
+   phone started), a one-task workflow run (`workflows/runs.py` `_dispatch`) and a workflow run
+   refused while Mobster quits, for a key with no dispatch record (`_run`) do.
+   `Runtime.create` never sets it itself: its other callers may have dispatched work before they
+   call it. A 503 `unavailable` before a route runs never has it: the store that would prove the key
+   unused is the one that didn't open.
 2. **Preparation** (`Runtime.run_smart`, `Runtime.open_driver`). The model client is taken and
    metered. The WDA driver is built, and a FrameClock is attached to the video relay.
    `prepare_wda_phone` asks the phone guard, refuses a locked phone and clears overlays. The app
@@ -276,7 +301,7 @@ not sent again.
    the lease. Interrupted runs are marked `interrupted` on restart and never resumed
    automatically.
 
-Every event reaches the journal through `Run._append` in `server.py`, and the dashboard sees each
+Every event reaches the journal through `Run._append` in `run.py`, and the dashboard sees each
 as a server-sent event. Screens are stored beside the run and referenced by `frameId`, never
 inlined. Error events never carry request payloads, generated text, credentials or provider
 response bodies.
@@ -309,6 +334,7 @@ Keys and switches are read from the environment, or from a private env file pass
 | `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION` | `model_clients.GeminiChat` | Gemini on Vertex through your own `gcloud` login; set the project to `<your-project-id>` (location defaults to `global`) |
 | `MOBSTER_ENABLE_LIVE`, `MOBSTER_PERMISSION_MODE`, `MOBSTER_ASK_BEFORE_ACTING` | `__main__` (`serve`), `setup_service`, `permissions.policy` | saved live-run gate for `serve`; the permission mode (`MOBSTER_ASK_BEFORE_ACTING=0` is the older name for `dont_ask`) |
 | `MOBSTER_PROGRAMS` | `learned/programs.py` | saved programs: on for runs from the Mac app, the API, MCP and Remote, `on` or `off` for every origin |
+| `MOBSTER_EXPERIMENTAL_COMPILED_READ` | `compiled_read/` | learned extractors for `read_screen`, tree diffs in the prompt, version-keyed saved programs; off unless `1` |
 | `MOBSTER_FRAME_CLOCK_LOG`, `MOBSTER_FRAME_CLOCK_TRACE` | `frame_clock`, `drivers` | pixel settle diagnostics |
 | `MOBSTER_GLIDE` | `drivers.WDA._glide_ok` | `0` turns exact-distance scrolling off |
 | `MOBSTER_HEDGE`, `MOBSTER_HEDGE_RATIO` | `hedge` | `0` turns hedged requests off; the ratio sets their budget |
@@ -347,3 +373,11 @@ Every number below is from a dated internal run report; none is a new measuremen
   both benchmarks.
 - [../bench/README.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/bench/README.md): MobsterBench-iOS and its decision rule.
 - [README.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/README.md): the index of all docs.
+
+### Own background workers
+
+`Run.stop` is a one-way `CancelToken`. `RunExecutor` follows that token, bounds active named workers, and reports unfinished work through `join(timeout)` and `workers()`. Listener delivery, checkpoint writing, and prewarming each own an executor. Cancellation hooks run on the stopping thread and must stay short; a worker cannot join itself. The remaining Runtime worker paths keep their existing ownership.
+
+### Keep the engine independent
+
+The optional screenshot-selection module is reached through `harness_api`’s `image_policy` hook. An engine without that hook keeps every screenshot. Shared stillness proofs belong to `wda.guards`; the public engine does not import the private frame-clock implementation. Unknown stream state refuses reuse.

@@ -1,0 +1,262 @@
+{
+"note": "Recorded on the test device (iPhone 15 Pro, iOS 26.0.1), 12 Oct 2026: the rows the agent saw, scrubbed (the account's name, the phone's name; serial and model numbers dropped).",
+"rows": [
+{
+"role": "NavigationBar",
+"label": "Display & Brightness",
+"rect": [
+0.0,
+0.07,
+1.0,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "Settings",
+"rect": [
+0.04,
+0.07,
+0.11,
+0.05
+]
+},
+{
+"role": "StaticText",
+"label": "Display & Brightness",
+"rect": [
+0.27,
+0.08,
+0.45,
+0.02
+]
+},
+{
+"role": "Other",
+"label": "Appearance",
+"rect": [
+0.04,
+0.13,
+0.92,
+0.07
+]
+},
+{
+"role": "Cell",
+"label": "DEVICE_APPEARANCE",
+"rect": [
+0.04,
+0.2,
+0.92,
+0.26
+]
+},
+{
+"role": "Button",
+"label": "Light",
+"rect": [
+0.24,
+0.22,
+0.15,
+0.22
+],
+"value": "1",
+"selected": true
+},
+{
+"role": "Button",
+"label": "Dark",
+"rect": [
+0.6,
+0.22,
+0.15,
+0.22
+]
+},
+{
+"role": "Cell",
+"label": "AUTOMATIC",
+"rect": [
+0.04,
+0.46,
+0.92,
+0.06
+]
+},
+{
+"role": "Switch",
+"label": "Automatic",
+"rect": [
+0.08,
+0.47,
+0.83,
+0.03
+],
+"value": "off"
+},
+{
+"role": "Button",
+"label": "Automatic",
+"rect": [
+0.08,
+0.47,
+0.2,
+0.02
+]
+},
+{
+"role": "Cell",
+"label": "Text Size",
+"rect": [
+0.04,
+0.56,
+0.92,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "Text Size",
+"rect": [
+0.08,
+0.58,
+0.18,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "chevron",
+"rect": [
+0.9,
+0.58,
+0.02,
+0.02
+]
+},
+{
+"role": "Cell",
+"label": "BOLD_TEXT",
+"rect": [
+0.04,
+0.62,
+0.92,
+0.07
+]
+},
+{
+"role": "Switch",
+"label": "Bold Text",
+"rect": [
+0.08,
+0.63,
+0.83,
+0.03
+],
+"value": "on"
+},
+{
+"role": "Button",
+"label": "Bold Text",
+"rect": [
+0.08,
+0.64,
+0.18,
+0.03
+]
+},
+{
+"role": "Other",
+"label": "Brightness",
+"rect": [
+0.04,
+0.7,
+0.92,
+0.05
+]
+},
+{
+"role": "Cell",
+"label": "Screen brightness",
+"rect": [
+0.04,
+0.76,
+0.92,
+0.06
+],
+"value": "51%"
+},
+{
+"role": "Slider",
+"label": "Screen brightness",
+"rect": [
+0.08,
+0.77,
+0.83,
+0.04
+],
+"value": "51%"
+},
+{
+"role": "Cell",
+"label": "WHITE_BALANCE",
+"rect": [
+0.04,
+0.82,
+0.92,
+0.06
+]
+},
+{
+"role": "Switch",
+"label": "True Tone",
+"rect": [
+0.08,
+0.83,
+0.83,
+0.03
+],
+"value": "off"
+},
+{
+"role": "Button",
+"label": "True Tone",
+"rect": [
+0.08,
+0.84,
+0.2,
+0.02
+]
+},
+{
+"role": "Other",
+"label": "Automatically adapt iPhone display based on ambient lighting conditions to make colors appear consistent in different environments.",
+"rect": [
+0.04,
+0.88,
+0.92,
+0.08
+]
+},
+{
+"role": "Cell",
+"label": "Night Shift, Off",
+"rect": [
+0.04,
+0.97,
+0.92,
+0.03
+]
+},
+{
+"role": "Button",
+"label": "Night Shift, Off",
+"rect": [
+0.08,
+0.99,
+0.79,
+0.01
+]
+}
+]
+}

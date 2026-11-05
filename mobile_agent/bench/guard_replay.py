@@ -64,7 +64,8 @@ def decisions(folder):
             out.append(("refused", e.get("label") or "", "Button", app_at.get(e.get("step"), "")))
         elif e.get("event") == "frontier_action" and e.get("operation") in ("TAP", "LONG_PRESS") and KS.label_verbs(
                 e.get("target_label") or ""):
-            out.append(("tapped", e.get("target_label") or "", "Button", e.get("app_name") or app_at.get(e.get("step"), "")))
+            out.append(("tapped", e.get("target_label") or "", "Button", e.get("app_name")
+                        or app_at.get(e.get("step"), "")))
     return record.get("goal") or "", names, out
 
 
@@ -119,7 +120,8 @@ def main(argv=None):
     pathlib.Path(args.out).write_text(json.dumps(result, indent=1, ensure_ascii=False))
     print(json.dumps({k: result[k] for k in ("tasks", "counts", "usd")}, indent=1))
     for n in newly:
-        print(f"NEWLY ALLOWED {n['task']:14} {n['kind']:9} {n['app']:10} {n['label'][:60]!r} requested={n['requested']}")
+        print(f"NEWLY ALLOWED {n['task']:14} {n['kind']:9} {n['app']:10} {n['label'][:60]!r} "
+              f"requested={n['requested']}")
     return 0
 
 

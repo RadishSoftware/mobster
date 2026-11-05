@@ -1,0 +1,48 @@
+---
+title: "App Store screenshots"
+"og:title": "App Store screenshots from your checks"
+sidebarTitle: "App Store screenshots"
+keywords: ["app store screenshots", "screenshot sizes", "6.9 inch", "13 inch ipad", "localized screenshots", "fastlane deliver", "status bar 9:41", "mobster asc screenshots"]
+description: "Make App Store screenshots from your real flows: every required display size and every language your app has, at 9:41, as PNGs fastlane deliver reads."
+icon: "images"
+---
+
+`mobster asc screenshots` makes your App Store screenshots from the checks you already have. Each check opens a screen the way your users reach it, by deep link or by its steps. Mobster runs it on a simulator of each App Store display size, in each language your app ships, with the status bar at 9:41, full battery and full bars. Then it saves that screen as a full-resolution PNG.
+
+Nothing is uploaded. The folder is yours to review, then `fastlane deliver` or App Store Connect takes it.
+
+## Make them
+
+Tag the checks that end on a screen you want in the store with `screenshot`, then from your project's folder:
+
+```sh
+mobster asc screenshots --size 6.9 --locale en-US --locale de-DE
+```
+
+```text
+2 screenshots: 1 screen × 6.9" × en-US, de-DE
+[1/2] Home greets a returning user: iPhone 17 Pro Max, en-US
+[2/2] Home greets a returning user: iPhone 17 Pro Max, de-DE
+✓ en-US/01_69_home-greets-a-returning-user.png  1320×2868  (passed)
+✓ de-DE/01_69_home-greets-a-returning-user.png  1320×2868  (passed)
+
+Screenshots in fastlane/screenshots, listed in screenshots.json. Review them, then upload with `fastlane deliver` or in App Store Connect. Mobster uploads nothing.
+```
+
+That run took 1 min 55 s on an M5 Max under heavy load (14 Oct 2026), most of it creating and booting the iPhone 17 Pro Max simulator the first time.
+
+| Flag | Default |
+| --- | --- |
+| `PATH` | The checks tagged `screenshot`, else every check in `.mobster/checks`. Each check is one screenshot, numbered in order. |
+| `--size` | `6.9`, plus `13` when the app runs on iPad (`UIDeviceFamily`). Also `6.5` and `6.3`. Repeatable. |
+| `--locale` | Every language the built app has (its `.lproj` folders), as App Store locales: `en` is `en-US`, `de` is `de-DE`. Repeatable. |
+| `-o DIR` | `fastlane/screenshots`, in `<locale>/<NN>_<size>_<check>.png`, the layout `fastlane deliver` reads. |
+
+## How each one is made
+
+- **The language.** The app launches with `-AppleLanguages (de-DE) -AppleLocale de_DE`. iOS stays in its own language. Your app shows the one you asked for.
+- **The size.** Each size runs on the newest simulator of it this Mac has: iPhone 17 Pro Max or 16 Pro Max for 6.9", iPad Pro 13-inch for 13". Each PNG's pixel size is checked against App Store Connect's sizes: 1320 × 2868 for 6.9", 2064 × 2752 for 13".
+- **The status bar.** `xcrun simctl status_bar … override` sets 9:41, Wi-Fi, full bars and a charged battery for the run, and clears it after.
+- **The verdict.** The check's expectations are still checked. A shot whose run couldn't run is left out. `screenshots.json` lists every shot with its verdict, so a German screen that fails an English expectation shows up there.
+
+Checks that open their screen by deep link (`launch.url`) need no model and suit every language. A check with steps replays its recorded steps, which find controls by their labels. In another language those labels differ, so Smart heals the step on your key.

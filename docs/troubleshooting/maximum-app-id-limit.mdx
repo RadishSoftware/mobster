@@ -1,0 +1,26 @@
+---
+title: "Your maximum App ID limit has been reached. You may create up to 10 App IDs every 7 days."
+sidebarTitle: "App ID limit reached"
+description: "Apple lets a free account make 10 App IDs a week. Wait a few days, or build Mobster's helper with a paid developer team."
+icon: "triangle-alert"
+keywords: ["App ID", "free Apple Account", "signing", "xcodebuild"]
+"article:modified_time": "2026-10-26"
+---
+
+You see this: `xcodebuild` prints this as `Communication with Apple failed` while it signs Mobster's helper. Mobster shows `Your free Apple Account can make 10 app IDs a week.`
+
+## Why it happens
+
+Signing the helper needs an App ID, and a free Apple Account may create up to 10 in 7 days.
+
+## Fix
+
+1. Wait a few days for the limit to reset.
+2. Or choose a paid developer team in Mobster's setup so the helper builds under that team.
+3. Build again from Mobster for Mac.
+
+## Check it worked
+
+The build finishes and `mobster doctor` prints no `✗` line for the runner.
+
+Checked 26 Oct 2026 against Mobster 0.4.0. Back to [Troubleshooting](/troubleshooting#iphone).

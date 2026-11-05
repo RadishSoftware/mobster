@@ -1,0 +1,181 @@
+---
+title: "Without the cable"
+description: "Reach an iPhone over Wi-Fi after one cable pairing, through the encrypted link between this Mac and the phone. It has an off switch."
+icon: "wifi"
+---
+
+**Preview.** Wi-Fi for iPhones is being tested on real phones. It's off by default. `MOBSTER_WIFI_TRANSPORT=1` in your env file turns it on (or **on** in `POST /api/wireless`), and `MOBSTER_WIFI_TRANSPORT=0` turns it off. With Wi-Fi off, normal tasks use the cable. **Check Wi-Fi** can still probe an unplugged phone. In the Mac app, use the Wi-Fi tile on **Add a device**. **Check Wi-Fi** runs the probe and shows whether it passed on this Mac. If it passes, the tile offers **Use devices over Wi-Fi**.
+
+After you set up an iPhone with a cable once, Mobster can reach it over Wi-Fi when it's unplugged. Tasks, the live view, manual control, approvals and `--device` work the same as on the cable.
+
+On a slow Wi-Fi link, the live view lowers its frame rate and detail so the picture stays current instead of falling behind. The line under the picture then shows the rate, such as "Live  Wi-Fi  6 fps". It goes back up by itself when the link has room.
+
+## How it stays private
+
+For the wireless helper connection, Mobster relies on Apple’s CoreDevice tunnel for network encryption and authentication. Mobster does not add or independently verify either on that connection. Before connecting, it checks that the address is in `fd00::/8`, that CoreDevice reports the matching iPhone identity, and that the Mac routes the address through a `utun` interface that holds this Mac's end of a link to it and isn't a VPN. These checks refuse the routes Mobster can tell apart from Apple's tunnel. They don't prove that the interface is Apple's tunnel.
+
+- Mobster configures WebDriverAgent to bind to the phone’s `fd00::/8` address reported by CoreDevice, instead of its Wi-Fi address. No unplugged-phone probe has passed yet.
+- The route check: the `utun` must hold an address on the same network as the phone's address (a `/64` or narrower), or a point-to-point address whose peer is the phone's address. Mobster refuses a route that is only a default route, and a `utun` that macOS marks as a VPN (`ifconfig -v` shows `IS_VPN` or a NetworkExtension VPN agent). It checks before it starts the helper over Wi-Fi, and every 10 seconds while the helper runs there. When the route stops passing, Mobster stops using Wi-Fi as soon as no task is running on the phone. The relay doesn't check each connection. Whether Apple's tunnel always passes the check isn't measured yet: when it doesn't, the phone stays on the cable and `mobster wifi probe` says why.
+- The helper answers only a request whose `Host` is `127.0.0.1`, `localhost` or `[::1]`. A request without a `Host`, or with an `Origin` header (a web page), is refused. Any program on this Mac can still send those headers.
+- On this Mac, a small relay listens on `127.0.0.1` only, on the phone's usual ports (`8100` and `9100`, or `8101` and `9101` for a second phone, and so on). Nothing else on your network can connect to it.
+- After the helper answers, Mobster checks ports 8100 and 9100 from this Mac at the phone addresses it can resolve. An accepting port stops the helper. On the default gateway, only a response recognized as WebDriverAgent triggers a stop. The helper stays stopped until you start it again; `error` in the runner state says why. These checks do not cover unresolved phone addresses or access from another machine. A helper built before Mobster limited its screen stream to those addresses is built again, not reused: `mobster devices` shows "Mobster's helper on it is out of date. Build it again; Mobster walks you through it."
+- Mobster never uses usbmux over the network (`iproxy -n`) for WebDriverAgent: that would be plain TCP on your network.
+- The address has to be the iPhone's own. Mobster starts its helper on Wi-Fi only when Xcode's device service reports the same UDID for that address as the phone you set up. If it reports another iPhone's, Mobster starts nothing and says "CoreDevice gave Mobster another iPhone's Wi-Fi address", and the phone stays on the cable.
+- The approval rules are the same as over USB. Mobster never unlocks the phone.
+
+## Try it
+
+1. Turn it on for this Mobster: set `MOBSTER_WIFI_TRANSPORT=1` in your env file (the Mac app's is `~/Library/Application Support/app.mobster.desktop/agent.env`), then quit and reopen the app. `POST /api/wireless` with `{"wifiTransport": true}` does the same while it runs.
+2. Plug the iPhone in, unlock it, and turn on Wi-Fi for it:
+
+   ```sh
+   mobster wifi on --device "Sam's iPhone"
+   ```
+
+   This sets the same switch as Xcode's "Connect via network", over the cable, once. It needs the phone plugged in and trusting this Mac. When Mobster can't set it by itself, it tells you to tick "Connect via network" for the phone in Xcode › Window › Devices and Simulators instead.
+   In the Mac app, the same switch is **Use over Wi-Fi**: on the first run's last screen and in Add a device once the device is ready ("Use Sam's iPhone over Wi-Fi", **Turn on**), and for each device in its card's **Rules…** on the Devices page. Wi-Fi for iPhones itself is the **Over Wi-Fi** tile on Add a device: **Not checked** with **Check Wi-Fi**, **Checking** while the probe runs (up to 3 minutes), **Didn't pass** with the step it stopped at and **Check again**, or **Works here** with the switch. Check Wi-Fi checks an iPhone set up here that is off the cable, and starts Mobster's helper over Wi-Fi for the check while Wi-Fi for iPhones is off. A check that ran with the cable in, or took too long, says so in the tile and keeps nothing.
+3. Unplug it, keep it unlocked and on the same Wi-Fi as this Mac, and check the link:
+
+   ```sh
+   mobster wifi probe --device "Sam's iPhone"
+   ```
+
+`mobster wifi off --device "Sam's iPhone"` stops using it over Wi-Fi at once. When Mobster turned the phone's switch on, it turns it off on the phone too, over the cable:
+
+```text
+Wi-Fi is off for Sam's iPhone. Mobster uses it only with the cable.
+```
+
+When the phone isn't plugged in, doesn't trust this Mac, or doesn't let Mobster turn its switch off, the phone still accepts Wi-Fi connections from Macs it trusts. `mobster wifi off` says so and exits 1:
+
+```text
+Wi-Fi is off for Sam's iPhone. Mobster uses it only with the cable.
+Sam's iPhone still accepts Wi-Fi connections from Macs it trusts: Mobster turns its Connect via network switch off only over the cable.
+Plug Sam's iPhone in and unlock it, then turn off Wi-Fi for it again.
+Plugged in and unlocked: mobster wifi off --device "Sam's iPhone"
+```
+
+Mobster notes the switch in its list before it turns it on, and keeps the note until the switch is off again. So a `mobster wifi on` or `mobster setup` that stopped midway still shows here, and running `mobster wifi off` again with the phone plugged in turns it off. When `mobster wifi on` sent you to Xcode to tick **Connect via network**, Mobster leaves that switch alone: it tells you to untick it in Xcode › Window › Devices and Simulators, and exits 0. With `--json`, the first case is `{"ok": false, "code": "still_on", ...}` (or `off_failed`), and the Xcode case is `{"ok": true, "next": {"code": "xcode_on", ...}}`. In the Mac app, turning off **Use over Wi-Fi** doesn't say this; the answer to `POST /api/devices/DEVICE/wifi` carries it as `next`.
+
+## Adding an iPhone with Wi-Fi on
+
+With Wi-Fi for iPhones on, setting up a new iPhone (the first run, **Add a device** on the Devices page, or `mobster setup`) can end wireless, with one cable moment. Mobster asks you first, for each phone: it never turns on a phone's Wi-Fi switch because Wi-Fi for iPhones is on.
+
+- **In the Mac app**, the question is **Use Sam's iPhone over Wi-Fi** with **Turn on**: on the first run's last screen, in Add a device once the device is ready, and in its card's **Rules…** on the Devices page.
+- **In the terminal**, `mobster setup` asks `Use Sam's iPhone over Wi-Fi when it's unplugged? [y/N]` once the phone trusts this Mac. Enter means no. After a yes, `mobster setup` waits for the switch to be set before it ends.
+- **With no terminal to ask on** (`mobster setup --json`, or its output going to a pipe), Mobster doesn't turn Wi-Fi on. It prints `{"waiting": "wifi", "hint": ...}` and exits 1. The hint names the yes to give: run `mobster setup` on a terminal, or `mobster wifi on --device "Sam's iPhone"` with the phone plugged in.
+
+Say yes and the checklist's last row is **Wi-Fi**, which says each step:
+
+1. You plug the phone in and tap **Trust**, then say yes. While it's still on the cable, Mobster turns on its Wi-Fi switch once, the same switch as `mobster wifi on`.
+2. You turn on Developer Mode on the cable. The phone restarts, which drops the cable for a minute. Mobster waits up to 5 minutes for it to come back and carries on. If it doesn't come back, setup carries on on the cable when you plug it in again.
+3. Mobster's helper installs over the cable as usual.
+4. Once the helper runs, Mobster waits up to 90 seconds for Xcode's device service to report the phone on your local network with its encrypted link connected. Only then does the **Wi-Fi** row say **Unplug** *the phone*. If the link doesn't come, the phone stays on the cable, and the row says why. Close Add a device with **Keep working** and Mobster still finishes the step, then tells you to unplug the phone in a notification.
+
+Mobster turns the switch on once per setup. If you say no, the phone says no, or Mobster can't read its answer, Mobster doesn't try again: the phone stays on the cable, and you can turn Wi-Fi on later with `mobster wifi on` or **Use over Wi-Fi**. A phone you set up before has no Wi-Fi step.
+
+Mobster never types the passcode, taps Trust or turns on Developer Mode. You do those on the phone.
+
+| iOS on the phone | What Setup does | Measured on a real phone |
+| --- | --- | --- |
+| before 17.4 | waits for the link, then keeps the phone on the cable and says the link often doesn't come up before iOS 17.4 | not yet (15 Oct 2026) |
+| 17.4 to 26 | waits for the link, then says to unplug it | not yet (15 Oct 2026) |
+| 27 and later | the same, and mentions Device Hub's **Pair Nearby Device** in words | not yet (15 Oct 2026) |
+
+The version comes from Xcode's device service (`osVersionNumber`), else from the phone's own report. `GET /api/setup` and `GET /api/devices/{device}/setup` carry the step as `wifi`: `{state, reason, os, hub, cable}`. Its `state` is `asking` while Mobster waits for your yes.
+
+## Cable or Wi-Fi
+
+| The phone is | Mobster uses |
+| --- | --- |
+| plugged in | the cable, as always |
+| unplugged, Wi-Fi on for it, and the encrypted link up | Wi-Fi |
+| unplugged otherwise | nothing: it shows as not plugged in, with what to do |
+
+If the link drops during a task you started in Mobster for Mac, the terminal UI or `mobster chat`, Mobster says "Your iPhone went out of reach over Wi-Fi: bring it back or plug it in and Mobster carries on" and waits 2 minutes. When the phone answers again, over Wi-Fi or the cable, the task goes on from where it was. If it doesn't come back, the task stops with "Your iPhone stayed out of reach over Wi-Fi, so Mobster stopped."
+
+A schedule, `mobster run` or a coding agent over MCP stops at once with "Your iPhone went out of reach over Wi-Fi, so Mobster stopped." Either way, a step that was sent when the link dropped may or may not have happened. Mobster doesn't send it again blind: it looks at the screen first.
+
+A change waits until no task is running on the phone, here or in another Mobster command. Plug the cable in during a task over Wi-Fi and the task finishes over Wi-Fi, then Mobster switches to the cable. Unplug it during a task on the cable and the task stops, as it does today.
+
+Mobster checks the link every 10 seconds. When it drops, Mobster tries again after 1, 2, 4, 8 and up to 60 seconds, and at once when this Mac joins another network. A phone you stopped in Setup stays stopped.
+
+With two phones, each has its own link and its own ports, and every command names its phone.
+
+In the Mac app, the iPhone's pane shows a Wi-Fi glyph while it's on Wi-Fi. When Wi-Fi is on for it but Mobster can't reach it, the pane and the conversation say so, and **Try again** in the pane looks for it at once.
+
+## What works over Wi-Fi
+
+| You do this | Over Wi-Fi |
+| --- | --- |
+| Read the screen, tap, type, launch an app, run a task | Through the same helper and ports as the cable |
+| Check whether the phone is locked | `mobster devices lock-probe` asks the helper. When the helper doesn't answer, it asks Xcode's device service (`devicectl device info lockState`) and says so. A lock state it can't read is never taken as unlocked |
+| List the apps on the phone | Through `devicectl device info apps`, because ideviceinstaller needs the cable |
+| Install a build (`install_app`, `mobster phone install`) | Through `devicectl device install app`, which reaches the phone through the encrypted link. It needs a signed build and the phone unlocked, the same as on the cable. If the link drops mid-install, the install stops and isn't tried again |
+| Battery | From the helper (the cable reads it from lockdown) |
+
+Photos and videos move over Wi-Fi, through the helper ([Files](/files#photos-and-videos)). An app's files, audio, logs and pairing without a cable aren't done over Wi-Fi.
+
+The lowest iOS version that works over Wi-Fi isn't measured yet. `mobster wifi probe` prints the phone's iOS version (`osVersionNumber`), and the table here will list the versions the probe passed on.
+
+## Status and the probe
+
+`mobster wifi status` lists each iPhone set up here: on the cable, on Wi-Fi, or not reachable over Wi-Fi, and whether Wi-Fi is on for it. It reads only.
+
+`mobster wifi probe` checks one unplugged phone step by step and prints what it saw:
+
+1. Whether this network lets devices see each other (see below).
+2. What Xcode's device service reports for the phone, with every connection field it gives.
+3. Whether the encrypted link is up, that its address is in `fd00::/8`, and that this Mac reaches it through the link (a `utun` interface that holds this Mac's end of it and isn't a VPN), not through Wi-Fi, Ethernet or a VPN. When it doesn't, the step says why, for example `utun4 holds no address on a link to fd7a:1c2b:3d4e::1 (fd12:3456:789a::2/64), so it isn't the tunnel to the phone`.
+4. What `devicectl device info lockState` and `device info apps` return and which fields they carry, so the lock state and app list work without the helper. This step is evidence; it doesn't change the result.
+5. Whether WebDriverAgent on the phone answers through a relay on `127.0.0.1`. With `--start`, the probe launches Mobster's helper over Wi-Fi first, and stops it at the end (quit the Mac app before you use it).
+6. That `8100` and `9100` don't answer on the phone's Wi-Fi addresses, nor on this Mac's default gateway. When this Mac is on the phone's Personal Hotspot, the phone is that gateway and has no name to look up, so an answer that is WebDriverAgent counts there.
+7. Whether usbmux lists the phone over the network, for the record only.
+
+It exits 0 when every check passed and 1 when one failed. `--json` prints one object with each step and the fields.
+
+## Networks that keep devices apart
+
+Guest, hotel and campus Wi-Fi often stop devices on it from reaching each other, and block Bonjour, the way Macs and iPhones find each other. On such a network this Mac can't find the iPhone however it's set up. Mobster checks for it: it listens for a couple of seconds for the things phones, TVs, speakers, printers and other computers announce on the network, leaving out this Mac's own and AirDrop's. Hearing nothing on a network that's up means the network keeps devices apart, and Mobster says:
+
+> This network stops devices from seeing each other. Use the cable or your phone's hotspot.
+
+`mobster doctor`, `mobster wifi probe`, the Wi-Fi card in Add a device and each device's Rules on the Devices page all say it. The check only listens through macOS's own Bonjour service; it sends nothing to the phone and opens nothing on this Mac.
+
+## When it doesn't work
+
+| What you see | What to do |
+| --- | --- |
+| Plug Sam's iPhone into this Mac with a cable to turn on Wi-Fi for it. | Plug it in, unlock it and tap Trust if it asks, then try again. |
+| Sam's iPhone doesn't trust this Mac yet. | Unlock it and tap Trust, then try again. |
+| Mobster couldn't turn on Wi-Fi for Sam's iPhone by itself. | In Xcode, open Window › Devices and Simulators, select it and tick Connect via network. |
+| Sam's iPhone isn't reachable over Wi-Fi. | Keep it unlocked and on the same Wi-Fi as this Mac, or plug it in. |
+| Mobster stopped using Wi-Fi for Sam's iPhone: this Mac no longer reaches it through the encrypted link. | Turn off any VPN on this Mac, or plug Sam's iPhone in. |
+| The encrypted link to Sam's iPhone isn't up yet. | Unlock it and keep it on the same Wi-Fi as this Mac; Mobster tries again by itself. |
+| Wi-Fi isn't available for this iPhone yet. | Plug it in to use it now. |
+| Xcode's device service stopped answering. | Plug the phone in once, or restart this Mac if it keeps happening. |
+| Your iPhone went out of reach over Wi-Fi, so Mobster stopped. | Keep it unlocked and on the same Wi-Fi as this Mac, or plug it in, then try again. |
+| CoreDevice gave Mobster another iPhone's Wi-Fi address for Sam's iPhone, so Mobster didn't use it. | Plug it in; Mobster tries Wi-Fi again by itself. |
+| This network stops devices from seeing each other. | Use the cable or your phone's hotspot. |
+| macOS doesn't let Mobster reach devices on your network. | Turn on Mobster in System Settings › Privacy & Security › Local Network. |
+| A VPN on this Mac can keep it and Sam's iPhone apart. | Turn the VPN off, or use the cable. |
+| Sam's iPhone still accepts Wi-Fi connections from Macs it trusts: Mobster turns its Connect via network switch off only over the cable. | Plug Sam's iPhone in and unlock it, then turn off Wi-Fi for it again. |
+| Mobster couldn't turn off Sam's iPhone's Connect via network switch, so it still accepts Wi-Fi connections from Macs it trusts. | Unlock Sam's iPhone, keep it plugged in and turn off Wi-Fi for it again, or untick Connect via network for it in Xcode › Window › Devices and Simulators. |
+| Sam's iPhone may still accept Wi-Fi connections from Macs it trusts: Connect via network was turned on for it in Xcode, so Mobster left it on. | In Xcode, open Window › Devices and Simulators, select Sam's iPhone and untick Connect via network. |
+
+`mobster doctor` adds a few lines for a phone with Wi-Fi on: whether Xcode's device service sees it over the network, Developer Mode, whether macOS lets Mobster reach your network (System Settings › Privacy & Security › Local Network), a warning when a VPN is on, and whether this network lets devices see each other.
+
+The phone has to be awake for Wi-Fi. For scheduled workflows, keep it unlocked and on the charger.
+
+## For scripts
+
+| Route | Body | Answer |
+| --- | --- | --- |
+| `GET /api/wireless` | | `wifiTransport`; `probe` (the last `mobster wifi probe` on this Mac: `state` `passed`, `failed` or `not_run`, `at` in milliseconds, and `reason` naming the step that failed; the phone's `udid` too); `network` (null until checked, or `state` and `problem`); and per phone: `id`, `probe` (its own last probe), `udid`, `name`, `primary`, `enabled`, `transport` (`usb`, `wifi` or null), `tunnel` (`up`, `connecting`, `down` or `unknown`), `reachable`, `lastSeenAt`, `lastCheck` (null, or the check `POST /api/wireless/probe` started: `state` `running`, `passed`, `failed`, `plugged_in` or `timeout`, the `step` it is on or reached, `startedAt`, `reason` and `next`) and `problem` (null, or `code`, `message` and `fix`). While a check runs, the phone's `probe.state` is `running` and `probe.step` names the step |
+| `GET /api/wireless/network` | | `network`: checks now (at most about 3 seconds) whether this network lets devices see each other. `state` is `ok`, `blocked`, `no_permission`, `vpn`, `offline` or `unknown`; `problem` is null or its `code`, `message` and `fix` |
+| `POST /api/wireless` | `{"wifiTransport": true}` | turns Wi-Fi for iPhones on or off for this Mobster, and saves it in the env file (`MOBSTER_WIFI_TRANSPORT=1` or `0`) |
+| `POST /api/devices/DEVICE/wifi` | `{"enabled": true}` | `device`, as above. Turning it on needs the phone plugged in and trusting this Mac: 409 `needs_cable` or `not_trusted` otherwise. `next` (`code`, `message`, `fix`) is the one step left, when there is one: `needs_xcode` after turning it on; `still_on`, `off_failed` or `xcode_on` after turning it off, when the phone's own switch is still on |
+| `POST /api/wireless/reconnect` | `{"device": "Sam's iPhone"}` | 202: look again now, without waiting out the backoff |
+| `POST /api/wireless/probe` | `{"device": "Sam's iPhone", "start": false}` (both optional; `device` may be left out when one iPhone is set up) | 202 with `device`, `accepted` and `check`: runs the checks of `mobster wifi probe` in the background, one phone at a time, and keeps a passed or failed result as that command does. Read the end in `lastCheck`: `failed` carries `next` (`code`, `message`, `fix`) for the step that failed; `plugged_in` means unplug the cable first and keeps nothing; `timeout` means it ran longer than 180 seconds. It starts Mobster's helper over Wi-Fi only with `"start": true`. 409 `busy` while a task holds the phone, 409 `probe_running` while another check runs |
+
+Every route needs the API token. With Wi-Fi for iPhones on, each iPhone in `GET /api/devices` also has `transport` and `wifi` (`enabled`, `reachable`), and `GET /api/events?topics=devices` sends `transport_changed` with `device`, `transport` and `reachable` when a phone moves between the cable and Wi-Fi.

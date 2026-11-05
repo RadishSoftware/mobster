@@ -1,0 +1,113 @@
+---
+title: "Settings in Mobster for Mac"
+sidebarTitle: "Settings"
+description: "What each section of Settings in Mobster for Mac does."
+icon: "settings"
+keywords: ["settings", "preferences", "open at login", "appearance", "dark mode", "light mode", "notifications", "models", "api key", "spending limit", "monthly limit", "account", "sign out", "plan", "manage subscription", "advanced", "billing", "help", "devices", "groups"]
+---
+
+Settings is a page. Its sections take the sidebar's place, under **Back** and **Search settings**, and the section you pick fills the window. `⌘,` opens it, and so do **Settings** in the menu under your email at the foot of the sidebar, and `⌘K`. **Back** or `esc` returns you to where you were.
+
+The sections are in six groups:
+
+| Group | Sections |
+|---|---|
+| **App** | General, Notifications, Voice |
+| **Your agent** | Models, Safety, Memory, Triggers, Plugins, Advanced |
+| **Your devices** | Devices, Apps, Profiles |
+| **Connections** | Connectors, Remote |
+| **Account** | Account, Team, Billing, Help and support |
+| **Developers** | For developers, Project |
+
+**Devices**, **Apps**, **Profiles**, **Connectors** and **Memory** are pages of their own: the [Devices page](/phones), [Apps](/safety#apps), [Profiles](/profiles), [Connectors](/connectors) and [Memory](/memory). Each opens inside Settings, as a pane does in the Mac's System Settings: the sections stay on the left with its row selected, and **Back** still returns you to where you were before Settings. Each has its own address, such as `/settings/devices`, `/settings/memory` and `/settings/connectors/github`, and the older `/devices`, `/apps`, `/profiles`, `/connectors` and `/memory` addresses open them there. [Voice](/mac/shortcuts#voice), [Memory](/memory), [Triggers](/triggers), [Mobster Remote](/remote) and [Plugins](/plugins) have their own guides.
+
+## General
+
+- **Open at login.** Start Mobster when you log in, so scheduled workflows run even if you haven't opened it. Closing the window keeps Mobster running; quit with ⌘Q.
+- **Appearance.** **Auto** follows your Mac's appearance. **Light** or **Dark** keeps Mobster in that one, whatever macOS uses.
+- **What you use Mobster for.** **My app**, **My accounts** or **Both**, the answer to Setup's first question (**Both** until you answer it). It picks the suggestions under the task box and how much Setup's iPhone screen explains.
+
+## Notifications
+
+- **Task notifications.** Tell me when a task finishes or needs my OK while Mobster is in the background.
+
+Notification Center keeps each task's notifications together. Each title says what to do or what happened, such as "Unlock Test iPhone" or "Review the result in Messages", and the line under it names the app and the phone. A click opens what the notification is about: the task, its approval, or the device on the Devices page. An approval's notification has the approval's two buttons, such as **Send** and **Don't send**. [Approvals and safety](/safety#answer-from-a-notification) says what they do.
+
+## Models
+
+Models picks who does your tasks, and whose bill it is: a plan you already pay for, or an API key. Keys and sign-ins stay in this Mac's Keychain. Each task sends its text, the screen's contents and screenshots to that provider.
+
+- **Use your plan.** Codex, Claude Code and Gemini each say **Ready** once they're installed and signed in, or the one thing left to do. You pick a ready one in the composer. The other plans, such as Grok and Kimi Code, have **Sign in** or **Add key**. [Use your plan](/models-and-keys#use-your-plan) lists them.
+- **Use an API key.** Each task is billed by that provider. **Claude** and **OpenAI** come first, then Google, OpenRouter, xAI, Groq, Mistral and DeepSeek, and **More providers** shows the rest. [Use an API key](/models-and-keys#use-an-api-key) lists them.
+
+<Frame caption="Settings › Models, under Use an API key: Claude in use, and OpenAI connected but not in use.">
+  <img src="/images/mac/settings-ai-light.webp" alt="Settings › Models, Use an API key: Claude in use, OpenAI connected but not in use, and the other providers' keys." className="block dark:hidden" />
+  <img src="/images/mac/settings-ai-dark.webp" alt="Settings › Models, Use an API key: Claude in use, OpenAI connected but not in use, and the other providers' keys." className="hidden dark:block" />
+</Frame>
+
+- **Claude** and **OpenAI.** **Connect** takes a key, **Test** checks it, and **Replace** swaps it. The one Mobster's agent runs on says **In use**. When both are connected, **Use Claude instead** or **Use OpenAI instead** switches.
+- **Another provider.** **Add key** opens a form for the key and, if you want, a model. **Save and use** checks the key and makes it the one in use. **Remove** forgets it.
+- **This month.** What your tasks cost at your provider's published rates. A task on Codex, Claude Code or Gemini adds a row per agent and model with its tokens and API-equivalent, which isn't spend. For Claude Code, the row also shows its 5-hour and weekly limits: the share used and when each resets. [Use your plan](/models-and-keys#use-your-plan)
+- **Stop a task that reaches \$1.** Mobster ends a task at this cost and tells you what it found so far. It's on at \$1 by default, and takes \$0.05 to \$100.
+- **Monthly limit.** Mobster won't start new tasks once this month's spend reaches this amount, and a running task stops at what's left. It's off by default, and takes \$1 to \$10,000.
+
+## Safety
+
+- **Ask before acting.** Mobster stops and shows you exactly what it will do before it sends, buys, posts, deletes or submits anything. On by default.
+- **Let Mobster tap and type.** Turning this off blocks new tasks and live-view control here. Running tasks and direct MCP control can still act. Use Stop (⌘ .) to stop the task on screen.
+
+## Advanced
+
+Optional extras, and the choices behind the defaults.
+
+- **Mobster's helper on your iPhone.** Whether it's running, when its signature ends, and **Refresh now** when it's due; Mobster refreshes it by itself when your iPhone is plugged in and unlocked. **Stop** frees your iPhone for Xcode or another tool; Mobster starts it again when a task needs it, and **Start** starts it now.
+- **Live picture smoothness** (Saver, Smooth, Smoothest) and **Live picture sharpness** (Low, Medium, High). Smoothness is the rate while a task runs; the rest of the time the picture shows up to 15 frames a second. A still screen costs one frame a second, and the picture stops while the window is out of view. On a slow link, Mobster goes below these choices and the line under the picture shows the rate.
+- **Mobster may ask me questions.** When a task could mean two things and your iPhone's screen can't settle it, Mobster asks you first, at most twice a task.
+
+## Devices
+
+**Devices** opens the [Devices page](/phones), the one place for your devices, inside Settings. **Add a device** sets up another one, and each device is a card whose **⋯** has Rename, Set as default, Rules, Connect or Disconnect, and Forget. A link to Settings › Devices opens that page too.
+
+## Account
+
+Your Mobster account and this Mac. [Your Mobster account](/account) has the details.
+
+- **Your account.** The email you signed in with and how, such as "Signed in with GitHub", with **Sign out**. Signing out asks "Sign out of Mobster?": "Signing out clears your sign-in on this Mac. Mobster also tries to remove the Mac from your account. If that fails, apps connected through Mobster Remote may keep access. Your conversations and history stay on this Mac."
+- **This Mac.** "Mobster runs on one Mac at a time." Its row names this Mac, with "Open Mobster on another Mac to move it there." To move it, open Mobster on the other Mac and choose **Use on this Mac**. [One Mac at a time](/account#one-mac-at-a-time)
+
+## Billing
+
+Your plan, and where to pay, cancel or get money back. `mobster://billing` opens it.
+
+- **Plan.** Lifetime, Monthly, Yearly or Free trial, and how it stands: "Active. It doesn't expire.", "Renews on Nov 8, 2026.", "Canceled. Mobster works through Nov 8, 2026." or "Free trial until Oct 21. Then choose Monthly \$12, Yearly \$99 or Lifetime \$149. Nothing is charged until you choose." A monthly or yearly plan has **Manage subscription**, which opens Stripe's billing page in your browser.
+- **The plans during the trial.** During the free trial, before checkout starts, the available plans appear below the trial's line, under "Your plan starts the day you pay. Your free trial ends then." Pick one and pay: checkout opens in your browser. **Billing** in the menu under your email, at the foot of the sidebar, opens this section.
+- **Invoices and receipts.** **View** opens Stripe's billing page, where you can download them.
+- **Refunds.** A full refund within 14 days of buying Lifetime. On a monthly or yearly plan the row is **Canceling**: cancel anytime in Manage subscription, and use Mobster until your paid period ends. During the trial it says "Nothing is charged in the trial. Lifetime has a full refund within 14 days of buying." **Email support** writes to support@radish.software.
+
+## Help and support
+
+- **Take the tour.** A 1-minute look around: the task box, your iPhone and approvals.
+- **Contact support.** Write to support@radish.software.
+- **Join the Discord.** Ask questions, share tasks and hear what is new from other people who use Mobster.
+- **Follow on X.** News and short clips of Mobster at work, @getmobster.
+- **About.** Mobster's version and the build it came from, such as `0.4.0 (b88043b)`, and the date of that build's commit. Hover the version to see the full revision, and click it to copy the revision for a bug report.
+
+## For developers
+
+Your own agent can use your iPhone through Mobster's MCP server. The Mac app's own agent serves it, so there's nothing else to install.
+
+- **Add Mobster to your agents.** **Open Connectors** goes to [Use Mobster from…](/connectors), where you click **Add** next to Claude Code or Codex.
+- **Approvals.** **Open Safety** opens Safety settings, where you choose when Mobster's own tasks ask first. By default, Mobster asks before sending, buying, posting or deleting. For those actions over MCP on a real iPhone, you approve in the Mac app; the agent cannot approve for you. On a simulator, the agent's own permission prompts apply.
+- **Test your app.** Run your app's checks on simulators and your iPhone, with reports for CI. [Run every check](/testing)
+- **Test results.** **Open Projects** opens Projects. Each project's page shows its runs by branch: each check that didn't pass, why, its steps with the one it failed on marked, and its Logs and Crash pane beside them. The old Test results address opens Projects. [Logs, crashes and video](/testing#logs-crashes-and-video)
+- **Copy tasks as checks.** Finished tasks get **Copy as check**: their steps and what they proved, ready to paste into your project's `.mobster/checks`.
+
+## Project
+
+What the app you test needs on this Mac. Choose the project: one Mobster already knows, or **Choose a folder** for its repository.
+
+- **Secrets.** The names your checks use as `${NAME}`, from `.mobster/env.example`. Each says whether it's set in this Mac's Keychain, set from the environment, or not set (a check that uses it won't start). **Set** or **Replace** asks for the value in a hidden field, once; Mobster never shows it again, here or in a run. **Add** adds a name to `env.example` with its value. **Remove** deletes the value and keeps the name. It's the same as `mobster env set` ([Test accounts and secrets](/checks)).
+- **TestFlight.** The App Store Connect key Mobster lists and installs your TestFlight builds with: the project's own, else the one every project shares. **Add a key** takes the Key ID, the Issuer ID for a team key, and the `.p8` file's text, and keeps the key in this Mac's Keychain. Afterwards the row shows the Key ID only. An environment key says where it comes from and has no Keychain removal action. It's the same as `mobster testflight key add` ([App Store Connect](/dev/app-store-connect)).
+- **Builds.** With a key, the app's 5 newest TestFlight builds, newest first, each with when it was uploaded. The app is the one Mobster found in the project's folder (a choice when it found several), else the bundle ID you type once. A build TestFlight can install has **Install**, which installs it on your default device through TestFlight, as `mobster testflight install` does; the others say why they can't be installed, such as an expired build. **Show them** lists up to 20.
+  - If Mobster tapped Install and didn't see TestFlight finish, the row says to look at the iPhone and offers no Install, so a second install never starts by accident.
+  - Mobster never accepts TestFlight's terms for you. When TestFlight needs a tap, the row says which one.

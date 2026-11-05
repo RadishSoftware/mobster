@@ -1,0 +1,117 @@
+---
+title: "Quickstart: Mobster for Mac"
+sidebarTitle: "Mobster for Mac"
+description: "Install Mobster for Mac, connect your iPhone and run your first task."
+icon: "laptop"
+keywords: ["mac app", "setup", "first task", "download", "install"]
+---
+
+The longest wait is Mobster's helper installing on your iPhone, about 2 minutes the first time.
+
+## Before you begin
+
+- A Mac with Apple silicon and macOS 13 or later.
+- An iPhone and a USB cable that carries data.
+- Xcode, signed in to an Apple Account. A free account works. Setup offers to get Xcode if it's missing, and that download can take an hour.
+- The macOS your Xcode version needs ([Apple lists it](https://developer.apple.com/support/xcode/)).
+- A plan you already pay for, such as Claude Code or Codex, or an Anthropic or OpenAI API key. You pay the provider directly.
+
+[Requirements](/requirements) lists the rest.
+
+## Set up
+
+<Steps>
+  <Step title="Get Mobster and sign in">
+    <Tabs>
+      <Tab title="Download">
+        [Get Mobster for Mac](https://mobster.dev/download), open `Mobster.dmg` and drag Mobster to Applications.
+      </Tab>
+      <Tab title="Homebrew">
+        ```sh
+        brew install --cask radishsoftware/tap/mobster-app
+        ```
+
+        This puts the same `Mobster.app` in Applications.
+      </Tab>
+    </Tabs>
+
+    Open Mobster and sign in with Apple, Google, GitHub or a code sent to your email. The app updates itself from then on. [Your Mobster account](/account)
+  </Step>
+  <Step title="Choose what you use Mobster for">
+    Mobster asks **What will you use Mobster for?**
+
+    - **My app**: check an iOS app you or your coding agent built.
+    - **My accounts**: Instagram and TikTok on your iPhones, such as DMs, comments, posts and reports.
+
+    Your answer picks the first tasks Mobster suggests. You can change it in Settings › General › **What you use Mobster for**.
+  </Step>
+  <Step title="Connect your iPhone">
+    **Connect your iPhone** is a checklist that updates as you go. When a row has a button, such as **Get Xcode** or **Install**, press it.
+
+    If Xcode isn't signed in to an Apple Account, the first row says so, with **Open Xcode**. Sign in under Xcode › Settings › Accounts, and the row clears when you come back.
+
+    1. Plug in the iPhone, unlock it and tap **Trust**.
+    2. Mobster installs its helper on the iPhone, signed with the Apple Account in Xcode.
+    3. On the iPhone, open Settings › Privacy & Security › Developer Mode, turn it on and restart. iOS shows the switch once the install has started.
+    4. Choose **Allow** so Mobster can tap and type.
+
+    The screen then names your iPhone and says it is ready.
+
+    <Frame caption="Connect your iPhone, part way through.">
+      <img src="/images/mac/setup-light.webp" alt="Setup's iPhone screen: Connect your iPhone, with a checklist of Xcode, the iPhone, Developer Mode, Mobster's helper installing, and Let Mobster tap and type." className="block dark:hidden" />
+      <img src="/images/mac/setup-dark.webp" alt="Setup's iPhone screen: Connect your iPhone, with a checklist of Xcode, the iPhone, Developer Mode, Mobster's helper installing, and Let Mobster tap and type." className="hidden dark:block" />
+    </Frame>
+
+    <Note>A free Apple Account signs the helper for 7 days at a time. Mobster refreshes it while the iPhone is plugged in and unlocked.</Note>
+  </Step>
+  <Step title="Choose who runs your tasks">
+    - **Use your plan**: choose **Claude Code** or **Codex**. If either is signed in on this Mac, Setup uses it. If neither is signed in, Setup lists plans that support a one-time sign-in code, such as Grok. To add Mobster to your agent, see [Add Mobster to your agent](/agents).
+    - **Use an API key**: choose **Anthropic** or **OpenAI**, paste the key and choose **Connect**. Mobster tests the key once.
+
+    With an Anthropic key, Setup says **Claude is connected with the key ending a7f2.**
+  </Step>
+  <Step title="Start your free trial">
+    When your iPhone is ready, choose **Start 7 days free**. The trial needs no card. Mobster charges nothing when it ends: you choose a plan then. [The free trial](/account#the-free-trial)
+
+    An account that already has a plan sees **You're all set** instead.
+  </Step>
+</Steps>
+
+## Run a first task
+
+Mobster opens with a first task in the task box. Run it, or replace it with a task that only reads, and press Enter:
+
+```text
+What iOS version is this iPhone on?
+```
+
+Mobster works one step at a time. Each step shows what it tapped, and the answer comes with the screen it was read from.
+
+## Approve a send
+
+Now ask for something that sends:
+
+```text
+Text Sam I'm 10 minutes late
+```
+
+Mobster stops before it taps Send and shows you the app and the exact text. Choose **Send** to send it or **Don't send** to stop. With no answer in 10 minutes, the task ends without sending.
+
+<Frame caption="An approval: the exact text, and Send or Don't send.">
+  <img src="/images/mac/approval-light.webp" alt="An approval card in a conversation: Send this message, the text in a message bubble, and the buttons Send and Don't send." className="block dark:hidden" />
+  <img src="/images/mac/approval-dark.webp" alt="An approval card in a conversation: Send this message, the text in a message bubble, and the buttons Send and Don't send." className="hidden dark:block" />
+</Frame>
+
+## Next
+
+<CardGroup cols={3}>
+  <Card title="Test your app" icon="list-checks" href="/quickstart/test">
+    Run your first check on a simulator, with no iPhone.
+  </Card>
+  <Card title="Add to your agent" icon="bot" href="/agents">
+    Give Claude Code or Codex your iPhone.
+  </Card>
+  <Card title="A tour of the app" icon="map" href="/mac/tour">
+    The task page, your conversations, the phone pane and Workflows.
+  </Card>
+</CardGroup>

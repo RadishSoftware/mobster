@@ -1,0 +1,69 @@
+{
+ "note": "Notification Center over the bank app (SpringBoard's tree; synthetic, iOS 26 labels).",
+ "bundle": "com.apple.springboard",
+ "width": 402,
+ "height": 874,
+ "keyboard": "",
+ "elements": [
+  {
+   "label": "Monday, October 5",
+   "role": "StaticText",
+   "rect": [
+    0.2,
+    0.08,
+    0.6,
+    0.03
+   ]
+  },
+  {
+   "label": "9:41",
+   "role": "StaticText",
+   "rect": [
+    0.3,
+    0.12,
+    0.4,
+    0.08
+   ]
+  },
+  {
+   "label": "Messages, Chase, Your Chase verification code is 482913. Don't share it with anyone., 2m ago",
+   "role": "Cell",
+   "rect": [
+    0.04,
+    0.55,
+    0.92,
+    0.09
+   ]
+  },
+  {
+   "label": "Weather, Rain expected, Rain starting around 4 PM., 12m ago",
+   "role": "Cell",
+   "rect": [
+    0.04,
+    0.65,
+    0.92,
+    0.08
+   ]
+  },
+  {
+   "label": "Calendar, Standup in 10 minutes, now",
+   "role": "Cell",
+   "rect": [
+    0.04,
+    0.74,
+    0.92,
+    0.07
+   ]
+  },
+  {
+   "label": "Notification Center",
+   "role": "StaticText",
+   "rect": [
+    0.3,
+    0.02,
+    0.4,
+    0.02
+   ]
+  }
+ ]
+}

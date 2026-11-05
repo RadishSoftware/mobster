@@ -1,0 +1,25 @@
+---
+title: "Could not resolve host"
+sidebarTitle: "Could not resolve host"
+description: "Xcode couldn't download WebDriverAgent because this Mac has no internet. Check the connection and build again."
+icon: "triangle-alert"
+keywords: ["resolve host", "network", "WebDriverAgent", "download"]
+"article:modified_time": "2026-10-26"
+---
+
+You see this: `xcodebuild` prints `Could not resolve host` while it fetches WebDriverAgent's source. Mobster shows `Mobster couldn't download WebDriverAgent. Check your internet connection and build again.`
+
+## Why it happens
+
+The first build downloads WebDriverAgent. This Mac couldn't reach the server, so nothing was built.
+
+## Fix
+
+1. Check that this Mac is online and that nothing on your network blocks the download.
+2. Build again from Mobster for Mac.
+
+## Check it worked
+
+The build starts compiling instead of stopping at the download.
+
+Checked 26 Oct 2026 against Mobster 0.4.0. Back to [Troubleshooting](/troubleshooting#iphone).

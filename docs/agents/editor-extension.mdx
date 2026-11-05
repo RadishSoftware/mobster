@@ -1,0 +1,107 @@
+---
+title: "Mobster in Cursor and VS Code"
+sidebarTitle: "Editor extension"
+description: "A side panel beside your code with your app live on a simulator, your checks with run and heal, approvals, and test on save. You build it on your Mac and install it from a VSIX."
+icon: "/images/marks/vscode.svg"
+keywords: ["cursor extension", "vs code extension", "vsix", "test on save", "live simulator", "heal review", "codelens", "cursor rules"]
+---
+
+The Mobster extension puts a panel in Cursor's or VS Code's side bar. It shows the simulator your checks run on, live, and lists the project's checks in `.mobster/checks` with their last verdict. From the panel you run a check, review a healed step, and answer an approval. With test on save on, each save runs the checks that cover what you changed.
+
+The panel talks to Mobster on this Mac, never to a phone: to the agent inside Mobster for Mac, or to `mobster serve`. A check you run from the panel runs on a simulator only. To run checks on an iPhone, use `mobster test --device` ([Run every check](/testing)).
+
+## Build and install it
+
+The extension isn't in the VS Code Marketplace or Open VSX. You build the VSIX from Mobster's source on your Mac, with Node 20 or later:
+
+```sh
+cd editors/vscode
+npm ci
+npm run package
+```
+
+It prints `Packaged: …/editors/vscode/mobster.vsix`. Install the file:
+
+```sh
+cursor --install-extension mobster.vsix
+code --install-extension mobster.vsix
+```
+
+Or open the Command Palette, run **Extensions: Install from VSIX…**, and pick `mobster.vsix`. The Mobster mark appears in the activity bar.
+
+## Connect the panel
+
+Open the folder that holds your app's `.mobster`. The panel looks for Mobster in this order:
+
+1. the `mobster serve` this window started;
+2. `MOBSTER_URL`, with the token in `MOBSTER_API_TOKEN` or the file `MOBSTER_API_TOKEN_FILE` names;
+3. the agent inside Mobster for Mac, by the address and token it writes in `~/Library/Application Support/app.mobster.desktop/state/`.
+
+When none answers, the panel says **Mobster isn't running** and offers **Open Mobster** and **Start mobster serve**. A `mobster serve` the panel starts listens on a free port on 127.0.0.1 and stops when the window closes.
+
+## Run a check
+
+- In the panel, press **Run** on a check's row, or **Run all**.
+- In a check file, press **Run check** above its first line, or **Run with no heals** to fail a step that no longer matches instead of healing it.
+- In a SwiftUI view or a UIKit controller, press **Run the 2 checks for TodayView** above the declaration. Mobster uses the same selection rules as `mobster test pr`: it picks a check if the check expects an accessibility id or text shown by the file, names the view, or opens its deep link.
+- From the Command Palette, run **Mobster: Run the check under the cursor**. In a check file it runs that check; in a screen's file, the checks that cover its screen.
+
+One suite runs at a time. While it runs, the panel follows the simulator it runs on and shows **Running 1 of 3**, and the status bar counts the checks. **Stop** ends the check that is running, and the rest don't start.
+
+Mobster can replay a passed check's approved steps. Healing a changed step or generating text again can require a model call. A check with steps that has no recording yet needs Smart's key, as `mobster test` does ([Models and keys](/models-and-keys)).
+
+## Read a failure
+
+When a check fails, the panel shows a card for it: the reason, each expectation that failed with what Mobster found instead, and the screen at the verdict. Press the screen to open it full size, **Report** to open the suite's HTML report, or **Open check** to edit the check.
+
+## Review a healed step
+
+When a step no longer matches the screen and Mobster finds the new one, it heals the step and writes `<check>.heal.yaml` beside the check ([Replay and heals](/testing#replay-and-heals)). The panel lists each healed step under **Healed steps**, with what it was, what it became, and why.
+
+- **Accept** keeps the healed step. The next run replays it with no model.
+- **Keep failing** puts the old step back. The check fails at that step until the app or the check changes.
+
+This is the same decision as `mobster test heal --accept` and `--reject`, and as MCP's `review_heals`.
+
+## Answer an approval
+
+A task waiting on you shows under **Waiting for you**, with what Mobster is about to do and the app and device it does it on. This covers a task in Mobster for Mac and an agent's action through `mobster mcp`.
+
+- Under `mobster serve`, **Approve** and **Decline** answer it from the panel, and the task's journal records the answer.
+- Under Mobster for Mac, only the app approves. **Decline** still works from the panel for a task, and the panel says "Approve this in the Mobster app on this Mac" with **Open Mobster**. An agent's approval through `mobster mcp` is answered in the app.
+
+## Test on save
+
+Turn on **Test on save** in the panel, or set `mobster.testOnSave` in your settings. When you save a Swift, storyboard, strings or check file in the project, Mobster waits 1.5 seconds for more saves, builds the app for the simulator, and runs the checks that cover what changed since your last commit. A save while a suite runs queues one more run after it.
+
+Test on save runs `mobster test pr` against `HEAD`: it drafts no new checks and posts nothing to GitHub.
+
+## Set up your agent from the panel
+
+**Set up Cursor** (or **Set up VS Code**) at the bottom of the panel runs one command and lists every file it wrote:
+
+```sh
+mobster mcp install cursor --with-skill --rules /path/to/your/app --json
+```
+
+It adds Mobster's MCP server and skill to your editor, and the rules to the project's `AGENTS.md` and, for Cursor, `.cursor/rules/mobster.mdc` ([Instructions for your agent](/agents/instructions)). Restart the editor to load the server.
+
+## Settings
+
+| Setting | Default | What it does |
+| --- | --- | --- |
+| `mobster.testOnSave` | `false` | Test what changed on each save |
+| `mobster.simulator` | empty | The kind of simulator checks run on, such as `iPhone 17 Pro`, as `mobster test --sim` takes it. Empty: Mobster picks one |
+| `mobster.path` | empty | The `mobster` command. Empty: Mobster for Mac's, then `~/.local/bin`, Homebrew's, and your `PATH` |
+
+## The routes the panel uses
+
+The panel reads and starts everything through Mobster's local API. Every route needs the API token ([Scripting](/scripting)).
+
+| Route | What it does |
+| --- | --- |
+| `GET /api/tests/project?root=/abs/path` | the project's checks with each one's last verdict, the healed steps waiting, and the suite the editor started last. `&file=/abs/path/TodayView.swift` adds `covering`: the screen in that file and the checks that cover it |
+| `POST /api/tests/suites` | `{root, checks?, changed?, sim?, heal?}` starts a suite on simulators: the check files named, every check, or with `changed: true` the checks for what changed since the last commit, after building the app. `202 {suite}`; `409 suite_running` while one runs; `403 plan_required` without a plan or trial in Mobster for Mac |
+| `GET /api/tests/suites/{id}` | the suite: `status` (`running`, `finished` or `error`), `done` of `total`, and when it finishes each result's `status`, `reason`, `failed` expectations, verdict `frame`, `healed` steps and `report` |
+| `POST /api/tests/suites/{id}/stop` | stop it |
+| `POST /api/tests/heals` | `{root, action, checks?}`: `accept` or `reject` the healed steps of those checks, or of every check |

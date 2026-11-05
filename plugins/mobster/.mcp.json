@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "mobster": {
+      "command": "${CLAUDE_PLUGIN_ROOT}/scripts/mobster-mcp",
+      "args": []
+    }
+  }
+}
