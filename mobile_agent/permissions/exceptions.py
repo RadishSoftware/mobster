@@ -50,18 +50,18 @@ class Exceptions:
             self._stamp = stamp
         return self._items
 
-    def _save(self):
+    def _save(self, items):
         self.path.parent.mkdir(parents=True, exist_ok=True)
         handle, temporary = tempfile.mkstemp(dir=self.path.parent, prefix=".exceptions-")
         try:
             with os.fdopen(handle, "w", encoding="utf-8") as stream:
-                json.dump(list(self._items.values()), stream, ensure_ascii=False)
+                json.dump(list(items.values()), stream, ensure_ascii=False)
             os.chmod(temporary, 0o600)
             os.replace(temporary, self.path)
         except BaseException:
             Path(temporary).unlink(missing_ok=True)
             raise
-        self._stamp = self._mtime()
+        self._items, self._stamp = items, self._mtime()
 
     def contains(self, app, label, op):
         with self._lock:
@@ -71,27 +71,27 @@ class Exceptions:
         if not app or not norm(label):
             raise ValueError("An exception names an app and a control")
         with self._lock:
-            items = self._load()
+            items = dict(self._load())
             key = key_of(app, label, op)
             items[key] = {"key": key, "app": app, "appName": " ".join(str(app_name or "").split())[:80],
                           "label": " ".join(str(label).split())[:120], "op": (op or "").upper(),
                           "addedAt": time.time() * 1000}
             while len(items) > LIMIT:
                 items.pop(min(items, key=lambda k: items[k]["addedAt"]))
-            self._save()
-            return items[key]
+            self._save(items)
+            return dict(items[key])
 
     def remove(self, key):
         with self._lock:
-            items = self._load()
+            items = dict(self._load())
             if items.pop(key, None) is None:
                 return False
-            self._save()
+            self._save(items)
             return True
 
     def public(self):
         with self._lock:
-            return sorted(self._load().values(), key=lambda item: -item["addedAt"])
+            return sorted((dict(item) for item in self._load().values()), key=lambda item: -item["addedAt"])
 
 
 def default_path():

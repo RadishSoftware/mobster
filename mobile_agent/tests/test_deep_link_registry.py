@@ -326,7 +326,8 @@ class RouteTests(Project):
                 (("GET", None, {"project": ["relative"]}, False), "bad_project", 400),
                 (("POST", {"project": str(self.root), "name": "a", "url": "javascript:1"}, None, True), "bad_link",
                  400),
-                (("POST", {"project": str(self.root), "name": "a", "url": "shop://a"}, None, False), "app_only", 403)):
+                (("POST", {"project": str(self.root), "name": "a", "url": "shop://a"}, None, False), "app_only", 403),
+                (("DELETE", None, {"project": [str(self.root)], "name": ["a"]}, False), "app_only", 403)):
             with self.subTest(code=code), self.assertRaises(APIError) as caught:
                 self.call(*args)
             self.assertEqual((caught.exception.code, caught.exception.status), (code, status))

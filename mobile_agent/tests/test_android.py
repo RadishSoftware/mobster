@@ -282,19 +282,6 @@ class LogTests(unittest.TestCase):
         self.assertNotIn("sk-ant-api03-AAAA", text)
         self.assertIn("FATAL EXCEPTION", text)
 
-    def test_recording_pulls_the_file_and_cleans_up(self):
-        fake = FakeAdb()
-        process = mock.Mock()
-        process.wait.return_value = 0
-        started = []
-        recording = logs.start_recording(Adb("emulator-5554", fake, "adb"),
-                                         lambda argv: started.append(argv) or process)
-        with mock.patch.object(logs.time, "sleep"):
-            recording.stop("/tmp/x.mp4")
-        self.assertIn("screenrecord", started[0])
-        self.assertIn(["pull", logs.RECORD_PATH, "/tmp/x.mp4"], fake.calls)
-        self.assertIn(["rm", "-f", logs.RECORD_PATH], fake.shells())
-
 
 class FakeProcess:
     pid = 99999999

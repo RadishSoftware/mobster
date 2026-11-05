@@ -45,13 +45,15 @@ class SimLease:
         with self._lock:
             leases, self._leases = self._leases, []
             on_release, self._on_release = self._on_release, None
-        if on_release is not None:
-            on_release()
-        for lease in leases:
-            try:
-                lease.close()
-            except OSError:
-                pass
+        try:
+            if on_release is not None:
+                on_release()
+        finally:
+            for lease in leases:
+                try:
+                    lease.close()
+                except OSError:
+                    pass
 
     def __enter__(self) -> SimTarget:
         return self.target

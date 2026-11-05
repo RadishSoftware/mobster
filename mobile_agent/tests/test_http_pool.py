@@ -1,7 +1,9 @@
+import fcntl
 import os
 import socket
 import threading
 import unittest
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from mobile_agent.decision_provider import JevDecisions
@@ -118,6 +120,33 @@ class PoolTests(unittest.TestCase):
         FakeHTTP.made[0].connection.peer.sendall(b"HTTP/1.1 408 Request Timeout\r\n\r\n")
         self.pooled().request("POST", "/x")
         self.assertEqual(len(FakeHTTP.made), 2)
+
+    def test_tls_buffered_bytes_make_a_connection_unusable(self):
+        client = self.pooled()
+        client.request("POST", "/x")
+        client.close()
+        connection = FakeHTTP.made[0].connection
+        sock = connection.sock
+        connection.sock = SimpleNamespace(fileno=sock.fileno, close=sock.close, pending=lambda: 1)
+        self.pooled().request("POST", "/x")
+        self.assertEqual(len(FakeHTTP.made), 2)
+        self.assertEqual(self.pool.stats["discarded"], 1)
+
+    def test_idle_socket_above_select_descriptor_limit_is_reused(self):
+        client = self.pooled()
+        client.request("POST", "/x")
+        client.close()
+        connection = FakeHTTP.made[0].connection
+        try:
+            descriptor = fcntl.fcntl(connection.sock, fcntl.F_DUPFD, 1024)
+        except OSError as error:
+            self.skipTest(f"cannot allocate a high descriptor: {error}")
+        high = socket.socket(fileno=descriptor)
+        connection.sock.close()
+        connection.sock = high
+        self.pooled().request("POST", "/x")
+        self.assertEqual(len(FakeHTTP.made), 1)
+        self.assertEqual(self.pool.stats["reused"], 1)
 
     def test_close_during_a_request_aborts_it_and_never_pools_it(self):
         client = self.pooled()

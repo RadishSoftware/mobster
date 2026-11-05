@@ -1,19 +1,16 @@
-"""logcat, crashes and screen recordings. Every line passes the secret filter before it is kept."""
+"""logcat and crashes. Every line passes the secret filter before it is kept."""
 
 import re
-import time
 from dataclasses import dataclass
 
 from .. import secret_filter
-from .adb import Adb, AdbError, valid_package
+from .adb import Adb, valid_package
 
 THREADTIME = re.compile(r"^(\d\d-\d\d \d\d:\d\d:\d\d\.\d+)\s+(\d+)\s+(\d+)\s+([VDIWEF])\s+(.*?)\s*:\s?(.*)$")
 FATAL = re.compile(r"^FATAL EXCEPTION: (.*)$")
 PROCESS = re.compile(r"^Process: ([A-Za-z0-9_.]+), PID: (\d+)")
 ANR = re.compile(r"^ANR in ([A-Za-z0-9_.]+)(?: \(([^)]*)\))?")
 EXCEPTION = re.compile(r"^([A-Za-z0-9_.$]+(?:Exception|Error)): ?(.*)$")
-RECORD_LIMIT_SECONDS = 180  # screenrecord stops by itself at 3 minutes
-RECORD_PATH = "/sdcard/mobster-record.mp4"
 
 
 @dataclass(frozen=True)
@@ -86,30 +83,3 @@ def _crash(kind, block):
 
 def crashes_of(adb, package, since=None):
     return parse_crashes(read_logcat(adb, since), valid_package(package))
-
-
-class Recording:
-    """`screenrecord` on the device; stop() pulls the file. One at a time per device."""
-
-    def __init__(self, adb: Adb, popen):
-        self.adb, self._popen, self.started = adb, popen, time.monotonic()
-
-    def stop(self, destination):
-        self.adb.shell("pkill", "-INT", "screenrecord", check=False, timeout=10)
-        time.sleep(1.0)  # the muxer needs a moment to write the moov atom
-        try:
-            self._popen.wait(timeout=10)
-        except Exception:
-            self._popen.kill()
-        self.adb.adb("pull", RECORD_PATH, str(destination), timeout=60)
-        self.adb.shell("rm", "-f", RECORD_PATH, check=False, timeout=10)
-        return destination
-
-
-def start_recording(adb: Adb, popen, size="720x1280"):
-    """Start a screen recording. ``popen`` starts a process from an argv; the caller owns the returned Recording."""
-    if not re.fullmatch(r"\d{3,4}x\d{3,4}", size):
-        raise AdbError(f"{size!r} is not a recording size.")
-    argv = [adb.binary, *(["-s", adb.serial] if adb.serial else []), "shell", "screenrecord",
-            "--time-limit", str(RECORD_LIMIT_SECONDS), "--size", size, RECORD_PATH]
-    return Recording(adb, popen(argv))

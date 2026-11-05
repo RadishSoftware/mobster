@@ -38,7 +38,8 @@ def score_tree(tree, bundle_id=None, now=None):
     actionable = [node for node in shown if node.role in ACTIONABLE]
     labelled = [node for node in actionable if (node.label or node.identifier or node.value).strip()]
     share = len(labelled) / len(actionable) if actionable else None
-    has_web = web.web_view(tree) is not None
+    view = web.web_view(tree)
+    has_web = view is not None
     has_flutter = flutter.is_flutter(tree)
     reasons, rating = [], "good"
 
@@ -60,9 +61,9 @@ def score_tree(tree, bundle_id=None, now=None):
     elif share < GOOD_LABELLED:
         lower("partial", f"{len(labelled)} of {len(actionable)} controls have a label ({share:.0%})")
     if has_web:
-        inside = sum(1 for node in shown if web.inside(node, web.web_view(tree))) - 1
+        inside = sum(1 for node in shown if web.inside(node, view)) - 1
         lower("partial", f"a WebView holds the content ({inside} accessibility elements inside it); "
-                         "the DOM attach reads it when the inspector is reachable")
+                         "only its published accessibility elements are scored")
     if has_flutter:
         lower("partial", "Flutter draws its own widgets; its semantics tree is the only thing the agent can read")
     if not reasons:

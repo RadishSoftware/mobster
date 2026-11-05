@@ -5,6 +5,7 @@ import os
 import unittest
 from unittest import mock
 
+from mobile_agent.journal import LeaseHeld
 from mobile_agent.sim import holders
 from mobile_agent.sim.governor import Governor, Pressure
 from mobile_agent.sim.models import SimError
@@ -44,6 +45,18 @@ class HolderTests(unittest.TestCase):
             self.assertIsNone(holders.read(manager.data_dir, held.target.udid))
             with manager.acquire() as target:
                 self.assertEqual(target.udid, held.target.udid)
+
+    def test_list_uses_one_lease_observation_for_busy_and_holder_fields(self):
+        with fake_manager() as (manager, simctl, wda, leases, root):
+            held = manager.acquire()
+            self.addCleanup(held.release)
+            probe = mock.Mock()
+            with mock.patch.object(manager, "lease", side_effect=[probe, LeaseHeld("now held")]) as acquire:
+                row = manager.list()[0]
+            self.assertFalse(row["in_use"])
+            self.assertIsNone(row["holder"])
+            acquire.assert_called_once_with(held.target.wda_url)
+            probe.close.assert_called_once_with()
 
     def test_a_crashed_holder_is_ignored(self):
         with fake_manager() as (manager, simctl, wda, leases, root):

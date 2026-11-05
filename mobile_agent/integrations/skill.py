@@ -54,7 +54,7 @@ def migrate(skills_dir, dry_run=False):
 
 def install(skills_dir, dry_run=False):
     """Copy the skill to ``skills_dir``/ios-testing, and remove its old ``mobster`` folder."""
-    from .clients import write_atomic
+    from .client_files import write_atomic
     migrate(skills_dir, dry_run)
     target = Path(skills_dir) / NAME
     if target.is_symlink():

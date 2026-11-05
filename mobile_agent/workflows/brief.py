@@ -56,26 +56,6 @@ def _summary(run):
     return run.summary if isinstance(getattr(run, "summary", None), dict) else {}
 
 
-def _done(run):
-    summary = _summary(run)
-    return getattr(run, "status", None) == "completed" or summary.get("outcome") == "done"
-
-
-def sources_of(going):
-    """[(label, run)] of this round's phone tasks that finished, in the order they ran (a repeat's check left out)."""
-    rounds = len(going.record["rounds"])
-    runs = {getattr(run, "id", None): run for run in going.round_runs}
-    out = []
-    for entry in going.record["log"]:
-        if (entry.get("round") != rounds or entry.get("kind") not in ("task", "taught")
-                or entry.get("state") != "finished"):
-            continue
-        run = runs.get(entry.get("runId"))
-        if run is not None and getattr(run, "finished_at", None) is not None and _done(run):
-            out.append((str(entry.get("label") or getattr(run, "goal", "") or "A task")[:200], run))
-    return out
-
-
 def _short(label, limit=60):
     words = " ".join(str(label).split())
     first = re.split(r"(?<=[.:!?])\s", words, maxsplit=1)[0]
@@ -130,8 +110,7 @@ def answer_of(envelope):
     return ("Your brief: " + ", ".join(parts) + ".") if parts else "Your brief is ready."
 
 
-def run(going, step, values, *, sources=None, key=None):
-    sources = sources_of(going) if sources is None else sources
+def run(going, step, values, *, sources, key=None):
     if not sources:
         raise batch.Stop("failed", "There's nothing to put in the brief: no task before it finished.")
     envelope, mapping, answer = compose(sources)

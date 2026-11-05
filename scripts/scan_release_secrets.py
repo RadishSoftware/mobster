@@ -13,9 +13,9 @@ The checks, each must find nothing:
 
   names      no .env file (an .env.example is fine), .p8, AuthKey_*, .p12, .key, updater key,
              keychain, .vercel folder or secrets folder
-  patterns   no provider key, token, private key block or JSON web token (scripts/check_public_tree.py's
+  patterns   no provider key, token, private key block or JSON web token (scripts/secret_patterns.py's
              SECRETS, minus the documented placeholders and Stripe's publishable pk_ keys)
-  values     none of the maintainer's own secret values (check_public_tree.secret_values: the env
+  values     none of the maintainer's own secret values (secret_patterns.secret_values: the env
              files of --root, .vercel/.env*, MOBSTER_SECRET_FILES and this shell's *KEY/*TOKEN variables)
   gitleaks   `gitleaks dir` over the unpacked text with the repository's .gitleaks.toml. Without
              gitleaks installed this check fails: brew install gitleaks
@@ -56,7 +56,7 @@ MAX_MEMBER = 512 << 20
 
 
 def load_checker():
-    spec = importlib.util.spec_from_file_location("check_public_tree", HERE / "check_public_tree.py")
+    spec = importlib.util.spec_from_file_location("secret_patterns", HERE / "secret_patterns.py")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module

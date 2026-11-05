@@ -34,7 +34,6 @@ def add_arguments(parser):
 
 def run(args):
     from .. import cli_run as cli
-    from ..__main__ import device_target
     from ..cli_constants import EXIT_COULDNT, EXIT_FAILED, EXIT_OK, EXIT_USAGE
     from ..tui.session import Session, error_text
     as_json = bool(args.json) or not sys.stdout.isatty()
@@ -57,7 +56,7 @@ def run(args):
     wda_url = None
     if args.device:
         try:
-            wda_url = device_target(args.device)["wdaUrl"]
+            wda_url = cli.device_target(args.device)["wdaUrl"]
         except cli.NoDevice as error:
             return fail(str(error), EXIT_COULDNT)
     emit = cli.event_printer(args, preview=False)

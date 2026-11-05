@@ -1,7 +1,6 @@
 """The screen as the agent reads it: its picture, its rows, the lists on it and its signature."""
 
 import base64
-import hashlib
 import io
 import json
 import os
@@ -403,12 +402,13 @@ def screen_pairs(snapshot):
 
 
 def screen_signature(snapshot):
+    from ..replay_core.path import signature_hash
     from ..state import signature
     try:
         pairs = signature(snapshot)
     except Exception:
         return ""
-    return hashlib.sha1(json.dumps(pairs, ensure_ascii=False).encode()).hexdigest()[:16]
+    return signature_hash(pairs)
 
 
 def editable_in(snapshot, element):

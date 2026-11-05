@@ -148,8 +148,7 @@ def _add(store, args):
 
 
 def _remove(store, args):
-    fact = store.get_fact(args.id)
-    store.forget(args.id)
+    fact = store.forget(args.id)
     _print(f"Forgot: {fact['text']}")
     return 0
 

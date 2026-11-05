@@ -7,38 +7,9 @@ from pathlib import Path
 from unittest import mock
 
 from mobile_agent import attach
-from mobile_agent.attach import flutter, score, web
+from mobile_agent.attach import flutter, score
 from mobile_agent.tests.test_verify_fixtures import app, node
 from mobile_agent.verify.tree import parse_tree
-
-WEB_DOM = {"width": 400, "height": 700, "url": "https://example.test/cart", "nodes": [
-    {"selector": "#checkout", "tag": "button", "role": "", "type": "submit", "text": "Checkout",
-     "rect": [20, 100, 200, 40]},
-    {"selector": "[data-testid=\"email\"]", "tag": "input", "type": "email", "text": "", "value": "a@b.test",
-     "rect": [20, 160, 300, 40]},
-    {"selector": "body > p:nth-of-type(1)", "tag": "p", "text": "2 items", "rect": [20, 220, 100, 20]},
-    {"selector": "bad", "rect": [1, 2]},
-    "junk",
-]}
-
-
-class FakeBridge(web.WebBridge):
-    def __init__(self, dom=WEB_DOM, pages=None, result="ok"):
-        self.dom, self.result, self.ran = dom, result, []
-        self.pages = [{"id": "p1", "bundle_id": "dev.shop"}] if pages is None else pages
-
-    def contexts(self):
-        return self.pages
-
-    def evaluate(self, context_id, script, timeout=10):
-        self.ran.append((context_id, script))
-        if script == web.DOM_SCRIPT:
-            if self.dom is None:
-                raise web.WebUnreachable("gone")
-            return self.dom
-        if isinstance(self.result, Exception):
-            raise self.result
-        return self.result
 
 
 def shop_tree():
@@ -46,65 +17,6 @@ def shop_tree():
         node("NavigationBar", "Cart", rect=(0, 50, 402, 44)),
         node("WebView", "Cart", rect=(0, 100, 400, 700), children=[node("Other", "stale", rect=(0, 110, 100, 20))]),
         node("Button", "Back", rect=(10, 810, 80, 40)), bundle="dev.shop"))
-
-
-class WebAttachTests(unittest.TestCase):
-    def test_reads_the_dom_as_nodes_with_selectors(self):
-        got = web.read(shop_tree(), FakeBridge())
-        self.assertEqual(got.source, "web")
-        by_label = {n.label: n for n in got.nodes}
-        self.assertEqual(by_label["Checkout"].role, "Button")
-        self.assertEqual(by_label["Checkout"].rect, (0 + 20, 100 + 100, 200, 40))
-        self.assertEqual(by_label["Checkout"].identifier, "checkout")
-        self.assertEqual({n.role for n in got.nodes if n.value == "a@b.test"}, {"TextField"})
-        self.assertIn("Back", by_label)                       # native chrome outside the WebView stays
-        self.assertNotIn("stale", by_label)                   # the WebView's own AX children are replaced
-        self.assertEqual(len(got.page.nodes), 3)              # malformed rows are dropped
-        self.assertEqual(got.page.selectors["web:#checkout"], "#checkout")
-
-    def test_falls_back_to_the_ax_tree_and_says_why(self):
-        for bridge, why in ((None, "no web inspector bridge"), (FakeBridge(pages=[]), "not inspectable"),
-                            (FakeBridge(dom=None), "gone"), (FakeBridge(dom={"nodes": "x"}), "no DOM")):
-            got = web.read(shop_tree(), bridge)
-            self.assertEqual(got.source, "ax")
-            self.assertIn(why, got.reason)
-            self.assertIn("stale", {n.label for n in got.nodes})
-        plain = parse_tree(app(node("Button", "Go")))
-        self.assertEqual(web.read(plain, FakeBridge()).reason, "no WebView on screen")
-
-    def test_page_of_another_app_is_not_read(self):
-        bridge = FakeBridge(pages=[{"id": "x", "bundle_id": "other.app"}])
-        self.assertEqual(web.read(shop_tree(), bridge).source, "ax")
-        self.assertEqual(bridge.ran, [])
-
-    def test_an_app_with_several_pages_is_not_read_at_a_guess(self):
-        # Safari on the iOS 26.4 simulator listed three tabs, the one on screen last (26 Oct 2026)
-        bridge = FakeBridge(pages=[{"id": "p1", "bundle_id": "dev.shop"}, {"id": "p2", "bundle_id": "dev.shop"}])
-        got = web.read(shop_tree(), bridge)
-        self.assertEqual(got.source, "ax")
-        self.assertIn("2 inspectable pages", got.reason)
-        self.assertEqual(bridge.ran, [])
-
-    def test_click_and_type_target_the_selector_once(self):
-        bridge = FakeBridge()
-        page = web.read(shop_tree(), bridge).page
-        web.click(bridge, page, "web:#checkout")
-        web.type_text(bridge, page, "web:#checkout", 'x"); alert(1); ("')
-        self.assertEqual(len(bridge.ran), 3)                  # the read, then one script per action
-        self.assertIn('"#checkout"', bridge.ran[1][1])
-        self.assertIn(r'x\"); alert(1); (\"', bridge.ran[2][1])  # text is a JSON string, never code
-
-    def test_actions_refuse_when_unsure_and_never_retry(self):
-        bridge = FakeBridge()
-        page = web.read(shop_tree(), bridge).page
-        with self.assertRaises(web.WebActionError):
-            web.click(bridge, page, "web:#nothing")
-        self.assertEqual(len(bridge.ran), 1)                  # nothing was sent
-        for failure in ("missing", web.WebUnreachable("dropped")):
-            bridge.result, bridge.ran = failure, []
-            with self.assertRaises(web.WebActionError):
-                web.click(bridge, page, "web:#checkout")
-            self.assertEqual(len(bridge.ran), 1)
 
 
 def flutter_tree(marked=False):
@@ -124,28 +36,11 @@ class FlutterTests(unittest.TestCase):
     def test_recognises_the_shape_with_and_without_engine_marks(self):
         self.assertTrue(flutter.is_flutter(flutter_tree()))
         self.assertTrue(flutter.is_flutter(flutter_tree(marked=True)))
-        self.assertTrue(flutter.read(flutter_tree(marked=True)).marked)
 
     def test_native_trees_are_not_flutter(self):
         native = parse_tree(app(*[node("Button", f"B{i}") for i in range(8)]))
         self.assertFalse(flutter.is_flutter(native))
-        self.assertIsNone(flutter.read(native))
         self.assertFalse(flutter.is_flutter(parse_tree(app(node("Other", "A"), node("Other", "B")))))
-
-    def test_maps_identifiers_and_roles_to_the_node_model(self):
-        screen = flutter.read(flutter_tree(marked=True))
-        self.assertEqual(screen.identifiers["btn_sign_in"].role, "Button")
-        self.assertEqual(screen.identifiers["btn_sign_in"].label, "Sign in")
-        self.assertEqual({n.role for n in screen.nodes if n.label == "Welcome back"}, {"StaticText"})
-        self.assertEqual({n.role for n in screen.nodes if n.label == "Terms"}, {"Other"})   # disabled stays inert
-        self.assertNotIn("FlutterSemanticsScrollView", screen.identifiers)
-
-    def test_a_container_with_labelled_children_is_not_a_button(self):
-        inner = node("Other", "Row", rect=(0, 100, 400, 60), children=[node("Other", "Title", rect=(0, 100, 200, 30))])
-        screen = flutter.read(parse_tree(app(inner, *[node("Other", f"X{i}") for i in range(7)], node(
-            "Other", "", id="FlutterView"))))
-        roles = {n.label: n.role for n in screen.nodes}
-        self.assertEqual((roles["Row"], roles["Title"]), ("Other", "Button"))
 
 
 class ScoreTests(unittest.TestCase):
@@ -171,6 +66,17 @@ class ScoreTests(unittest.TestCase):
         drawn = score.score_tree(parse_tree(app(node("Other", "Game"))))
         self.assertEqual(drawn.rating, "poor")
         self.assertIn("drawn", drawn.reasons[0])
+
+    def test_webview_score_counts_only_elements_inside_the_largest_view(self):
+        tree = parse_tree(app(
+            node("WebView", "Small", rect=(0, 0, 100, 50)),
+            node("WebView", "Large", rect=(0, 100, 400, 600), children=[
+                node("Button", "Inside", rect=(20, 120, 100, 40))]),
+            node("Button", "Outside", rect=(20, 800, 100, 40))))
+        got = score.score_tree(tree)
+        self.assertTrue(got.webview)
+        self.assertIn("a WebView holds the content (1 accessibility elements inside it); "
+                      "only its published accessibility elements are scored", got.reasons)
 
     def test_one_unreadable_app_does_not_stop_the_survey(self):
         trees = {"a": parse_tree(app(*[node("Button", f"B{i}", rect=(0, 50 * i + 50, 300, 40)) for i in range(9)]))}

@@ -511,23 +511,15 @@ class Run:
 
     def emit(self, event):
         with self.condition:
-            entry = self._append(event)
-            if self.listeners is not None:
-                # Posting under the lock keeps publication in saved sequence order when two threads emit.
-                self.listeners.post("on_event", self, entry)
-
-    def _append(self, event):
-        if "_frame" in event:
-            # Screens are stored beside the run and referenced by id, never inlined; the caller's dict gets the id too.
-            data = event.pop("_frame")
-            event["frameId"] = self.frames.put(self.id, data) if self.frames is not None and data else None
-        # A call on the person's plan is no spend: History and Home don't read "0¢" for "On your Claude plan".
-        if (event.get("event") == "inference_finished" and type(event.get("cost_nanodollars")) is int
-                and event.get("billing") != "plan"):
-            with self.condition:
+            if "_frame" in event:
+                # Screens are stored beside the run and referenced by id; the caller's dict gets the id too.
+                data = event.pop("_frame")
+                event["frameId"] = self.frames.put(self.id, data) if self.frames is not None and data else None
+            # A call on the person's plan is no spend: History and Home show "On your Claude plan", not "0¢".
+            if (event.get("event") == "inference_finished" and type(event.get("cost_nanodollars")) is int
+                    and event.get("billing") != "plan"):
                 self.cost_nanodollars += event["cost_nanodollars"]
                 self.cost_known = True
-        with self.condition:
             # The one gate for what a run stores and serves: secrets are masked in the journal and every reader.
             entry = {**secret_filter.redact_deep(event), "seq": len(self.events), "timestamp": time.time() * 1000}
             if self.subrun_open is not None and "subrun" not in entry:
@@ -536,7 +528,9 @@ class Run:
                 self.journal.append(self.metadata(), entry)
             self.events.append(entry)
             self.condition.notify_all()
-        return entry
+            if self.listeners is not None:
+                # Posting under the lock keeps publication in saved sequence order when two threads emit.
+                self.listeners.post("on_event", self, entry)
 
     def steer(self, text, source="app"):
         if source not in ("app", "tui", "cli", "mcp", "voice", "remote"):

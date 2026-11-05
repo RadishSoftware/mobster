@@ -67,6 +67,19 @@ def wda_url_for(args):
     return (getattr(args, "wda_url", None) or os.environ.get("MOBSTER_WDA_URL") or DEFAULT_WDA_URL).rstrip("/")
 
 
+def device_target(name):
+    """The device `--device NAME` names (devices.discover), with a WDA address to drive."""
+    from . import devices
+    try:
+        item = devices.resolve(devices.discover(probe=False), name)
+    except LookupError as error:
+        raise NoDevice(str(error)) from None
+    if not item.get("wdaUrl"):
+        raise NoDevice(f"“{item['name']}” isn't set up yet. {item.get('reason') or ''} Set it up with "
+                       "`mobster setup`, or in Mobster for Mac.".replace("  ", " "))
+    return item
+
+
 class NoDevice(ConnectionError):
     """Nothing answered at the WDA address (exit code 3)."""
 

@@ -24,17 +24,22 @@ class WorkflowHistory:
     def forget(self, connection, identifier):
         connection.execute("DELETE FROM workflow_versions WHERE workflow_id=?", (identifier,))
 
+    def _version_row(self, identifier, revision):
+        """Read a saved version under the journal lock, after checking the workflow still exists."""
+        row = self.owner.journal.connection.execute(
+            "SELECT data, published_at FROM workflow_versions WHERE workflow_id=? AND revision=?",
+            (identifier, revision)).fetchone()
+        if row is None:
+            raise APIError("That version isn't kept any more.", 404, "version_not_found")
+        return row
+
     def publish(self, identifier, body):
         """POST /api/workflows/{id}/publish {revision}"""
         if not isinstance(body, dict) or set(body) != {"revision"} or type(body["revision"]) is not int:
             raise ValueError("Give the revision to publish")
         with self.owner.lock, self.owner.journal.lock:
             workflow = self.owner._get(identifier)
-            row = self.owner.journal.connection.execute(
-                "SELECT data FROM workflow_versions WHERE workflow_id=? AND revision=?",
-                (identifier, body["revision"])).fetchone()
-            if row is None:
-                raise APIError("That version isn't kept any more.", 404, "version_not_found")
+            row = self._version_row(identifier, body["revision"])
             try:
                 graph = self.owner.check_graph(json.loads(row[0]).get("graph"), identifier)
             except ValueError as error:
@@ -83,22 +88,14 @@ class WorkflowHistory:
         """GET /api/workflows/{id}/versions/{revision}: that version as the API shows a workflow."""
         with self.owner.journal.lock:
             self.owner._get(identifier)
-            row = self.owner.journal.connection.execute(
-                "SELECT data FROM workflow_versions WHERE workflow_id=? AND revision=?",
-                (identifier, revision)).fetchone()
-        if row is None:
-            raise APIError("That version isn't kept any more.", 404, "version_not_found")
+            row = self._version_row(identifier, revision)
         return self.owner.public(json.loads(row[0]))
 
     def call_graph(self, identifier, revision, *, allow_draft=False):
         """The saved graph a child call may run, with publication provenance checked under the same lock."""
         with self.owner.journal.lock:
             self.owner._get(identifier)
-            row = self.owner.journal.connection.execute(
-                "SELECT data, published_at FROM workflow_versions WHERE workflow_id=? AND revision=?",
-                (identifier, revision)).fetchone()
-            if row is None:
-                raise APIError("That version isn't kept any more.", 404, "version_not_found")
+            row = self._version_row(identifier, revision)
             if row[1] is None and not allow_draft:
                 raise APIError("Publish that saved version before another workflow runs it.", 409, "not_published")
             return json.loads(row[0])["graph"]
@@ -112,11 +109,7 @@ class WorkflowHistory:
             workflow = self.owner._get(identifier)
             if body["current"] != workflow["revision"]:
                 raise APIError("The workflow changed. Reload before rolling it back.", 409, "revision_conflict")
-            row = self.owner.journal.connection.execute(
-                "SELECT data FROM workflow_versions WHERE workflow_id=? AND revision=?",
-                (identifier, body["revision"])).fetchone()
-            if row is None:
-                raise APIError("That version isn't kept any more.", 404, "version_not_found")
+            row = self._version_row(identifier, body["revision"])
             old = json.loads(row[0])
             updated = dict(workflow)
             for key in RESTORED:

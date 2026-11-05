@@ -47,6 +47,20 @@ class InterfaceTests(unittest.TestCase):
         lease.release()
         self.assertEqual(closed, [1])
 
+    def test_release_closes_every_lease_when_its_callback_fails(self):
+        target = SimTarget("U", NAME, "iPhone 17 Pro", "iOS 26.4", "http://127.0.0.1:8310", "http://127.0.0.1:9310",
+                           "/x.xctestrun")
+        callback = mock.Mock(side_effect=RuntimeError("holder cleanup failed"))
+        first, second = mock.Mock(), mock.Mock()
+        first.close.side_effect = OSError("already closed")
+        lease = SimLease(target, [first, second], on_release=callback)
+        with self.assertRaisesRegex(RuntimeError, "holder cleanup failed"):
+            lease.release()
+        lease.release()
+        callback.assert_called_once_with()
+        first.close.assert_called_once_with()
+        second.close.assert_called_once_with()
+
 
 class AcquireTests(unittest.TestCase):
     def test_cold_acquire_creates_boots_configures_builds_and_starts(self):

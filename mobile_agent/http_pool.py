@@ -1,11 +1,10 @@
 """Warm model connections shared across runs in one process, each borrowed by one caller at a time."""
 
 import hashlib
-import select
 import threading
 import time
 
-from .transport import HTTP
+from .transport import HTTP, peer_closed
 
 # Under each front end's own limit (2026-09-23: aiplatform.googleapis.com closed one at 240 s, api.typesafe.ai at 900+).
 MAX_IDLE_SECONDS = 120
@@ -15,18 +14,6 @@ MAX_IDLE_PER_KEY = 4
 
 def _digest(key):
     return hashlib.sha256((key or "").encode("utf-8")).hexdigest()
-
-
-def _dropped(client):
-    # The transport never retries, so a socket the peer closed or wrote to is never reused.
-    sock = getattr(client.connection, "sock", None)
-    if sock is None:
-        return True
-    try:
-        readable, _, _ = select.select([sock], [], [], 0)
-    except (OSError, ValueError):
-        return True
-    return bool(readable)
 
 
 class ConnectionPool:
@@ -47,7 +34,8 @@ class ConnectionPool:
             while idle:
                 candidate, since = idle.pop()
                 limit = self.max_idle if self.max_idle is not None else IDLE_LIMITS.get(base_url, MAX_IDLE_SECONDS)
-                if self._clock() - since <= limit and not _dropped(candidate):
+                sock = getattr(candidate.connection, "sock", None)
+                if self._clock() - since <= limit and sock is not None and not peer_closed(sock):
                     client = candidate
                     reused = True
                     self.stats["reused"] += 1

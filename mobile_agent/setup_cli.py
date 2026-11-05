@@ -47,7 +47,6 @@ def run(args):
         print(f"mobster setup: {error}", file=sys.stderr)
         return 3
     setup = runtime.setup
-    asked = set()
     shown = 0
     frame = 0
     last = None
@@ -83,7 +82,7 @@ def run(args):
                     print("\n" + paint("✗ ", "coral", "bold") + failed +
                           "\n  Fix it, then run " + paint("mobster setup", "accent") + " again.")
                 return 1
-            action = _next_action(state, asked)
+            action = _next_action(state)
             if action is not None and not as_json:
                 shown = 0
                 if not _act(runtime, state, action, args, paint):
@@ -111,16 +110,16 @@ def _failed(state):
     return None
 
 
-def _next_action(state, asked):
+def _next_action(state):
     steps = {step["id"]: step for step in state.get("steps") or ()}
     build, running, live = steps.get("wda_build"), steps.get("wda_running"), steps.get("live")
-    if build and build["state"] == "todo" and "build" not in asked:
+    if build and build["state"] == "todo":
         return "build"
-    if running and running["state"] == "todo" and build and build["state"] == "done" and "start" not in asked:
+    if running and running["state"] == "todo" and build and build["state"] == "done":
         return "start"
-    if live and live["state"] == "todo" and "live" not in asked:
+    if live and live["state"] == "todo":
         return "live"
-    if (state.get("wifi") or {}).get("state") == "asking" and "wifi" not in asked:
+    if (state.get("wifi") or {}).get("state") == "asking":
         return "wifi"
     return None
 

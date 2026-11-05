@@ -177,11 +177,8 @@ class Session:
         return run
 
     def threads(self):
-        """The runtime's ThreadService, or None (no journal, or a build without conversations)."""
-        try:
-            from ..threads.service import service_for
-        except ImportError:
-            return None
+        """The runtime's ThreadService, or None when conversations are not running."""
+        from ..threads.service import service_for
         return service_for(self.runtime)
 
     def recent_threads(self, limit=30):
@@ -216,11 +213,8 @@ class Session:
         path = Path(path).expanduser()
         if not path.is_file():
             raise ValueError(f"There's no file at {path}.")
-        try:
-            from ..attachments.service import store_for
-            from ..attachments.store import FILE_MAX
-        except ImportError:
-            raise ValueError("Attaching files isn't in this build.") from None
+        from ..attachments.service import store_for
+        from ..attachments.store import FILE_MAX
         store = store_for(self.runtime)
         if store is None:
             raise ValueError("Attaching files needs Mobster's task history, which this window doesn't keep.")

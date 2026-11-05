@@ -33,8 +33,7 @@ def maybe_here(args):
             print(f"mobster: {message}", file=sys.stderr)
         return 3
     if getattr(args, "device", None):
-        from .__main__ import device_target
-        from .cli_run import NoDevice
+        from .cli_run import NoDevice, device_target
         try:
             args.wda_url = device_target(args.device)["wdaUrl"]
         except NoDevice as error:

@@ -722,6 +722,14 @@ def _md_cell(value):
     return _cell_text(value).replace("|", "\\|").replace("\n", " ")
 
 
+def comparison_rows(options):
+    """Fact labels in first-seen order, with each option's first value or an empty cell."""
+    labels = dict.fromkeys(fact["label"] for option in options for fact in option.get("facts") or ())
+    for label in labels:
+        yield label, [next((fact["value"] for fact in option.get("facts") or () if fact["label"] == label), "")
+                      for option in options]
+
+
 def block_markdown(block):
     """One block as Markdown."""
     kind, lines = block["type"], []
@@ -797,11 +805,9 @@ def block_markdown(block):
                          + (f". {item['detail']}" if item.get("detail") else ""))
     elif kind == "comparison":
         options = block["options"]
-        labels = list(dict.fromkeys(f["label"] for o in options for f in o.get("facts") or ()))
         lines.append("| | " + " | ".join(_md_cell(o["name"]) for o in options) + " |")
         lines.append("| --- |" + " --- |" * len(options))
-        for label in labels:
-            values = [next((f["value"] for f in o.get("facts") or () if f["label"] == label), "") for o in options]
+        for label, values in comparison_rows(options):
             lines.append(f"| {_md_cell(label)} | " + " | ".join(_md_cell(v) for v in values) + " |")
         for key, word in (("pros", "Pros"), ("cons", "Cons")):
             if any(o.get(key) for o in options):

@@ -56,12 +56,12 @@ class NoWebhookTests(unittest.TestCase):
             self.assertEqual(self.check.main([directory]), 1)
 
 
-@unittest.skipUnless((ROOT / "scripts" / "check_public_tree.py").exists(), "needs scripts/check_public_tree.py")
+@unittest.skipUnless((ROOT / "scripts" / "secret_patterns.py").exists(), "needs scripts/secret_patterns.py")
 class SecretScanTests(unittest.TestCase):
 
     def setUp(self):
-        spec = importlib.util.spec_from_file_location("check_public_tree_under_test",
-                                                      ROOT / "scripts" / "check_public_tree.py")
+        spec = importlib.util.spec_from_file_location("secret_patterns_under_test",
+                                                      ROOT / "scripts" / "secret_patterns.py")
         self.tree = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(self.tree)
 

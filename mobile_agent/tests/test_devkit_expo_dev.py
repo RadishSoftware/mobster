@@ -66,6 +66,23 @@ class ProcessOwnership(unittest.TestCase):
             probe.assert_not_called()
 
 
+class ProjectResolution(Project):
+    def test_explicit_project_and_current_directory_resolve_to_the_app(self):
+        self.expo_app()
+        self.assertEqual(expo.resolve_project(str(self.root)).root, self.root.resolve())
+        with mock.patch.object(Path, "cwd", return_value=self.root):
+            self.assertEqual(expo.resolve_project().root, self.root.resolve())
+
+    def test_relative_and_missing_projects_are_refused_before_discovery(self):
+        for path, message in (("relative/project", "Pass the absolute path"),
+                              (str(self.root / "missing"), "isn't a folder")):
+            with self.subTest(path=path), mock.patch.object(expo, "find_app") as discover:
+                with self.assertRaises(DevError) as caught:
+                    expo.resolve_project(path)
+                self.assertIn(message, caught.exception.message)
+                discover.assert_not_called()
+
+
 class DetectByConfig(Project):
     def test_an_expo_config_makes_an_expo_project(self):
         write(self.root / "package.json", {"name": "x"})
@@ -423,8 +440,10 @@ class Api(Project):
     def test_starting_and_stopping_acts_only_for_the_app_and_stops_what_it_started(self):
         self.expo_app()
         body = {"project": str(self.root)}
-        with self.assertRaises(APIError):
-            expo_routes.dev_route(Request(body, app_session=False))
+        for route in (expo_routes.dev_route, expo_routes.reload_route, expo_routes.stop_route):
+            with self.subTest(route=route.__name__), self.assertRaises(APIError) as caught:
+                route(Request(body, app_session=False))
+            self.assertEqual((caught.exception.code, caught.exception.status), ("app_only", 403))
         stops = []
         with mock.patch.object(expo_dev, "ensure",
                                return_value=({"state": "running", "port": 8081, "pid": 4242}, True)), \

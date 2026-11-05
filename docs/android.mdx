@@ -73,7 +73,6 @@ With the flag set, MCP `list_devices` includes Android devices with `"platform":
 | Launch an app, open a link | `monkey`, `am start -a VIEW` |
 | Install an `.apk` | `adb install -r` |
 | Screenshot, logcat with secrets masked, crash and ANR detection | `screencap`, `logcat` |
-| Screen recording up to 3 minutes | `screenrecord` |
 
 The tree maps `resource-id` to the id, `text` and `content-desc` to the label, and sizes to dp, so `id:`, `label:` and `role:` selectors read the same on both platforms.
 
@@ -84,7 +83,7 @@ The tree maps `resource-id` to the id, `text` and `content-desc` to the label, a
 - The tree comes from `uiautomator dump`, not the Appium UIAutomator2 server. A dump is slower and a screen that animates forever can't be dumped. The server's APKs need a pinned download, which `mobster sim doctor --fix` will do once they are pinned.
 - System permission dialogs aren't answered yet; grant the permission with `conditions.permissions`.
 - Crash evidence from `logcat` isn't attached to a report yet.
-- Video and the Mac app's device list aren't wired.
+- Video capture is not supported. The Mac app's device list is not wired.
 - `mobster test` refuses a USB Android phone (decided 25 Oct 2026), and keeps refusing it until Mobster can tell your own builds from the other apps on a phone. With the flag set, use MCP `verify_start` to check an installed app on a USB Android phone, with `bundle_id` and `reset: "none"`. `tap` and `screen` on their own can't drive an Android device yet.
 
 ## Measured
