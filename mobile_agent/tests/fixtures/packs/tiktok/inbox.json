@@ -1,0 +1,116 @@
+{
+"note": "Synthetic and inferred: TikTok's usual iOS labels, every name, handle and text made up; waiting for a recorded tree (REAL-QA-QUEUE.md, PRIORITY: app packs, list B).",
+"rows": [
+{
+"role": "StaticText",
+"label": "Inbox",
+"rect": [
+0.4,
+0.06,
+0.2,
+0.03
+]
+},
+{
+"role": "Button",
+"label": "Activity",
+"rect": [
+0.04,
+0.12,
+0.92,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "New followers",
+"rect": [
+0.04,
+0.18,
+0.92,
+0.06
+]
+},
+{
+"role": "Cell",
+"label": "Unread, Mia Chen, sent a video, 2h",
+"rect": [
+0.0,
+0.26,
+1.0,
+0.08
+]
+},
+{
+"role": "Cell",
+"label": "Leo, haha yes, 1d",
+"rect": [
+0.0,
+0.34,
+1.0,
+0.08
+]
+},
+{
+"role": "Cell",
+"label": "Priya, You: see you saturday, 3d",
+"rect": [
+0.0,
+0.42,
+1.0,
+0.08
+]
+},
+{
+"role": "Button",
+"label": "Home",
+"rect": [
+0.0,
+0.92,
+0.2,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "Friends",
+"rect": [
+0.2,
+0.92,
+0.2,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "Create",
+"rect": [
+0.4,
+0.92,
+0.2,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "Inbox",
+"rect": [
+0.6,
+0.92,
+0.2,
+0.06
+],
+"selected": true
+},
+{
+"role": "Button",
+"label": "Profile",
+"rect": [
+0.8,
+0.92,
+0.2,
+0.06
+]
+}
+]
+}

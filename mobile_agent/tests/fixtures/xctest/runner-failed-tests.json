@@ -1,0 +1,55 @@
+{
+ "devices": [
+  {
+   "architecture": "arm64",
+   "deviceId": "<UDID>",
+   "deviceName": "Mobster · iPhone 17 Pro · iOS 26.4 · 6",
+   "modelName": "iPhone 17 Pro",
+   "osBuildNumber": "23E244",
+   "osVersion": "26.4",
+   "platform": "iOS Simulator"
+  }
+ ],
+ "testNodes": [
+  {
+   "children": [
+    {
+     "children": [
+      {
+       "children": [
+        {
+         "children": [
+          {
+           "name": "The test runner failed to initialize for UI testing. (Underlying Error: Timed out while loading Accessibility.)",
+           "nodeType": "Failure Message"
+          }
+         ],
+         "name": "WebDriverAgentRunner-Runner (77840) encountered an error",
+         "nodeIdentifier": "WebDriverAgentRunner-Runner (77840) encountered an error",
+         "nodeType": "Test Case",
+         "result": "Failed"
+        }
+       ],
+       "name": "System Failures",
+       "nodeType": "Test Suite",
+       "result": "Failed"
+      }
+     ],
+     "name": "WebDriverAgentRunner",
+     "nodeIdentifierURL": "test://com.apple.xcode/WebDriverAgent/WebDriverAgentRunner",
+     "nodeType": "UI test bundle",
+     "result": "Failed"
+    }
+   ],
+   "name": "WebDriverAgentRunner",
+   "nodeType": "Test Plan",
+   "result": "Failed"
+  }
+ ],
+ "testPlanConfigurations": [
+  {
+   "configurationId": "1",
+   "configurationName": "Test Scheme Action"
+  }
+ ]
+}

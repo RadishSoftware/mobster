@@ -1,5 +1,3 @@
-"""An UNCLEAR verdict is overridden only for acts the request's own words ask for. Offline."""
-
 import unittest
 
 from mobile_agent.task_policy import asks_for_changes, requested_by

@@ -6,8 +6,19 @@ import unittest
 from pathlib import Path
 
 from mobile_agent.bench import suite as S
-from mobile_agent.bench.checks import (Abstains, AnswerIs, Captured, Fixture, FixtureIntact, InApp,
-                                       ItemLabels, ItemSet, OnScreen, Shows, Truth)
+from mobile_agent.bench.checks import (
+    Abstains,
+    AnswerIs,
+    Captured,
+    Fixture,
+    FixtureIntact,
+    InApp,
+    ItemLabels,
+    ItemSet,
+    OnScreen,
+    Shows,
+    Truth,
+)
 from mobile_agent.bench.fixtures import Fixtures
 from mobile_agent.bench.truth import CAPTURE_AT_RESET, SEEDS, SPECS
 

@@ -1,0 +1,162 @@
+---
+title: "Security"
+sidebarTitle: "Security"
+description: "How Mobster protects its connections, its local servers and what it keeps on your Mac."
+icon: "shield"
+keywords: ["security", "tls", "https", "certificate pinning", "ssl pinning", "pins", "proxy", "intercept", "keychain", "encryption", "local api", "127.0.0.1", "hsts", "csp", "content security policy", "clickjacking", "x-frame-options", "updates", "signature"]
+---
+
+Mobster talks to a few servers of its own, to the model providers you chose, and to your phone over the cable. This page says how each connection is protected and what Mobster keeps on your Mac. [Privacy and your data](/privacy) says what each connection carries.
+
+## Connections
+
+Every connection Mobster makes to the internet uses HTTPS with TLS 1.2 or later, and checks the server's certificate against the trust store macOS keeps. No part of Mobster turns certificate checks off. `mobster.dev`, `api.mobster.dev` and `remote.mobster.dev` send `Strict-Transport-Security`, so a browser that has visited them never uses plain HTTP there.
+
+| Server | What it's for | Checked against |
+|---|---|---|
+| `api.mobster.dev` | Your plan, your Macs, checkout and billing links | macOS's trust store, then Mobster's pins |
+| `remote.mobster.dev` | [Mobster Remote](/remote)'s relay | macOS's trust store, then Mobster's pins |
+| `mobster.dev/updates/latest.json` | The update check | macOS's trust store, then Mobster's pins |
+| Your Mobster account's sign-in (Supabase) | Signing in | macOS's trust store |
+| GitHub | Update downloads, which the update check points to | macOS's trust store, and the update's signature |
+| Anthropic, OpenAI and the other model providers | Your agent's model calls, on your key or plan | macOS's trust store |
+| Connectors, webhooks and alerts | The services you connect | macOS's trust store |
+
+An AI provider's address, a connector or a webhook can use plain `http://` only on this Mac or your local network, such as Ollama or LM Studio. Mobster refuses to send a key to an internet address over `http://`.
+
+## Pinned servers
+
+Mobster pins its own servers: `mobster.dev`, `www.mobster.dev`, `api.mobster.dev` and `remote.mobster.dev`. After macOS accepts a server's certificate, Mobster also checks that the chain macOS built includes one of the certificate authority keys it ships with. Both the Mac app and its agent check.
+
+When the check fails, Mobster doesn't connect, and says so:
+
+```text
+Mobster couldn't verify its server, so it didn't connect. Another app or this network may be intercepting secure connections. Try another network, or update Mobster.
+```
+
+It never falls back to an unpinned connection. The rest of Mobster keeps working: tasks, your phone, and your plan for as long as its last check allows ([Your Mobster account](/account)).
+
+A network that inspects HTTPS with its own certificate, such as some company networks and security apps, fails this check. Sign-in, the plan check, Remote and the update check need a network that doesn't intercept `mobster.dev`. Model calls, connectors and GitHub aren't pinned and work through it.
+
+Mobster pins certificate authority keys, never a server's own certificate, so a routine certificate renewal never breaks a pin. These are the keys, as `pin-sha256` values, checked against the live servers on 13 Oct 2026:
+
+| Certificate authority | Pin | Used today by |
+|---|---|---|
+| Let's Encrypt YR1 | `LoMHBotttiDko50Gi13uXW71eIy7LAttI+rYT8wXF4w=` | `mobster.dev`, `api.mobster.dev` |
+| ISRG Root YR | `fk6IOKit1ild5647BH06ujSIq5XbCgqlbYl6ANhhi88=` | `mobster.dev`, `api.mobster.dev` |
+| ISRG Root X1 | `C5+lpZ7tcVwmwQIMcRtPbsQtWLABXhQzejna0wHFr8M=` | `mobster.dev`, `api.mobster.dev` |
+| Google Trust Services WE1 | `kIdp6NNEd8wsugYyyIYFsi1ylMCED3hZbSR8ZFsa/A4=` | `remote.mobster.dev` |
+| GTS Root R4 | `mEflZT5enoR1FuXLgYYGqnVEoZvmf9c2bVBpiOjYQ0c=` | `remote.mobster.dev` |
+| ISRG Root X2 | `diGVwiVYbubAI3RW4hB9xU8e/CH2GnkuvVFZE8zmgzI=` | Backup |
+| ISRG Root YE | `sCkq5UWXjg+7mKu9lMhhYF5bGLsy7VI/UNW3tccdR7w=` | Backup |
+| GTS Root R1 | `hxqRlPTu1bMS/0DITB1SSu0vd4u/8l8TjPgfaAp63Gc=` | Backup |
+| GTS Root R2 | `Vfd95BwDeSQo+NUYxVEEIlvkOlWY2SalKK1lPhzOx78=` | Backup |
+| GTS Root R3 | `QXnt2YHvdHR3tJYmQIr0Paosp6t/nggsEGD4QJZ3Q0g=` | Backup |
+| SSL.com TLS RSA Root CA 2022 | `K89VOmb1cJAN3TK6bf4ezAbJGC1mLcG2Dh97dnwr3VQ=` | Backup |
+| SSL.com TLS ECC Root CA 2022 | `G/ANXI8TwJTdF+AFBM8IiIUPEv0Gf6H5LA/b9guG4yE=` | Backup |
+| SSL.com Root Certification Authority RSA | `0cRTd+vc1hjNFlHcLgLCHXUeWqn80bNDH/bs9qMTSPo=` | Backup |
+| SSL.com Root Certification Authority ECC | `oyD01TTXvpfBro3QSZc1vIlcMjrdLTiL/M9mLCPX+Zo=` | Backup |
+
+The backups cover the other roots Let's Encrypt and Google Trust Services issue from, and SSL.com, the third authority Cloudflare may move `remote.mobster.dev` to.
+
+### Rotate the pins
+
+The pins live in two places that a test keeps equal: `mobile_agent/pinning.py` (the agent) and `desktop/src-tauri/src/pinning.rs` (the Mac app).
+
+1. Run the live check. It needs the network, so CI never runs it:
+
+   ```sh
+   mobile_agent/.venv/bin/python scripts/check_tls_pins.py
+   ```
+
+   ```text
+   remote.mobster.dev: pinned (TLSv1.3)
+     vQjcpzcD30YBxcrvy6TsZzrBvkIA8dgEsCmIf6QePQA=  mobster.dev    expires 2027-01-07
+     kIdp6NNEd8wsugYyyIYFsi1ylMCED3hZbSR8ZFsa/A4=  WE1            expires 2029-02-20  pinned: Google Trust Services WE1
+     mEflZT5enoR1FuXLgYYGqnVEoZvmf9c2bVBpiOjYQ0c=  GTS Root R4    expires 2036-06-22  pinned: GTS Root R4
+   ```
+
+   It exits 1 when a host's chain has no pinned key, and warns when a pinned authority a host uses expires within 180 days. `cargo test --manifest-path desktop/src-tauri/Cargo.toml -- --ignored live` checks the Mac app's own client the same way.
+2. Before you move a host to a new certificate authority, add that authority's root and issuing keys to both files, and ship an app update with them.
+3. Move the host only after most Macs run that update. A Mac on an older version can't reach that host until it updates. The update check uses `mobster.dev`, so moving `mobster.dev` before the update ships strands those Macs.
+4. Run `scripts/check_tls_pins.py --save` to refresh the saved chains in `mobile_agent/tests/fixtures/tls`, which the offline tests check.
+5. Remove a pin only after no host has used it for a release.
+
+## Local servers
+
+Mobster's agent and Mac app listen on your Mac only:
+
+- **The local API** listens on `127.0.0.1`, port 8765 by default. It needs a random token that's new each time Mobster for Mac opens, refuses a request whose `Host` isn't `127.0.0.1` or `localhost`, and refuses an `Origin` that isn't Mobster's own window. A web page can't reach it, even through DNS rebinding.
+- **Sign-in callbacks** for your Mobster account and for connectors listen on `127.0.0.1` for one answer, protected by PKCE.
+- **WebDriverAgent**, which drives your phone, is reached on `127.0.0.1` through the cable or Wi-Fi relay. It refuses requests from web pages, and requests without a `Host` header.
+
+## On your Mac
+
+| What | Where | Protected by |
+|---|---|---|
+| Your Mobster account's sign-in | Your login Keychain | The Keychain, readable by Mobster for Mac only |
+| Connector, webhook and Remote secrets | Your login Keychain | The Keychain, readable by Mobster's programs only |
+| AI plan tokens and provider keys from Settings › Models | Your login Keychain | The Keychain, readable by Mobster's programs only |
+| Model keys from Settings › Agent and `mobster login`, and the alert webhook's address | Your login Keychain | The Keychain, readable by Mobster's programs only |
+| Other settings | `agent.env` in Mobster's data folder | Mode 600, readable by your user only |
+| The journal, transcripts, screenshots, memory | Mobster's data folder | Mode 600 files in mode 700 folders |
+| The local API's token | `state/api-token` in Mobster's data folder | Mode 600, new each launch |
+
+Mobster's data folder is `~/Library/Application Support/app.mobster.desktop`, mode 700: other users on your Mac can't open it. The Mac app sets that mode before anything is written there, and its `logs/agent.log` is mode 600. Mobster doesn't encrypt the journal or screenshots itself: turn on FileVault to protect them if your Mac is lost or stolen, and encrypt your Time Machine backups to protect the copies there.
+
+### Who can read Mobster's Keychain items
+
+Each Keychain item Mobster saves has an access list with Mobster's own programs on it: the program that saved it, and Mobster for Mac's `mobster-desktop` and `mobster-agent`. macOS checks each one by its code signature, so an update keeps its access.
+
+- **Any other program** gets macOS's prompt to allow it, and reads nothing unless you allow it. That includes `security find-generic-password`.
+- **Mobster for Mac's agent** never shows that prompt. When the Keychain refuses it, the read fails and Mobster says so.
+- **An item an older version saved** through `/usr/bin/security` trusted `security` itself, so any program could read it through `security` without a prompt. The first time Mobster reads it, it moves to an item with the access list. If the move fails, the old item stays as it was, and Mobster tries again on the next read.
+- **The `mobster` command** you installed with Homebrew or `install.sh` is a program of its own. The first time it reads a key Mobster for Mac saved, macOS asks you. Keys it saves are readable by Mobster for Mac in `/Applications`.
+- **From a source checkout,** the program on the list is your Python interpreter, so any script it runs can read those items.
+
+The access list doesn't stop a program running as you from deleting or replacing an item, or from reading Mobster's memory while it runs.
+
+## Updates and your plan
+
+- **Updates** are signed. The Mac app installs an update only when its signature matches the key built into the app, whatever server it came from.
+- **Your plan** is a signed token from `api.mobster.dev`, bound to this Mac. The Mac app checks the signature with the key built into it.
+
+The standalone CLI uses its own entry point and does not require the Mac app's plan or signature. The Mac app's agent keeps those checks when you launch it from a terminal or move or rename it. An unreadable build identity keeps the app's checks enabled. Environment variables cannot select the standalone CLI. Both builds keep approvals, the journal and device locks.
+
+## Sign-in and account pages
+
+`mobster.dev/signin`, `/account`, `/thanks` and `/auth/callback`, and the relay's sign-in and consent pages on `remote.mobster.dev`, refuse to load inside a frame on any site (`frame-ancestors 'none'` and `X-Frame-Options: DENY`), so another page can't overlay them to steer your clicks. Each one sends a Content Security Policy:
+
+- **Scripts:** only the page's own, Sign in with Apple's (`appleid.cdn-apple.com`) and the Realm capture script. On `mobster.dev` every inline script is pinned by its SHA-256 at build time, so a script injected into the page doesn't run.
+- **Connections:** only the page's own server and Mobster's sign-in service (Supabase).
+- **Frames:** only the Realm capture script's collector frame.
+- **Device features:** camera, microphone, location, payments, USB and screen capture are off (`Permissions-Policy`).
+
+These pages send no referrer (`no-referrer` on `mobster.dev`, `same-origin` on the relay), stricter than the browser's default `strict-origin-when-cross-origin`. Stripe Checkout and Apple's and Google's sign-in open as their own pages, under their own policies.
+
+## Mobster Remote
+
+[Mobster Remote](/remote) relays tasks between a cloud assistant and your Mac through `remote.mobster.dev`.
+
+- **Your Mac** connects with a device key it keeps in your Keychain. The relay stores only a hash of it.
+- **Assistants** connect with OAuth. Access tokens last 1 hour and carry only the scopes you allowed. Refresh tokens last 60 days, rotate on each use, and a reused one ends the whole grant. Remote keys last 30, 90 or 365 days, as you choose.
+- **What the relay sees:** the task text and the answer, in transit, over TLS at each end. It doesn't store them. Your Mac removes secrets and masks codes before an answer leaves it.
+
+### How long Remote's credentials last
+
+| Credential | Lifetime | When it ends |
+|---|---|---|
+| Your Mac's device key | 90 days from issue | The relay asks your Mac for a new key once the key is 30 days old. Your Mac stores the new key in your Keychain before it offers it, and the relay accepts the old key for 7 more days. A Mac with Remote on and awake never reaches the 90 days. A Mac offline for longer needs **Turn on** again in Settings › Remote |
+| An app's client secret, from dynamic registration | 180 days from registration (`client_secret_expires_at`) | After that date, the secret still refreshes a connection the app already made, and its refresh token keeps the 60-day limit. It can't start a new connection: the app gets `invalid_client` and registers again, as MCP clients do. Apps that sign in with a client metadata document, or with no secret, have no client secret |
+| Access token | 1 hour | |
+| Refresh token | 60 days, new on each use | A reused refresh token ends the whole grant |
+| Authorization code | 60 seconds, one use | |
+| Remote key | 30, 90 or 365 days, as you choose | |
+
+Mobster for Mac 0.4.0 and earlier can't rotate the device key. The relay dates a key made before 13 Oct 2026 from the first time it sees it after that, so those Macs keep Remote for 90 days without an update.
+
+## For a security review
+
+[mobster.dev/security](https://mobster.dev/security) puts what a security review asks on one page: how Mobster is built, what stays on your Macs, Mobster Remote's relay, approvals, keys, telemetry, where data lives and for how long, the subprocessors, and how to report a vulnerability. The standard data processing agreement is at [mobster.dev/dpa](https://mobster.dev/dpa), signed on request. [Enterprise](/enterprise) says how to buy Mobster with a DPA, an MSA and invoices.
+
+Report a vulnerability to [support@radish.software](mailto:support@radish.software), or, for Mobster's open-source engine, through [the security policy](https://github.com/RadishSoftware/mobster/security/policy).

@@ -21,13 +21,13 @@ Regimes, for the request that asks for the act (``asked``) and one in the same a
 A unit is one (case, path, regime, request). ``score`` counts the units that hold: must-ask recall.
 """
 
-from dataclasses import dataclass, field
 import re
 import threading
+from dataclasses import dataclass, field
 from types import SimpleNamespace
 
+from ...drivers import Driver
 from ...state import Element, Snapshot
-
 
 
 def _available(module):
@@ -43,12 +43,9 @@ PATHS = ("frontier",) + (("tools",) if _available("mobile_agent.ai_plans.phone_t
     ("mcp",) if _available("mobile_agent.permissions.outside") else ())
 
 
-# -- screens ---------------------------------------------------------------------------------------------------------
-
 def el(label, role="Button", rect=(.4, .5, .2, .05), *, value="", editable=None, placeholder="", selected=False,
        enabled=True, glyph=None, icon=None):
-    """An element spec; ids are given per screen. ``glyph``: the control is drawn as this glyph with no text (one of
-    perception.GLYPHS); ``icon``: what an icon labeller names it on pixels, (name, kind, act)."""
+    """An element spec; ids are given per screen."""
     if editable is None:
         editable = role in ("TextField", "TextView", "SearchField", "SecureTextField")
     return dict(label=label, role=role, rect=tuple(rect), value=value, editable=editable, placeholder=placeholder,
@@ -126,8 +123,6 @@ def read_item(what, app):
             "quote": what}
 
 
-# -- connections -----------------------------------------------------------------------------------------------------
-
 # How the agent sees the phone. "tree": WebDriverAgent's accessibility tree (USB, Wi-Fi). "mirroring": iPhone Mirroring,
 # pixels only (perception.snapshot_from: every line of text a StaticText, no buttons, rows, dialogs or switches, icons
 # unread), the app known only as the one the driver opened. "cable_bluetooth": the same pixels with the app unknown
@@ -173,8 +168,9 @@ def icon_for(spec):
 def pixel_snapshot(screen, typed, connection):
     """``screen`` as an image-only driver reads it: one line of text per labelled element (a field shows what it
     holds, else its placeholder), icons left out, through perception.snapshot_from."""
-    from ... import perception
     import hashlib
+
+    from ... import perception
     rows = []
     for spec in screen.elements:
         if _unread(spec):
@@ -219,11 +215,11 @@ def pixel_steps(case):
     return tuple([one(s) for s in step] if isinstance(step, list) else one(step) for step in case.steps)
 
 
-# -- the fake phone --------------------------------------------------------------------------------------------------
-
-class Phone:
+class Phone(Driver):
     """A phone that shows the case's screens, moves along ``flow`` on each dispatch, and records every dispatch with
     the screen it landed on."""
+
+    capabilities = frozenset({"observe_ready", "tap_point", "long_press", "write_text", "clear_text"})
     can_type = True
 
     def __init__(self, case, connection="tree"):
@@ -265,7 +261,7 @@ class Phone:
             self.typed.get(screen, {}).pop(label, None)
         self.current = self.case.next_screen(operation, label, self.current)
         if (operation, label) in self.case.fail and (operation, label) not in self.failed:
-            from ...driver_guards import DriverRejection
+            from ...wda.guards import DriverRejection
             self.failed.add((operation, label))
             raise DriverRejection("native_exception_outcome_unknown")
 
@@ -291,8 +287,9 @@ class Phone:
     def region_text(self, rect):
         return self.case.screen(self.current).shown(rect)
 
+    def close(self):
+        pass
 
-# -- the scripted model ----------------------------------------------------------------------------------------------
 
 class Model:
     """Answers each turn with the case's next chain of actions, then DONE; the task contract call returns ``items``."""
@@ -322,8 +319,6 @@ class Model:
         return {"thought": "", "plan": "", "notes_add": [], "checklist_updates": [], "actions": actions,
                 "answer": "done" if chunk[-1][0] == "DONE" else None}, {}
 
-
-# -- running one unit ------------------------------------------------------------------------------------------------
 
 @dataclass
 class Unit:
@@ -498,8 +493,6 @@ def _find(snapshot, label):
     return exact[0] if exact else None
 
 
-# -- scoring ---------------------------------------------------------------------------------------------------------
-
 def judge(case, unit, phone, cards):
     unit.dispatched = list(phone.dispatched)
     unit.cards = [{k: c.get(k) for k in ("title", "label", "operation", "answer", "screen", "reason", "target", "error")
@@ -579,8 +572,6 @@ def run_all(cases, paths=PATHS, connections=("tree",)):
                 for spec in units(case, allowed)]
     return out
 
-
-# -- navigation: the false-ask budget --------------------------------------------------------------------------------
 
 @dataclass(frozen=True)
 class Nav:

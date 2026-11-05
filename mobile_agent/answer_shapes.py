@@ -6,12 +6,19 @@ its one validation gate stay in ``result_blocks``.
 
 import re
 
-from .result_blocks import (MAX_OPTIONS, MAX_SERIES, NUMERIC_COLUMNS, STATUSES, BlockError, checklist, status_word, table,
-                            timeline, validate_block)
+from .result_blocks import (
+    MAX_OPTIONS,
+    MAX_SERIES,
+    NUMERIC_COLUMNS,
+    STATUSES,
+    BlockError,
+    checklist,
+    status_word,
+    table,
+    timeline,
+    validate_block,
+)
 
-# The line the stable prompt adds when a request asks for several things or for checks (frontier._stable_lines): the
-# answer is Markdown (frontier.SYSTEM's DONE line), and these shapes in it become a table, a checklist and a timeline
-# (``from_answer``), which the Mac app draws where the answer wrote them (dashboard features/blocks/answer-markdown.tsx).
 ANSWER_SHAPES = ("\n\nIn your DONE answer, start with one sentence that answers the request. When you checked or "
                  "tested several screens or things, then write one line per check, - [pass] what you checked: what "
                  "you saw (or [fail], [unsure]), and no table. Otherwise write several things that share the same "
@@ -19,15 +26,14 @@ ANSWER_SHAPES = ("\n\nIn your DONE answer, start with one sentence that answers 
                  "numbers as that table, labels or dates first: Mobster draws it. For places, give the table a Name "
                  "and an Address column. Write events in time order as one line each, - <time or date>: what "
                  "happened.")
-# A request about several things, or about checking something.
 WANTS_SHAPES = re.compile(r"\b(list|lists|table|compare|comparison|each|every|all (?:my|the|of)|check|checks|test|go "
                           r"through|rank|ranking|top \d+|which (?:ones|of)|summari[sz]e|breakdown|report|chart|graph|"
                           r"plot|visuali[sz]e|trend|map|nearby|near me|timeline|itinerary|schedule|history|vs\.?|"
                           r"versus)\b", re.I)
-# What a request asks the table to be drawn as (``from_answer``'s ``request``).
 CHART_WORDS = re.compile(r"\b(chart|graph|plot|visuali[sz]e|trend|trends|over time|histogram|pie|scatter)\b", re.I)
 PIE_WORDS = re.compile(r"\b(pie|donut|share|split|breakdown|proportion|percent of|makeup)\b", re.I)
-LINE_WORDS = re.compile(r"\b(line|trend|trends|over time|by (?:day|week|month|year)|daily|weekly|monthly|history)\b", re.I)
+LINE_WORDS = re.compile(r"\b(line|trend|trends|over time|by (?:day|week|month|year)|daily|weekly|monthly|history)\b",
+                        re.I)
 SCATTER_WORDS = re.compile(r"\b(scatter|correlat\w*|relationship between)\b", re.I)
 COMPARE_WORDS = re.compile(r"\b(compare|comparison|vs\.?|versus|which (?:one |is )?(?:is )?better|pros and cons|"
                            r"difference between|side by side)\b", re.I)
@@ -104,7 +110,8 @@ _WHEN = (r"(?:\d{1,2}(?::\d{2})?\s?(?:[AaPp]\.?[Mm]\.?)|\d{1,2}:\d{2}|\d{4}-\d{2
          r"(?:Mon|Tue|Tues|Wed|Thu|Thur|Thurs|Fri|Sat|Sun)[a-z]*\.?(?:,? \d{1,2}(?::\d{2})?\s?(?:[AaPp][Mm])?)?|"
          r"(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\.? \d{1,2}(?:, \d{4})?|"
          r"(?:Day|Week) \d{1,3}|(?:19|20)\d{2}|Today|Tonight|Tomorrow|Yesterday|Morning|Noon|Afternoon|Evening)")
-_EVENT = re.compile(r"^\s*[-*]\s+(?:\*\*)?(" + _WHEN + r"(?:\s?[-–]\s?" + _WHEN + r")?)(?:\*\*)?\s*(?::|—|–| - )\s*(.+?)\s*$")
+_EVENT = re.compile(r"^\s*[-*]\s+(?:\*\*)?(" + _WHEN + r"(?:\s?[-–]\s?" + _WHEN + r")?)"
+                    r"(?:\*\*)?\s*(?::|—|–| - )\s*(.+?)\s*$")
 
 
 def _event(line):
@@ -154,11 +161,6 @@ def _table_view(block, request):
 
 
 def from_answer(text, request=None):
-    """(rest, blocks): the Markdown tables, check lines and dated event lines in a model's answer as table, checklist
-    and timeline blocks, and the answer without them. A table needs a header, a rule and a row; a checklist two check
-    lines; a timeline three event lines. ``request``, the task's words, picks how a table opens: a chart when it asks
-    for one, a map when it asks where and the table has an address, the options side by side when it compares.
-    ([], text unchanged) when there is none."""
     if not isinstance(text, str):
         return text, []
     lines, blocks, drop, index = text.split("\n"), [], set(), 0

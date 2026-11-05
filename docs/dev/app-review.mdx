@@ -1,0 +1,73 @@
+---
+title: "App Review pre-check"
+sidebarTitle: "App Review"
+keywords: ["app review", "app store review", "guidelines", "privacy manifest", "usage description", "sign in with apple", "restore purchases", "account deletion", "placeholder text"]
+description: "Find what App Review rejects before you submit: missing usage descriptions, no privacy manifest, no Restore Purchases, no account deletion, placeholder text."
+icon: "shield-check"
+---
+
+One check looks for the things App Review rejects most often. Each finding names the guideline and shows the evidence: a frame or a file path. Mobster doesn't submit anything and can't promise Apple accepts the build; it finds the problems that need no judgment.
+
+## The check
+
+Save this as `.mobster/checks/app-review.yaml` and run `mobster test`:
+
+```yaml .mobster/checks/app-review.yaml
+version: 1
+name: App Review pre-check
+app:
+  bundle: com.example.yourapp
+  path: .mobster/build/Build/Products/Debug-iphonesimulator/YourApp.app
+steps:
+  - Open Settings, then About, then come back and open every other tab once
+audit: [usage-descriptions, privacy-manifest]
+throughout:
+  - no_text: /lorem ipsum|\bTODO\b|Placeholder|test@/i
+    name: 2.1 no placeholder text
+somewhere:
+  - visible: {label: Restore Purchases}
+    name: 3.1.1 Restore Purchases is reachable
+```
+
+A run that finds a problem prints it in plain words:
+
+```
+failed App Review pre-check (41.2 s)
+  ✗ 5.1.1 Daybreak.app/Info.plist has no NSCameraUsageDescription. Add one that says why the app needs the camera.
+      Evidence: AVCaptureSession is in Daybreak
+  ✗ 2.1 "Lorem ipsum dolor sit amet" is on screen: placeholder text. Replace it.
+      Evidence: frames/0007.png
+```
+
+## What it checks
+
+Before the app runs, from the built `.app`:
+
+| Check | Guideline | Fails when |
+|---|---|---|
+| `usage-descriptions` | 5.1.1 | The binary uses camera, location, contacts and similar APIs and `Info.plist` has no `NS*UsageDescription` for it, or the text is empty, `TODO`, lorem ipsum or a single word |
+| `privacy-manifest` | 5.1.1 | The binary uses a required-reason API and `PrivacyInfo.xcprivacy` is missing, or doesn't declare that category with a reason |
+
+A framework with a required-reason API and no manifest of its own is a finding for a person, not a failure.
+
+While Smart walks the app:
+
+| Check | Guideline | Held by |
+|---|---|---|
+| No placeholder text | 2.1 | `throughout`: no screen shows lorem ipsum, `TODO`, `Placeholder` or `test@` |
+| Restore Purchases | 3.1.1 | `somewhere`, only if the app links StoreKit |
+| Sign in with Apple | 4.8 | `somewhere`, only if the app links a third-party sign-in |
+| Account deletion | 5.1.1(v) | `somewhere`, only if the app links a sign-in or has an account |
+| Settings and About open | 2.1 | `throughout`: no screen says 404 or "page not found" |
+
+Keep a `somewhere` line only for what your app has: Restore Purchases if it links StoreKit, Sign in with Apple if it offers another sign-in, account deletion if people can create accounts.
+
+## How a run is judged
+
+A finding at fail level makes the run `failed`. A control Smart never found is `needs_review`, because the run may not have reached that screen: open the frames and add a step that goes there. Mobster follows links to Settings and About only. It doesn't crawl the app.
+
+The keys behind this are `throughout`, `somewhere` and `audit` in the [check file](/checks#the-check-file). You can write them in any check.
+
+## What it doesn't do
+
+It doesn't read your App Store Connect metadata, review your screenshots or test in-app purchases ([Checks for TestFlight, purchases and push](/dev/recipes#a-paywall-and-its-prices) covers the paywall). It reads strings in the binary, so a library that mentions an API without calling it can raise a finding for a person.

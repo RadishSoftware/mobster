@@ -1,0 +1,25 @@
+---
+title: "Failed Registering Bundle Identifier"
+sidebarTitle: "Failed Registering Bundle Identifier"
+description: "Another team already owns the helper's app ID. Build again and Mobster gives the helper an ID of your own."
+icon: "triangle-alert"
+keywords: ["bundle identifier", "app identifier", "xcodebuild", "team"]
+"article:modified_time": "2026-10-26"
+---
+
+You see this: `xcodebuild` prints `Failed Registering Bundle Identifier: The app identifier "app.mobster.wda.runner" cannot be registered to your development team because it is not available.` Mobster shows `The helper's app ID is taken by another team.`
+
+## Why it happens
+
+App IDs are unique across Apple. The default one for the helper belongs to a different team, so yours can't register it.
+
+## Fix
+
+1. Install the helper again from Mobster for Mac. It picks an app ID made for your team.
+2. If it fails again, open Xcode › Settings › Accounts, check the team and build once more.
+
+## Check it worked
+
+The build finishes and `mobster doctor` prints no `✗` line for the runner.
+
+Checked 26 Oct 2026 against Mobster 0.4.0. Back to [Troubleshooting](/troubleshooting#iphone).

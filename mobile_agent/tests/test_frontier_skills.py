@@ -1,12 +1,9 @@
-"""Skills in the loop (agent_hooks.Skill): an operation code performs for the model, asked between ``prepare``
-and ``perform`` when it has a title, with every secret it returns masked from the model and the trace, and its
-field painted over in later screenshots. A fake USE_CODE skill with the code 482913 stands in for Track 3's."""
-
 import base64
 import io
 import json
 import unittest
 
+from mobile_agent import drivers
 from mobile_agent.agent_hooks import MASK, Prepared, SkillResult
 from mobile_agent.frontier import FrontierAgent, prompt_text, usable_skills
 from mobile_agent.state import Element, Snapshot
@@ -32,12 +29,10 @@ FILLED = screen(Element("1", "Enter the code we sent", "StaticText", (.1, .2, .8
                 Element("5", "Continue", "Button", (.1, .5, .8, .05)))
 
 
-def picture():
-    """The phone's screen: grey, with black and white stripes where the code field is."""
+def picture(rect=FIELD_RECT):
     from PIL import Image
     image = Image.new("RGB", (400, 800), (128, 128, 128))
-    x, y, w, h = (int(FIELD_RECT[0] * 400), int(FIELD_RECT[1] * 800), int(FIELD_RECT[2] * 400),
-                  int(FIELD_RECT[3] * 800))
+    x, y, w, h = int(rect[0] * 400), int(rect[1] * 800), int(rect[2] * 400), int(rect[3] * 800)
     for column in range(x, x + w):
         for row in range(y, y + h):
             image.putpixel((column, row), (0, 0, 0) if (column // 4) % 2 else (255, 255, 255))
@@ -46,17 +41,18 @@ def picture():
     return out.getvalue()
 
 
-def stripes(url):
-    """The standard deviation of the code field's pixels in a prompt's JPEG (stripes: ~127; painted over: ~0)."""
+def stripes(url, rect=FIELD_RECT):
     from PIL import Image, ImageStat
     image = Image.open(io.BytesIO(base64.b64decode(url.split(",", 1)[1]))).convert("L")
     width, height = image.size
-    box = (int((FIELD_RECT[0] + .05) * width), int((FIELD_RECT[1] + .01) * height),
-           int((FIELD_RECT[0] + FIELD_RECT[2] - .05) * width), int((FIELD_RECT[1] + FIELD_RECT[3] - .01) * height))
+    box = (int((rect[0] + .05) * width), int((rect[1] + .01) * height),
+           int((rect[0] + rect[2] - .05) * width), int((rect[1] + rect[3] - .01) * height))
     return ImageStat.Stat(image.crop(box)).stddev[0]
 
 
-class Phone:
+class Phone(drivers.Driver):
+    capabilities = frozenset({"capture_preview"})
+
     def __init__(self):
         self.screen, self.actions = SIGN_IN, []
 
@@ -70,6 +66,9 @@ class Phone:
 
     def capture_preview(self, timeout=3):
         return picture()
+
+    def close(self):
+        pass
 
 
 class CodeSkill:
@@ -96,7 +95,8 @@ class CodeSkill:
 
 class Model:
     def __init__(self, *chunks, answer=f"Signed in with the code {CODE}."):
-        self.chunks, self.answer, self.prompts, self.images, self.schemas, self.systems = list(chunks), answer, [], [], [], []
+        self.chunks, self.answer, self.prompts, self.images, self.schemas, self.systems = (
+            list(chunks), answer, [], [], [], [])
         self.usage = {"prompt_tokens": 0, "completion_tokens": 0, "cached_tokens": 0, "calls": 0}
 
     def complete(self, messages, schema, timeout=60, **kwargs):
@@ -127,21 +127,41 @@ def run(order, approve=None, title="Use the code Chase sent 12 s ago to sign in 
 
 
 class SkillTests(unittest.TestCase):
+    def test_point_crop_keeps_the_whole_line_and_masks_secrets_at_its_edge(self):
+        from unittest.mock import patch
+
+        from PIL import Image, ImageStat
+
+        from mobile_agent.frontier import point_crop
+
+        image = Image.new("RGB", (400, 800), (128, 128, 128))
+        for x in range(8, 32):
+            for y in range(240, 288):
+                image.putpixel((x, y), (255, 255, 255) if x % 4 < 2 else (0, 0, 0))
+        with patch("mobile_agent.frontier.screen.screen_image", side_effect=lambda *_: image.copy()):
+            raw = Image.open(io.BytesIO(point_crop(None, .5, .33)))
+            masked = Image.open(io.BytesIO(point_crop(None, .5, .33, blur=[(.02, .3, .06, .06)])))
+        self.assertEqual(raw.size, (360, 130))
+        edge = (10, 49, 26, 80)
+        self.assertGreater(ImageStat.Stat(raw.crop(edge)).stddev[0], 40)
+        self.assertLess(ImageStat.Stat(masked.crop(edge)).stddev[0], 8)
+
     def test_the_skill_is_offered_and_its_secret_never_reaches_the_model_or_the_trace(self):
         order = []
-        phone, model, result, events = run(order, approve=lambda request: order.append(("approve", request)) or "approved")
+        phone, model, result, events = run(order,
+                                           approve=lambda request: order.append(("approve", request)) or "approved")
         self.assertIn("- USE_CODE target: type the verification code", model.systems[0])
         self.assertIn("USE_CODE", model.schemas[0]["properties"]["actions"]["items"]["properties"]["op"]["enum"])
         self.assertEqual([o[0] for o in order], ["prepare", "approve", "perform"])
         self.assertTrue(len(model.prompts) >= 2)
         for prompt in model.prompts:
             self.assertNotIn(CODE, prompt)
-        self.assertIn(MASK, model.prompts[1])  # the field and the banner, masked
+        self.assertIn(MASK, model.prompts[1])
         self.assertIn("Entered the 6-digit code from Chase.", model.prompts[1])
         self.assertNotIn(CODE, result["answer"])
         self.assertNotIn(CODE, json.dumps(result, default=str))
         self.assertNotIn(CODE, json.dumps(events, default=str))
-        self.assertNotIn(CODE, json.dumps(order[1][1]))  # the approval's payload
+        self.assertNotIn(CODE, json.dumps(order[1][1]))
         self.assertEqual(order[1][1]["kind"], "use_code")
         self.assertIn(("TAP", "Continue", None), phone.actions)
         kinds = [e["event"] for e in events]
@@ -150,8 +170,8 @@ class SkillTests(unittest.TestCase):
 
     def test_the_code_field_is_painted_over_in_later_screenshots(self):
         _, model, _, _ = run([], approve=lambda request: "approved")
-        self.assertGreater(stripes(model.images[0]), 60)   # before: the field is just a field
-        self.assertLess(stripes(model.images[1]), 8)       # after: nothing of what is there can be read
+        self.assertGreater(stripes(model.images[0]), 60)
+        self.assertLess(stripes(model.images[1]), 8)
 
     def test_a_denial_means_no_perform(self):
         order = []
@@ -174,7 +194,6 @@ class SkillTests(unittest.TestCase):
         self.assertIn("needs the user's OK", model.prompts[1])
 
     def test_a_skill_that_asks_in_every_mode_asks_the_floor_approver_with_full_access(self):
-        # A connector's tool set to Ask (CALL_TOOL) asks even when the run has full access (no approve).
         order = []
         skill = CodeSkill(order)
         skill.asks_in_every_mode = True
@@ -224,8 +243,6 @@ class SkillTests(unittest.TestCase):
         self.assertIn("USE_CODE could not be done (RuntimeError).", model.prompts[1])
 
     def test_no_event_carries_the_secret_when_a_later_label_or_error_holds_it(self):
-        # Labels and errors reach the trace as they are ("frontier_action" named the tapped row, the failure its
-        # error): every event goes out masked (review of #68).
         accepted = Element("7", f"Code {CODE} accepted", "StaticText", (.1, .6, .8, .04))
 
         class After(Phone):
@@ -252,30 +269,16 @@ class SkillTests(unittest.TestCase):
         self.assertNotIn(CODE, json.dumps(events, default=str, ensure_ascii=False))
 
     def test_an_element_whose_text_holds_the_secret_is_painted_over_too(self):
-        from PIL import Image
         banner = (.05, .62, .9, .05)
 
         class Banner(Phone):
             def capture_preview(self, timeout=3):
-                image = Image.new("RGB", (400, 800), (128, 128, 128))
-                x, y, w, h = (int(banner[0] * 400), int(banner[1] * 800), int(banner[2] * 400), int(banner[3] * 800))
-                for column in range(x, x + w):
-                    for row in range(y, y + h):
-                        image.putpixel((column, row), (0, 0, 0) if (column // 4) % 2 else (255, 255, 255))
-                out = io.BytesIO()
-                image.save(out, "PNG")
-                return out.getvalue()
+                return picture(banner)
 
         agent = FrontierAgent(Banner(), None, apps={BANK: "Bank"}, skills=())
-        agent._secrets = {CODE}
+        agent.run_state.secrets = {CODE}
         shown = screen(Element("7", f"Code {CODE} accepted", "StaticText", banner))
-        url = agent._screenshot(shown)["image_url"]["url"]
-        from PIL import ImageStat
-        image = Image.open(io.BytesIO(base64.b64decode(url.split(",", 1)[1]))).convert("L")
-        width, height = image.size
-        box = (int((banner[0] + .05) * width), int((banner[1] + .01) * height),
-               int((banner[0] + banner[2] - .05) * width), int((banner[1] + banner[3] - .01) * height))
-        self.assertLess(ImageStat.Stat(image.crop(box)).stddev[0], 8)
+        self.assertLess(stripes(agent._screenshot(shown)["image_url"]["url"], banner), 8)
 
 
 if __name__ == "__main__":
@@ -283,10 +286,8 @@ if __name__ == "__main__":
 
 
 def golden_runs():
-    """Scripted runs over the frontier's existing fixtures (tests/test_frontier.py, test_contract.py): what each
-    did, as a golden record. Self-contained, so tests/fixtures/frontier/golden_runs.json was recorded by running
-    this same function on origin/main (67bdb85) before any of this sprint's changes."""
     import inspect
+
     from mobile_agent.frontier import FrontierAgent
     from mobile_agent.state import Element
     from mobile_agent.tests import test_contract as C
@@ -308,7 +309,8 @@ def golden_runs():
 
     screen = F.screen
     runs = {}
-    row = screen(Element("1", "Delete", "Button", (.1, .1, .2, .05)), Element("2", "Archive", "Button", (.4, .1, .2, .05)))
+    row = screen(Element("1", "Delete", "Button", (.1, .1, .2, .05)),
+                 Element("2", "Archive", "Button", (.4, .1, .2, .05)))
     runs["unrequested_act"] = run([row] * 3, [("TAP", "Delete", None), ("TAP", "Archive", None), ("DONE", None, None),
                                               ("DONE", None, None)], F.ARCHIVE)
     archived = screen(Element("1", "Archived", "StaticText", (.4, .1, .2, .05)))
@@ -325,9 +327,11 @@ def golden_runs():
     form = screen(Element("1", "Title", "TextField", (.1, .2, .8, .05), editable=True,
                           actions=("TAP", "TYPE", "TYPE_SUBMIT")), Element("2", "Save", "Button", (.7, .05, .2, .05)))
     runs["chunk_missing_target"] = run([form] * 4, [[("TYPE", "Title", "Q2 plan"), ("TAP", "Save", None),
-                                                     ("TAP", "Share", None)], ("DONE", None, None), ("DONE", None, None)],
+                                                     ("TAP", "Share", None)], ("DONE", None, None),
+                                                    ("DONE", None, None)],
                                        "Add a doc titled Q2 plan.")
-    loop = screen(Element("1", "Recent", "Button", (.1, .1, .2, .05)), Element("2", "Drag", "Button", (.5, .1, .2, .05)))
+    loop = screen(Element("1", "Recent", "Button", (.1, .1, .2, .05)),
+                  Element("2", "Drag", "Button", (.5, .1, .2, .05)))
     runs["loop"] = run([loop] * 20, [[("TAP", "Recent", None), ("TAP", "Drag", None)]] * 3
                        + [("TAP", "Recent", None), ("DONE", None, None)], "Create a doc and add it.")
 
@@ -346,7 +350,8 @@ def golden_runs():
                             "Open Omega Trattoria.")
     keys = [Element(str(i), k, "Button", (.1 * i, .8, .08, .05), locator=f"/App/Button[{i}]")
             for i, k in enumerate(["1", "2", "3", "5", "0", "."], 1)]
-    shifted = [Element(str(i), e.label, "Button", e.rect, locator=f"/App/Button[{i + 1}]") for i, e in enumerate(keys, 1)]
+    shifted = [Element(str(i), e.label, "Button", e.rect, locator=f"/App/Button[{i + 1}]") for i,
+               e in enumerate(keys, 1)]
     afters = [screen(Element("0", amount, "StaticText", (.1, .2, .8, .05)), *shifted)
               for amount in ["$3", "$32", "$32.", "$32.5", "$32.50"]]
     runs["keypad_chain"] = run([screen(*keys)] + afters, [[("TAP", "3", None), ("TAP", "2", None), ("TAP", ".", None),
@@ -367,7 +372,6 @@ def golden_runs():
 
 class GoldenTests(unittest.TestCase):
     def test_no_guard_and_no_skills_reproduce_the_loop_as_it_was(self):
-        """Acceptance 5: ``skills=()`` and ``guard=None`` behave as origin/main did, over the existing fixtures."""
         from pathlib import Path
         golden = json.loads((Path(__file__).parent / "fixtures" / "frontier" / "golden_runs.json").read_text())
         now = json.loads(json.dumps(golden_runs()))

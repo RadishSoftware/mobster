@@ -1,0 +1,147 @@
+---
+title: "Results"
+"og:title": "Results: tables, charts, maps and other cards"
+sidebarTitle: "Results"
+description: "How a task's answer shows as cards you can sort, export and approve, and what each card holds."
+icon: "layout-list"
+keywords: ["results", "blocks", "table", "review queue", "approve", "export csv", "drafts", "result blocks", "chart", "graph", "pie", "scatter", "sparkline", "map", "timeline", "comparison", "gallery", "pdf report"]
+---
+
+Mobster for Mac draws an answer's Markdown: headings, **bold**, lists with task boxes, links, `code`, code blocks with **Copy**, tables that scroll inside their own box, quotes and rules. A link opens in your browser, shows short, and shows its whole address when you point at it; only `https://` links open. Raw HTML in an answer shows as text, and a picture in it is never loaded: it shows as a link.
+
+A task's answer can carry result blocks: cards drawn from a fixed set, such as a table of saved posts or a queue of drafts to approve. A card made from the answer's own table or list sits where the answer wrote it; the other cards sit under the answer. Mobster for Mac draws each card the same way for every app, so a table from Instagram and a table from Settings look and work alike. Each card's head shows the icon of the app the task read it in. A task that used any app shows the card's own symbol.
+
+Under the answer, each thing Mobster read on screen shows as a chip with the app's icon, the words it read and where. Choose a chip to see that screen. A message the task sent shows as that message: who it went to, and the words in the app's bubble, blue for Messages.
+
+A block is data. It never holds code, HTML or a file path, and Mobster checks every block before it stores one. A block that doesn't fit is shown as its text instead, so an answer never disappears.
+
+## The cards
+
+| Card | What it shows |
+| --- | --- |
+| Review queue | Drafts to send, one per person: who it goes to, exactly as the screen named them, the app, what it's about, their last message, and anything only you can decide. **Edit**, **Skip** and **Approve** on each ([below](#review-queues)) |
+| Table | Typed columns (text, numbers, money, dates, links, pass or fail, company names with their logos). Sort by any column, filter the rows, **Copy table** and **Export CSV**. A row Mobster saw on screen has a thumbnail of that screen. The same rows can show as a **Chart**, on a **Map** or as **Cards** side by side ([below](#tables-as-charts-maps-and-cards)) |
+| Media list | Videos or posts: a screenshot, when it was seen, words it heard, sounds and a link |
+| Evidence | One claim, with the screen or the words that show it |
+| Checklist | Checks marked **Passed**, **Failed** or **Needs review**, what was expected and what Mobster saw, with a screenshot |
+| Notes | Headings, lists and code |
+| Chart | Bars, a line or an area along dates, a ring for two or three shares, a scatter, or tiles with the latest value and its change. A missing value is a gap, never a zero. Point at it, or focus it and press `←` and `→`, for every series' value at that point in full. **Table** shows the numbers |
+| Map | Places on an Apple Maps map, each a numbered pin, with the same numbers in a list. A pin or **Maps** opens the place in Maps |
+| Timeline | Events in time order on one line: when, what, a detail, and whether it's done, now or next |
+| Comparison | Two to four options side by side, the same facts on the same rows, pros and cons, and the one Mobster picks, marked **Mobster's pick** in words |
+| Gallery | Screens from the task in a grid, each with a caption; click one to see it whole |
+
+A checklist filters to its failures, and each failed row sits on a quiet coral tint with what was expected and what Mobster saw. A media list and a long note open in the side panel. A chart is read out as its numbers to VoiceOver, and its numbers are always a click away in **Table**, so nothing hides behind pointing.
+
+Charts use five colours in a fixed order, picked so colour-blind readers can tell neighbours apart (checked on 14 Oct 2026 in both appearances). A sixth series is grey. A pie has at most three parts; four or more show as bars. Violet stays Mobster's own colour and green, amber and coral stay pass, unsure and fail, so no chart uses them. Text on a chart is in ink, never in a series' colour.
+
+### Tables as charts, maps and cards
+
+A table offers the views its rows fit, at the top of its card:
+
+- **Chart** when a number column has at least two numbers. A date column draws a line, earliest date first; anything else draws bars in the table's order. The icons beside it switch to the kinds the numbers fit: a line or an area along dates, a pie for two or three shares, a scatter for two number columns. Numbers in different units, such as a price and a rating, draw one small chart each.
+- **Map** when the table has an **Address** or **Location** column, or **Latitude** and **Longitude**.
+- **Cards** when it has two to four rows: each row becomes an option, its first column the name.
+
+The card opens in the view your request asked for. "Chart my revenue by month" opens the chart, "Find coffee near me" opens the map, and "Compare these flights" opens the cards. The other views stay one click away.
+
+### How maps are drawn
+
+Mobster for Mac draws a map on this Mac with Apple's MapKit, off screen. It looks up each place by its address (or by its name near where the card says), then keeps the picture, so opening the result again asks nothing. What goes to Apple is each place's name and address, the words the card already shows. A place Apple can't find stays in the list, marked "not found on the map". Without a connection, the list still says where each place is.
+
+Each card has one header row: its icon, its title and a count. Click the header, or press `return` on it, to fold the card. Its actions show when you point at the card or move focus into it: copy, export and **Open full view**, which opens the card in a panel on the right. In a window 1200 points wide or wider, the conversation moves over and stays usable beside the panel. In a narrower window, the panel lies over the conversation. `esc` or × closes it, and your next words go to the composer. `esc` in a field stays the field's, and while a question or an approval waits, `esc` answers it first. One panel shows at a time.
+
+## Save a result as a file
+
+Each card's **Download** menu has its own format first (**CSV** for a table, **Markdown** for the others), then **PDF** and **Image (PNG)** of that card. Under any finished answer, **⋯** has **Open as document**, which opens the whole result in the side panel, and **Download PDF**. A long task's report ends on the same row as any answer: **Copy** copies the report as Markdown, and **⋯** adds **Save as Markdown**.
+
+- The PDF is a report: a cover page with the task, when it ended and in which app, the answer, and a numbered list of what follows; then every card, with tables whose header repeats on each page, charts drawn as vectors so they stay sharp at any zoom, maps with their numbered pins, and the screens behind checks and evidence; then the quotes Mobster read as its sources, and page numbers. It is set in Mobster's typefaces on Letter pages.
+- The image is one card at twice its size, for a message or a slide. Under the card, it carries the Mobster mark and `mobster.dev`, as a run's clip does.
+- Mobster for Mac makes both on this Mac with macOS's WebKit, off screen, and saves them to Downloads as `<title>.pdf` or `<title>.png`, never overwriting a file. Nothing is uploaded, and no window opens.
+
+## Share a result
+
+**Share link** in an answer's **⋯**, or **Share** at the top of **Open as document**, makes a link to the result: `https://mobster.dev/s/` and an id of 128 random bits. Anyone with the link can open the page, without signing in.
+
+1. The dialog shows the page exactly as the link will serve it, and redraws as you change it.
+2. **Hide names and handles** is on: each person the cards name reads as "Person 1", "Person 2", in every place they appear. **Include screens** is off: the iPhone screens behind checks and evidence are left out.
+3. Give it a title, and choose when it expires: 1, 7, 30 or 90 days, or never. It's 30 days unless you choose.
+4. **Create link** uploads the page and copies the link. The dialog lists every link to that result, with **Copy link** and **Turn off**.
+
+- **Never indexed.** Links aren't listed anywhere. Every answer says `X-Robots-Tag: noindex, nofollow, noarchive`, the page carries the same robots meta tag, and robots.txt disallows `/s/`. A pasted link shows its title and no preview.
+- **Turn off** stops the link at once and deletes its page. An expired link stops at once too, and its page is deleted within a day.
+- **What's stored** is the page as you previewed it, its title, size and a hash, and when it was made, expires and was turned off ([Privacy](/privacy)). Nothing else from the task leaves your Mac.
+- Making or turning off a link needs Mobster for Mac signed in to your Mobster account. The page runs no script and loads nothing from anywhere.
+- **Made with Mobster.** The page ends with that line, and "Mobster" links to mobster.dev. The link sends nothing about the page: share pages send no referrer.
+- **Making a link needs a Mobster plan or a running free trial.** Without one, **Create link** says "Sharing needs a Mobster plan or a running trial". Listing your links and turning them off work either way.
+- **Limits.** You can keep 200 links and 50 MB of pages live at once. A link that is turned off or expired doesn't count. At the limit, **Create link** says to turn some off, or let them expire, and share again.
+- **Links to other sites are marked.** Each link on a shared page to a site other than mobster.dev gets "(leaves mobster.dev for example.com)" after it, opens with `rel="noopener noreferrer nofollow ugc"`, and the page ends with a note: "Shared by a Mobster user. Links marked “leaves mobster.dev” go to other sites." Mobster adds these when it stores the page, so the page you previewed is the page without them.
+
+## Review queues
+
+A review queue holds drafts for you to approve one at a time. Nothing is sent from the card.
+
+Each item reads as the conversation will once you approve it: the person, badged with the app's icon, their last message on the left, and the draft on the right in the app's bubble, blue for Messages.
+
+1. Read the draft. **Edit** changes its words on this Mac.
+2. A draft with a part in brackets, such as `[works / doesn't work]`, can't be approved until you fill it in. When **Approve** can't start a task, it says why beside it: "Fill in the part in brackets first", "Write the message first", or what keeps the phone from a new task, such as "Sam's iPhone isn't ready".
+3. **Approve** starts a new task that sends exactly those words to exactly that person, in that app. In a conversation, the task runs there.
+4. **Skip** sets an item aside. **Undo** puts it back.
+
+An item with no draft, such as a conversation that can wait or a person who doesn't fit, has only **Skip**. Mobster refuses to approve it, whatever words come with the request. The one exception is a person [Who's waiting on me](/waiting) leaves without a draft. Its card shows an empty box that says "Write your reply", **Approve** waits until you type something, and Mobster still refuses an empty reply.
+
+The new task follows your permission mode, as any task does ([Safety](/safety)). Your Approve stands for its one send when the screen shows the same person and the same words. If the person or the words differ, Mobster asks you again on the approval card. With **Don't ask** as your mode, nothing asks. Every action of the new task is in its journal, and its approval says it came from the review queue.
+
+Mobster reads who an item goes to from the stored result, never from the Mac app's request. An item can be approved once: approving it again shows the task it already started, and never sends a second time. A draft that looks like it holds a password or a code is refused.
+
+## Where blocks come from
+
+- **Long tasks.** A long task builds its blocks from what it read: the DM job's review queue, a table of saved posts, a media list of Reels ([Work through a feed or a list](/capabilities#work-through-a-feed-or-a-list)).
+- **An app pack's reads.** When Mobster reads Instagram or TikTok by code, what it read is a card: a table of your DMs, a list of Reels or TikToks with their sounds, your saved posts ([What Mobster knows about Instagram and TikTok](/app-packs)). These cards come first. An answer table that repeats their rows is left out, so the same rows never show twice.
+- **The answer itself.** When your request asks for several things ("list my last 5 orders"), for checks ("go through each screen and check it"), for a chart, a map, a timeline or a comparison, Mobster asks its model to start with one sentence, then write the things as a Markdown table, one line per check (`- [pass] Plans: the price reads $49.99`), or one line per event (`- 9:00 AM: Leave home`). Mobster turns those into a table, a checklist and a timeline, opens the table in the view the request asked for, and the sentence stays the answer. The model never writes a block's JSON. **Copy** still copies the whole answer.
+- **Your scripts.** `GET /api/runs/{id}` has the blocks in the task's `summary.blocks`.
+
+## Jobs on the Apps page
+
+The Apps page lists jobs for the apps on your iPhone, under the apps: the ones Mobster tested first (**Check my build**, **Clear DM backlog**, the saved-posts brief, what's trending), then your workflows that say what they hand back (`produces`, [Workflows](/workflows#the-format)). Each job shows a preview of its card, drawn the same way as a real result with sample words, never your data. **Try it** puts the job's task in the task box; it runs only when you send it. **Open** goes to the workflow. A plugin's workflow can say what it produces too ([Plugins](/plugins)).
+
+## The format
+
+`summary.blocks` is a versioned envelope. Every block has a `type`, an `id` and an optional `title`.
+
+```json
+{
+  "v": 1,
+  "blocks": [
+    {"type": "table", "id": "posts", "title": "Saved posts",
+     "columns": [{"key": "creator", "label": "Creator", "type": "text"},
+                 {"key": "likes", "label": "Likes", "type": "number"}],
+     "rows": [{"cells": {"creator": "@noodlelab", "likes": 18200}, "frameId": "f0002"}],
+     "sort": {"key": "likes", "dir": "desc"}}
+  ]
+}
+```
+
+| `type` | Fields |
+| --- | --- |
+| `review_queue` | `action` (`send_message`, `reply` or `post_comment`), `buckets` (`[{id, label}]`), `items`: `{id, to, handle, app, bundleId, account, context, lastMessage, draft, decision, bucket, frameId}`. `to` is required |
+| `table` | `columns` (`[{key, label, type}]`, `type` one of `text`, `number`, `money`, `percent`, `date`, `duration`, `bool`, `link`, `status`, `brand`), `rows` (`[{cells, frameId}]`), `sort` |
+| `media_list` | `items`: `{id, title, creator, frameId, at, transcript, sounds, link}` |
+| `evidence` | `claim`, `frameId`, `crop` (`{x, y, w, h}` from 0 to 1), `quote`, `verdict` (`pass`, `fail` or `uncertain`) |
+| `checklist` | `items`: `{id, label, status, expected, observed, frameId}` |
+| `markdown` | `text` |
+| `chart` | `kind` (`bar`, `line`, `area`, `pie`, `scatter` or `sparkline`), `x` (labels), `series` (`[{label, values}]`; a scatter's are `[{label, points: [{x, y, label}]}]`), `unit`, `format` (`number`, `money` or `percent`), `currency`, `stacked`, `xLabel`, `yLabel`. Up to 5 series and 60 labels; a scatter up to 3 series of 200 points; a pie one series |
+| `map` | `places`: `{id, name, address, lat, lon, note, rating, link, frameId}`, each with an address or a latitude and longitude; `near` (where to look up an address that doesn't say its city). Up to 30 places |
+| `timeline` | `items`: `{id, at, title, detail, state, frameId}`; `state` is `done`, `now`, `next`, `pass`, `fail` or `uncertain` |
+| `comparison` | `options` (2 to 4): `{id, name, subtitle, badge, facts: [{label, value}], pros, cons, link, frameId}`; `recommended` (an option's id), `verdict` |
+| `gallery` | `items`: `{id, frameId, caption, link}` |
+
+A table may also say how it opens: `view` (`chart`, `map` or `compare`) and `chart` (`{kind, x, y, stacked}`: `x` a column's key, `y` the number columns' keys).
+
+A map card's picture is at `GET /api/runs/{id}/blocks/{block}/map?theme=light|dark&w=720&h=320`: `{image, width, height, places: [{id, x, y, lat, lon}], missing}`, where `x` and `y` place each pin on the picture. A table with places works the same way.
+
+A `brand` cell is plain text, at most 80 characters: a company's name. The Mac app shows the company's real logo beside it when it has one, and the name alone when it doesn't. It never draws a made-up mark.
+
+Limits: 8 blocks an answer, 200 rows a table, 60 items a list, 16 columns, 256 KB in all. A `frameId` names a screen of the task, served at `GET /api/runs/{id}/frames/{frameId}`. Only `https://` links are kept. Every text passes Mobster's secret filter, so a password or a one-time code shows as `••••••`.
+
+A decision on an item is in the task's `blockState`, keyed `<block>/<item>`: `{"state": "approved", "runId": "…"}` or `{"state": "skipped"}`. To decide one, send `POST /api/runs/{id}/blocks/{block}/items/{item}` with `{"decision": "approve"}` ([Scripting](/scripting)).

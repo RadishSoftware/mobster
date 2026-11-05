@@ -1,0 +1,251 @@
+{
+"note": "Recorded on the test device (iPhone 15 Pro, iOS 26.0.1), 12 Oct 2026: the rows the agent saw, scrubbed (the account's name, the phone's name; serial and model numbers dropped). The same screen read by Vision OCR (iPhone Mirroring's reading).",
+"rows": [
+{
+"text": "9:57 L",
+"confidence": 1,
+"rect": [
+0.1085,
+0.025,
+0.1492,
+0.0203
+]
+},
+{
+"text": "•1l9",
+"confidence": 0.3,
+"rect": [
+0.7085,
+0.025,
+0.122,
+0.0235
+]
+},
+{
+"text": "814",
+"confidence": 1,
+"rect": [
+0.8508,
+0.0266,
+0.078,
+0.0172
+]
+},
+{
+"text": "iPhone Storage",
+"confidence": 1,
+"rect": [
+0.3314,
+0.084,
+0.3406,
+0.0246
+]
+},
+{
+"text": "iPhone",
+"confidence": 1,
+"rect": [
+0.078,
+0.1925,
+0.1525,
+0.0219
+]
+},
+{
+"text": "125.51 GB of 128 GB used",
+"confidence": 1,
+"rect": [
+0.4,
+0.1941,
+0.5254,
+0.0219
+]
+},
+{
+"text": "• Applications • Messages • Photos • ios",
+"confidence": 1,
+"rect": [
+0.0678,
+0.2598,
+0.7119,
+0.0203
+]
+},
+{
+"text": "System Data",
+"confidence": 1,
+"rect": [
+0.0947,
+0.2905,
+0.2106,
+0.0183
+]
+},
+{
+"text": "Recommendations",
+"confidence": 1,
+"rect": [
+0.0814,
+0.3552,
+0.4068,
+0.0219
+]
+},
+{
+"text": "Review Your Photos & Videos",
+"confidence": 1,
+"rect": [
+0.1831,
+0.4131,
+0.5966,
+0.0219
+]
+},
+{
+"text": "Show All",
+"confidence": 1,
+"rect": [
+0.7422,
+0.3548,
+0.1936,
+0.0212
+]
+},
+{
+"text": "Save up to 8.17 GB. See photos and",
+"confidence": 1,
+"rect": [
+0.1797,
+0.4789,
+0.6847,
+0.0203
+]
+},
+{
+"text": "videos taking up storage in the",
+"confidence": 1,
+"rect": [
+0.1797,
+0.5023,
+0.5966,
+0.0203
+]
+},
+{
+"text": "Photos app and consider deleting",
+"confidence": 1,
+"rect": [
+0.1797,
+0.5274,
+0.6508,
+0.0203
+]
+},
+{
+"text": "them.",
+"confidence": 1,
+"rect": [
+0.1797,
+0.554,
+0.122,
+0.0188
+]
+},
+{
+"text": "\"Recently Deleted\" Album",
+"confidence": 1,
+"rect": [
+0.1763,
+0.6526,
+0.539,
+0.025
+]
+},
+{
+"text": "Empty",
+"confidence": 1,
+"rect": [
+0.7898,
+0.6557,
+0.1356,
+0.0219
+]
+},
+{
+"text": "Save up to 3.1MB. This will",
+"confidence": 1,
+"rect": [
+0.1831,
+0.7167,
+0.5254,
+0.0235
+]
+},
+{
+"text": "permanently delete all photos and",
+"confidence": 1,
+"rect": [
+0.1831,
+0.7449,
+0.6576,
+0.0203
+]
+},
+{
+"text": "videos kept in the \"Recently Deleted\"",
+"confidence": 1,
+"rect": [
+0.1797,
+0.7684,
+0.7288,
+0.0219
+]
+},
+{
+"text": "album.",
+"confidence": 1,
+"rect": [
+0.1783,
+0.7934,
+0.1425,
+0.021
+]
+},
+{
+"text": "Size :",
+"confidence": 1,
+"rect": [
+0.7593,
+0.8732,
+0.1322,
+0.0203
+]
+},
+{
+"text": "Q Applications",
+"confidence": 1,
+"rect": [
+0.122,
+0.928,
+0.3254,
+0.0235
+]
+}
+],
+"hash": "storage",
+"window": {
+"w": 589,
+"h": 1278
+},
+"icons": [
+[
+"Back",
+[
+0.0746,
+0.0829,
+0.0407,
+0.025
+]
+]
+]
+}

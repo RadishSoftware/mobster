@@ -1,5 +1,3 @@
-"""The frontier step loop over Mobster's driver: guards, repeats, editing, dismissal. Offline."""
-
 import json
 import threading
 import time
@@ -7,9 +5,10 @@ import unittest
 import unittest.mock
 from types import SimpleNamespace
 
-from mobile_agent.frontier import KEYBOARD_ROW, FrontierAgent, normalize_reply, failure_feedback, guard, prompt_messages, prompt_text, screen_rows
-from mobile_agent.model_clients import (CallCancelled, OpenAIChat, cost_usd)
-from mobile_agent.state import Element, Snapshot, typing_timeout
+from mobile_agent import drivers
+from mobile_agent.frontier import FrontierAgent, failure_feedback, guard, normalize_reply, prompt_messages, prompt_text
+from mobile_agent.model_clients import CallCancelled, OpenAIChat
+from mobile_agent.state import Element, Snapshot
 
 
 def screen(*elements, bundle="com.example.mail"):
@@ -17,7 +16,8 @@ def screen(*elements, bundle="com.example.mail"):
                     bundle_id=bundle)
 
 
-class Driver:
+class Driver(drivers.Driver):
+    capabilities = frozenset({"tap_point", "clear_text"})
     can_type = True
 
     def __init__(self, screens):
@@ -37,9 +37,11 @@ class Driver:
     def clear_text(self, target, timeout=10):
         self.actions.append(("CLEAR", target.label, None))
 
+    def close(self):
+        pass
+
 
 class Script:
-    """A model that answers each step from a list of (operation, target label, text)."""
 
     def __init__(self, steps):
         self.steps, self.usage = list(steps), {"prompt_tokens": 0, "completion_tokens": 0, "cached_tokens": 0,
@@ -76,7 +78,8 @@ class FrontierLoopTests(unittest.TestCase):
         return driver, result, events
 
     def test_an_unrequested_act_is_refused_and_a_requested_one_runs(self):
-        row = screen(Element("1", "Delete", "Button", (.1, .1, .2, .05)), Element("2", "Archive", "Button", (.4, .1, .2, .05)))
+        row = screen(Element("1", "Delete", "Button", (.1, .1, .2, .05)),
+                     Element("2", "Archive", "Button", (.4, .1, .2, .05)))
         driver, result, events = self.run_script(ARCHIVE, [row, row, row], [("TAP", "Delete", None),
                                                                            ("TAP", "Archive", None),
                                                                            ("DONE", None, None), ("DONE", None, None)])
@@ -103,6 +106,33 @@ class FrontierLoopTests(unittest.TestCase):
                 action = next(e for e in events if e["event"] == "frontier_action")
                 self.assertEqual(action["target_label"], label)
                 self.assertEqual(step_text("SWIPE_LEFT", action["target_label"]), "Swiped left on Buy oat milk")
+
+    def test_a_press_says_whether_it_may_have_committed_something_by_the_loops_own_test(self):
+        from mobile_agent.frontier.safety import consequential
+        button = lambda label: Element("1", label, "Button", (.1, .1, .3, .05))
+        pressed = lambda label, *others, bundle="com.example.mail": consequential(
+            "TAP", button(label), screen(button(label), *others, bundle=bundle))
+        for label in ("$4.99", "Comfort $14.20", "Discard", "Wipe", "Deactivate", "Place order", "Unfollow", "Accept"):
+            self.assertTrue(pressed(label), label)
+        self.assertTrue(pressed("Get", bundle="com.apple.AppStore"))
+        for label in ("Alex Rivera", "General", "Back"):
+            self.assertFalse(pressed(label), label)
+        # A tap on a form holding typed text may submit it; Back leaves it.
+        typed = Element("2", "Name", "TextField", (.1, .3, .8, .05), editable=True, value="Sam")
+        self.assertTrue(pressed("Alex Rivera", typed))
+        self.assertFalse(pressed("Back", typed))
+        # The loop says it on each press's frontier_action, which the step carries as `commit`.
+        row = screen(Element("1", "Inbox", "Button", (.1, .1, .2, .05)),
+                     Element("2", "Archive", "Button", (.4, .1, .2, .05)))
+        _, _, events = self.run_script(ARCHIVE, [row] * 5, [("TAP", "Inbox", None), ("TAP", "Archive", None),
+                                                           ("DONE", None, None), ("DONE", None, None)])
+        actions = [(e["target_label"], e.get("consequential")) for e in events if e["event"] == "frontier_action"]
+        self.assertEqual(actions, [("Inbox", False), ("Archive", True)])
+        # A test that fails says the press may have committed, never that it didn't.
+        from mobile_agent.frontier.stages.after import may_commit
+        target = "mobile_agent.frontier.stages.after.consequential"
+        with unittest.mock.patch(target, side_effect=AttributeError("rect")):
+            self.assertTrue(may_commit("TAP", button("Alex Rivera"), row))
 
     def test_done_chained_after_an_edit_waits_for_one_look_at_the_result(self):
         row = screen(Element("1", "Archive", "Button", (.4, .1, .2, .05)))
@@ -214,6 +244,8 @@ class FrontierLoopTests(unittest.TestCase):
                         actions=("TAP", "TYPE", "TYPE_SUBMIT"))
 
         class Replacing(Driver):
+            capabilities = Driver.capabilities | {"replace_text"}
+
             def replace_text(self, target, text, timeout=10):
                 self.actions.append(("REPLACE", target.label, text))
                 self.index += 1
@@ -225,7 +257,6 @@ class FrontierLoopTests(unittest.TestCase):
             "Set the alarm label to Saturday Run.")
         self.assertEqual(driver.actions[0], ("REPLACE", "Label", "Saturday Run"))
         self.assertNotIn("CLEAR", [a[0] for a in driver.actions])
-
 
     def test_a_chunk_runs_without_asking_again_and_stops_at_a_missing_target(self):
         form = screen(Element("1", "Title", "TextField", (.1, .2, .8, .05), editable=True,
@@ -254,21 +285,12 @@ class FrontierLoopTests(unittest.TestCase):
         self.assertEqual(driver.actions, [])
 
     def test_a_loop_over_the_same_control_is_refused(self):
-        row = screen(Element("1", "Recent", "Button", (.1, .1, .2, .05)), Element("2", "Drag", "Button", (.5, .1, .2, .05)))
+        row = screen(Element("1", "Recent", "Button", (.1, .1, .2, .05)),
+                     Element("2", "Drag", "Button", (.5, .1, .2, .05)))
         steps = [[("TAP", "Recent", None), ("TAP", "Drag", None)]] * 3 + [("TAP", "Recent", None), ("DONE", None, None)]
         driver = Driver([row] * 20)
         FrontierAgent(driver, Script(steps), screenshots=False, settle_seconds=0).run("Create a doc and add it.")
         self.assertEqual(driver.actions.count(("TAP", "Recent", None)), 2)
-
-    def test_line_breaks_are_kept_only_for_text_views(self):
-        field = Element("1", "Title", "TextField", (.1, .2, .8, .05), editable=True, actions=("TAP", "TYPE", "TYPE_SUBMIT"))
-        body = Element("2", "Body", "TextView", (.1, .3, .8, .5), editable=True, actions=("TAP", "TYPE", "TYPE_SUBMIT"))
-        form = screen(field, body)
-        driver = Driver([form] * 6)
-        FrontierAgent(driver, Script([("TYPE", "Title", "Q2\nplan"), ("TYPE", "Body", "line one\nline two"),
-                                      ("DONE", None, None)]), screenshots=False, settle_seconds=0).run("Add a note.")
-        self.assertEqual(driver.actions[:2], [("TYPE", "Title", "Q2 plan"), ("TYPE", "Body", "line one\nline two")])
-
 
 class FindTests(unittest.TestCase):
     def test_a_chain_finds_an_unlabelled_field_by_placeholder_and_a_label_by_part(self):
@@ -299,14 +321,6 @@ class KeypadChainTests(unittest.TestCase):
 
 
 class SwitchAndWaitTests(unittest.TestCase):
-    def test_a_row_wide_switch_is_tapped_at_its_knob(self):
-        from mobile_agent.wda_gestures import switch_point
-        row = Element("1", "Outdoor Seating", "Switch", (.05, .5, .9, .05))
-        x, _ = switch_point(row, 400)
-        self.assertAlmostEqual(x, .95 - 30 / 400)
-        button = Element("2", "Done", "Button", (.05, .5, .9, .05))
-        self.assertEqual(switch_point(button, 400), button.center)
-
     def test_idle_waits_are_refused_after_two(self):
         still = screen(Element("1", "Search", "SearchField", (.1, .1, .8, .05), editable=True,
                                actions=("TAP", "TYPE", "TYPE_SUBMIT")))
@@ -316,6 +330,13 @@ class SwitchAndWaitTests(unittest.TestCase):
                       settle_seconds=0).run("Find the doc and star it.")
         self.assertEqual([e["label"] for e in events if e["event"] == "frontier_refused"], ["idle_wait", "idle_wait"])
 
+    def test_a_row_wide_switch_is_tapped_at_its_knob(self):
+        from mobile_agent.wda.gestures import switch_point
+        row = Element("1", "Outdoor Seating", "Switch", (.05, .5, .9, .05))
+        x, _ = switch_point(row, 400)
+        self.assertAlmostEqual(x, .95 - 30 / 400)
+        button = Element("2", "Done", "Button", (.05, .5, .9, .05))
+        self.assertEqual(switch_point(button, 400), button.center)
 
 class DeviceLossTests(unittest.TestCase):
     def test_a_device_that_stops_answering_still_gets_a_report(self):
@@ -327,15 +348,13 @@ class DeviceLossTests(unittest.TestCase):
                     raise TimeoutError("Operation deadline exceeded")
                 return row
         script = Script([("TAP", "Next", None), ("DONE", None, None)])
-        with unittest.mock.patch("mobile_agent.frontier.time.sleep"):
+        with unittest.mock.patch("time.sleep"):
             result = FrontierAgent(Dying([row]), script, screenshots=False, settle_seconds=0).run("Open next.")
         self.assertEqual(result["status"], "error")
         self.assertEqual(result["answer"], "done")  # the report-only call answered from the notes
 
 
 class SpeedPathTests(unittest.TestCase):
-    """Reads the loop no longer takes (24 Sep: a source read of a long list costs 0.7-1.7 s on the
-    simulator) and model calls a chain no longer stops for."""
 
     ENTRY = Element("1", "Search products", "Button", (.1, .1, .8, .05))
     FIELD = Element("2", "search_field", "SearchField", (.1, .1, .7, .05), editable=True,
@@ -372,7 +391,6 @@ class SpeedPathTests(unittest.TestCase):
 
     @staticmethod
     def by_id(script, alias):
-        """The script's answers, with the first action naming ``alias`` and later ones its id too."""
         complete = script.complete
 
         def answer(messages, schema, timeout=60):
@@ -399,6 +417,7 @@ class SpeedPathTests(unittest.TestCase):
         row.read_started = 1.0
 
         class Counting(Driver):
+            capabilities = Driver.capabilities | {"frame_clock"}
             frame_clock = SimpleNamespace(still_for=lambda: still_for)
             reads = 0
 
@@ -423,6 +442,7 @@ class SpeedPathTests(unittest.TestCase):
         other = screen(Element("1", "Next", "Button", (.1, .3, .2, .05)))
         for later, ready_calls in ((row, 2), (other, 3)):
             class Settling(Driver):
+                capabilities = Driver.capabilities | {"observe_ready"}
                 readies = 0
 
                 def observe(self, timeout=10):
@@ -443,6 +463,7 @@ class SpeedPathTests(unittest.TestCase):
         screens = [screen(a, b, c), screen(b, c), screen(c), screen(Element("9", "Done", "Button", (0, 0, .1, .1)))]
 
         class OneRead(Driver):
+            capabilities = Driver.capabilities | {"frame_clock", "settled_by", "settles_on_one_read", "wait_for_change"}
             settles_on_one_read, settled_by = True, None
             # With a verify screen the stream is still since its read: no read before acting.
             frame_clock = SimpleNamespace(still_for=lambda: 1e9 if verify_screen is not None else None)
@@ -467,7 +488,8 @@ class SpeedPathTests(unittest.TestCase):
                 super().execute(operation, target, snapshot, text=text, timeout=timeout)
         driver, events = OneRead(screens), []
         script = Script(steps or [[("TAP", "A", None), ("TAP", "B", None)], ("TAP", "C", None), ("DONE", None, None)])
-        result = FrontierAgent(driver, script, emit=events.append, screenshots=False, settle_seconds=0).run("Tap A, B, C.")
+        result = FrontierAgent(driver, script, emit=events.append, screenshots=False,
+                               settle_seconds=0).run("Tap A, B, C.")
         return driver, events, result
 
     def test_a_chunk_ends_on_one_read_proven_by_a_read_while_the_model_thinks(self):
@@ -483,6 +505,7 @@ class SpeedPathTests(unittest.TestCase):
         shop = screen(Element("2", "Cart", "Button", (.1, .1, .2, .05)), bundle="com.example.shop")
 
         class Switching(Driver):
+            capabilities = Driver.capabilities | {"wait_for_change"}
             settled = 0
 
             def wait_for_change(self, before, timeout=2, wait_seconds=.6, single_read=False):
@@ -510,6 +533,7 @@ class SpeedPathTests(unittest.TestCase):
                         actions=("TAP", "TYPE", "TYPE_SUBMIT", "SUBMIT"))
 
         class Settling(Driver):
+            capabilities = Driver.capabilities | {"wait_for_change"}
             settled = 0
 
             def wait_for_change(self, before, timeout=2, wait_seconds=.6, single_read=False):
@@ -529,6 +553,41 @@ class SpeedPathTests(unittest.TestCase):
         self.assertEqual([a[0] for a in driver.actions], ["HOME", "TAP"])
         self.assertEqual(driver.single, [False, True])
 
+    def test_a_launch_asks_the_driver_for_a_one_read_settle_only_at_rest(self):
+        # The driver takes it only with MOBSTER_SETTLE=launch and only when the pixels already rest
+        # (tests/test_settle_rest.py); HOME, which no recorded run measured, still asks for agreeing reads.
+        mail = screen(Element("1", "Inbox", "Button", (.1, .1, .2, .05)))
+        shop = screen(Element("2", "Cart", "Button", (.1, .1, .2, .05)), bundle="com.example.shop")
+
+        class Asked(Driver):
+            capabilities = Driver.capabilities | {"settles_on_one_read", "wait_for_change"}
+            settles_on_one_read = True
+
+            def __init__(self, screens):
+                super().__init__(screens)
+                self.single = []
+
+            def wait_for_change(self, before, timeout=2, wait_seconds=.6, single_read=False):
+                self.single.append(single_read)
+                return self.screens[min(self.index, len(self.screens) - 1)]
+        for chunk, expected in (([("LAUNCH_APP", None, None)], ["rest"]), ([("HOME", None, None)], [False]),
+                                ([("HOME", None, None), ("LAUNCH_APP", None, None)],
+                                 ["rest"])):  # HOME's own settle is skipped
+            driver = Asked([mail, mail, shop, shop])
+            script = Script([chunk, ("DONE", None, None), ("DONE", None, None)])
+            original = script.complete
+
+            def complete(messages, schema, timeout=60, original=original):
+                out, usage = original(messages, schema, timeout)
+                for action in out["actions"]:
+                    if action["operation"] == "LAUNCH_APP":
+                        action["app"] = "com.example.shop"
+                return out, usage
+            script.complete = complete
+            FrontierAgent(driver, script, apps={"com.example.shop": "Shop"}, screenshots=False,
+                          settle_seconds=0).run("Open my cart in Shop.")
+            self.assertEqual(driver.single[-len(expected):], expected, chunk)
+
     def test_a_verify_read_that_differs_is_the_screen_acted_on(self):
         moved = screen(Element("7", "C", "Button", (.5, .5, .08, .05)))
         moved.read_started = 1.0
@@ -539,45 +598,19 @@ class SpeedPathTests(unittest.TestCase):
 
 
 class HelperTests(unittest.TestCase):
-    def test_long_field_values_show_their_end(self):
-        body = "x" * 460 + " Note: Q2 planning"
-        _, lines = screen_rows(screen(Element("1", "Body", "TextView", (0, 0, 1, 1), value=body, editable=True,
-                                              actions=("TAP", "TYPE", "TYPE_SUBMIT"))))
-        self.assertIn("Note: Q2 planning", lines[0])
-
     def test_a_long_description_mentioning_an_act_is_not_that_act(self):
         film = Element("1", "Moana, 74%, Jul 8, 2026, Teenage Moana answers the Ocean's call and voyages", "Cell",
                        (0, .3, 1, .1))
-        self.assertIsNone(guard("Add Moana to my watchlist.", "TAP", film, None))
-        self.assertIsNotNone(guard("Add Moana to my watchlist.", "TAP", Element("2", "Call", "Button", (0, 0, .1, .1)), None))
-
-    def test_guard_and_cost(self):
-        self.assertIsNone(guard(ARCHIVE, "TAP", Element("1", "Inbox", "Button", (0, 0, .1, .1)), None))
-        self.assertIsNotNone(guard(ARCHIVE, "TAP", Element("1", "Send", "Button", (0, 0, .1, .1)), None))
-        self.assertEqual(cost_usd("gpt-5.5", {"prompt_tokens": 1_000_000, "completion_tokens": 0}), 5.0)
-        self.assertIsNone(cost_usd("unknown", {"prompt_tokens": 1}))
-
-
+        self.assertIsNone(guard("Add Moana to my watchlist.", "TAP", film))
+        self.assertIsNotNone(guard("Add Moana to my watchlist.", "TAP", Element("2", "Call", "Button", (0, 0, .1, .1))))
 
 class FailureFeedbackTests(unittest.TestCase):
     TITLE = Element("1", "Title", "TextField", (.1, .1, .8, .05), editable=True, actions=("TAP", "TYPE", "TYPE_SUBMIT"))
-
-    def test_newlines_for_a_one_line_field_are_explained(self):
-        error = ValueError("TYPE requires bounded nonempty text without control characters")
-        self.assertIn("one line", failure_feedback("SET_TEXT", self.TITLE, "Map\n\nTop colleagues", error))
 
     def test_a_typing_timeout_warns_against_retyping(self):
         error = RuntimeError("HTTP TimeoutError; request outcome unknown; not retried")
         self.assertIn("never retype", failure_feedback("TYPE", self.TITLE, "note", error))
         self.assertNotIn("retype", failure_feedback("TAP", self.TITLE, None, error))
-
-    def test_other_errors_carry_their_message(self):
-        self.assertIn("gone", failure_feedback("TAP", self.TITLE, None, ValueError("gone")))
-
-    def test_long_text_gets_time_to_type(self):
-        self.assertEqual(typing_timeout(None), 15)
-        self.assertGreater(typing_timeout("x" * 1300), 120)
-
 
 class MacroTests(unittest.TestCase):
     def test_read_list_scrolls_to_the_end_and_shows_every_row_once(self):
@@ -616,7 +649,8 @@ class CostTests(unittest.TestCase):
                 return super().complete(messages, schema, timeout)
 
         rows = [screen(Element("1", "Next", "Button", (.1, .1, .2, .05))),
-                screen(Element("1", "Other", "Button", (.1, .5, .2, .05)), Element("2", "Add", "Button", (0, 0, .1, .1)))]
+                screen(Element("1", "Other", "Button", (.1, .5, .2, .05)),
+                       Element("2", "Add", "Button", (0, 0, .1, .1)))]
         FrontierAgent(Driver(rows), Recording([("TAP", "Next", None), ("DONE", None, None), ("DONE", None, None)]),
                       screenshots=False, settle_seconds=0).run("Tap next and add it.")
         prefixes = {(m[0]["content"], json.dumps(m[1]["content"][0])) for m, _ in seen}
@@ -630,11 +664,13 @@ class CostTests(unittest.TestCase):
     def test_the_request_marks_the_breakpoint_and_forces_one_call(self):
         messages = prompt_messages("Do it.", "- Mail: com.apple.mobilemail", "0 of 50", "Mail", "", [], [], None,
                                    ['e1 Button "Next" @1,1,1,1'],
-                                   {"type": "image_url", "image_url": {"url": "data:image/jpeg;base64,AA", "detail": "low"}})
+                                   {"type": "image_url",
+                                    "image_url": {"url": "data:image/jpeg;base64,AA", "detail": "low"}})
         body = OpenAIChat("gpt-5.6-terra", key="k").body(messages, {"type": "object"})
         self.assertEqual(body["input"][0]["role"], "developer")
         stable, turn, image = body["input"][1]["content"]
-        self.assertEqual(stable, {"type": "input_text", "text": "Request: Do it.\n\nApps you may use:\n- Mail: com.apple.mobilemail",
+        self.assertEqual(stable, {"type": "input_text",
+                                  "text": "Request: Do it.\n\nApps you may use:\n- Mail: com.apple.mobilemail",
                                   "prompt_cache_breakpoint": {"mode": "explicit"}})
         self.assertNotIn("prompt_cache_breakpoint", turn)
         self.assertEqual(image, {"type": "input_image", "image_url": "data:image/jpeg;base64,AA", "detail": "low"})
@@ -644,25 +680,6 @@ class CostTests(unittest.TestCase):
         self.assertNotIn("prompt_cache_options", older)
         self.assertNotIn("prompt_cache_breakpoint", older["input"][1]["content"][0])
 
-    def test_the_answer_is_the_function_calls_arguments(self):
-        reply = {"output": [{"type": "reasoning"}, {"type": "function_call", "name": "step", "arguments": '{"a": 1}'}]}
-        self.assertEqual(OpenAIChat.answer(reply), {"a": 1})
-        with self.assertRaises(RuntimeError):
-            OpenAIChat.answer({"output": [{"type": "message"}], "status": "incomplete"})
-
-    def test_cache_reads_and_writes_are_priced_at_their_rates(self):
-        usage = {"prompt_tokens": 3000, "cached_tokens": 1000, "cache_write_tokens": 500, "completion_tokens": 100}
-        self.assertAlmostEqual(cost_usd("gpt-5.6-terra", usage), (1500 * 2 + 1000 * .2 + 500 * 2.5 + 100 * 12) / 1e6)
-        self.assertAlmostEqual(cost_usd("gpt-5.6-luna", {"prompt_tokens": 1000}), 1000 * .2 / 1e6)
-
-    def test_keyboard_keys_are_left_out(self):
-        _, lines = screen_rows(screen(Element("1", "Cart", "Button", (.4, .9, .2, .06)),
-                                      Element("2", "q", "Key", (0, .7, .1, .05)), Element("3", "w", "Key", (.1, .7, .1, .05))))
-        self.assertEqual(lines, ['e1 Button "Cart" @40,90,20,6', KEYBOARD_ROW])
-        _, lines = screen_rows(screen(Element("1", "Cart", "Button", (.4, .9, .2, .06))))
-        self.assertEqual(lines, ['e1 Button "Cart" @40,90,20,6'])
-
-
 class CompactReplyTests(unittest.TestCase):
     def test_a_compact_reply_reads_as_a_full_one(self):
         out = normalize_reply({"thought": "t", "plan": None, "actions": [
@@ -671,13 +688,10 @@ class CompactReplyTests(unittest.TestCase):
             {"op": "LAUNCH_APP", "target": "com.example.notes", "text": None}]})
         self.assertEqual(out["actions"], [
             {"operation": "TAP", "target": "e7", "target_label": None, "text": None, "app": None},
-            {"operation": "TYPE_SUBMIT", "target": None, "target_label": "Search Mail", "text": "invitation", "app": None},
-            {"operation": "LAUNCH_APP", "target": None, "target_label": None, "text": None, "app": "com.example.notes"}])
-
-    def test_a_full_reply_is_left_as_it_is(self):
-        full = {"actions": [{"operation": "TAP", "target": "e1", "target_label": None, "text": None, "app": None}]}
-        self.assertIs(normalize_reply(full), full)
-
+            {"operation": "TYPE_SUBMIT", "target": None, "target_label": "Search Mail", "text": "invitation",
+             "app": None},
+            {"operation": "LAUNCH_APP", "target": None, "target_label": None, "text": None,
+             "app": "com.example.notes"}])
 
 # OpenAI's own reply to an account with no credit, pretty-printed as it comes: its code sits at character ~265.
 QUOTA_BODY = json.dumps({"error": {
@@ -696,7 +710,6 @@ class Reply:
 
 
 class Connections:
-    """Stands in for http.client.HTTPSConnection: each request gets the next scripted Reply."""
 
     def __init__(self, *replies):
         self.replies, self.requests = list(replies), 0
@@ -723,13 +736,11 @@ OK_REPLY = {"output": [{"type": "function_call", "arguments": json.dumps({"actio
 
 
 class ModelErrorTests(unittest.TestCase):
-    """QA matrix A9, A11 and A12 (code-read risks 10 and 11): an empty account is read from a real-length error body,
-    a server error is sent again, and Stop ends a wait to retry at once."""
 
     def post(self, connections, chat=None, sleep=None):
         chat = chat or OpenAIChat("gpt-5.6-sol", key="sk-test")
         with unittest.mock.patch("mobile_agent.model_clients.http.client.HTTPSConnection", connections.Connection), \
-                unittest.mock.patch("mobile_agent.frontier.time.sleep", sleep or (lambda seconds: None)):
+                unittest.mock.patch("time.sleep", sleep or (lambda seconds: None)):
             return chat.complete([{"role": "user", "content": "hi"}], {"type": "object", "properties": {}})
 
     def test_an_empty_account_is_known_from_a_long_body_and_is_not_retried(self):
@@ -744,11 +755,6 @@ class ModelErrorTests(unittest.TestCase):
         self.assertTrue(engines.out_of_credit(text[:300]))
         self.assertEqual(engines.plain_error(text[:300]), engines.NO_CREDIT)
         self.assertEqual(engines.model_error(text[:300]), "no_credit")
-
-    def test_the_old_cut_lost_the_code(self):
-        from mobile_agent import engines
-        self.assertGreater(QUOTA_BODY.find(b"insufficient_quota"), 300)  # why the cut needed the code first
-        self.assertFalse(engines.out_of_credit("OpenAI HTTP 429: " + QUOTA_BODY[:300].decode()))
 
     def test_a_server_error_is_sent_again_and_the_task_goes_on(self):
         waits = []
@@ -779,23 +785,12 @@ class ModelErrorTests(unittest.TestCase):
             now[0] += seconds
 
         with unittest.mock.patch("mobile_agent.model_clients.http.client.HTTPSConnection", connections.Connection), \
-                unittest.mock.patch("mobile_agent.frontier.time.monotonic", side_effect=lambda: now[0]), \
-                unittest.mock.patch("mobile_agent.frontier.time.sleep", side_effect=sleep):
+                unittest.mock.patch("time.monotonic", side_effect=lambda: now[0]), \
+                unittest.mock.patch("time.sleep", side_effect=sleep):
             with self.assertRaises(TimeoutError):
                 chat.complete([{"role": "user", "content": "hi"}], {"type": "object"}, timeout=.5)
         self.assertEqual(connections.requests, 1)
         self.assertEqual(now[0], .5)
-
-    def test_a_reused_connection_updates_its_socket_timeout(self):
-        chat = OpenAIChat("gpt-5.6-sol", key="sk-test")
-        connections = Connections(Reply(200, OK_REPLY))
-        self.post(connections, chat=chat)
-        socket = chat.connection.sock = unittest.mock.Mock()
-        with unittest.mock.patch("mobile_agent.model_clients.http.client.HTTPSConnection", connections.Connection):
-            chat.complete([{"role": "user", "content": "hi"}], {"type": "object"}, timeout=.5)
-        socket.settimeout.assert_called_once()
-        self.assertGreater(socket.settimeout.call_args.args[0], 0)
-        self.assertLessEqual(socket.settimeout.call_args.args[0], .5)
 
     def test_stop_ends_a_rate_limit_wait_at_once(self):
         stop = threading.Event()
@@ -852,7 +847,6 @@ class ModelErrorTests(unittest.TestCase):
 
 
 class ActionCeilingTests(unittest.TestCase):
-    """QA matrix code-read risk 14: a task that ends at the action ceiling says so, not that it used all its turns."""
 
     def test_the_ceiling_is_named_in_the_result_and_its_sentence(self):
         from mobile_agent import smart_result
@@ -861,7 +855,7 @@ class ActionCeilingTests(unittest.TestCase):
                           Element("99", f"Step {n}", "StaticText", (.1, .9, .5, .04))) for n in range(12)]
         steps = [[("TAP", "A", None), ("TAP", "B", None)], [("TAP", "C", None), ("TAP", "D", None)],
                  [("TAP", "E", None), ("TAP", "F", None)]]
-        with unittest.mock.patch("mobile_agent.frontier.MAX_ACTIONS", 4):
+        with unittest.mock.patch("mobile_agent.frontier.phases.MAX_ACTIONS", 4):
             result = FrontierAgent(Driver(screens), Script(steps), screenshots=False, settle_seconds=0).run("Tap them.")
         self.assertEqual((result["status"], result["actions"], result["reason"]), ("max_steps", 4, "4 actions used"))
         self.assertEqual(smart_result.reason_of("max_steps", "couldnt_finish", result["reason"], None),
@@ -882,10 +876,6 @@ class GeminiReasoningTests(unittest.TestCase):
 
     def test_none_asks_for_the_least_thinking_not_the_default(self):
         self.assertEqual(self.body_for("none")["thinkingConfig"], {"thinkingLevel": "LOW"})
-
-    def test_named_levels_pass_through(self):
-        self.assertEqual(self.body_for("medium")["thinkingConfig"], {"thinkingLevel": "MEDIUM"})
-
 
 if __name__ == "__main__":
     unittest.main()

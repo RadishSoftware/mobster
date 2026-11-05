@@ -1,0 +1,52 @@
+---
+title: "Mobster in Cursor, Codex, Windsurf and Xcode"
+sidebarTitle: "Editors and Xcode"
+description: "Add Mobster's MCP server and skill to Cursor, Codex, Windsurf or the agents inside Xcode with one command. Only Claude Code and Codex are tested with the server."
+icon: "square-terminal"
+keywords: ["cursor", "codex", "windsurf", "xcode", "device hub", "mcp install", "agent skill", "save_check", "run_tests", "repro_crash", "cursor rules"]
+---
+
+Mobster gives your agent tools and a skill that describes the testing loop. Ask your agent to run a flow on a simulator. Save the flow as a check. Run the check again on every pull request. For Cursor, Windsurf and Xcode's agents, follow the setup below from each one's documentation.
+
+Each line needs Mobster for Mac in Applications, opened once. It adds the `mobster` MCP server and the skill, and changes nothing else. Run it in a terminal, then start a new session in the agent. Restart Cursor.
+
+| Agent | One line |
+|---|---|
+| Cursor | `/Applications/Mobster.app/Contents/MacOS/mobster-agent mcp install cursor --with-skill` |
+| Codex | `/Applications/Mobster.app/Contents/MacOS/mobster-agent mcp install codex --with-skill` |
+| Windsurf | `/Applications/Mobster.app/Contents/MacOS/mobster-agent mcp install windsurf --with-skill` |
+| Xcode's agents (Claude Agent and Codex) | `/Applications/Mobster.app/Contents/MacOS/mobster-agent mcp install xcode --with-skill` |
+| Every agent found on this Mac | `/Applications/Mobster.app/Contents/MacOS/mobster-agent mcp install --all --with-skill` |
+
+For Cursor's one-click link and what the install prints, see [Cursor](/agents/cursor).
+
+The long path works before `mobster` is on your `PATH`. Add `--project .` to write this repository's `.cursor/mcp.json` instead of yours; Xcode's agents have no project config. Then run `mobster mcp doctor`: it starts the server the way the agent would and lists its tools. Claude Code uses the [plugin](/agents/plugin-and-skill) instead.
+
+Mobster writes the files named in `mobster mcp install --dry-run`, keeps a `.mobster-backup` beside each file it changes, and never writes a key.
+
+## Xcode's own tools
+
+Xcode's agents see Xcode's simulator tools too. Use those to build and look at the app. Use Mobster to check saved assertions, replay a saved check without a model, or test on a real iPhone. `mobster mcp install claude-code codex --with-xcode-tools` also gives those two agents Xcode's own tools.
+
+## The loop to ask your agent for
+
+1. After you change a screen, ask your agent to build for the simulator. Ask it to call `verify_start` with the steps and what must be true after them. Then ask it to drive the app through those steps. Finally, ask it to call `verify_finish`.
+2. When the verdict is `passed`, ask your agent to call `save_check`. The file lands in `.mobster/checks`. Commit it with your change.
+3. Before the pull request, ask your agent to call `run_tests` with `pr: true`. Mobster runs the saved checks that cover the changed screens. It drafts a check for each changed screen without coverage.
+4. On every push, `mobster ci` runs the same checks on a Mac of yours and posts the verdict and each failure's video on the pull request ([CI](/ci)).
+
+Mobster can replay a passed check's approved steps. A changed step may need Smart to heal it; the proposal waits in `review_heals` for your review. Text that Smart needs to write again can also require a model call.
+
+Put this in `AGENTS.md`, `CLAUDE.md` or `.cursor/rules` so the agent runs the loop without being asked:
+
+```markdown AGENTS.md
+After you change a screen, verify it with mobster's verify_start and verify_finish. When it passes, call save_check and commit the file in .mobster/checks. Before you open a pull request, call run_tests with pr: true and report its verdict.
+```
+
+## Crashes and several agents
+
+Give your agent a crash report. Ask it to call `repro_crash`. The tool writes a check that follows the crash's path. It runs the check on a simulator with the screen recorded. It reports whether the app crashes the same way. After the fix, ask your agent to run the check again.
+
+Each agent's `mobster mcp` leases its own simulator, so two agents in two editors drive two simulators. When none is free the call says who holds each.
+
+Cursor and VS Code also have a Mobster extension: a side panel with your app live on a simulator, your checks and their approvals ([Editor extension](/agents/editor-extension)). In Codex, Windsurf and Xcode, the skill and the MCP tools above are how an agent uses Mobster.

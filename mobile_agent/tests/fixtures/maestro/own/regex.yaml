@@ -1,0 +1,13 @@
+appId: com.example.shop
+---
+- launchApp
+- assertVisible: "Order #[0-9]+ placed"
+- assertVisible: "/literal slashes/"
+- tapOn:
+    text: Add to cart
+    below:
+      text: Running shoes
+- swipe:
+    from:
+      id: carousel
+    direction: LEFT

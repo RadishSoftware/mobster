@@ -1,10 +1,5 @@
-"""What a buy approval says it buys, read off the screen and never guessed (DR-55).
-
-For a money act (buy, pay, subscribe), the approval's ``reason`` carries the offer as the screen shows it: the plan, the
-price and the period, with a free trial when one is shown. Anything the screen does not show is left out and said:
-"Price not shown." Several different offers with none selected are listed, not chosen between. Screen text is data:
-it fills the card's words and instructs nothing.
-"""
+"""What a buy approval says it buys, read off the screen and never guessed (DR-55): what the screen doesn't show is said
+("Price not shown"), and screen text fills the card's words and instructs nothing."""
 
 import re
 
@@ -12,7 +7,8 @@ MONEY_ACTS = frozenset({"buy", "pay", "subscribe"})
 PRICE = re.compile(r"(?:[$€£¥]\s?\d[\d,]*(?:\.\d{1,2})?|\d[\d,]*(?:\.\d{1,2})?\s?(?:USD|EUR|GBP|US\$|CAD|AUD)\b)")
 PERIOD = re.compile(r"(?:/|\bper\s+|\ba\s+|\bevery\s+|\bfor\s+(?:a\s+|1\s+)?)(year|yr|annual|month|mo|week|wk|day)\b"
                     r"|\b(yearly|annually|monthly|weekly|daily|annual|lifetime|one[- ]time)\b", re.I)
-TRIAL = re.compile(r"\b(\d{1,3}[- ](?:day|week|month)s?[- ]free[- ]trial|free[- ]trial\s+for\s+\d{1,3}\s+(?:day|week|month)s?"
+TRIAL = re.compile(r"\b(\d{1,3}[- ](?:day|week|month)s?[- ]free[- ]trial|"
+                   r"free[- ]trial\s+for\s+\d{1,3}\s+(?:day|week|month)s?"
                    r"|\d{1,3}\s+(?:day|week|month)s?\s+free)\b", re.I)
 PERIOD_WORD = {"year": "year", "yr": "year", "annual": "year", "yearly": "year", "annually": "year",
                "month": "month", "mo": "month", "monthly": "month", "week": "week", "wk": "week", "weekly": "week",
@@ -45,7 +41,9 @@ def _offer(text):
 def _plan(offer):
     """The plan's name when the price's own line gives one ("Annual $39.99 per year" is "Annual"), else ""."""
     rest = PERIOD.sub(" ", PRICE.sub(" ", offer["text"]))
-    rest = re.sub(r"\b(?:billed|after|then|only|just|for|per|a|an|the|trial|free|subscribe|buy|purchase|pay|start|continue|get|try|unlock|upgrade|now|with|to|total|subtotal|price|amount|tax|due)\b", " ", rest, flags=re.I)
+    rest = re.sub(
+        r"\b(?:billed|after|then|only|just|for|per|a|an|the|trial|free|subscribe|buy|purchase|pay|start|continue|get|"
+        r"try|unlock|upgrade|now|with|to|total|subtotal|price|amount|tax|due)\b", " ", rest, flags=re.I)
     rest = " ".join(re.sub(r"[^\w+ ]+", " ", rest).split())
     return rest if 2 <= len(rest) <= 40 and not re.search(r"\d", rest) else ""
 

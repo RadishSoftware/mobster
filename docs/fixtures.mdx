@@ -1,0 +1,98 @@
+---
+title: "Fixtures"
+sidebarTitle: "Fixtures"
+keywords: ["fixture", "seed data", "test data", "reset", "keychain", "pasteboard", "launch arguments", "signed in", "logged in", "mobster fixtures"]
+description: "Name the state a check starts from once, in .mobster/fixtures/, and use it in every check: a reset, launch arguments, seed files, the keychain, the pasteboard and a sign-in."
+icon: "database"
+---
+
+A fixture is the state your app is in before a check's steps begin: signed in, a cart with two items, a clean install. You write it once in `.mobster/fixtures/` and name it in each check that needs it.
+
+```yaml
+# .mobster/fixtures/signed-in.yaml
+launch:
+  args: [-UITests]
+  env: {API_HOST: staging.example.com}
+steps:
+  - type ${TEST_EMAIL} into Email
+  - type ${TEST_PASSWORD} into Password and tap Sign in
+```
+
+```yaml
+# .mobster/fixtures/logged-in-cart.yaml
+extends: signed-in
+reset: data
+keychain: reset
+files:
+  - from: files/cart.json        # inside .mobster/fixtures/
+    to: Documents/cart.json      # inside the app's data container
+pasteboard: SAVE10
+```
+
+```yaml
+# .mobster/checks/checkout.yaml
+app: {bundle: com.example.shop}
+fixture: logged-in-cart          # or a list: [clean, logged-in-cart]
+steps:
+  - tap Checkout
+expect:
+  - text: Order summary
+```
+
+## What a fixture holds
+
+| Key | What it does | Where |
+|---|---|---|
+| `extends` | Fixtures this one builds on, applied first | Anywhere |
+| `reset` | `none`, `data` or `reinstall`, as in [Reset levels](/simulators#reset-levels). The check's own `reset` wins | Simulators |
+| `launch.args`, `launch.env` | Added to the check's. For a name in both, the check's env wins | Anywhere |
+| `steps` | Run before the check's steps, such as signing in | Anywhere |
+| `files` | Copied into the app's data container before it launches. A folder copies whole | Simulators |
+| `keychain: reset` | Empties the simulator's keychain | Simulators |
+| `pasteboard` | Sets the simulator's clipboard | Simulators |
+| `dialogs` | Answers to iOS's own dialogs, as in a check's [`dialogs`](/testing#system-dialogs). The check's own answer wins | Anywhere |
+
+A sign-in uses the project's secrets: `${TEST_EMAIL}` and `${TEST_PASSWORD}` come from `mobster env` ([Checks](/checks#secrets-and-test-credentials)), are filled in when the run starts, and never reach a report.
+
+Fixtures compose in the order you name them. `reset` and nonempty `pasteboard` take the last one set. Keychain resets accumulate. `args` and `steps` add up. `dialogs` merge key by key, a later fixture first and the check last. `env` and a file's destination are replaced by a later fixture. A fixture used twice runs once, and a circle (`a` extends `b` extends `a`) is refused with the chain.
+
+## List and apply
+
+```sh
+mobster fixtures list
+```
+
+```text
+demo-seed: 1 file, keychain reset, pasteboard  [simulators only]
+logged-in-cart: reset data, 1 file, keychain reset, pasteboard, 1 arg, 1 env, 2 steps  (builds on signed-in)  [simulators only]
+signed-in: 1 arg, 1 env, 2 steps
+```
+
+`mobster fixtures apply` does the same to a simulator now, without a check: it resets the app, resets the keychain, copies the files and sets the pasteboard. It doesn't launch the app, and it leaves a fixture's args, env and steps for a check to use. Run on 18 Oct 2026 on an iPhone 17 Pro simulator (iOS 26.4):
+
+```sh
+mobster fixtures apply demo-seed --bundle dev.mobster.daybreak --sim "iPhone 17 Pro"
+```
+
+```text
+Simulator: Mobster · iPhone 17 Pro · iOS 26.4 · 3
+Applied demo-seed to dev.mobster.daybreak on Mobster · iPhone 17 Pro · iOS 26.4 · 3: keychain reset, 1 file copied, pasteboard set.
+```
+
+`cat` of the file in the app's container then read `{"items": 2}`, and `xcrun simctl pbpaste` read `SAVE10`. The first run on a simulator also builds WebDriverAgent, which took 92 s that day.
+
+`--json` prints the list as JSON, and `GET /api/tests/fixtures?project=/abs/path` returns it to the Mac app: each fixture's flattened `reset`, `args`, `env`, `steps`, `files`, `keychain`, `dialogs`, `destructive`, and whether a `pasteboard` is set (never its text).
+
+**Apply** in a project's Fixtures section in the Mac app (with `MOBSTER_EXPERIMENTAL_TESTS_PAGE=1`) is `mobster fixtures apply` on Mobster's own simulator. A fixture that erases the app's data, reinstalls it, resets the keychain, replaces files or sets the pasteboard asks first and says which. It sends `POST /api/tests/fixtures/apply` with `{project, names, bundle?, sim?}`, which needs the Mac app's session. `bundle` defaults to the project's app. It answers when the simulator is ready, which can take a minute. It never takes an iPhone, applies one fixture set at a time (`409 busy`), and never waits for a simulator a check holds.
+
+## What it won't do to your iPhone
+
+A reset, seed files, a keychain reset and a pasteboard change a device's state, so they run on simulators only. A check on a real iPhone whose fixture holds any of them doesn't run, and says why before it touches the phone:
+
+```text
+mobster fixtures: a reset changes the state of a phone, and fixtures do that on simulators only (from signed-in, logged-in-cart). Run the check on a simulator, or use a fixture with only launch args, env and steps on the phone.
+```
+
+On a phone, args, env and steps work, so a sign-in fixture runs there.
+
+Files go only inside the app's data container on a simulator Mobster made. A destination that leaves the container, a symbolic link in the way, a source outside `.mobster/fixtures/` and more than 20 MB are refused, and nothing is copied.

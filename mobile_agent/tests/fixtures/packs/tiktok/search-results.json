@@ -1,0 +1,88 @@
+{
+"note": "Synthetic and inferred: TikTok's usual iOS labels, every name, handle and text made up; waiting for a recorded tree (REAL-QA-QUEUE.md, PRIORITY: app packs, list B).",
+"rows": [
+{
+"role": "SearchField",
+"label": "Search",
+"rect": [
+0.12,
+0.06,
+0.7,
+0.04
+],
+"value": "space",
+"editable": true
+},
+{
+"role": "Button",
+"label": "Back",
+"rect": [
+0.02,
+0.06,
+0.08,
+0.04
+]
+},
+{
+"role": "Button",
+"label": "Top",
+"rect": [
+0.04,
+0.12,
+0.15,
+0.03
+]
+},
+{
+"role": "Button",
+"label": "Users",
+"rect": [
+0.2,
+0.12,
+0.15,
+0.03
+],
+"selected": true
+},
+{
+"role": "Button",
+"label": "Videos",
+"rect": [
+0.36,
+0.12,
+0.15,
+0.03
+]
+},
+{
+"role": "Cell",
+"label": "space.facts",
+"rect": [
+0.0,
+0.18,
+1.0,
+0.08
+]
+},
+{
+"role": "StaticText",
+"label": "Space Facts 2.1M followers",
+"rect": [
+0.2,
+0.22,
+0.6,
+0.02
+]
+},
+{
+"role": "Cell",
+"label": "space.facts.fan",
+"rect": [
+0.0,
+0.26,
+1.0,
+0.08
+]
+}
+]
+}

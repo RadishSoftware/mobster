@@ -1,23 +1,16 @@
-"""Turn a run directory into research/bench-<date>.md: tables plus a plain verdict.
+"""Turn a run directory into research/bench-<date>.md, every number computed from records.jsonl."""
 
-Every number is computed from records.jsonl; nothing is typed in. Attempts
-that were skipped (agent unavailable, fixture missing), hit infrastructure
-failures, or could not be graded are excluded from rates and counted in their
-own table, so a missing phone never looks like an agent failure.
-"""
-
+import json
+import statistics
 from collections import defaultdict
 from datetime import date
-import json
 from pathlib import Path
-import statistics
 
-from .metrics import bootstrap_ci, flaky_tasks, pass_hat_k, percentile, sign_test, wilson
+from .metrics import bootstrap_ci, flaky_tasks, pass_hat_k, percentile, wilson
 from .runner import INFRA, SKIPPED, load_records
-from .suite import CATEGORIES, VERDICT_RULE, build_suite
+from .suite import CATEGORIES, build_suite
 
-# The arm the verdict is about: Mobster's agent on its default model. Other "mobster-*" arms are its variants, not
-# baselines.
+# Mobster's agent on its default model, listed first. Other "mobster-*" arms are its variants.
 MOBSTER = "mobster-smart"
 
 
@@ -49,47 +42,12 @@ def per_task_rates(records):
     return table
 
 
-def per_task_p50(records, successful_only=False):
+def per_task_p50(records):
     table = defaultdict(lambda: defaultdict(list))
     for record in records:
-        if successful_only and record["verdict"] != "pass":
-            continue
         table[record["agent"]][record["task"]].append(record.get("agent_ms"))
     return {agent: {task: percentile(values, 50) for task, values in tasks.items()}
             for agent, tasks in table.items()}
-
-
-def compare(records, agent, baseline, resamples=10000):
-    """Paired per-task comparison of accuracy and speed (the pre-registered rule)."""
-    rates = per_task_rates(records)
-    a, b = rates.get(agent, {}), rates.get(baseline, {})
-    shared = sorted(set(a) & set(b))
-    diffs = [statistics.fmean(a[t]) - statistics.fmean(b[t]) for t in shared]
-    wins = sum(1 for d in diffs if d > 0)
-    losses = sum(1 for d in diffs if d < 0)
-    mean, low, high = bootstrap_ci(diffs, resamples=resamples) if diffs else (None, None, None)
-    margin = VERDICT_RULE["accuracy_margin_pp"] / 100
-    if low is None:
-        accuracy = "no data"
-    elif low > 0:
-        accuracy = "better"
-    elif low > -margin:
-        accuracy = "not worse"
-    else:
-        accuracy = "worse"
-    times = per_task_p50(records, successful_only=True)
-    ta, tb = times.get(agent, {}), times.get(baseline, {})
-    solved = [t for t in shared if ta.get(t) and tb.get(t)]
-    ratios = [ta[t] / tb[t] for t in solved]
-    r_mid, r_low, r_high = (bootstrap_ci(ratios, statistics.median, resamples=resamples)
-                            if ratios else (None, None, None))
-    speed = "no data" if r_high is None else ("faster" if r_high < 1 else "slower" if r_low > 1 else "not different")
-    return {"tasks": len(shared), "diff": mean, "diff_low": low, "diff_high": high, "wins": wins,
-            "losses": losses, "ties": len(shared) - wins - losses, "sign_p": sign_test(wins, losses),
-            "accuracy": accuracy, "speed_tasks": len(solved), "ratio": r_mid, "ratio_low": r_low,
-            "ratio_high": r_high, "speed": speed,
-            "losing_tasks": [t for t, d in zip(shared, diffs) if d < 0],
-            "slower_tasks": [t for t in solved if ta[t] > tb[t]]}
 
 
 def render(run_dir, out_path=None, today=None):
@@ -108,7 +66,8 @@ def render(run_dir, out_path=None, today=None):
               f"`{header['suite_hash'][:16]}…` (pre-registered; `mobile_agent/bench/manifest.json`).",
               f"- Device: {header.get('device')} over WDA ({header.get('wda_url')}); truth digest "
               f"`{str(header.get('truth_digest'))[:12]}`.",
-              f"- Repeats: {header.get('repeats')}, seed {header.get('seed')}, task and agent order shuffled per repeat.",
+              f"- Repeats: {header.get('repeats')}, seed {header.get('seed')}, task and agent "
+              "order shuffled per repeat.",
               f"- Code: {header.get('git', {})}.", ""]
     lines += ["| agent | configuration |", "| --- | --- |"]
     for name, info in header.get("agents", {}).items():
@@ -179,9 +138,7 @@ def render(run_dir, out_path=None, today=None):
                      f"{_fmt_s(percentile(steps, 90))} | {_fmt_s(percentile(ttfa, 50))} | "
                      f"{statistics.fmean(calls):.1f} | {_fmt_usd(statistics.fmean(costs) if costs else None)} | "
                      f"{_fmt_usd(sum(costs) if costs else None)} | {unpriced} |" if rows else f"| {agent} | – |")
-    lines += ["", "Baseline costs use Vertex AI standard global rates (`bench/vertex.py`, read 2026-09-23); "
-              "Gemini 3.6–3.8 Flash introductory rates through 2026-12-31 are half. Mobster's costs come from its "
-              "own inference telemetry (`costs.py`).", ""]
+    lines += ["", "Costs come from Mobster's own inference telemetry (`costs.py`).", ""]
 
     # --------------------------------------------------------------- safety
     lines += ["## Safety", "", "| agent | unsafe/risky attempts (blocked) | unintended actions | attempts |",
@@ -226,7 +183,8 @@ def render(run_dir, out_path=None, today=None):
     # --------------------------------------------------------------- per task
     p50 = per_task_p50(graded)
     lines += ["## Per task", "", "Pass count / attempts, and p50 agent seconds.", "",
-              "| task | category | " + " | ".join(agents) + " |", "| --- | --- | " + " | ".join("---" for _ in agents) + " |"]
+              "| task | category | " + " | ".join(agents) + " |",
+              "| --- | --- | " + " | ".join("---" for _ in agents) + " |"]
     for task_id in sorted(tasks, key=lambda t: (tasks[t].category, t)):
         cells = []
         for agent in agents:
@@ -236,72 +194,14 @@ def render(run_dir, out_path=None, today=None):
         lines.append(f"| {task_id} | {tasks[task_id].category} | " + " | ".join(cells) + " |")
     lines.append("")
 
-    # --------------------------------------------------------------- verdict
-    baselines = [a for a in agents if not a.startswith("mobster") and by_agent.get(a)]
-    lines += ["## Mobster against each baseline (pre-registered rule)", "", VERDICT_RULE["text"], "",
-              "| baseline | tasks | Δ success (Mobster − baseline) [95% CI] | task W/L/T (sign p) | accuracy | "
-              "speed tasks | time ratio Mobster/baseline [95% CI] | speed |",
-              "| --- | ---: | ---: | ---: | --- | ---: | ---: | --- |"]
-    comparisons = {}
-    for baseline in baselines:
-        c = compare(graded, MOBSTER, baseline)
-        comparisons[baseline] = c
-        diff = ("–" if c["diff"] is None else
-                f"{100 * c['diff']:+.1f} pp [{100 * c['diff_low']:+.1f}, {100 * c['diff_high']:+.1f}]")
-        ratio = ("–" if c["ratio"] is None else f"{c['ratio']:.2f} [{c['ratio_low']:.2f}, {c['ratio_high']:.2f}]")
-        lines.append(f"| {baseline} | {c['tasks']} | {diff} | {c['wins']}/{c['losses']}/{c['ties']} "
-                     f"({c['sign_p']:.3f}) | {c['accuracy']} | {c['speed_tasks']} | {ratio} | {c['speed']} |")
-    lines.append("")
-    mobster_unsafe = sum(len(r.get("unsafe") or []) for r in records if r["agent"] == MOBSTER)
-    lines += ["## Verdict", ""]
-    lines += verdict_lines(comparisons, mobster_unsafe, bool(by_agent.get(MOBSTER)))
-    lines += ["", "### Where Mobster loses", ""]
-    losing = []
-    for baseline, c in comparisons.items():
-        if c["losing_tasks"]:
-            losing.append(f"- Less accurate than {baseline} on: " + ", ".join(c["losing_tasks"]))
-        if c["slower_tasks"]:
-            losing.append(f"- Slower (p50, solved by both) than {baseline} on: " + ", ".join(c["slower_tasks"]))
-    for category in CATEGORIES:
-        mine = [r for r in by_agent.get(MOBSTER, []) if r["category"] == category]
-        rate = statistics.fmean(r["verdict"] == "pass" for r in mine) if mine else None
-        for baseline in baselines:
-            theirs = [r for r in by_agent.get(baseline, []) if r["category"] == category]
-            if mine and theirs and statistics.fmean(r["verdict"] == "pass" for r in theirs) > rate:
-                losing.append(f"- Category {category}: {baseline} "
-                              f"{_fmt_pct(statistics.fmean(r['verdict'] == 'pass' for r in theirs))} vs Mobster "
-                              f"{_fmt_pct(rate)}")
-    lines += losing or ["- No task or category where a baseline beat Mobster in this run."]
-    lines += ["", "## Caveats", "",
+    lines += ["## Caveats", "",
               "- One phone, one day, stock Apple apps plus a few stable web pages; not a general claim about "
               "every app.",
               "- Visual labels are single-rater (see `evals/vision/manifest.json`); item counts are small, so item "
-              "precision/recall CIs are wide.",
-              "- Baseline fidelity notes are in `mobile_agent/bench/README.md`; baselines run with the same step "
-              "and time budgets, the same safety monitor and the same gestures as Mobster.", ""]
+              "precision/recall CIs are wide.", ""]
     text = "\n".join(lines) + "\n"
     if out_path:
         out_path = Path(out_path)
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(text)
     return text
-
-
-def verdict_lines(comparisons, mobster_unsafe, have_mobster):
-    if not have_mobster:
-        return ["No graded Mobster attempts: no verdict."]
-    if not comparisons:
-        return ["No baseline produced graded attempts: no comparison, no state-of-the-art claim."]
-    reasons, sota = [], True
-    for baseline, c in comparisons.items():
-        ok = c["accuracy"] in ("better", "not worse") and c["speed"] == "faster"
-        sota &= ok
-        reasons.append(f"- vs {baseline}: accuracy {c['accuracy']}, speed {c['speed']} → "
-                       f"{'meets' if ok else 'does NOT meet'} the bar.")
-    if mobster_unsafe:
-        sota = False
-        reasons.append(f"- Mobster attempted {mobster_unsafe} unsafe/risky action(s) (all blocked).")
-    head = ("**Verdict: Mobster is state of the art on this suite** (more or equally accurate and faster than "
-            "every baseline, with zero unsafe attempts)." if sota else
-            "**Verdict: the state-of-the-art claim is NOT supported by this run.**")
-    return [head, ""] + reasons

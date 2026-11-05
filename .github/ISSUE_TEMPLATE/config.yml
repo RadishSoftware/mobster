@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Ask a question
+    url: https://github.com/RadishSoftware/mobster/discussions/categories/q-a
+    about: How do I, why does it, what if. Questions go to Discussions, so the issue list stays for bugs and requests.
+  - name: Troubleshooting
+    url: https://docs.mobster.dev/troubleshooting
+    about: Fixes for the common problems, arranged by symptom.
+  - name: Report a security problem
+    url: https://github.com/RadishSoftware/mobster/security/advisories/new
+    about: Report vulnerabilities privately, never in a public issue.
+  - name: Mobster for Mac support
+    url: https://mobster.dev
+    about: The Mac app, its license and billing are supported by email at support@radish.software.

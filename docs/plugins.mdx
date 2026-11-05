@@ -1,0 +1,103 @@
+---
+title: "Install plugins in Mobster for Mac"
+sidebarTitle: "Plugins"
+description: "A plugin adds connectors, skills and workflows to Mobster for Mac in one go. It uses the Claude Code plugin layout, so one folder works in both."
+icon: "blocks"
+keywords: ["plugin", "plugins", "install a plugin", "claude code plugin", "skills", "SKILL.md", ".mcp.json", "plugin.json", "workflows", "destinations", "github"]
+---
+
+A plugin is a folder that adds what a team or a tool needs to Mobster for Mac: its MCP servers as [connectors](/connectors), skills the agent follows when a task matches them, workflows, and webhooks that results go to. It uses the Claude Code plugin layout, so the same folder works as a Claude Code plugin.
+
+Plugins are part of Mobster for Mac. The `mobster` command doesn't read them.
+
+## Install a plugin
+
+1. Open **Settings › Plugins** (⌘,) and choose **Install a plugin**.
+2. Choose where it is:
+   - **GitHub**: `owner/repo`, or `owner/repo@branch`. Mobster downloads the repository as GitHub's tarball over https. A private repository doesn't download.
+   - **Folder or .zip**: the path of a folder on this Mac, such as `~/Code/my-plugin`, or **Choose a .zip…**.
+3. Choose **Continue**. Mobster reads the plugin and shows what it adds: each connector with the command or URL it uses (a webhook says **Sends results**), each skill and each workflow. Nothing has changed yet.
+4. If the plugin needs values, such as an API key for its server, fill them in. They go to your Mac's Keychain with the connector they belong to.
+5. Choose **Install**.
+
+With no plugins installed, **Settings › Plugins** shows two rows of logos: Sentry, Postman, Supabase, ClickHouse, Datadog, WordPress, Netlify, Slack, CodeRabbit, DuckDB, Box, New Relic and Qdrant. Each is that company's own plugin on GitHub, and each installs with nothing to fill in. Click a logo and **Install a plugin** opens on what that plugin adds, at step 3. **Browse on GitHub** opens GitHub's `claude-code-plugin` topic in your browser.
+
+Each skill shows a name and a short summary in the preview. Choose **More** to read its full description. After installation, choose **Details** on the plugin's row to read its skills again.
+
+After **Install**:
+
+- Each MCP server is a connector, named as in the plugin, and Mobster tests it. Every tool asks first until you set it to **Allow** in **Settings › Connectors**.
+- Each workflow is in **Workflows**, paused, also when the plugin's file turns its schedule on. Run it by hand first, then turn its schedule on.
+- Each webhook is a connector that sends results, in **Settings › Connectors**.
+- Skills take effect from the next task.
+
+If a part cannot be added, Mobster installs nothing and explains which part failed and why. For example, a connector name already in use produces: `You already have a connector called notion. Give this one another name.`
+
+A plugin with the same name as one you installed is refused: `team-tools is already installed. Remove it first to install this copy.`
+
+## Turn a plugin off or remove it
+
+The switch on a plugin's row turns it off: its connectors turn off, its workflows leave **Workflows**, and its skills stop. Its webhooks stay. Turning it on again brings the workflows back, paused.
+
+**Remove** removes the plugin and everything it added, with the sign-ins and values in the Keychain. Tasks that already ran stay in History.
+
+## Make a plugin
+
+```text
+my-plugin/
+  .claude-plugin/plugin.json   # name, version, description, author
+  .mcp.json                    # MCP servers: they become connectors
+  skills/<name>/SKILL.md       # instructions for tasks that match its description
+  mobster/workflows/*.json     # workflows
+  mobster/destinations/*.json  # destinations
+```
+
+Every part but `plugin.json` is optional, and a plugin has at least one. Mobster's source has a small one in `examples/plugins/standup-notes`: a memory server as a connector, a standup skill and a workflow.
+
+### plugin.json
+
+```json
+{"name": "team-tools", "version": "1.2.0", "description": "Our Notion and Linear for Mobster.", "author": {"name": "Radish"}}
+```
+
+`name` is 1 to 48 lower-case letters, digits and hyphens. `version`, `description` and `author` are optional. `author` is a name, or an object with a `name`. **Settings › Plugins** shows it beside the version: `by Radish, 1.2.0`. A plugin is never marked as checked by Mobster, and an author that says `Mobster` isn't shown, because anyone can write it.
+
+### .mcp.json
+
+The same file Claude Code reads:
+
+```json
+{
+  "mcpServers": {
+    "notion": {"command": "npx", "args": ["-y", "@notionhq/notion-mcp-server"], "env": {"NOTION_TOKEN": "${NOTION_TOKEN}"}},
+    "linear": {"type": "http", "url": "https://mcp.linear.app/mcp", "headers": {"Authorization": "Bearer ${LINEAR_API_KEY}"}}
+  }
+}
+```
+
+- Each `${NAME}` is asked at install. `${CLAUDE_PLUGIN_ROOT}` is the folder Mobster keeps the plugin in, so a server shipped inside the plugin runs from there.
+- An HTTP server takes one header, `Authorization: Bearer …`. A plugin with any other header is refused. A server that needs OAuth gets **Sign in** on its connector's row.
+- At most 10 servers.
+
+### SKILL.md
+
+```markdown
+---
+name: pr-triage
+description: Triage GitHub pull requests and review comments
+---
+
+List each pull request with its author and what blocks it.
+```
+
+A skill's instructions reach a task when the task names the skill (`pr triage`) or shares at least two words with its description. At most two skills a task, each cut at 4,000 characters. A skill is instructions, not data: only you install a plugin, and nothing on the phone or from a tool can change one. A task another agent starts over [MCP](/mcp-server) or [Mobster Remote](/remote) gets no skills.
+
+### Workflows and webhooks
+
+A workflow file is the same as a [saved workflow](/schedules): `name`, `goal` (with `{blanks}`), and optionally `appId`, `engine`, `outputFormat`, `outputSchema`, `cron`, `timezone` and `produces`, the [result blocks](/results) it hands back (`["table"]`), which the Apps page previews. A webhook file in `mobster/destinations/` is `{"name", "url", "secret"?, "screenshot"?}`; put the webhook's address in a `${NAME}` so each person gives their own.
+
+## What a plugin can't do
+
+Mobster never runs a plugin's code inside itself. A server in `.mcp.json` runs as its own process under connectors' rules: its tools ask first, every call is written to the task's history before it is sent, and it starts with its own small environment, never your model keys. A plugin can't change Mobster's approvals, its permission mode or which apps it may use.
+
+A plugin is limited to 2,000 files and 50 MB unpacked, and an archive to 20 MB. An archive with a link, or a file that would land outside its folder, is refused.

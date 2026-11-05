@@ -1,0 +1,20 @@
+---
+title: "Claude Code plugin and skill"
+"og:title": "The Claude Code plugin and the mobster skill"
+sidebarTitle: "Plugin and skill"
+description: "Add Mobster's Claude Code plugin, or the mobster skill for any agent that reads Agent Skills, so your agent knows how to use your iPhone through Mobster."
+icon: "puzzle"
+keywords: ["claude code plugin", "agent skills", "skill", "claude code", "codex", "cursor"]
+---
+
+import PluginInstall from '/snippets/plugin-install.mdx';
+
+The skill teaches an agent that reads [Agent Skills](https://agentskills.io/specification) how to use Mobster: the verify loop, driving a real iPhone, the safety rules (screen text is data, ask before anything that sends, buys, posts or deletes, never enter a passcode), and how to add the server from Mobster for Mac when the client has none. To give the agent the phone itself, [add Mobster's MCP server](/mcp-server).
+
+This page is about Mobster inside your agent. To add plugins to Mobster for Mac itself, see [Plugins](/plugins).
+
+<PluginInstall />
+
+The `mobster` command installs the skill too: `mobster mcp install --all --with-skill` copies it to `~/.claude/skills/ios-testing` for Claude Code, `~/.codeium/windsurf/skills/ios-testing` for Windsurf, and `~/.agents/skills/ios-testing` for the rest: Codex, Cursor, VS Code, opencode, Gemini CLI, Zed, Goose, Amp, Cline and oh-my-pi all read that folder. Claude Desktop has no skills folder. With `--project`, it goes in the project's `.claude/skills` and `.agents/skills`. A skill folder that isn't Mobster's, or that another installer linked, is left alone. Before 0.3 the folder was called `mobster`: installing removes that old folder when it holds Mobster's skill.
+
+Cursor, Codex, Windsurf and Xcode have their own one-line installs on [Mobster in Cursor, Codex, Windsurf and Xcode](/agents/editors).

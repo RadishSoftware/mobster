@@ -1,0 +1,709 @@
+{
+"name": "app_library_search_clock",
+"bundle": "com.apple.springboard",
+"keyboard": "visible",
+"w": 402.0,
+"h": 874.0,
+"elements": [
+{
+"role": "SearchField",
+"label": "dewey-search-field",
+"value": "Clock",
+"rect": [
+0.0597,
+0.1007,
+0.7065,
+0.0549
+],
+"editable": true,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Image",
+"label": "Search",
+"value": "",
+"rect": [
+0.0995,
+0.119,
+0.0597,
+0.0229
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Button",
+"label": "Clear text",
+"value": "",
+"rect": [
+0.6667,
+0.119,
+0.0597,
+0.0229
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Button",
+"label": "Cancel",
+"value": "",
+"rect": [
+0.806,
+0.1098,
+0.1294,
+0.0412
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "StaticText",
+"label": "Cancel",
+"value": "Cancel",
+"rect": [
+0.806,
+0.119,
+0.1294,
+0.0229
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "Other",
+"value": "",
+"rect": [
+0.0597,
+0.1922,
+0.4179,
+0.2197
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "WebDriverAgentRunner-Runner",
+"value": "",
+"rect": [
+0.0896,
+0.2059,
+0.1692,
+0.0778
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "Bluesky",
+"value": "",
+"rect": [
+0.2786,
+0.2059,
+0.1692,
+0.0778
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "Cinephile",
+"value": "",
+"rect": [
+0.0896,
+0.2929,
+0.1692,
+0.0778
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "Other folder",
+"value": "27 apps",
+"rect": [
+0.2786,
+0.2929,
+0.1692,
+0.0778
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "\uf8ff System",
+"value": "",
+"rect": [
+0.5174,
+0.1922,
+0.4179,
+0.2197
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "Watch",
+"value": "",
+"rect": [
+0.5473,
+0.2059,
+0.1692,
+0.0778
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "Files",
+"value": "",
+"rect": [
+0.7363,
+0.2059,
+0.1791,
+0.0778
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "Fitness",
+"value": "",
+"rect": [
+0.5473,
+0.2929,
+0.1692,
+0.0778
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "\uf8ff System folder",
+"value": "17 apps",
+"rect": [
+0.7363,
+0.2929,
+0.1791,
+0.0778
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Cell",
+"label": "Clock",
+"value": "",
+"rect": [
+0.0,
+0.1831,
+0.995,
+0.0824
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "StaticText",
+"label": "Clock",
+"value": "Clock",
+"rect": [
+0.2189,
+0.2151,
+0.1194,
+0.0229
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "Clock",
+"value": "",
+"rect": [
+0.0597,
+0.1968,
+0.1294,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "Q",
+"value": "",
+"rect": [
+0.01,
+0.6773,
+0.0995,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "W",
+"value": "",
+"rect": [
+0.1095,
+0.6773,
+0.0995,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "E",
+"value": "",
+"rect": [
+0.209,
+0.6773,
+0.0995,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "R",
+"value": "",
+"rect": [
+0.2985,
+0.6773,
+0.1095,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "T",
+"value": "",
+"rect": [
+0.398,
+0.6773,
+0.0995,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "Y",
+"value": "",
+"rect": [
+0.4975,
+0.6773,
+0.0995,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "U",
+"value": "",
+"rect": [
+0.597,
+0.6773,
+0.0995,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "I",
+"value": "",
+"rect": [
+0.6965,
+0.6773,
+0.0995,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "O",
+"value": "",
+"rect": [
+0.796,
+0.6773,
+0.0995,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "P",
+"value": "",
+"rect": [
+0.8955,
+0.6773,
+0.0995,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "A",
+"value": "",
+"rect": [
+0.0597,
+0.7368,
+0.0995,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "S",
+"value": "",
+"rect": [
+0.1592,
+0.7368,
+0.0995,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "D",
+"value": "",
+"rect": [
+0.2587,
+0.7368,
+0.0995,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "F",
+"value": "",
+"rect": [
+0.3582,
+0.7368,
+0.0995,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "G",
+"value": "",
+"rect": [
+0.4577,
+0.7368,
+0.0995,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "H",
+"value": "",
+"rect": [
+0.5473,
+0.7368,
+0.1095,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "J",
+"value": "",
+"rect": [
+0.6468,
+0.7368,
+0.0995,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "K",
+"value": "",
+"rect": [
+0.7463,
+0.7368,
+0.0995,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "L",
+"value": "",
+"rect": [
+0.8458,
+0.7368,
+0.0995,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Button",
+"label": "shift",
+"value": "1",
+"rect": [
+0.01,
+0.7963,
+0.1294,
+0.0641
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "Z",
+"value": "",
+"rect": [
+0.1592,
+0.7963,
+0.0995,
+0.0641
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "X",
+"value": "",
+"rect": [
+0.2587,
+0.7963,
+0.0995,
+0.0641
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "C",
+"value": "",
+"rect": [
+0.3582,
+0.7963,
+0.0995,
+0.0641
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "V",
+"value": "",
+"rect": [
+0.4577,
+0.7963,
+0.0995,
+0.0641
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "B",
+"value": "",
+"rect": [
+0.5473,
+0.7963,
+0.1095,
+0.0641
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "N",
+"value": "",
+"rect": [
+0.6468,
+0.7963,
+0.0995,
+0.0641
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "M",
+"value": "",
+"rect": [
+0.7463,
+0.7963,
+0.0995,
+0.0641
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "delete",
+"value": "",
+"rect": [
+0.8657,
+0.7963,
+0.1294,
+0.0641
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "numbers",
+"value": "",
+"rect": [
+0.01,
+0.8604,
+0.2488,
+0.0641
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": " ",
+"value": "",
+"rect": [
+0.2587,
+0.8604,
+0.4876,
+0.0641
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Button",
+"label": "go",
+"value": "",
+"rect": [
+0.7463,
+0.8604,
+0.2488,
+0.0641
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "StaticText",
+"label": "2:59\u202fPM",
+"value": "2:59\u202fPM",
+"rect": [
+0.1393,
+0.0275,
+0.0896,
+0.0229
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+}
+]
+}

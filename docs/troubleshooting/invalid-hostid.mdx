@@ -1,0 +1,26 @@
+---
+title: "Could not connect to lockdownd: Invalid HostID (-21)"
+sidebarTitle: "Invalid HostID"
+description: "Your iPhone no longer recognises this Mac's pairing. Unplug it, plug it back in and tap Trust."
+icon: "triangle-alert"
+keywords: ["lockdownd", "pairing record", "HostID", "libimobiledevice"]
+"article:modified_time": "2026-10-26"
+---
+
+You see this: libimobiledevice prints `ERROR: Could not connect to lockdownd: Invalid HostID (-21)` when this Mac's pairing record for the phone is missing or no longer matches.
+
+## Why it happens
+
+The phone forgot this Mac, or this Mac holds an old pairing.
+
+## Fix
+
+1. Unplug the iPhone and plug it back in.
+2. Unlock it and tap **Trust**, then enter your passcode.
+3. Choose **Check again** in Mobster for Mac, or run `mobster doctor`.
+
+## Check it worked
+
+`idevice_id -l` prints the phone's UDID, and `mobster doctor` prints no `not trusted` line for it.
+
+Checked 26 Oct 2026 against Mobster 0.4.0. Back to [Troubleshooting](/troubleshooting#iphone).

@@ -1,0 +1,61 @@
+---
+title: "Running checks in CircleCI"
+sidebarTitle: "CircleCI"
+keywords: ["circleci", ".circleci/config.yml", "macos executor", "hosted runner", "ci token"]
+description: "Run your checks on every pull request on a CircleCI macOS executor, with simulators and a CI token."
+icon: "cloud"
+hidden: true
+noindex: true
+---
+
+<Warning>CI tokens are not enabled yet, so hosted runners cannot run your checks today. Run them on [your own Mac](/ci#a-mac-of-yours).</Warning>
+
+CircleCI's `macos` executor runs jobs on Macs it hosts. `mobster ci init --host circleci` writes the job. [CI](/ci) has the parts every host shares.
+
+## Set it up
+
+```sh
+mobster ci init --host circleci
+```
+
+It writes `.circleci/config.yml`. When that file exists, it leaves it as it is and writes the job to `.mobster/hosts/config.yml` for you to merge. Then add `MOBSTER_CI_TOKEN` as a project environment variable, commit the file and open a pull request.
+
+```yaml .circleci/config.yml
+version: 2.1
+jobs:
+  mobster:
+    macos:
+      xcode: "16.4.0"
+    resource_class: m4pro.medium
+    environment:
+      MOBSTER: /Applications/Mobster.app/Contents/MacOS/mobster-agent
+      MOBSTER_BASE_BRANCH: main   # the branch your pull requests merge into
+    steps:
+      - checkout
+      - run:
+          name: Install Mobster
+          command: |
+            brew install --cask radishsoftware/tap/mobster-app
+            "$MOBSTER" sim doctor --fix
+      - run:
+          name: Test what this PR changed
+          command: |
+            if [ -z "${CIRCLE_PULL_REQUEST:-}" ]; then echo "This build isn't for a pull request."; exit 0; fi
+            "$MOBSTER" ci run
+      - store_artifacts:
+          path: .mobster/ci
+workflows:
+  mobster:
+    jobs:
+      - mobster
+```
+
+Pick the Xcode version and the resource class from CircleCI's macOS list, and set `MOBSTER_BASE_BRANCH` to the branch your pull requests merge into. The report is the job's artifacts. CircleCI gets no comment from Mobster: GitHub and GitLab are the hosts where `mobster ci comment` posts.
+
+## Sign in with a CI token
+
+The job signs in with a CI token, not with Mobster for Mac. It is part of your plan, adds no seat and counts no runs. It licenses simulator checks only (`mobster ci run` and `mobster test`), it ends after 90 days unless you choose up to 365, and it never licenses an iPhone. Make one with `mobster account ci-token create NAME` or in the console under Settings › CI tokens, and revoke it from either. Store it as `MOBSTER_CI_TOKEN`, as a secret of the service. `mobster ci doctor` in the job checks that it is live and says what to fix if it isn't.
+
+## What this runner doesn't do
+
+A hosted Mac has no iPhone, so the checks run on simulators. To test on a phone, use [a Mac of yours](/ci/mac-runner).

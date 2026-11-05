@@ -1,0 +1,155 @@
+{
+"note": "Synthetic and inferred: TikTok's usual iOS labels, every name, handle and text made up; waiting for a recorded tree (REAL-QA-QUEUE.md, PRIORITY: app packs, list B).",
+"rows": [
+{
+"role": "Button",
+"label": "Back",
+"rect": [
+0.02,
+0.06,
+0.08,
+0.04
+]
+},
+{
+"role": "Other",
+"label": "Video",
+"rect": [
+0.0,
+0.0,
+1.0,
+0.92
+]
+},
+{
+"role": "Button",
+"label": "space.facts's profile",
+"rect": [
+0.86,
+0.4,
+0.12,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "Follow",
+"rect": [
+0.89,
+0.45,
+0.07,
+0.03
+]
+},
+{
+"role": "Button",
+"label": "Like",
+"rect": [
+0.86,
+0.5,
+0.12,
+0.05
+]
+},
+{
+"role": "StaticText",
+"label": "4.1M",
+"rect": [
+0.86,
+0.55,
+0.12,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "Comments",
+"rect": [
+0.86,
+0.59,
+0.12,
+0.05
+]
+},
+{
+"role": "StaticText",
+"label": "20.3K",
+"rect": [
+0.86,
+0.64,
+0.12,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "Favorites",
+"rect": [
+0.86,
+0.68,
+0.12,
+0.05
+]
+},
+{
+"role": "StaticText",
+"label": "88K",
+"rect": [
+0.86,
+0.73,
+0.12,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "Share",
+"rect": [
+0.86,
+0.77,
+0.12,
+0.05
+]
+},
+{
+"role": "StaticText",
+"label": "12K",
+"rect": [
+0.86,
+0.82,
+0.12,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "@space.facts",
+"rect": [
+0.04,
+0.76,
+0.4,
+0.03
+]
+},
+{
+"role": "StaticText",
+"label": "How big is the Sun, really",
+"rect": [
+0.04,
+0.8,
+0.7,
+0.04
+]
+},
+{
+"role": "Button",
+"label": "♬ original sound - space.facts",
+"rect": [
+0.04,
+0.86,
+0.6,
+0.02
+]
+}
+]
+}

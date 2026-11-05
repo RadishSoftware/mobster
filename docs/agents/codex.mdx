@@ -1,0 +1,61 @@
+---
+title: "Use Mobster from Codex CLI"
+sidebarTitle: "Codex CLI"
+description: "Add Mobster's MCP server to Codex CLI with one command, so its agent can check iOS apps on a simulator and drive your iPhone."
+icon: "/images/marks-ink/codex.svg"
+keywords: ["codex cli", "mcp", "mobster mcp install", "ios testing", "agent"]
+---
+
+Mobster adds its MCP server to Codex CLI's own config. Codex CLI then lists Mobster's tools (`verify_start`, `screen`, `tap`, `run_tests` and the rest of [the MCP server](/mcp-server)).
+
+## Add it
+
+```sh
+mobster mcp install codex
+```
+
+It prints what it changed:
+
+```text
+Mobster's MCP server: /Applications/Mobster.app/Contents/MacOS/mobster-agent mcp
+  Codex           added      ~/.codex/config.toml
+New sessions of the other clients pick it up. Check it with `mobster mcp doctor`.
+```
+
+Add `--dry-run` to see the change first and write nothing. Run the command again and nothing changes. `mobster mcp install --all` sets up every agent it finds, Codex CLI included.
+
+## What it writes
+
+The entry goes in `~/.codex/config.toml`. `$CODEX_HOME` moves the folder. Mobster runs `codex mcp add` when the `codex` command is on your `PATH`, and edits the file otherwise.
+
+```toml
+[mcp_servers.mobster]
+command = "/Applications/Mobster.app/Contents/MacOS/mobster-agent"
+args = ["mcp"]
+```
+
+Mobster keeps the rest of the file as it is, with a copy of the old one beside it (`.mobster-backup`). It writes the full path to `mobster` because apps opened from the Dock don't see your shell's `PATH`, and it never writes a key. `--project DIR` writes `DIR/.codex/config.toml`, which Codex reads in a trusted project.
+
+## Check it
+
+```sh
+mobster mcp doctor
+```
+
+The doctor starts the server the way Codex CLI does, lists its tools and calls `status`. Then it checks that the Codex CLI entry runs a `mobster` that exists, and says which command to run if it doesn't. Start a new Codex session. `/mcp` lists the server.
+
+## Add the skill
+
+```sh
+mobster mcp install codex --with-skill
+```
+
+This copies the `mobster` skill into `~/.agents/skills`, so the agent also knows the verify loop and the rules for a real iPhone: ask before anything that sends, buys, posts or deletes, and never enter a passcode.
+
+## Take it out
+
+```sh
+mobster mcp install codex --remove
+```
+
+This removes the `mobster` entry and leaves your other servers alone. Codex CLI's own reference for the file is at https://learn.chatgpt.com/docs/extend/mcp?surface=cli.

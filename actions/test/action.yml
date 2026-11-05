@@ -1,0 +1,167 @@
+name: Mobster test
+description: Test the screens a pull request changed on a simulator or your iPhone. Keeps one PR comment with the verdict.
+author: Radish Software
+branding:
+  icon: smartphone
+  color: purple
+
+inputs:
+  base:
+    description: The branch the PR merges into. Default origin/<the PR's base branch>.
+    required: false
+    default: ""
+  sim:
+    description: Simulator device types to run on, one per line, such as "iPhone 17 Pro@iOS 26.4". Default each check's own.
+    required: false
+    default: ""
+  device:
+    description: Real iPhones on this runner, one per line, by their names in `mobster devices`. The runner's MOBSTER_RUNNER_DEVICES must list each, or nothing runs.
+    required: false
+    default: ""
+  testflight:
+    description: With device, the bundle ID of your app's TestFlight build on the phone. The runner's MOBSTER_RUNNER_TESTFLIGHT must list it.
+    required: false
+    default: ""
+  build:
+    description: Build the app before testing it.
+    required: false
+    default: "true"
+  scheme:
+    description: The Xcode scheme to build. Default the only one.
+    required: false
+    default: ""
+  project:
+    description: The .xcodeproj or .xcworkspace to build. Default the one in the repository.
+    required: false
+    default: ""
+  drafts:
+    description: Checks for changed screens no check covers. run (write and run them), write, or off. Drafts never fail the PR.
+    required: false
+    default: run
+  args:
+    description: More `mobster test` flags, such as "--retries 2 --parallel 2". Use the device and testflight inputs for phones.
+    required: false
+    default: ""
+  working-directory:
+    description: The folder holding .mobster.
+    required: false
+    default: "."
+  comment:
+    description: Keep one comment on the PR with the verdict. The job summary gets it either way.
+    required: false
+    default: "true"
+  tested-with:
+    description: End the comment with "Tested with Mobster", linked to mobster.dev.
+    required: false
+    default: "false"
+  fail-on-failure:
+    description: Fail the job when a check fails or couldn't run.
+    required: false
+    default: "true"
+  artifact-name:
+    description: The name of the uploaded report.
+    required: false
+    default: mobster-report
+  retention-days:
+    description: How long GitHub keeps the report.
+    required: false
+    default: "14"
+  github-token:
+    description: The token that writes the PR comment. It needs pull-requests write.
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  exit-code:
+    description: mobster test's exit code. 0 passed, 1 failed, 2 needs review, 3 couldn't run.
+    value: ${{ steps.run.outputs.exit-code }}
+  headline:
+    description: 'The verdict line, such as "Mobster checks: 11 passed, 1 failed".'
+    value: ${{ steps.run.outputs.headline }}
+  report-dir:
+    description: The suite folder with pr.json, pr-comment.md, the HTML report, frames and GIFs.
+    value: ${{ steps.run.outputs.report-dir }}
+  artifact-url:
+    description: The uploaded report's link.
+    value: ${{ steps.upload.outputs.artifact-url }}
+
+runs:
+  using: composite
+  steps:
+    - name: Check what this runner allows
+      shell: bash
+      env:
+        INPUT_DEVICE: ${{ inputs.device }}
+        INPUT_TESTFLIGHT: ${{ inputs.testflight }}
+        INPUT_ARGS: ${{ inputs.args }}
+      run: python3 "$GITHUB_ACTION_PATH/action.py" guard
+
+    - name: Find Mobster on this runner
+      shell: bash
+      run: |
+        # Mobster for Mac on the runner serves `mobster`: its agent runs the same commands.
+        app=/Applications/Mobster.app/Contents/MacOS/mobster-agent
+        if [ -z "${MOBSTER_BIN:-}" ] && ! command -v mobster >/dev/null 2>&1 && [ -x "$app" ]; then
+          echo "MOBSTER_BIN=$app" >> "$GITHUB_ENV"
+        fi
+        echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+    - name: Fetch the base branch
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        INPUT_BASE: ${{ inputs.base }}
+      run: |
+        if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
+          git fetch --quiet --no-tags --unshallow origin || true
+        fi
+        if [ -z "$INPUT_BASE" ] && [ -n "$GITHUB_BASE_REF" ]; then
+          git fetch --quiet --no-tags origin "+refs/heads/$GITHUB_BASE_REF:refs/remotes/origin/$GITHUB_BASE_REF" || true
+        fi
+
+    - name: Test this PR
+      id: run
+      shell: bash
+      env:
+        INPUT_BASE: ${{ inputs.base }}
+        INPUT_SIM: ${{ inputs.sim }}
+        INPUT_DEVICE: ${{ inputs.device }}
+        INPUT_TESTFLIGHT: ${{ inputs.testflight }}
+        INPUT_BUILD: ${{ inputs.build }}
+        INPUT_SCHEME: ${{ inputs.scheme }}
+        INPUT_PROJECT: ${{ inputs.project }}
+        INPUT_DRAFTS: ${{ inputs.drafts }}
+        INPUT_ARGS: ${{ inputs.args }}
+        INPUT_TESTED_WITH: ${{ inputs.tested-with }}
+        INPUT_WORKING_DIRECTORY: ${{ inputs.working-directory }}
+      run: python3 "$GITHUB_ACTION_PATH/action.py" run
+
+    - name: Upload the report
+      id: upload
+      if: always() && steps.run.outputs.report-dir != ''
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: ${{ steps.run.outputs.report-dir }}
+        include-hidden-files: true
+        retention-days: ${{ inputs.retention-days }}
+        if-no-files-found: warn
+
+    - name: Comment on the PR
+      if: always()
+      shell: bash
+      env:
+        INPUT_COMMENT: ${{ inputs.comment }}
+        INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
+        MOBSTER_REPORT_DIR: ${{ steps.run.outputs.report-dir }}
+        MOBSTER_ARTIFACT_URL: ${{ steps.upload.outputs.artifact-url }}
+        MOBSTER_EXIT_CODE: ${{ steps.run.outputs.exit-code }}
+      run: python3 "$GITHUB_ACTION_PATH/action.py" comment
+
+    - name: Verdict
+      shell: bash
+      env:
+        INPUT_FAIL_ON_FAILURE: ${{ inputs.fail-on-failure }}
+        MOBSTER_EXIT_CODE: ${{ steps.run.outputs.exit-code }}
+        MOBSTER_HEADLINE: ${{ steps.run.outputs.headline }}
+      run: python3 "$GITHUB_ACTION_PATH/action.py" finish

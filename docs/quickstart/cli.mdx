@@ -1,0 +1,131 @@
+---
+title: "Quickstart: the mobster command"
+sidebarTitle: "In your terminal"
+description: "Put the mobster command from Mobster for Mac on your PATH, run the demo, then run a task on your iPhone from the terminal."
+icon: "terminal"
+keywords: ["install", "cli", "terminal", "mobster command", "demo", "first task"]
+---
+
+The `mobster` command is the agent inside Mobster for Mac. Step 2 runs a demo that needs no iPhone and no key.
+
+## Before you begin
+
+- Mobster for Mac in your Applications folder: [download it](https://mobster.dev/download), or run `brew install --cask radishsoftware/tap/mobster-app`.
+- For a task on your iPhone, the iPhone set up in Mobster for Mac ([Quickstart: Mobster for Mac](/quickstart/mac)) and a Claude or OpenAI key.
+
+## Set up
+
+<Steps>
+  <Step title="Put mobster on your PATH">
+    Link the command inside Mobster for Mac into `~/.local/bin`, add that folder to your `PATH`, and open a new terminal window:
+
+    ```sh
+    mkdir -p ~/.local/bin
+    ln -sf /Applications/Mobster.app/Contents/MacOS/mobster-agent \
+      ~/.local/bin/mobster
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
+    ```
+
+    Check the version:
+
+    ```sh
+    mobster version
+    ```
+
+    ```text Output
+    mobster 0.4.0
+    ```
+
+    Mobster for Mac updates itself and the command bundled with it.
+  </Step>
+  <Step title="Run the demo">
+    ```sh
+    mobster demo
+    ```
+
+    Mobster's agent runs one task on a scripted phone and prints each step. It makes no model calls.
+
+    ```text Output
+    ❯ Search for coffee  scripted demo: no iPhone, no model calls
+      ● Opened Safari
+      ● Tapped “Search”
+        ⎿ Safari → screen changed
+      ● Typed and submitted in “Search”
+        ⎿ Safari → screen changed
+      ✓ Checked the task is done
+    ✓ Done  2 steps, 4.9 s
+      The top result is the Coffee guide.
+    ```
+  </Step>
+  <Step title="Check your Mac and iPhone">
+    ```sh
+    mobster doctor
+    ```
+
+    Each line is one check. A `✗` line needs fixing, and the arrow under it is the command that fixes it. On a Mac with its iPhone connected and no key yet:
+
+    ```text Output
+    Mobster doctor
+
+      ✓ Python            3.12.13
+      ✓ Mobster           0.4.0, frozen app build
+      ✗ Model key         none yet
+                          → mobster login
+      ✓ Xcode             Xcode 26.4
+      ✓ iPhone tools      installed
+      ✓ iPhone            iPhone 15 Pro, iOS 26.0.1, trusts this Mac (+1 more)
+      ...
+      ✓ Screen            unlocked
+      ✓ In use            no other Mobster is using it
+
+    1 thing to fix before your first task.  Help: https://docs.mobster.dev/troubleshooting
+    ...
+    ```
+  </Step>
+  <Step title="Save your key">
+    Skip this step if you saved a key in Mobster for Mac: the command uses the same one.
+
+    ```sh
+    mobster login
+    ```
+
+    ```text Output
+    Mobster's agent runs on your own Claude or OpenAI key.
+    You pay them for what it uses, and the key stays on this Mac.
+
+    Which AI do you use?
+      1  Claude, by Anthropic   recommended
+      2  OpenAI
+    Choose 1 or 2 [1]: 1
+
+    Get a key from the Claude Console: https://platform.claude.com/settings/keys
+    Paste your Claude key (it starts with sk-ant-; it isn't shown):
+    ```
+
+    Mobster tests the key with one small request, then saves it on this Mac. Run `mobster doctor` again: its last line says `Ready for tasks.`
+  </Step>
+</Steps>
+
+## Run a task
+
+Unlock your iPhone and run:
+
+```sh
+mobster run "Open Settings and tell me which iOS version this is" --execute
+```
+
+Each step prints as it happens, in the same format as the demo, then the answer. Before Mobster sends, buys, posts or deletes, it asks at the terminal: answer `y` or `n`.
+
+## Next
+
+<CardGroup cols={3}>
+  <Card title="Conversations" icon="messages-square" href="/conversations">
+    `mobster chat`: follow-ups that know what the last task found.
+  </Card>
+  <Card title="Add to your agent" icon="bot" href="/agents">
+    Give Claude Code or Codex your iPhone.
+  </Card>
+  <Card title="Scripts" icon="code" href="/scripting">
+    JSON events and exit codes from `mobster run`.
+  </Card>
+</CardGroup>

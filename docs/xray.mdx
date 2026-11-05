@@ -1,0 +1,212 @@
+---
+title: "X-ray an app"
+"og:title": "X-ray: map an app, see who it talks to"
+sidebarTitle: "X-ray"
+description: "App X-ray taps through an app on your iPhone with no model and maps its screens, links and paywalls. Network X-ray records your iPhone's traffic and shows which companies each app contacts. Both stay on your Mac."
+icon: "scan-search"
+keywords: ["x-ray", "app x-ray", "network x-ray", "map an app", "screens", "paywall", "competitor", "app update", "diff", "no model", "who is my app talking to", "trackers", "analytics sdk", "domains", "hostnames", "pcap", "mobster-pcap", "mobster xray"]
+---
+
+X-ray shows what's inside an app and what it does that its screen doesn't. **App X-ray** taps through an app with no model and maps its screens, links and paywalls. **Network X-ray** records your iPhone's network traffic and tells you which domains each app contacted, which companies run them, and which do ads, analytics or attribution.
+
+## App X-ray
+
+App X-ray opens an app on your iPhone, taps through every control that opens a screen, and hands back a map: the screens it reached, how they connect, the paywalls it found with their plans and prices, and the numbers for the run. It calls no model, so it costs nothing in model spend and needs no key.
+
+It is a task like any other. It uses your plan, waits in line when the iPhone is busy, shows each tap in the run view and ends when you press Stop.
+
+### Run it
+
+In Mobster for Mac, open Settings › **Apps**, or **Apps** in ⌘K. Under Jobs, **Map an app, screen by screen** has a **Map an app** button: it lists the apps on your iPhone, and the one you pick starts the map. In Terminal:
+
+```sh
+mobster xray app com.apple.Preferences
+```
+
+`APP` is the app's bundle ID, or its name on the phone. The command prints each step and then the answer:
+
+```
+Mapped 30 screens of Settings, 2 taps deep, in 3 min 50 s, with no model. It left 153 controls alone because they could act.
+
+Map: ~/Library/Application Support/app.mobster.desktop/xray/apps/com.apple.Preferences/20261015-225012/map.json
+Report: ~/Library/Application Support/app.mobster.desktop/xray/apps/com.apple.Preferences/20261015-225012/report.html
+```
+
+That answer is from Settings on an iPhone 17 Pro simulator (iOS 26.4) on 15 Oct 2026, where it stopped at the default cap of 30 screens.
+
+| Option | What it sets |
+| --- | --- |
+| `--screens N` | Stop after this many screens, 1 to 120. Default 30. |
+| `--minutes N` | Stop after this many minutes, 1 to 30. Default 5. |
+| `--device NAME` | The iPhone to use. |
+| `--json` | Print each event as one JSON line. The last line is the result. |
+
+Exit codes: 0 mapped, 1 stopped or mapped nothing, 2 usage, 3 couldn't run (no phone, no plan, app not found, or an app X-ray doesn't map), 130 `ctrl+c`.
+
+### What you get
+
+The result is a finished task with three cards ([Results](/results)):
+
+- **Screens**: a gallery of the screens it reached, each with its name. At most 60.
+- **Paywall plans**: a table with the screen, plan, price, period and trial of every plan it read on a paywall. Left out when it found no paywall.
+- **How it went**: the screens, links, taps, time, why it stopped, how many controls it left alone, and where the files are.
+
+The files are on this Mac, in `~/Library/Application Support/app.mobster.desktop/xray/apps/<bundle ID>/<date>-<time>/`, a folder only you can open:
+
+| File | What it holds |
+| --- | --- |
+| `map.json` | The screens (title, text, the taps that reach each, a wireframe of its layout), the links between them, what it left alone, the paywalls and the stats. |
+| `report.html` | The same map as one self-contained page, with a thumbnail of each screen. |
+| `frames/` | One thumbnail per screen. |
+
+### What it taps and what it leaves alone
+
+It fails closed. It taps a control only when its shape says it opens a screen (a row in a list, a tab, a link with a chevron, a tall card or a full-width row of data like a weather forecast's days) and its words name no act. It leaves alone:
+
+- anything that names an act: delete, sign out, send, post, buy, subscribe, start a trial, allow. Words that are also what an app shows count only as a label's first word, so "Feels like 67°" and "Software Update" are tapped and "Like" and "Update Now" aren't;
+- a row with its own info button, like a Wi-Fi network or a Bluetooth device in Settings: tapping the row joins or connects;
+- switches, sliders, pickers, text fields and a row that holds a switch;
+- everything on a paywall: it reads the plans and backs out;
+- a system dialog, except one it can close with "Not Now", "Cancel" or "Close". When only you can answer, it stops and says so;
+- a tap that changed the screen in place. It leaves the rest of that screen alone, in case it set something.
+
+It never types. A screen behind a sign-in or a search is mapped up to that point.
+
+Some apps act on a plain tap, which no label shows: a row in Phone or FaceTime places a call, a tile in Shortcuts runs a shortcut, a tile in Home switches an accessory. App X-ray doesn't map those four. It says so in one sentence, and taps nothing.
+
+When an app reopens on the last screen it showed, App X-ray goes back to its first screen before it maps from there.
+
+Every tap is journaled before it is sent, as the agent's are. App X-ray saves its run in the terminal task history. Another Mobster holding that history must finish before App X-ray starts. If the phone stops answering after a tap was sent, App X-ray doesn't send it again. It ends with the map so far and says an action may have run.
+
+Text on a screen is data. A screen that says "tap here" changes nothing.
+
+### Compare two maps
+
+Run it again after an update, then compare:
+
+```sh
+mobster xray diff before/map.json after/map.json
+```
+
+Each argument is a `map.json` or the folder that holds it. It needs no phone and no plan, and prints what changed:
+
+```
+Yearly price went $59.99 → $69.99 on Pro
+New paywall screen: Upgrade (Settings › Upgrade), $4.99
+3 new screens under Settings
+Gone: Old
+```
+
+`--json` prints the comparison as JSON.
+
+### Start it from a script
+
+`POST /api/xray/app` starts the same task:
+
+```json
+{"appId": "com.apple.weather", "device": "Test iPhone", "screens": 30, "minutes": 5, "key": "weather-1"}
+```
+
+Only `appId` is required. It answers `201 {"runId": "..."}`. The run's events and result come from the task API, like any task. The same phone rules apply: it queues when the phone is held, and the plan check applies first. It answers `422` for an app X-ray doesn't map and `400` for an app that isn't on the phone. A request with the same `key` returns the same run.
+
+## Network X-ray
+
+Open **Devices** and press **Network X-ray** on a phone's card. The recorder opens under your phones, on the same page. Choose 30 s, 60 s or 2 min (60 s is the default), press **Record** and use the apps you want to look at. The apps and the companies they talk to, with their logos, fill in as they appear. When it ends, **Open the report** opens it as a finished task. From a terminal:
+
+```sh
+mobster xray network --device "Test iPhone" --seconds 60
+```
+
+It prints one line per app and where the report is:
+
+```text
+In 59 s Flashlight Pro contacted 14 domains at 10 companies; 6 of them are ads, analytics or attribution.
+In 59 s iOS contacted 1 domain at 1 company.
+Report: ~/Library/Application Support/app.mobster.desktop/xray/network/20261015-225906/report.html
+```
+
+Those are the lines `mobster xray network --from` prints for the synthetic capture Mobster's tests use (`mobile_agent/tests/netxray_synthetic.py`), whose Flashlight Pro is a made-up app. A recording first prints `Recording <phone> over the cable for 60 s. Use the apps you want to look at. ctrl+c stops early.`, then one line for each app that used the network.
+
+Each line counts domains Mobster saw in that app's traffic, groups them by the company that runs them, and counts the ones on Mobster's own list of ad, analytics and attribution services. The list is short: Mobster wrote it from the SDK vendors' own documentation and from hostnames real recordings left unnamed. A domain on no line gets its own name as its company and no category.
+
+### What you get
+
+| File | What it holds |
+| --- | --- |
+| `report.html` | The report, one page with no script that loads nothing from the web: a section per app, then every domain with its company, category, sizes and connections. "Mobster" in its footer links to mobster.dev |
+| `report.md` | The same in Markdown |
+| `netxray.json` | The numbers (`schema: "mobster.netxray/1"`): per app and per domain, the company, the category, bytes up and down, packets and connections |
+
+They are in the data folder under `xray/network/<YYYYmmdd-HHMMSS>/`, readable only by you. In the Mac app the result also shows as a task with two tables, **Who your apps talked to** (an app, a company with its logo, what it does, domains, KB sent and received) and **Every domain**, and a note on what Mobster read and what it couldn't see. You can sort, filter and export them like any [result](/results).
+
+### Which apps and which phone
+
+Mobster reads the phone's app list and matches each process in the capture to an app by its executable name. A match shows as the app's name on your phone. Some processes are parts of iOS itself, such as `nsurlsessiond` or `mDNSResponder`. Mobster labels those **iOS** and lists the process name in the details. A name it can't match shows as that name and says it is a process. When iOS does a lookup or a download for an app, the traffic counts for the app.
+
+When the capture has no process name for a packet or a connection, Mobster doesn't guess. That traffic goes to a line called **Unattributed** with its bytes and a sentence: "Mobster couldn't tell which app sent this traffic, so it isn't counted for any app."
+
+Mobster records one phone, the one you name with `--device` (its id, UDID or name, as in [Several phones](/devices)). With no name, it uses the one iPhone that is connected. With two or more connected and no name, it stops and lists them. It refuses simulators, because only a real iPhone has the capture service.
+
+### The cable
+
+Network X-ray records over the cable. iOS offers its packet capture service only on a USB connection: over Wi-Fi it refuses the service (measured on an iPhone 15 Pro with iOS 26.0.1, 15 Oct 2026). When the phone you pick is on Wi-Fi only, Mobster says so in one sentence and asks you to plug it in. `--wifi` asks for Wi-Fi even with the cable in, and today ends with that sentence.
+
+What a recording costs, measured on 15 Oct 2026 on an Apple M5 Max with the iPhone 15 Pro on its cable, over two 90-second recordings of six and four apps:
+
+| Measure | Value |
+| --- | --- |
+| `mobster-pcap` CPU time on the Mac | 0.58 to 0.63 s per 90 s, under 1% of one core |
+| `mobster-pcap` memory | 6.5 to 8.8 MB |
+| Traffic recorded | 58 MB and 50 MB (59,073 and 52,699 packets) |
+| Capture file before the analysis deletes it | 19.8 MB and 17.5 MB, about a third of the traffic |
+| Packets with a process name | 98.3% and 98.7% |
+| Traffic Mobster couldn't tie to an app | 1 and 2 connections |
+
+The capture travels over the cable, so it adds nothing to the phone's own network traffic.
+
+### Options
+
+| Command | What it does |
+| --- | --- |
+| `mobster xray network` | Record the connected iPhone for 60 seconds |
+| `--device NAME` | The iPhone: an id, UDID or name from `mobster devices` |
+| `--seconds N` | How long to record, 5 to 3600. The Mac app records 10 to 600 |
+| `--wifi` | Ask for Wi-Fi even with the cable in. iOS refuses capture over Wi-Fi today, so this ends with that sentence |
+| `--app NAME` | Report only this app, by its name on the iPhone |
+| `--keep-capture` | Keep the `.pcapng` beside the report |
+| `--json` | Print one JSON object: the report paths, the lines and the whole result |
+| `--from FILE.pcapng` | Read a capture you already have. No phone, no plan needed |
+
+`ctrl+c` ends the recording early and still writes the report. Exit codes: 0 done, 1 the capture failed, 2 usage, 3 couldn't run (no such iPhone, a simulator, no capture tool). Recording a phone needs a plan, like any task that uses one ([Plans](/pricing)).
+
+`--from` reads a pcapng that records the process behind each packet: one `mobster-pcap` wrote, or one macOS `tcpdump -P` wrote on a `rvi0` interface. A classic `.pcap` has no place for the process, so Mobster refuses it and says so.
+
+### Start it from another program
+
+The Mac app starts a capture with `POST /api/xray/network` and reads it with `GET /api/xray/network/{jobId}`. Only the Mac app's own session can: an API token alone can't record your phone's traffic, and the capture is not an agent or MCP tool.
+
+| Request | Answer |
+| --- | --- |
+| `POST /api/xray/network` with `{"device": "ID", "seconds": 60, "wifi": false}` | `202` with `{"jobId": "…"}`. `seconds` is 10 to 600. A second capture of the same phone while one runs is `409` `xray_busy` |
+| `GET /api/xray/network/{jobId}` | `state` (`recording`, `analyzing`, `done`, `failed` or `stopped`), `elapsed`, `seconds`, `device`, `live` (the apps, the companies and the totals so far), and when done the `runId` of the finished task |
+| `POST /api/xray/network/{jobId}/stop` | Ends the recording early. The analysis and the task still happen |
+
+### What leaves your Mac
+
+Nothing. The capture, the report files and the report's task stay on this Mac. Mobster makes no share link of the task, sends it to no destination and leaves it out of a feedback report. The local task API (`GET /api/runs`) shows it only to the Mac app, so an agent over MCP or Mobster Remote can't read it. [Privacy](/privacy#what-network-x-ray-reads) lists what Mobster reads and keeps.
+
+### What Network X-ray doesn't see
+
+- Names sent through encrypted DNS appear only when the connection itself names the server.
+- iCloud Private Relay hides the real servers behind Apple's relay.
+- Encrypted Client Hello hides the server's name in the handshake. Mobster counts those connections without a name.
+- It decrypts nothing, so it shows who an app contacted and how much, never what it sent.
+
+### How well the matching holds up
+
+Measured on two 90-second recordings on an iPhone 15 Pro (iOS 26.0.1), 15 Oct 2026: 10 apps opened one after another, 211 hostnames, labelled by hand afterwards.
+
+- **Apps.** All 10 apps were named as they are on the phone, even when the process has another name.
+- **Ads, analytics and attribution, as the list stood before those recordings.** Per app, 26 of the 31 flags were right (84%), and it caught 26 of the 33 trackers (79%). It missed Nielsen, Kevel, Zefr, Tealium, Mapbox's telemetry and Apple's Search Ads attribution. It flagged Firebase Installations and Remote Config, which are plumbing, not measurement.
+- **After adding those to the list,** the same two recordings score 33 of 34 flags right and all 33 trackers caught. That is measured on the recordings the additions came from, so it is not an independent test. The one wrong flag is `graph.facebook.com` inside an app Meta makes, which is Meta talking to itself.
+- **Companies.** Every hostname the list names had the right company. The list now names 160 of the 211 hostnames. The rest show their own domain as the company, which is right for an app's own servers.

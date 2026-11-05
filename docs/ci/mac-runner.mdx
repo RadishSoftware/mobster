@@ -1,0 +1,143 @@
+---
+title: "A Mac as your CI runner"
+sidebarTitle: "A Mac as your runner"
+keywords: ["mac mini", "self-hosted runner", "ci runner", "github actions runner", "gitlab runner", "pmset", "auto login", "iphone in ci", "device farm"]
+description: "Set up a Mac mini, or any Mac of yours, to run Mobster's checks for GitHub Actions or GitLab CI, with simulators and a plugged-in iPhone."
+icon: "server"
+---
+
+iOS simulators and iPhones run only on macOS. A phone has to be plugged into the machine that tests it, so testing on an iPhone takes a Mac you own. This page sets one up, start to finish. A Mac mini on a shelf is the usual choice. Any Apple silicon Mac works.
+
+Mobster doesn't host runners or phones. Your code, builds, screenshots and videos stay on your Mac and in your CI host's artifacts.
+
+## What you need
+
+| Part | Why |
+| --- | --- |
+| An Apple silicon Mac, on macOS 13 or later | Simulators run on it. Memory decides how many run at once: on 8 GB, more than 2 slow every run down |
+| Xcode and an iOS Simulator runtime | To build your app and run the simulators, on the macOS your Xcode version needs ([Apple lists it on its Xcode page](https://developer.apple.com/support/xcode/)) |
+| [Mobster for Mac](https://mobster.dev/download), signed in, with a plan or the free trial | Its agent is the `mobster` command in each job |
+| Optional: an iPhone with a cable | To run checks on a real phone. Use a test phone with a test account |
+
+## 1. The Mac
+
+Make a standard user for the runner, such as `ci`, and sign in as that user for the rest of this page. Then:
+
+1. Turn on automatic login for it in System Settings › Users & Groups. After a restart, the runner and the simulators start again without anyone at the Mac.
+2. Keep the Mac awake and have it restart after a power cut:
+
+   ```sh
+   sudo pmset -a sleep 0 disksleep 0 autorestart 1
+   ```
+
+   The display may sleep. Simulators don't need it.
+3. Turn on Screen Sharing or Remote Login in System Settings › General › Sharing, to reach a Mac with no screen.
+
+## 2. Xcode and a simulator
+
+Install Xcode from the App Store, open it once, then:
+
+```sh
+sudo xcode-select -s /Applications/Xcode.app
+sudo xcodebuild -license accept
+xcodebuild -downloadPlatform iOS
+```
+
+## 3. Mobster
+
+Install Mobster for Mac, open it, and sign in. Start your free trial or pick a plan. Then prepare a simulator, so the first job doesn't wait for one:
+
+```sh
+/Applications/Mobster.app/Contents/MacOS/mobster-agent sim doctor --fix
+```
+
+The first time builds WebDriverAgent, which takes several minutes. Later jobs reuse it.
+
+## 4. The runner
+
+<Tabs>
+  <Tab title="GitHub Actions">
+    In your repository (or organization), open Settings › Actions › Runners › New self-hosted runner, and pick macOS and ARM64. Run the commands GitHub shows in `~/actions-runner`, and add the `mobster` label when `config.sh` asks for labels:
+
+    ```sh
+    cd ~/actions-runner
+    ./config.sh --url https://github.com/your-org/your-app --token <runner token> --labels mobster
+    ./svc.sh install
+    ./svc.sh start
+    ```
+
+    `svc.sh install` runs the runner as a LaunchAgent of the `ci` user. Keep it that way: a runner started as a system daemon can't reach the user's simulators, Keychain or iPhone.
+  </Tab>
+  <Tab title="GitLab CI">
+    In your project, open Settings › CI/CD › Runners › New project runner, pick macOS, add the tag `mobster`, and copy the token. Then:
+
+    ```sh
+    brew install gitlab-runner
+    gitlab-runner register --url https://gitlab.com --token <runner token> --executor shell
+    brew services start gitlab-runner
+    ```
+
+    `brew services` runs the runner as a LaunchAgent of the `ci` user, so it reaches the user's simulators, Keychain and iPhone.
+  </Tab>
+</Tabs>
+
+## 5. The iPhone
+
+Skip this for simulators only.
+
+1. Plug the phone into the Mac with a cable, and set it up in Mobster for Mac, signed in as the runner's user ([Device setup](/device-setup)). Developer Mode stays on.
+2. On the phone, set Settings › Display & Brightness › Auto-Lock to Never, and keep it on its cable so it charges.
+3. Name it in the runner's own environment, so a pull request can't reach a phone the runner's owner didn't list:
+
+<Tabs>
+  <Tab title="GitHub Actions">
+    ```sh ~/actions-runner/.env
+    MOBSTER_RUNNER_DEVICES=Test iPhone
+    ```
+
+    Then `./svc.sh stop && ./svc.sh start`.
+  </Tab>
+  <Tab title="GitLab CI">
+    ```toml ~/.gitlab-runner/config.toml
+    [[runners]]
+      environment = ["MOBSTER_RUNNER_DEVICES=Test iPhone"]
+    ```
+
+    Then `gitlab-runner restart`.
+  </Tab>
+</Tabs>
+
+`MOBSTER_RUNNER_TESTFLIGHT` lists the bundle IDs of TestFlight builds the jobs may test on the phone, the same way.
+
+## 6. Check it
+
+```sh
+/Applications/Mobster.app/Contents/MacOS/mobster-agent ci doctor
+```
+
+```text
+✓ Apple silicon              this Mac is arm64
+✓ Xcode                      Xcode 26.4
+✓ iOS Simulator runtime      iOS 26.4
+✓ Mobster for Mac            in Applications
+✓ Mobster plan               active on this Mac
+✓ System sleep               never
+✓ Restart after a power cut  on
+✓ Automatic login            as ci
+✓ Runner service             GitHub Actions runner
+✓ Free disk                  212 GB
+✓ Phones this runner allows  test iphone (from ~/actions-runner/.env)
+
+This Mac is ready to run Mobster's checks. Next, `mobster sim doctor --fix` prepares a simulator, so the first job doesn't wait for one.
+```
+
+A row marked ✗ fails the check and says the fix. A row marked ! works, and is worth fixing. Then run `mobster ci init` in your project ([CI](/ci), [GitLab CI](/ci/gitlab)).
+
+## Keeping it running
+
+- Update Xcode and Mobster for Mac on the runner when you update them on your own Mac, so CI builds what you build.
+- Delete simulators of runtimes you removed: `xcrun simctl delete unavailable`.
+- Xcode's DerivedData and old simulator runtimes fill the disk. `mobster ci doctor` warns under 30 GB free and fails under 10 GB.
+- One runner runs one job at a time. For more jobs at once, add a second Mac, and split the checks with `--shard` ([CI](/ci#several-machines)).
+
+<Warning>A self-hosted runner runs the code of every pull request it picks up, as the runner's user, on the Mac the phone is plugged into. Don't connect one to a public repository that takes pull requests from forks.</Warning>

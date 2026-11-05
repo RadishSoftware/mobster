@@ -1,0 +1,85 @@
+---
+title: "Checks after every Xcode build"
+sidebarTitle: "Xcode"
+keywords: ["xcode", "post-action", "scheme", "xcodebuild", "run checks after build", "mobster xcode hook"]
+description: "Add one post-action to your Xcode scheme, and your checks run on each simulator build in the background, with the verdict as a notification."
+icon: "hammer"
+---
+
+`mobster xcode hook` adds a post-action to your Xcode scheme. After each simulator build, from Xcode or `xcodebuild`, Mobster runs the checks of the app you built on that build, in the background. The verdict comes as a macOS notification. Xcode never waits for it.
+
+## Turn it on
+
+From the folder with your `.xcodeproj` or `.xcworkspace`:
+
+```sh
+mobster xcode hook --scheme YourApp --tag smoke
+```
+
+```text
+Added the "Mobster checks" post-action to YourApp.xcodeproj/xcshareddata/xcschemes/YourApp.xcscheme.
+After each simulator build of YourApp, Mobster runs the checks of the app you built, in the background, and says the verdict in a notification. The log is .mobster/xcode/last.log.
+Commit the scheme to share it with your team. Take it out with: mobster xcode unhook --scheme YourApp
+```
+
+- The scheme has to be shared (Product › Scheme › Manage Schemes › Shared), so its file is in `xcshareddata`.
+- Mobster writes the scheme the way Xcode does, so your diff is the post-action's 19 lines. `mobster xcode unhook` takes them out, and the file is as it was.
+- `--tag smoke` runs only the checks tagged `smoke`. `--sim "iPhone 17 Pro"` runs them on that simulator instead of each check's own.
+
+## What runs
+
+After the build, Xcode runs `mobster-agent xcode after-build --background`:
+
+1. It reads the build from Xcode's settings (`BUILT_PRODUCTS_DIR`, `FULL_PRODUCT_NAME`, `PLATFORM_NAME`). A build for a device is skipped.
+2. It picks the checks whose app is the one you built, by bundle ID, and points them at that build.
+3. It returns at once, and the checks run in the background. A newer build stops the run an older build started.
+4. The verdict comes as a notification, such as "3 passed". The log is in `.mobster/xcode/last.log`, the verdict in `.mobster/xcode/last.json`, and the full report in `.mobster/test-results/`.
+
+Launch-only checks make no model call. Mobster can replay a passed check's approved steps; healing and generated text can still require model calls ([Replay and heals](/testing#replay-and-heals)).
+
+## Use Mobster from Xcode's agents
+
+Xcode's Claude Agent and Codex read their own MCP servers from `~/Library/Developer/Xcode/CodingAssistant`, not from `~/.claude.json` or `~/.codex`. Those files only apply to agents you start in Xcode. One command writes Mobster into them:
+
+```sh
+mobster mcp install xcode
+```
+
+```text
+Mobster's MCP server: /Users/you/.local/bin/mobster mcp
+  Xcode           added      ~/Library/Developer/Xcode/CodingAssistant/ClaudeAgentConfig/.claude.json
+  Xcode           added      ~/Library/Developer/Xcode/CodingAssistant/codex/config.toml
+Restart Xcode to load the change.
+New sessions of the other clients pick it up. Check it with `mobster mcp doctor`.
+```
+
+- It keeps every other server and setting in both files, copies the old file to `<file>.mobster-backup`, and changes nothing when you run it again. `--remove` takes only Mobster out.
+- Add `--with-skill` to put the Mobster skill in the Claude Agent's `skills` folder.
+- Xcode's Gemini folder is not written: its file format isn't documented.
+- The real iPhone path stays on your Mobster plan, as everywhere else.
+
+### Use Xcode's tools and Mobster together
+
+Agents outside Xcode, such as Claude Code and Codex, reach Xcode through `xcrun mcpbridge`. One command adds it beside Mobster:
+
+```sh
+mobster mcp install claude-code codex --with-xcode-tools
+```
+
+That runs `claude mcp add --scope user --transport stdio xcode -- xcrun mcpbridge` and `codex mcp add xcode -- xcrun mcpbridge`, the commands Apple documents. It needs Xcode 26.3 or later, and it leaves an existing `xcode` entry alone when that entry runs something else. Then:
+
+1. In Xcode, choose Xcode › Settings › Intelligence and turn on "Allow external agents to use Xcode tools" under Model Context Protocol. Mobster never changes this setting.
+2. Open your project in Xcode. `xcrun mcpbridge` connects to the running Xcode and exits with `no running Xcode processes found` when there is none.
+3. Ask the agent: "Build the app, then check on a simulator that the paywall shows three plans." The agent builds with Xcode's tools, passes the `.app` to Mobster's `verify_start`, drives the simulator and answers with the verdict and its frames.
+
+Xcode's tools build, test and render previews. Mobster's tools run the built app on a simulator or your iPhone and check saved assertions. No model grades the outcome.
+
+### What was run
+
+On 15 Oct 2026, on Xcode 26.4 with the iOS 26.4 simulator, with no Xcode window open:
+
+- `xcodebuild` built `examples/ios/Daybreak` for the simulator (`** BUILD SUCCEEDED **`) and `mobster verify --app … --keyless --text Daybreak` ran it on one simulator: verdict `passed`, 1 of 1 expectations held, 29.9 s including the simulator boot (25.3 s) and 0.8 s for the assertions.
+- `xcrun mcpbridge` with no Xcode running printed `MCP_XCODE_PID environment variable not set and no running Xcode processes found`.
+
+Not run: Xcode's own build tool through `mcpbridge`, and an agent started inside Xcode. Both need Xcode open and you signed in to Apple ID in Xcode. Xcode 27's agent plug-ins (a Mobster plug-in with a skill and MCP server) are not shipped: Xcode 27 isn't installed here, and whether plug-ins accept stdio servers isn't confirmed.
+

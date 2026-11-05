@@ -1,16 +1,4 @@
-"""Mobster's one engine (``smart``, Mobster's agent) and the frozen config the benchmark shares.
-
-``smart`` is frontier.FrontierAgent, one model planning every step (Claude Sonnet 5.5 on a Claude key, gpt-5.6-sol on
-an OpenAI key alone, a plan's own model). SMART is the only place its model, reasoning, and limits are set;
-the harness imports them from here, and tests/test_engines.py proves both paths build the same agent. The model is the
-one thing a user may change (``smart_model``): MOBSTER_SMART_MODEL or MOBSTER_SMART_PROVIDER. ``read_engine`` reads a
-saved or sent engine: a ``fast`` or ``quick`` from before Quick mode was retired (13 Oct 2026) is ``smart``.
-
-This module also holds what the app needs around the Smart loop and the benchmark does not: which key it
-uses, whether that key reaches the model, and the words for a provider's failure. The cost estimate and the metering
-are in costs.py, the dashboard's events in smart_events.py (docs/engine-contract.md) and the result in
-smart_result.py. Nothing here changes a decision the loop makes.
-"""
+"""Mobster's one engine (``smart``, Mobster's agent) and the frozen config the benchmark shares."""
 
 import dataclasses
 import hashlib
@@ -26,7 +14,6 @@ from . import harness_api
 
 SMART = "smart"
 ENGINES = (SMART,)
-# Quick mode's names, as older settings, workflows, runs and scripts saved or send them.
 RETIRED = ("fast", "quick")
 
 
@@ -38,11 +25,8 @@ def read_engine(value):
 @dataclass(frozen=True)
 class SmartConfig:
     """The frozen Smart loop. Change it only with a benchmark run that shows why."""
-    # Claude Sonnet 5.5 at low reasoning since 12 Oct 2026. Paired with gpt-5.6-sol on the same 16 never-run iOSWorld
-    # tasks (28 Sep, docs/benchmarks.md "Smart on Claude"): pass +0.0 points (95% CI -25 to +25), 0.68x the cost a
-    # task, agent time p50 137 s against 154 s. Since then this loop has run on Sonnet 5.5: iOSWorld dev_core 53.8%
-    # official pass (the A arms of aa1, ab1, ac1 and ac2, 10-11 Oct) and MobsterBench Real 38 of 46 graded tasks on the
-    # owner's iPhone (12 Oct). OPENAI_SMART_MODEL is Smart's model on an OpenAI key alone.
+    # Claude Sonnet 5.5 at low reasoning: paired with gpt-5.6-sol on 16 iOSWorld tasks it matched the pass rate at 0.68x
+    # the cost (docs/benchmarks.md "Smart on Claude").
     model: str = "claude-sonnet-5-5"
     reasoning: str = "low"
     max_steps: int = 50          # iOSWorld's own step limit
@@ -52,12 +36,10 @@ class SmartConfig:
 
 
 SMART_CONFIG = SmartConfig()
-# Smart's model on a Claude key, and on an OpenAI key alone (MOBSTER_SMART_MODEL picks any model outright).
 ANTHROPIC_SMART_MODEL = "claude-sonnet-5-5"
 OPENAI_SMART_MODEL = "gpt-5.6-sol"
 PROVIDER_NAMES = {"openai": "OpenAI", "anthropic": "Anthropic"}
-# The name a person knows the account by, in every sentence the app shows: "Claude", never "Anthropic" (MESSAGING § 11;
-# "by Anthropic" stays only on Setup's provider card and in Help). PROVIDER_NAMES stays the company, for errors' labels.
+# People know the account as "Claude", never "Anthropic" (MESSAGING § 11); PROVIDER_NAMES stays the company for errors.
 ACCOUNT_NAMES = {"OpenAI": "OpenAI", "Anthropic": "Claude"}
 
 
@@ -69,10 +51,10 @@ MODEL_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,127}")
 
 
 def model_provider(model):
-    """Who serves ``model``: a provider from Settings › Models for "<provider>:<model>", anthropic for claude-*,
-    openai otherwise. (A ChatGPT plan runs only through the person's own Codex: ai_plans/codex.py.)"""
+    """Who serves ``model``: a Settings › Models provider for "<provider>:<model>",
+    anthropic for claude-*, else openai."""
     model = str(model or "")
-    providers = harness_api.model_routes()
+    providers = harness_api.hooks().model_routes()
     routed, _ = providers.split(model)
     if routed:
         return routed  # "<provider>:<model>": a plan or a key from Settings › Models (ai_plans/providers.py)
@@ -80,9 +62,8 @@ def model_provider(model):
 
 
 def on_plan(model):
-    """Whether ``model`` runs on a plan the user pays for (no per-call cost): a plan in ai_plans/providers.py (Kimi
-    Code, Grok ...)."""
-    providers = harness_api.model_routes()
+    """Whether ``model`` runs on a plan the user pays for (no per-call cost)."""
+    providers = harness_api.hooks().model_routes()
     routed, _ = providers.split(model)
     return bool(routed) and providers.get(routed).group == "plan"
 
@@ -90,7 +71,7 @@ def on_plan(model):
 def model_words(model):
     """``model`` for a status line: "kimi-for-coding, using your Kimi Code plan" for a plan model, else the id."""
     if on_plan(model):
-        providers = harness_api.model_routes()
+        providers = harness_api.hooks().model_routes()
         routed, slug = providers.split(model)
         return f"{slug}, using {providers.get(routed).plan_label or 'your plan'}"
     return str(model or "")
@@ -100,43 +81,28 @@ def provider_name(model):
     provider = model_provider(model)
     if provider in PROVIDER_NAMES:
         return PROVIDER_NAMES[provider]
-    providers = harness_api.model_routes()
+    providers = harness_api.hooks().model_routes()
     return providers.get(provider).name
 
 
 def anthropic_key(env=None):
-    """The Anthropic key Smart uses on Claude: ANTHROPIC_API_KEY, else an Anthropic helper's (``keys.anthropic_key``,
-    the key hook; the engine alone reads ANTHROPIC_API_KEY only)."""
-    key, _ = _find_key("anthropic", os.environ if env is None else env)
+    """The Anthropic key Smart uses on Claude."""
+    key, _ = harness_api.hooks().key("anthropic", os.environ if env is None else env)
     return (key or "").strip() or None
 
 
-def _find_key(provider, env):
-    """(key, source) for "anthropic" or "openai": the harness's key hook (keys.py: a helper's key Settings saved counts
-    too), else the provider's own environment variable."""
-    find = harness_api.hook("key")
-    if find is not None:
-        return find(provider, env)
-    name = "ANTHROPIC_API_KEY" if provider == "anthropic" else "OPENAI_API_KEY"
-    key = (env.get(name) or "").strip()
-    return (key, "own") if key else (None, None)
-
-
 def smart_model(env=None):
-    """The model Smart plans with: MOBSTER_SMART_MODEL when it is set (any OpenAI or Claude model id); else the
-    provider the user chose (MOBSTER_SMART_PROVIDER, saved by Setup's "Connect your AI account", Settings › Models
-    or `mobster login`) while its key is there; else, with no choice, Claude whenever a Claude key is there
-    (ANTHROPIC_SMART_MODEL), even beside an OpenAI key, OPENAI_SMART_MODEL with an OpenAI key alone, and
-    SMART_CONFIG.model with no key at all. Only the model is chosen here: the loop is SMART_CONFIG's."""
+    """The model Smart plans with: MOBSTER_SMART_MODEL, else the provider the user chose, else Claude on a Claude key,
+    OpenAI on an OpenAI key alone, else SMART_CONFIG's."""
     env = os.environ if env is None else env
     chosen = (env.get("MOBSTER_SMART_MODEL") or "").strip()
     if chosen and MODEL_ID.fullmatch(chosen) and not chosen.startswith("gemini-"):
         return chosen
     preferred = (env.get("MOBSTER_SMART_PROVIDER") or "").strip()
-    providers = harness_api.model_routes()
+    providers = harness_api.hooks().model_routes()
     if providers.get(preferred) is not None:
-        # A plan or a key chosen in Settings › Models or `mobster login <id>`: it stays the choice while its key is
-        # missing (the run then says so), never a silent switch to another bill.
+        # A plan or key chosen in Settings stays the choice while its key is missing,
+        # never a silent switch to another bill.
         return providers.model_id(providers.get(preferred), env)
     if preferred == "openai" and openai_smart_key(env):
         return OPENAI_SMART_MODEL
@@ -154,15 +120,13 @@ def smart_config(env=None):
 
 
 def frontier_kwargs(config=SMART_CONFIG, *, max_cost_usd=None):
-    """FrontierAgent's keyword arguments for ``config``. ``max_cost_usd`` is the one deliberate difference
-    between the paths: the app stops at the user's per-task limit, the harness at its per-task cap."""
+    """FrontierAgent's keyword arguments for ``config``."""
     return {"max_steps": config.max_steps, "max_seconds": config.max_seconds, "screenshots": config.screenshots,
             "settle_seconds": config.settle_seconds, "max_cost_usd": max_cost_usd}
 
 
 def build_client(config=None, *, key=None):
-    """The Smart model's client on the user's key: model_clients.OpenAIChat, or model_clients.AnthropicChat for a Claude
-    model. ``config``: SMART_CONFIG on ``smart_model`` unless given."""
+    """The Smart model's client on the user's key."""
     from .model_clients import chat_client
     config = smart_config() if config is None else config
     return chat_client(config.model, reasoning=config.reasoning, key=key or None)
@@ -173,37 +137,20 @@ def build_frontier(driver, client, *, apps, emit, max_cost_usd=None, approve=Non
                    steering=None, clarify=None, step_observer=None, checkpoint=None, max_steps=None,
                    max_seconds=None, run_context=None, commit_check=None, dialog_approve=None, longform=None,
                    forced_approve=None, permissions=None, floor_approve=None,
-                   permission_mode=None, saved_program=None, program_parts=None):
-    """The Smart agent: FrontierAgent with ``config``'s arguments. ``cancelled`` is the app's
-    Stop (the harness passes none). ``guard``: the phone guard (lockscreen.guard_for, agent_hooks.PhoneGuard);
-    ``skills``: None for the default skills; ``output_schema``: the user's schema, asked for in the DONE turn
-    (``summarize`` then skips its structuring call when the answer fits).
-
-    Seam S7: ``context_blocks``, ``turn_context``, ``steering``, ``clarify``, ``step_observer``, ``checkpoint`` and
-    ``run_context`` go to FrontierAgent as they are (none set: the prompts are exactly as before);
-    ``max_steps`` and ``max_seconds`` (harness_api.frontier_options) replace ``config``'s when given.
-    ``commit_check``: a task as an account (accounts/screen.py) checks the account on screen before each commit.
-    ``dialog_approve``: who answers iOS's own prompts Mobster leaves to the user (system_dialogs), when ``approve`` is
-    None because Ask before acting is off: a privacy grant asks in every mode.
-
-    Long tasks (mobile_agent/longform): ``longform`` is the run's LongSession; ``forced_approve`` asks the person
-    before a long run's acts that ask when Ask before acting is off. Neither set: as before.
-    ``permissions``: the run's permission gate (permissions.gate_for_run); None asks as before. ``floor_approve``: who
-    asks before what asks in every mode (a one-time code) when ``approve`` is None because the run has full access.
-    ``permission_mode``: the run's own mode (the task's, its phone's), for iOS's prompts (system_dialogs).
-    ``saved_program``: a pre-run hook's matched program (learned/programs.py), or the function that matches it.
-    ``program_parts``: a pre-run hook's parts of saved programs (learned/parts.Parts)."""
+                   permission_mode=None, saved_program=None, program_parts=None, dialogs=None,
+                   dialog_policy=None, recorder=None):
+    """The Smart agent: FrontierAgent with ``config``'s arguments. ``recorder``: traces.Recording.attach, which returns
+    the driver and client the agent runs on (a tape on, the pair itself off)."""
     from .frontier import FrontierAgent
     kwargs = frontier_kwargs(config, max_cost_usd=max_cost_usd)
     if max_steps is not None:
         kwargs["max_steps"] = int(max_steps)
     if max_seconds is not None:
         kwargs["max_seconds"] = max_seconds
-    offered = harness_api.hook("tool_policy") if skills else None
-    if offered is not None:
-        # The tool policy (harness/tools): the default skills as they are; registered tools only when available,
-        # interactive-only ones only when a person watches, at most 8. The engine alone offers ``skills`` as given.
-        skills = offered(skills, run_context=run_context, driver=driver, guard=guard)
+    if skills:
+        # The tool policy (harness/tools): registered tools only when available, interactive ones only when a person
+        # watches, at most 8.
+        skills = harness_api.hooks().tool_policy(skills, run_context=run_context, driver=driver, guard=guard)
     hooks = {name: value for name, value in (
         ("context_blocks", tuple(context_blocks or ())), ("turn_context", turn_context), ("steering", steering),
         ("clarify", clarify), ("step_observer", step_observer), ("checkpoint", checkpoint),
@@ -211,19 +158,21 @@ def build_frontier(driver, client, *, apps, emit, max_cost_usd=None, approve=Non
         ("longform", longform), ("forced_approve", forced_approve),
         ("permissions", permissions), ("floor_approve", floor_approve),
         ("permission_mode", permission_mode), ("saved_program", saved_program),
-        ("program_parts", program_parts)) if value}
+        ("program_parts", program_parts), ("dialogs", dialogs), ("dialog_policy", dialog_policy)) if value}
+    if recorder is not None:
+        driver, client = recorder(driver, client, apps=apps, frontier={**kwargs, "output_schema": output_schema},
+                                  hooks=[*hooks, *(("approve",) if approve else ()), *(("guard",) if guard else ())])
     return FrontierAgent(driver, client, apps=apps, emit=emit, approve=approve, cancelled=cancelled, guard=guard,
                          skills=skills, output_schema=output_schema, **hooks, **kwargs)
 
 
 def acquire_client(key):
-    """The Smart model's client for one run (seam S6.2): today, a new one on ``key`` (``build_client``). Harness
-    may pool clients later under http_pool's rules; every run hands its client back through ``release_client``."""
+    """The Smart model's client for one run (seam S6.2): today, a new one on ``key`` (``build_client``)."""
     return build_client(key=key)
 
 
-def release_client(client, ok):
-    """A run is done with ``client`` (``ok``: it ended without an exception). Today: close its connection."""
+def release_client(client):
+    """A run is done with ``client``: close its connection."""
     connection = getattr(client, "connection", None)
     if connection is not None:
         try:
@@ -232,16 +181,13 @@ def release_client(client, ok):
             pass
 
 
-# -- keys and availability -------------------------------------------------------------------------
-
 def smart_key(env=None):
-    """The key Smart uses: ANTHROPIC_API_KEY when ``smart_model`` is a Claude model, a provider's key (or sign-in) for
-    one from Settings › Models, else ``openai_smart_key``."""
+    """The key Smart uses: the one of ``smart_model``'s provider."""
     env = os.environ if env is None else env
     provider = model_provider(smart_model(env))
     if provider == "anthropic":
         return anthropic_key(env)
-    providers = harness_api.model_routes()
+    providers = harness_api.hooks().model_routes()
     if providers.get(provider) is not None:
         key = providers.credential(providers.get(provider), env)
         return None if key is None else (key or "local-server-no-key")
@@ -249,38 +195,31 @@ def smart_key(env=None):
 
 
 def openai_smart_key(env=None):
-    """The OpenAI key Smart uses: OPENAI_API_KEY, else the helper's key when the helper is OpenAI.
-
-    The same rule as ``keys.openai_key``, which Setup, Settings and doctor read: an OpenAI helper counts
-    whether Settings saved it (MOBSTER_HELPER_PROVIDER) or its base URL is OpenAI's, so Setup never calls
-    the key step done while Smart asks for a key."""
+    """The OpenAI key Smart uses: OPENAI_API_KEY, else the helper's key when the helper is OpenAI."""
     env = os.environ if env is None else env
     key = (env.get("OPENAI_API_KEY") or "").strip()
     if key:
         return key
-    helper, source = _find_key("openai", {name: value for name, value in env.items() if name != "OPENAI_API_KEY"})
+    helper, source = harness_api.hooks().key("openai", {name: value for name, value in env.items()
+                                                       if name != "OPENAI_API_KEY"})
     if source != "helper":
         return None
     return helper.strip() or None
 
 
-# Setup's step for either key is "Connect your AI account"; the Mac app reads this as a missing key (keyMissing).
+# The Mac app reads this sentence as a missing key (keyMissing).
 NO_SMART_KEY = "Connect your AI account in Setup"
 NO_CREDIT = "Your OpenAI account is out of credit. Add credit at platform.openai.com, then try again."
 NO_ANTHROPIC_CREDIT = "Your Claude account is out of credit. Add credit at platform.claude.com, then try again."
 CREDIT_REASONS = (NO_CREDIT, NO_ANTHROPIC_CREDIT)
-# The error codes OpenAI gives an account with no credit left; its 402 (Payment Required) says the same.
 CREDIT_CODES = ("insufficient_quota", "credit_balance_exhausted")
-# What Anthropic says to an account with no credit: a 400 whose message reads "Your credit balance is too low to
-# access the Anthropic API", or a 402 billing_error.
+# Anthropic's no-credit answers: a 400 "credit balance is too low", or a 402 billing_error.
 ANTHROPIC_CREDIT = ("credit balance is too low", "billing_error")
 PROVIDER_ERROR = re.compile(r"(OpenAI|Anthropic) HTTP (\d{3})")
 
 
 def no_key_reason(managed=True, model=None, env=None):
-    """Why Smart can't run without a key. SMART_CONFIG.model, the model with no key at all, runs on either key: the
-    dashboard's words (Setup asks for a key), the env file's for a terminal user. Any other Claude model, or the one
-    MOBSTER_SMART_MODEL names, needs ANTHROPIC_API_KEY and says so."""
+    """Why Smart can't run without a key."""
     env = os.environ if env is None else env
     model = model or smart_model(env)
     chosen = (env.get("MOBSTER_SMART_MODEL") or "").strip() == model
@@ -299,25 +238,14 @@ def credit_provider(text):
 
 
 def out_of_credit(text):
-    """Whether a model error (its status and body, as a run's reason carries them) says the account has no
-    credit: OpenAI's insufficient_quota or credit_balance_exhausted code, Anthropic's "credit balance is too low",
-    or HTTP 402 from either. A plain 429 is a rate limit, which passes on its own."""
+    """Whether a model error (its status and body, as a run's reason carries them) says the account has no credit."""
     text = str(text or "")
     return (any(code in text for code in CREDIT_CODES + ANTHROPIC_CREDIT) or "OpenAI HTTP 402" in text
             or "Anthropic HTTP 402" in text)
 
 
 class ModelReach:
-    """Whether the saved key can run Smart's model, cached per key and model. Unknown counts as reachable: a
-    check never blocks a task.
-
-    Two kinds of refusal. The key's own (rejected, or its project can't use the model) comes from a
-    background check (GET /v1/models/<model> at OpenAI or Anthropic, once per key and model, again after
-    TTL_SECONDS) or from a run that hit it. An empty account (NO_CREDIT, NO_ANTHROPIC_CREDIT) comes from a run
-    or a key test: the free model read can't see it, since both providers enforce credit only when they
-    generate, so that read never clears it and the refusal has no expiry. What clears it: a key test that
-    generates and passes (``Runtime.check_key``), a Smart run whose model calls went through
-    (``record(key, True)``), or saving the key (``forget``). ``model`` None follows ``smart_model``."""
+    """Whether the saved key can run Smart's model, cached per key and model; unknown counts as reachable."""
 
     TTL_SECONDS = 6 * 3600
 
@@ -354,8 +282,7 @@ class ModelReach:
         return (True, None) if found is None else (found[0], found[1])
 
     def record(self, key, ok, reason=None, model=None):
-        """What a run or a key test found: ``ok`` True clears any refusal, False with an out-of-credit reason is
-        an empty account (it stays until one of the ways in the class docstring clears it)."""
+        """What a run or a key test found."""
         if key:
             with self.lock:
                 self.results[self.digest(key, self._model(model))] = (ok, reason, time.time(),
@@ -381,8 +308,7 @@ class ModelReach:
                 self.checking.discard(digest)
 
     def probe(self, key, model=None):
-        """(True, None), (False, why) or (None, None) when the answer is unknown (offline, a 5xx, a provider from
-        Settings › Models, whose key was checked against its model list when it was saved)."""
+        """(True, None), (False, why) or (None, None) when the answer is unknown."""
         model = self._model(model)
         if model_provider(model) not in ("openai", "anthropic"):
             return None, None
@@ -419,9 +345,7 @@ def unreachable(status, model=None):
 
 
 def model_failure(reason, model=None):
-    """(False, why) when a run's error says Smart can't run on this key (rejected, the model out of its
-    project's reach, or the account out of credit), else (None, None). A plain 429 is a rate limit and says
-    nothing about the key."""
+    """(False, why) when a run's error says Smart can't run on this key, else (None, None)."""
     text = str(reason or "")
     found = PROVIDER_ERROR.search(text)
     if not found:
@@ -438,10 +362,7 @@ NO_ANTHROPIC_REACH = "Mobster couldn't reach Claude. Check your internet connect
 
 
 def model_error(reason, model_failed=False):
-    """Which model-provider failure ended a run, for the app to read beside ``plain_error``'s sentence (a result's
-    ``model_error``): no_credit, rejected_key, model_unavailable, rate_limited, provider_error, declined or
-    unreachable; None when the provider wasn't the cause (the phone, the screen, a step). ``plain_error`` words each code,
-    so the code and the sentence always agree."""
+    """Which model-provider failure ended a run."""
     text = str(reason or "")
     found = PROVIDER_ERROR.search(text)
     status = found.group(2) if found else None
@@ -463,9 +384,7 @@ def model_error(reason, model_failed=False):
 
 
 def plain_error(reason, model_failed=False, model=None):
-    """A run error in words a person can act on, or None. ``model_failed``: the task's last model call
-    failed (costs.meter), so a timeout or a network error was the model provider's, not the phone's.
-    ``model``: the run's model (its provider names the service), else ``smart_model``."""
+    """A run error in words a person can act on, or None."""
     text = str(reason or "")
     model = model or smart_model()
     found = PROVIDER_ERROR.search(text)

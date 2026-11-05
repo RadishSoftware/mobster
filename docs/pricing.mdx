@@ -1,0 +1,53 @@
+---
+title: "Pricing and plans"
+sidebarTitle: "Pricing and plans"
+description: "Mobster for Mac is \\$12 a month, \\$99 a year, or \\$149 once. Every phone included, with 7 days free and no card first, on one Mac at a time, moved in one click. Mobster's engine and research are open source under MIT."
+icon: "credit-card"
+keywords: ["price", "pricing", "how much does it cost", "plan", "free trial", "trial", "account", "refund", "lifetime", "subscription", "cancel"]
+---
+
+<CardGroup cols={3}>
+  <Card title="Monthly" icon="calendar">
+    <p className="mob-price">{"$12"} <span>a month</span></p>
+
+    Everything in Lifetime, billed monthly. Cancel anytime in Settings › Billing.
+  </Card>
+  <Card title="Yearly" icon="calendar-days">
+    <p className="mob-price">{"$99"} <span>a year</span></p>
+
+    Everything in Lifetime, billed yearly, which is \$8.25 a month. Cancel anytime in Settings › Billing.
+  </Card>
+  <Card title="Lifetime" icon="laptop">
+    <p className="mob-price">{"$149"} <span>once</span></p>
+
+    Mobster for Mac, paid once. Guided setup, a live view, approvals, history, long tasks, workflows with loops, schedules, tasks you teach it once, results sent to your tools, connectors for Linear, Notion and GitHub, plugins, one button to add it to your agent, and [Mobster Remote](/remote).
+  </Card>
+</CardGroup>
+
+\$12 a month, \$99 a year, or \$149 once. Every phone included.
+
+By default, Mobster asks before sending, posting or buying. Try it free for 7 days on your own iPhone first, with no card: [the free trial](/account#the-free-trial).
+
+Mobster for Mac is the product, and it's paid. The agent, the `mobster` command, the MCP server, `mobster test` and the simulator manager all come with it. Mobster's engine and research are [open source under MIT](https://github.com/RadishSoftware/mobster): the agent loop, its safety core and the benchmarks, to read and to run from a source checkout as research.
+
+Mobster's agent runs on your own key, billed by your provider, or on a plan you already pay for, such as Codex, Claude Code or Gemini CLI: [Models and keys](/models-and-keys). Prices are in US dollars.
+
+## Your account
+
+- **Sign in, set up, then try it or buy.** On first launch, Mobster for Mac asks you to sign in with Apple, Google, GitHub or an email code and sets up your iPhone. When the iPhone is ready, it offers the 7-day free trial, which needs no card, with the plans one click away. [The free trial](/account#the-free-trial) When you buy, you pay in Stripe's Checkout in your browser, and Mobster opens by itself when the payment goes through. There's no key to copy. [Your Mobster account](/account)
+- **One Mac at a time.** Mobster runs on one Mac at a time; move it to another Mac in one click. Sign in on the other Mac and choose **Use on this Mac**. Your plan and your free trial come with it. Two Macs that run Mobster at the same time, such as two phone stations, need a plan each. [One Mac at a time](/account#one-mac-at-a-time)
+- **The plan check.** Mobster for Mac checks your plan with Mobster's account service when you sign in and every 10 minutes while it runs. It sends your sign-in, a hashed id for the Mac and its name, never a screen, a task or anything from the phone. Offline, or with the account service blocked, every plan keeps working for 7 days after the last check, then starts no task until Mobster checks in again.
+- **Tasks need the plan.** The app's agent checks the signed plan before every task, from the app, the local API, `mobster chat`, your coding agent's `phone_task`, a workflow, a schedule or Mobster Remote, and before `mobster verify` or `mobster test` runs on a real iPhone. `mobster verify`, `mobster test` and the simulator tools on a simulator need no plan. Without an active plan or free trial it starts nothing and says what to do: after the trial, "Your 7-day free trial on this Mac has ended, so Mobster did nothing: choose a plan at mobster.dev/pricing, then ask again." [What needs a plan](/account#what-needs-a-plan)
+
+## Refunds and cancelling
+
+- **Lifetime.** Full refund within 14 days if Mobster isn't for you. Write to [support@radish.software](mailto:support@radish.software).
+- **Free trial.** 7 days free, once per person: one per account, Mac, iPhone and sign-in ([what counts as one trial](/account#what-counts-as-one-trial)). It needs no card, so there's nothing to cancel: when it ends, nothing is charged, and you choose a plan to keep going.
+- **Monthly.** Cancel anytime in Settings › Billing › **Manage subscription**, which opens Stripe's billing page, where you can also change your card or download invoices. You aren't charged again, and Mobster keeps working to the end of the month you paid for. A monthly plan bought on mobster.dev is managed at [mobster.dev/manage](https://mobster.dev/manage).
+- **Yearly.** Renews each year. Cancel anytime in Settings › Billing › **Manage subscription**, the same as Monthly. You aren't charged again, and Mobster keeps working to the end of the year you paid for. A failed renewal gets 7 days of grace, as it does on Monthly.
+
+## Enterprise
+
+For a company with a security review and a purchase order: a signed DPA and MSA, a yearly invoice, an uptime SLA and a named contact, with single sign-on being built. There are no usage charges on any plan. [Enterprise](/enterprise)
+
+Questions about a plan, a refund or moving to another Mac: [support@radish.software](mailto:support@radish.software).

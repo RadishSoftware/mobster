@@ -6,14 +6,21 @@ import os
 import time
 from urllib.parse import quote
 
-from . import wda_timeouts, wda_watchdog
-from .driver_guards import finite_positive, grounded_target
-from .state import HOST_KEY_OPERATIONS, WDA_HOST_KEY_NAMES, validate_bundle_id
-from .transport import Deadline, HTTP, TransportError
-from .wda_gestures import (WDA_GLIDE_SPAN, WDA_SWIPE_SECONDS, WDAGestures, _swipe_points, clear_stroke_start,
-                           switch_point)
-from .wda_observe import WDA_STATE_SECONDS, WDAObserve
-from .wda_text import WDAText
+from .state import ADJUSTABLE_ROLES, HOST_KEY_OPERATIONS, WDA_HOST_KEY_NAMES, validate_bundle_id
+from .transport import HTTP, Deadline, TransportError, error_name
+from .wda import timeouts as wda_timeouts
+from .wda import watchdog as wda_watchdog
+from .wda.gestures import (
+    WDA_GLIDE_SPAN,
+    WDA_SWIPE_SECONDS,
+    WDAGestures,
+    _swipe_points,
+    clear_stroke_start,
+    switch_point,
+)
+from .wda.guards import finite_positive, grounded_target
+from .wda.observe import WDA_STATE_SECONDS, WDAObserve
+from .wda.text import WDAText
 
 # Snapshot depth. 25 was chosen when a full-depth widget home screen took
 # 40.5 s with WDA's `visible` attribute; without it the home screen reads in
@@ -75,26 +82,23 @@ def _env_int(name):
     return value if value > 0 else None
 
 
-class Driver(abc.ABC):
+class _Declared(abc.ABCMeta):
+    """Driver's metaclass: a driver is checked against its declared capabilities once its ``__init__`` has run."""
+
+    def __call__(cls, *args, **kwargs):
+        driver = super().__call__(*args, **kwargs)
+        check_capabilities(driver)
+        return driver
+
+
+class Driver(abc.ABC, metaclass=_Declared):
     """Required device contract. Instantiation fails when a method is missing.
 
-    ``can_type`` advertises text entry honestly: a driver that cannot type must
-    say ``False`` rather than offer a clipboard write as input. ``last_image``
-    carries the most recent operator preview frame when the driver captures one.
-
-    Optional capabilities stay duck-typed and are always probed with ``getattr``
-    at the call site, because each has a load-bearing fallback:
-
-    * ``observe_ready(timeout)`` -- settled observation; falls back to ``observe``.
-    * ``wait_for_change(snapshot, timeout, wait_seconds)`` -- native wait; falls
-      back to a plain ``observe`` with the full remaining budget.
-    * ``capture_preview(timeout)`` -- operator preview frame; absence selects a
-      different capture route, so no default may exist.
-
-    ``OPTIONAL`` is the whole list: every optional capability code may probe on
-    a driver, with what it is and what its absence means. A new connection
-    implements the ones it can. tests/test_driver_contract.py fails when code
-    probes a driver for a name that isn't listed.
+    Optional capabilities are probed with ``getattr`` at the call site, because each has a load-bearing fallback.
+    ``OPTIONAL`` lists them with what their absence means, and ``capabilities`` names the ones a driver has:
+    instantiation fails when it names one the new driver lacks or leaves one out, and ``operations_for`` derives
+    what a loop may offer the driver from it. tests/test_driver_contract.py
+    fails when code probes a driver for a name that isn't listed.
     """
 
     OPTIONAL = {
@@ -109,14 +113,18 @@ class Driver(abc.ABC):
                       "without it, the evidence read waits for the tree",
         "frame_clock": "a FrameClock on the phone's video (frame_clock.attach_frame_clock sets it)",
         "settled_by": "how the last settle was proven (one_read, agreeing_reads...); without it, unproven",
+        "predicted_settle": "the last settle's prediction and outcome (MOBSTER_EXPERIMENTAL_SETTLE); without it, none",
         "settles_early": "the last settle ended before its quiet period, on a frame-clock proof",
-        "settles_on_one_read": "a settle may end on one read",
+        "settles_on_one_read": "a settle may end on one read (wait_for_change's single_read: True, or \"rest\" for one "
+                               "read only when the pixels already rest)",
         "ax_only_steps": "steps left that read the tree with no screenshot",
         "next_step": "called at the top of each turn; returns the steps left of ax_only_steps",
         "source_reads": "how many screen reads this driver made (the run's timing)",
         "source_seconds": "the seconds those reads took",
         "rich_rows": "reads disabled and selected controls (WDA.tune(rich=True))",
         "tune": "set the driver up for the agent (rich rows, glides, typing rate); without it, as it is",
+        "evidence_source": "the screen's tree as WebDriverAgent-shaped XML, read by the connection itself (Android); "
+                           "without it, verify reads WebDriverAgent's /source through call",
         # Acting beyond execute
         "tap_point": "tap a screen point (TAP_XY, DISMISS), with informational purpose; without it, those actions fail",
         "dismiss_at": "where DISMISS taps; without it, tap_point",
@@ -127,7 +135,8 @@ class Driver(abc.ABC):
         "clear_text": "empty a field; without it, SET_TEXT to nothing fails",
         "relaunch_app": "quit and reopen an app (a fresh start); without it, LAUNCH_APP",
         "launch": "open an app and return its first screen (App X-ray); without it, LAUNCH_APP, a pause and a read",
-        "edge_back": "the left-edge swipe that goes back (App X-ray); without it, a raw drag on WebDriverAgent, else none",
+        "edge_back": "the left-edge swipe that goes back (App X-ray); without it, a raw drag on "
+        "WebDriverAgent, else none",
         "open_url": "open a link on the phone; without it, WebDriverAgent's /url through call",
         "drag_next": "a slow short drag that reveals a list row's buttons",
         "last_swipe_glided": "the last swipe was a glide, so it can't have flung past rows",
@@ -144,15 +153,23 @@ class Driver(abc.ABC):
         # Image-only connections
         "helper": "the native helper that captures and acts (iPhone Mirroring, Cable + Bluetooth)",
         # iOS's own moves (ios.system), on any connection
-        "recent_dialogs": "system_dialogs.Recent owned by this driver; absence starts with no clipboard or link evidence",
+        "recent_dialogs": "system_dialogs.Recent owned by this driver; absence starts with no "
+        "clipboard or link evidence",
         "opens_by_bundle": "False: apps can't open by bundle id, so open_app goes by name (Spotlight, App Library)",
         "reads_front_app": "False: active_app is a guess, so an app counts as opened when iOS's own screens left",
         "system_shortcut": "send the connection's key for home, spotlight or app_switcher; without it, Home and taps",
         "type_focused": "type into the field that has the keyboard; without it, TYPE on the field element",
         "clear_focused": "empty the field that has the keyboard; without it, its Clear text button when shown",
         "ios_version": "the phone's iOS version when the connection knows it; without it, WebDriverAgent's /status",
+        "effects": "the methods that change the device, on a driver with no WebDriverAgent transport, so a verify run "
+                   "journals each call; without it, the run journals WebDriverAgent's HTTP",
+        # VerifyRun's private wrappers: absence means the driver is not owned by that run layer yet.
+        "_verify_action_driver_journal": "the action journal owning recovery callbacks; without it, this run may "
+                                         "guard them",
+        "_verify_source_owner": "the run observing accessibility source reads; without it, this run may attach",
     }
 
+    capabilities: frozenset[str] = frozenset()
     can_type = False
     last_image = None
 
@@ -167,6 +184,33 @@ class Driver(abc.ABC):
     @abc.abstractmethod
     def close(self):
         """Release driver resources. Never terminates the caller's session."""
+
+
+def check_capabilities(driver):
+    """Raise TypeError unless ``driver.capabilities`` names exactly the Driver.OPTIONAL attributes ``driver`` has."""
+    declared = frozenset(driver.capabilities)
+    present = frozenset(name for name in Driver.OPTIONAL if hasattr(driver, name))
+    if declared != present:
+        raise TypeError(f"{type(driver).__name__}.capabilities declares {sorted(declared - present)} it doesn't have "
+                        f"and leaves out {sorted(present - declared)} it has. Set capabilities to the Driver.OPTIONAL "
+                        "names the driver has.")
+
+
+# What an operation needs beyond execute: any one of these Driver.OPTIONAL names. An operation not listed needs
+# nothing more (READ_LIST and SCROLL_TO swipe and read through execute and observe).
+OPERATION_NEEDS = {"LONG_PRESS": frozenset({"long_press"}), "TAP_XY": frozenset({"tap_point"}),
+                   "DISMISS": frozenset({"dismiss_at", "tap_point"})}
+
+
+def operations_for(capabilities, base_operations, role=None):
+    """The operations of ``base_operations``, in order, that a loop may offer a driver with ``capabilities``: each
+    one whose OPERATION_NEEDS the driver meets. With ``role``, those it may offer on an element of that role:
+    SET_TEXT on an adjustable control (a picker wheel) needs set_value, while on a field it clears and types
+    through execute."""
+    def offered(op):
+        needs = frozenset({"set_value"}) if op == "SET_TEXT" and role in ADJUSTABLE_ROLES else OPERATION_NEEDS.get(op)
+        return needs is None or not needs.isdisjoint(capabilities)
+    return tuple(op for op in base_operations if offered(op))
 
 
 def call_kind(method, path):
@@ -258,6 +302,13 @@ def wait_out_capture(status_ok, runner_restart=None, timeout=WDA_RECOVER_SECONDS
     return False
 
 class WDA(WDAObserve, WDAGestures, WDAText, Driver):
+    capabilities = frozenset({
+        "observe_ready", "wait_for_change", "capture_preview", "active_app", "slow_front", "pixel_snapshot",
+        "frame_clock", "settled_by", "predicted_settle", "settles_early", "settles_on_one_read", "ax_only_steps",
+        "next_step",
+        "source_reads", "source_seconds", "rich_rows", "tune", "tap_point", "long_press", "set_value", "write_text",
+        "replace_text", "clear_text", "relaunch_app", "launch", "drag_next", "last_swipe_glided", "last_relaunch",
+        "recover", "after_capture", "call", "call_trace", "url", "prefix", "http"})
     can_type = True
     # wait_for_change(on_settling=...) reports a likely-final screen before it is proven.
     reports_settling = True
@@ -358,13 +409,15 @@ class WDA(WDAObserve, WDAGestures, WDAText, Driver):
             pass
 
     def call(self, method, path, body=None, timeout=None):
-        # None: the bound for this class of call (wda_timeouts.WDA_CALL_TIMEOUTS). Any value is capped at MAX_WDA_TIMEOUT.
+        # None: the bound for this class of call (wda_timeouts.WDA_CALL_TIMEOUTS).
+        # Any value is capped at MAX_WDA_TIMEOUT.
         timeout = wda_timeouts.bounded(timeout, method, path)
         if method == "POST" and path in PAGE_SWITCHING_PATHS:
             self._pages_stale = True  # another app or screen: which tab page shows is asked again
         started = time.monotonic()
         try:
-            # An action is recorded while it is in flight; one that ends unanswered is an unknown outcome, never re-sent.
+            # An action is recorded while it is in flight;
+            # one that ends unanswered is an unknown outcome, never re-sent.
             result = wda_watchdog.send(self.url, method, path,
                                        lambda: self.http.request(method, self.prefix + path, body, timeout))
         finally:
@@ -381,10 +434,8 @@ class WDA(WDAObserve, WDAGestures, WDAText, Driver):
         return self.response_value(result)
 
     def relaunch_app(self, bundle, timeout=40):
-        """Close and reopen ``bundle`` when WDA answers and the app does not. An app whose accessibility server
-        stopped answering snapshots blocks every read until it is closed; restarting WDA does not clear it (iOSWorld
-        simulators, 10 Oct: after a stuck read, a WDA restart left reads hanging, closing the app cleared them in
-        2 s). False when WDA itself does not answer: the runner's recovery is the remedy then."""
+        """Close and reopen ``bundle`` when WDA answers and the app does not; False when WDA doesn't (recovery's job).
+        A stuck accessibility server blocks every read until its app closes; a WDA restart doesn't clear it (10 Oct)."""
         deadline = Deadline(timeout)
         try:
             self.http.request("GET", "/status", None, min(5, deadline.remaining()))
@@ -409,9 +460,12 @@ class WDA(WDAObserve, WDAGestures, WDAText, Driver):
 
     @staticmethod
     def response_value(result):
+        # WDA answers every command with a value, null included. With none, nothing says the command ran or didn't.
+        if "value" not in result:
+            raise TransportError("WDA answered with no value; request outcome unknown; not retried")
         value = result.get("value")
         if (isinstance(value, dict) and value.get("error")) or result.get("status", 0) != 0:
-            raise TransportError("WDA rejected command; not retried")
+            raise TransportError("WDA rejected command; not retried", status=200, wda_error=error_name(value))
         return value
 
     def configure(self, timeout=10):
@@ -468,8 +522,6 @@ class WDA(WDAObserve, WDAGestures, WDAText, Driver):
         self.call("POST", "/appium/settings", {"settings": settings}, timeout)
         self._detection_point_pending = False
 
-    # -- FrameClock ----------------------------------------------------------
-
     def launch(self, bundle_id, timeout=20):
         """Bring an app forward and return its first settled observation.
 
@@ -495,10 +547,8 @@ class WDA(WDAObserve, WDAGestures, WDAText, Driver):
         return snapshot, info
 
     def active_app(self, timeout=5):
-        """The foreground bundle, read device-wide (sessionless). An app whose tree is remembered as slow is confirmed
-        by POST /wda/apps/state instead (slow_front): there /wda/activeAppInfo takes as long as the tree (17-50 s,
-        then WDA died; 2026-10-14, TikTok's feed). Any other app comes from activeAppInfo within the probe bound and
-        no longer: a TransportError means the foreground app is unknown."""
+        """The foreground bundle, read device-wide within the probe bound: a TransportError means it is unknown.
+        A slow-tree app is confirmed by slow_front: activeAppInfo there took 17-50 s, then WDA died (14 Oct, TikTok)."""
         timeout = min(float(timeout), wda_timeouts.WDA_CALL_TIMEOUTS["probe"])
         started = time.monotonic()
         slow = self.slow_front(min(WDA_STATE_SECONDS, timeout))
@@ -613,11 +663,10 @@ class WDA(WDAObserve, WDAGestures, WDAText, Driver):
         else:
             raise ValueError("Unsupported WDA operation")
 
-    # -- The frontier's options (Jev and the plain driver never call these) -------------------
+    # The frontier's options: Jev and the plain driver never call these.
 
     def is_simulator(self, timeout=3):
-        """True when this WDA runs on a simulator (its /status names a simulator version); asked once
-        per URL. Unknown (no answer) is False, and is asked again next time."""
+        """True when this WDA runs on a simulator, asked once per URL; no answer is False and is asked again."""
         known = WDA._simulators.get(self.url)
         if known is None:
             try:
@@ -649,10 +698,6 @@ class WDA(WDAObserve, WDAGestures, WDAText, Driver):
             self.call("POST", "/appium/settings", {"settings": settings}, timeout)
         return settings
 
-    # -- Exact text -------------------------------------------------------------------------
-
-    # -- Recovery -------------------------------------------------------------------------------
-
     def _status_ok(self, timeout=3):
         try:
             status = self.http.request("GET", "/status", timeout=timeout)
@@ -663,11 +708,7 @@ class WDA(WDAObserve, WDAGestures, WDAText, Driver):
         return isinstance(value, dict) and value.get("ready", True) is not False
 
     def recover(self, timeout=WDA_RECOVER_SECONDS):
-        """Bring back a runner that reset or refused the connection, and attach to it: restart it
-        (``restarter``) when it does not answer, or wait for its supervisor (the USB runner), then take
-        its session (``new_session`` or resolve_wda_session), apply the session and tuned settings
-        again and forget what belonged to the old session. Returns the seconds it took; raises
-        TransportError when no runner answers within ``timeout``."""
+        """Bring back a runner that reset or refused the connection and attach; TransportError past ``timeout``."""
         started = time.monotonic()
         deadline = Deadline(timeout)
         phases = self.last_recovery = {"restarted": False}
@@ -684,10 +725,8 @@ class WDA(WDAObserve, WDAGestures, WDAText, Driver):
         return time.monotonic() - started
 
     def after_capture(self, timeout=WDA_RECOVER_SECONDS, sleep=time.sleep, clock=time.monotonic):
-        """Bring the runner back after the phone's screen-capture device closed (see WDA_LINK_BLIP_SECONDS): the
-        capture reset the phone's USB network link, and the runner goes down with it. wait_out_capture, then attach
-        to the new runner as recover() does. Nothing is sent to the phone meanwhile, so no action is in doubt.
-        Returns the seconds it took; raises TransportError when no runner answers within ``timeout``."""
+        """Bring the runner back after the phone's screen-capture device closed (see WDA_LINK_BLIP_SECONDS).
+        Nothing is sent to the phone meanwhile, so no action is in doubt; TransportError past ``timeout``."""
         started = clock()
         restarted = wait_out_capture(self._status_ok, self.runner_restart, timeout, sleep=sleep, clock=clock)
         self.recover(timeout=max(1.0, timeout - (clock() - started)))
@@ -728,7 +767,7 @@ class WDA(WDAObserve, WDAGestures, WDAText, Driver):
 
 
 # Driver kinds by name. The core registers WDA; mirroring.py registers "mirroring" (experimental) when imported, and an
-# optional extension (``extensions.py``) may register more before ``build_driver`` looks one up.
+# optional private package (harness_api.hooks) may register more before ``build_driver`` looks one up.
 DRIVERS = {"wda": WDA}
 
 
@@ -740,15 +779,10 @@ def register_driver(kind, cls):
 
 
 def build_driver(kind, **kwargs):
-    """One validated construction site for every driver.
-
-    Unknown kinds raise ``ValueError`` before anything is constructed; a
-    registered class that does not implement the device contract raises
-    ``TypeError`` instead of failing later at first use.
-    """
+    """One validated construction site: an unknown kind is a ValueError, a class missing the contract a TypeError."""
     if isinstance(kind, str) and kind not in DRIVERS:
-        from .extensions import load
-        load()
+        from . import harness_api
+        harness_api.hooks()
     try:
         cls = DRIVERS[kind]
     except (KeyError, TypeError):

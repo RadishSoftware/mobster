@@ -5,8 +5,7 @@ Mobster is measured on two benchmarks. They answer different questions.
 - **MobsterBench-iOS** (`mobile_agent/bench/`) is this project's pre-registered
   suite. It runs on a real iPhone over USB, with stock Apple apps and a few stable
   web pages, and is graded by oracles that never read the agent's own claims. It
-  asks: is Mobster more accurate and faster than strong screenshot baselines on
-  the same phone?
+  asks: how accurate and fast is Mobster on the same phone?
 - **iOSWorld** is a published third-party
   benchmark: 133 tasks over 26 synthetic SwiftUI apps on a simulator, scored by
   its own LLM judge. Its runner drives Xcode simulators through Mobster for Mac's simulator manager, so it is not in
@@ -20,6 +19,21 @@ copied here with their conditions.
 
 All commands assume the repository root and `PY=mobile_agent/.venv/bin/python`.
 Setup of the phone and simulators is in [running.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/running.md).
+
+## Results at a glance
+
+Every number names what was measured, on what, and when.
+
+| Measured | Result | Losses and gaps |
+|---|---|---|
+| iOSWorld, all 133 tasks, one iPhone 17 Pro simulator, iOS 26.4, Claude Sonnet 5.5, cold, 18 Oct 2026 | 53.4% (51.1% and 55.6% on two judgings); agent time p50 94.5 s; about $0.14 a task | gpt-5.6-terra via Codex CLI replaced the unavailable official gpt-5.4-mini judge. The paper reports 51.9%; different judges prevent a direct agent-performance comparison. Droidrun reports 89.5% with the official judge and 92.5% with mixed judges on a different setup. |
+| Earlier run: iOSWorld `dev_core` split, Mobster for Mac's build of this loop on Claude Sonnet 5.5 at low reasoning, simulators, 10 to 11 Oct 2026 | 53.8% official pass; agent time p50 103 s; about $0.18 a task | Multi-app tasks pass 31%. The best published result, 51.9%, is on all 133 tasks, so the two aren't directly comparable |
+| iOSWorld, 16 unseen tasks, paired A/B, 28 Sep 2026 | Sonnet 5.5 50% (95% CI 28 to 72), $0.197 a task; Opus 5.5 56% (31 to 81); gpt-5.6-sol 50% | No difference between the models is significant at this size |
+| MobsterBench-iOS, 68 tasks, iPhone 15 Pro over USB, 24 Sep 2026 | 54 of 66 passed (82%, CI 71 to 89); p50 7.7 s a task; $0.0057 a task | Multi-app 2 of 6. One risky tap blocked and 2 unintended actions recorded. Not held out: fixes went in between passes (63%, 71%, 82%). No baseline ran |
+| Where time goes, 346 runs, 22 Sep 2026 | The device side is about 61% of wall time, the model about 36% | At least 17% is waiting for the screen to settle |
+| FrameClock (the MJPEG stream as a settle clock), iPhone 15 Pro, 23 Sep 2026 | Mean navigation settle 1,122 to 996 ms with 0 premature settles in 48 | 0 of 32 premature still allows up to about 9%; Safari's pixel settle isn't measured |
+| VisionJudge on 135 labelled public-domain images, 23 Sep 2026 | 1 error in 117 answers (99.1% precision) | One rater; thresholds fitted on the same set; not phone screenshots. The runner (`evals/vision/run_eval.py`) and raw results are in the source repository at commit `24bd2f455`, before Quick mode's code was deleted |
+| The action verifier, 34 attempts, 19 Sep 2026 | Correct actions allowed 14 of 14; wrong actions blocked 12 of 12 | It let through 6 actions it should have refused; repeating an Add is still unsolved |
 
 ## MobsterBench-iOS
 
@@ -100,16 +114,9 @@ instead of failed.
 | `mobster-smart` | Mobster's agent (`frontier.FrontierAgent` through `engines.build_frontier`, with `SMART_CONFIG`) on Claude Sonnet 5.5, composed as the app composes it (`bench/agents/smart.py`). |
 | `mobster-smart-haiku`, `mobster-smart-opus`, `mobster-smart-sol`, `mobster-smart-luna` | The same loop on another model (`SMART_MODELS`). |
 | `mobster-smart-codex`, `mobster-smart-codex-luna`, `mobster-smart-cc` | The same loop through the Codex CLI's or Claude Code's sign-in. |
-| `gemini-cu` | Gemini computer use (`ENVIRONMENT_MOBILE`) on Vertex. `--cu-model auto` tries 3.8, 3.7, 3.6, then 3.5 Flash. |
-| `som-pro`, `som-flash` | A frontier VLM with Set-of-Marks over the same AX boxes, with an M3A-style action space. |
 
-An arm is any Mobster agent plus `+NAME` settings (`ARM_SETTINGS`): `mobster-smart+stream` runs with
-`MOBSTER_STREAM_DISPATCH=on`. `DEFAULT_AGENTS` is `mobster-smart,gemini-cu,som-pro`. Every agent gets the
-same goal text, budgets and safety monitor (`bench/safety.py`), which checks each
-action before dispatch. The baselines act through `bench/phone.py`, which uses
-the same WDA gesture primitives as Mobster's own driver. The baselines use
-Vertex AI, so they need `GOOGLE_CLOUD_PROJECT`, optionally
-`GOOGLE_CLOUD_LOCATION`, and a `gcloud` login. The Mobster agents need the key
+Every agent gets the same goal text, budgets and safety monitor (`bench/safety.py`),
+which checks each action before dispatch. The Mobster agents need the key
 of their model's provider: `ANTHROPIC_API_KEY` for the Claude arms, `OPENAI_API_KEY`
 for the gpt arms (see
 [running.md](https://github.com/RadishSoftware/mobster/blob/main/mobile_agent/docs/running.md#configuration)).
@@ -123,7 +130,6 @@ prints a key, token or project id.
 ```sh
 # Offline: suite hash, truth coverage, fixtures, agent availability, time and cost estimate
 $PY -m mobile_agent.bench dry-plan
-$PY -m mobile_agent.bench dry-plan --probe-models        # + one tiny Vertex call per baseline model
 
 # Once per phone, phone free and unlocked (read-only navigation by the harness)
 $PY -m mobile_agent.bench capture-truth --wda-url http://127.0.0.1:8100 --device iphone15pro
@@ -146,7 +152,6 @@ $PY -m mobile_agent.bench report --run research/bench-runs/full-YYYY-MM-DD
 - `--only` takes task ids or category names.
 - `--seed` fixes the order.
 - `--max-attempts` stops early (for smoke tests).
-- `--settle` is the baselines' fixed post-action settle (default 1.0 s).
 - `--yield-to` (default `http://127.0.0.1:8765`) or `--no-yield` controls
   yielding to a running app.
 
@@ -175,23 +180,20 @@ Each run folder holds `plan.json` (seed, order, agent configs) and
   attempts at a task all pass, averaged over tasks. pass^3 needs at least 3
   repeats. With 1 repeat, pass^1 equals the success rate and pass^3 is blank.
 - **Time.** Agent wall clock from start to result, minus harness-only reads
-  (`monitor_ms`) and provider throttling (`throttle_ms`). Resets and grading are
-  never timed. Per-step time is agent time divided by decision steps.
+  (`monitor_ms`). Resets and grading are never timed. Per-step time is agent
+  time divided by decision steps.
 - **Cost.** Mobster's cost comes from its own inference telemetry (`costs.py`).
-  Baselines use Vertex standard global rates (`bench/vertex.py`, read
-  2026-09-23). Unpriced calls are counted, never treated as zero.
+  Unpriced calls are counted, never treated as zero.
 - **Safety.** Unsafe or risky actions the monitor blocked, and unintended actions.
-  Both must be 0 for a state-of-the-art claim.
-- **Verdict (pre-registered).** For each baseline, per-task success is paired, and
-  the 95% bootstrap CI of the mean difference decides: "better" if the lower bound
-  is above 0, "not worse" if it is above −5 pp. Speed is the median per-task time
-  ratio on tasks both agents solved, and counts as "faster" if the CI's upper
-  bound is below 1. "State of the art" needs better or not-worse accuracy,
-  faster, and zero unsafe attempts against **every** baseline that ran.
-
-The verdict is keyed to the agent named `mobster-smart` (`report.MOBSTER`). A run
-without it ends with "No graded Mobster attempts: no verdict." That means no
-comparison was made. It is not a failure.
+  Both must be 0.
+- **Decision rule (pre-registered).** For each baseline, per-task success is
+  paired, and the 95% bootstrap CI of the mean difference decides: "better" if
+  the lower bound is above 0, "not worse" if it is above −5 pp. Speed is the
+  median per-task time ratio on tasks both agents solved, and counts as "faster"
+  if the CI's upper bound is below 1. "State of the art" needs better or
+  not-worse accuracy, faster, and zero unsafe attempts against **every**
+  baseline that ran. The rule is hashed with the suite. No baseline is in this
+  tree, so the report makes no comparison.
 
 ### What the "pass" runs are
 
@@ -508,13 +510,49 @@ do not line up with turns.
 Each run also writes its tape, `tape.jsonl.gz` (mobile_agent/bench/tape.py): every call
 the agent made to the phone and to its model, in order, with what came back (screens
 as data, pictures by size only). `MOBSTER_TAPE=off` turns it off. A tape replays the
-whole run on today's code with the recorded phone and model answering, for $0:
+whole run on today's code with the recorded phone and model answering, for $0. The replayed phone declares
+the capabilities the tape's header recorded, so the loop offers the operations the recording did:
 
 ```bash
 # Every action the same and every prompt byte for byte, or the first action that
 # differs and its turn. Exit status 1 when any run diverges.
 $PY -m mobile_agent.bench.tape_replay research/iosworld-runs/NAME
 ```
+
+A trace bundle (`mobster export ID --trace`, mobile_agent/docs/traces.md) replays the same way, and a folder of
+bundles is searched like a folder of tapes. `--steps` lists every recorded action under its run, so a change shows
+where it acts differently, step by step:
+
+```bash
+$PY -m mobile_agent.bench.tape_replay mobster-trace-3f9c2a1b7d10.zip --steps
+```
+
+```
+123-mem-042    10/23 acts  prompts 11/11  0.36s  DIVERGES at action 10 (turn 9): a read the recording didn't make ...
+      9. turn   9  execute HOME                                                  same
+     10. turn   9  execute LAUNCH_APP com.iosworld.benchmark.clouddrive          same
+     11. turn  11  execute SWIPE_RIGHT 'Product Strategy'                        differs: a read the recording didn't make (driver.observe_ready)
+     12. turn  12  tap_point 0.08 0.12                                            not reached
+```
+
+`same` is an action the replay sent as recorded. `differs` is the first one it did not (the replay stops there: past
+it, the recorded screens no longer follow what the agent did). `not reached` is every recorded action after it, and
+`never asked` one the replay ended before. A divergence says the change acts differently on that failure. It does not
+say the new way is better: that needs a paired A/B. The recorded model replies answer, so a prompt change is counted
+(`prompts`) and does not stop the replay.
+
+A run recorded in the app had things a replay does not: the phone guard, approvals, steering and tools. The tape's header
+names them (`hooks`) and `--steps` prints them. A read the guard made shifts the reads that follow it, so an app run can
+diverge on a read where the engine has not changed. Simulator tapes have none of these.
+
+Measured 18 Oct 2026 on the 24 failed runs of the all-133 iOSWorld run (main 217873d10, claude-sonnet-5-5, one
+simulator; 12 `blocked`, 12 `max_steps`), replayed on main cd8c514ce with this Mac at a load average near 100: each run
+took 0.02 to 3.9 s (median 1.7 s), 48.6 s for all 24 in one process (3.3 s of CPU). 21 of 24 replayed identically, 1009
+of 1023 recorded actions were replayed, and all 890 prompts were byte for byte the recording's. The three that diverge
+are the three runs the guard fixes merged since (commit-binding, folder-as-place) were written for: tasterank-001
+(3 of 3 actions, then a tap on "Save to list" the recording refused), multi-092 (a long press on "Like" where the
+recording tapped a comment count) and mem-042 (10 of 23 actions, then a read the recording never made). The failure map
+of 18 Oct lists the same three as the fixes' targets.
 
 Measured 14 Oct 2026 on 5 dev tasks (caltrack-001, lockedin-004, splitpay-001,
 multi-010, scorezone-003; iPhone 17 Pro simulator, iOS 26.4, claude-sonnet-5-5):
@@ -560,7 +598,13 @@ both builds (paying a second request was refused as a repeat: multi-086 0.18 -> 
 
 ### Measured results (iOSWorld)
 
-All iOSWorld runs so far use the same 11-task smoke subset, run on 2026-09-24,
+Mobster now quotes the full 133-task run from 18 Oct 2026 above, scored with a substitute judge. The earlier quoted result was 53.8% on `dev_core`, using Claude Sonnet 5.5 at low reasoning: the A arms of aa1, ab1, ac1 and ac2 on 10 and 11 Oct 2026 (`engines.SmartConfig` records it). Every iOSWorld
+run on this page used Mobster for Mac's build of the engine: `bench/iosworld.py` attaches the frame clock to the
+simulator's video stream and registers the app catalog, `bench/agents/smart.py` offers the default skills, and
+model calls are hedged unless `MOBSTER_HEDGE=0`. The open-source tree does not activate those four integrations, so the loop as
+it ships there has no iOSWorld number of its own.
+
+The runs below are earlier. They use the same 11-task smoke subset, run on 2026-09-24,
 one attempt per task, judged by iOSWorld's unmodified judge. The subset has 5
 single-app tasks (all "easy": `caltrack-001`, `clouddocs-004`, `lockedin-003`,
 `mail-002`, `splitpay-001`), 3 multi-app tasks (`multi-006`, `multi-031`,
@@ -665,4 +709,8 @@ progress when this page was written. Its results are not included here.
 - `evals/app_survey.py` measures how much of each app's screen the accessibility
   tree exposes.
 - `evals/latency_report.py` reports per-phase latency (p50/p90/p99 and the
-  critical path) from run journals and eval records.
+  critical path) from run journals and eval records. Its `temporal_ms_per_run`
+  is off-lane model-call time concurrent with recorded non-wait main-lane work,
+  clipped to each run. This is overlap, not proven time saved. The report keeps
+  summed off-lane model work separate and counts traces with dropped phase or
+  call spans in `incomplete_trace_runs`.

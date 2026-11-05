@@ -1,0 +1,15 @@
+{
+  "name": "mobster-vercel-ai-example",
+  "private": true,
+  "type": "module",
+  "description": "Mobster's MCP server in the Vercel AI SDK",
+  "scripts": {
+    "list": "node index.mjs --list",
+    "start": "node index.mjs"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.75",
+    "@ai-sdk/mcp": "^2.0.69",
+    "ai": "^7.0.131"
+  }
+}

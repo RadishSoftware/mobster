@@ -1,0 +1,69 @@
+---
+title: "Send feedback"
+sidebarTitle: "Send feedback"
+description: "Report a bug, ask for a feature or get help from inside Mobster for Mac. Add a screenshot with your iPhone screens hidden, and diagnostics you read before they go."
+icon: "message-square-warning"
+keywords: ["feedback", "bug", "report a bug", "feature request", "support", "help", "contact", "screenshot", "diagnostics", "reference number"]
+---
+
+Send feedback goes straight to the people who make Mobster. You choose what it is (a bug, a feature request or a question), write a title and the details, and decide what else goes with it. Mobster sends nothing you didn't see first.
+
+## Open it
+
+- **Help › Send Feedback…** in the menu bar.
+- **⌘K**, then type `feedback`.
+- The **?** button at the foot of the sidebar, then **Send feedback**.
+- On a task that couldn't finish, **Report this** beside **Try again**. It starts a bug report about that task, with the task's id attached.
+- On any finished task, **⋯ › Send feedback**.
+- On a page that couldn't be shown, **Report this** beside **Try again**.
+
+You need to be signed in to [your Mobster account](/account). Send feedback opens as a page of its own. Mobster takes the screenshot of the window the moment you open it, so the page itself is never in it.
+
+## What you can add
+
+| What | Goes by default | What's in it |
+|---|---|---|
+| Title and details | Yes | What you typed. Mobster masks passwords, codes, card numbers and keys in them before they leave your Mac. |
+| Reply-to email | Yes | Your account's email. Change it in **Reply to**. |
+| The facts | Yes | Mobster's version, macOS's version, and your iPhone's model, iOS version and connection (USB or Wi-Fi). The line under **Reply to** shows them: "Sent with Mobster 0.4.0, macOS 26.1, iPhone 15 Pro on iOS 26.0 over USB." |
+| Screenshot of this window | No | The Mobster window only. Your iPhone's screens are hidden. |
+| Diagnostics | No | The last task's steps, the last 200 lines of Mobster's log, and the facts. |
+
+### The screenshot
+
+Turn on **Screenshot of this window** to see it as it will be sent. Every place the window shows your iPhone's screen (the live view, a step's picture) is covered and labelled "iPhone screen hidden".
+
+Choose **Mark what to hide**, then drag over anything:
+
+- **Blur** pixelates the area so its words can't be read back.
+- **Hide** fills it in.
+- **Show iPhone screens** takes the covers off your iPhone's screens. Each mark's **×** removes that one.
+
+The picture under the form is the exact JPEG that is sent, at most 1,600 pixels wide and 2.5 MB.
+
+### Diagnostics
+
+Turn on **Diagnostics**, then choose **Review exactly what's attached** to read the bundle word for word. Before you see it, Mobster:
+
+- masks passwords, one-time codes, card numbers, API keys, tokens, private keys, signed and webhook links;
+- replaces email addresses with `<email>`, your iPhone's UDID with `<UDID>` and your home folder with `~`;
+- leaves out every screenshot and the screen's element tree.
+
+The bundle is at most 500 KB. It's only a link in the team's channel, never posted inline.
+
+## After you send
+
+Mobster says "Sent to the Mobster team" with a reference like `FB-7K3Q-9XWM`. Quote it when you write to support@radish.software. We reply to the email in **Reply to**.
+
+Without a connection, Mobster says "Saved to send later". The report waits on your Mac and goes by itself when Mobster can reach its server: soon after Mobster opens, when your Mac is back online, and every 5 minutes while one waits. A report sent again is the same report, never a second one. Up to 20 reports can wait.
+
+What you type stays as a draft until you send it, so **Cancel** loses nothing. Cancel and **Done** go back to where you opened it.
+
+## Limits
+
+- 5 reports at once, then 1 every 2 minutes, and 20 a day per account.
+- A title of 1 to 120 characters, details up to 5,000 characters.
+
+## Where it goes
+
+Your report goes to Mobster's account service at `api.mobster.dev` over a pinned connection, with your account's sign-in for that one request. The service stores it, then posts a summary to a staff-only channel: the title, the start of the details, the facts and your reply-to email. The screenshot and the diagnostics stay in private storage. The team opens them through links that stop working after 30 days, and they're deleted after 90 days. The report itself is kept so it can be answered. [Privacy](/privacy) says more.

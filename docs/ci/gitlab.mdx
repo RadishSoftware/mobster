@@ -1,0 +1,102 @@
+---
+title: "Running checks in GitLab CI"
+sidebarTitle: "GitLab CI"
+keywords: ["gitlab", "gitlab ci", "merge request", "mr comment", "gitlab runner", "shell executor", "junit", "mobster ci"]
+description: "Run your checks on every merge request, on a Mac of yours as a GitLab runner, with one MR comment and JUnit in the merge request."
+icon: "/images/marks/gitlab.svg"
+---
+
+`mobster ci` works in GitLab CI the way it works in GitHub Actions: a Mac of yours is the runner, the checks cover the screens the merge request changed, and one comment on the merge request holds the verdict, the repro steps and the media. GitLab also shows the JUnit results in the merge request's test widget. [CI](/ci) has the parts both hosts share.
+
+## Set it up
+
+From your project's folder:
+
+```sh
+mobster ci init --host gitlab
+```
+
+```text
+Wrote .gitlab-ci.yml.
+
+Next:
+  1. On the Mac that runs the checks: mobster ci doctor
+  2. Register it as a GitLab runner (shell executor) with the tag mobster: https://docs.mobster.dev/ci/mac-runner
+  3. Add ANTHROPIC_API_KEY as a masked CI/CD variable, for checks with steps.
+  4. Add MOBSTER_GITLAB_TOKEN, a project access token with the api scope, for the MR comment.
+  5. Commit the file and open a merge request.
+```
+
+When `.gitlab-ci.yml` already exists, the job goes to `.gitlab/mobster.gitlab-ci.yml` instead, and `mobster ci init` prints the line to add:
+
+```yaml .gitlab-ci.yml
+include:
+  - local: .gitlab/mobster.gitlab-ci.yml
+```
+
+`--host` is optional when the `origin` remote's URL names GitLab.
+
+## The job
+
+```yaml .gitlab-ci.yml
+mobster:
+  stage: test
+  tags: [mobster]
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  variables:
+    GIT_DEPTH: "0"
+    MOBSTER: /Applications/Mobster.app/Contents/MacOS/mobster-agent
+  timeout: 1h
+  interruptible: true
+  script:
+    - |
+      "$MOBSTER" ci run
+  after_script:
+    - |
+      "$MOBSTER" ci comment
+  artifacts:
+    when: always
+    expire_in: 14 days
+    paths:
+      - .mobster/ci/
+    reports:
+      junit: .mobster/ci/junit.xml
+```
+
+- The job runs only in merge request pipelines, on a runner with the `mobster` tag.
+- `mobster ci run` fetches the target branch (`CI_MERGE_REQUEST_TARGET_BRANCH_NAME`) and runs `mobster test pr` with `--video`. The report goes to `.mobster/ci/`.
+- `after_script` runs even when a check fails, so the comment always lands.
+- The comment links each frame, GIF and video to its file in the job's artifacts, and the report to the artifacts' browser.
+
+## The two variables
+
+Add both in Settings › CI/CD › Variables, masked. Leave them unprotected: merge request pipelines run on branches that aren't protected, and a protected variable never reaches them.
+
+| Variable | What it's for |
+| --- | --- |
+| `MOBSTER_GITLAB_TOKEN` | Writes the merge request comment. A project access token (Settings › Access tokens) with the `api` scope and the Reporter role. `CI_JOB_TOKEN` can't write comments. Without it, the job runs and posts nothing. |
+| `ANTHROPIC_API_KEY` | Smart, for checks with steps until they pass once. Launch-only checks and replays need no key. |
+
+Mobster never prints either one.
+
+## Your iPhone in GitLab CI
+
+A merge request can edit `.gitlab-ci.yml`, so the runner's owner lists the phones it may test in the runner's own `config.toml`, which no merge request can change:
+
+```toml ~/.gitlab-runner/config.toml
+[[runners]]
+  name = "mac-mini"
+  executor = "shell"
+  environment = ["MOBSTER_RUNNER_DEVICES=Test iPhone", "MOBSTER_RUNNER_TESTFLIGHT=com.example.yourapp"]
+```
+
+```yaml
+  script:
+    - |
+      "$MOBSTER" ci run --device "Test iPhone"
+```
+
+A phone or TestFlight app the runner doesn't list stops the job before a check runs. `gitlab-runner restart` picks up the change.
+
+<Warning>A runner with the shell executor runs each merge request's code as the runner's user, on the Mac the phone is plugged into. Use it on projects whose merge requests you trust, with a test phone signed in to a test account.</Warning>

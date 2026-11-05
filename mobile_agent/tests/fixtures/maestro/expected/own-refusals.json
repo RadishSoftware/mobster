@@ -1,0 +1,15 @@
+{
+  "price-check.yaml": {
+    "outcome": "refused",
+    "reason": null,
+    "checks": {},
+    "refused": [
+      [
+        "command 3 (assertTrue)",
+        "assertTrue",
+        "judges a JavaScript condition, which Mobster doesn't run"
+      ]
+    ],
+    "notes": []
+  }
+}

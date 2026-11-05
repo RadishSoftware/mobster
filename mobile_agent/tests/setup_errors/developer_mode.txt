@@ -1,0 +1,5 @@
+xcodebuild: error: Unable to find a destination matching the provided destination specifier:
+		{ id:00008130-001A2B3C4D5E6F70 }
+
+	Ineligible destinations for the "WebDriverAgentRunner" scheme:
+		{ platform:iOS, arch:arm64, id:00008130-001A2B3C4D5E6F70, name:Test iPhone, error:Developer Mode disabled To use Test iPhone for development, enable Developer Mode in Settings → Privacy & Security. }

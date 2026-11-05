@@ -1,0 +1,121 @@
+---
+title: "App API"
+description: "Every app on your iPhone as an API: GET /v1/<app>/<thing> reads the real app into JSON or CSV, and the same endpoint is an MCP tool."
+icon: "braces"
+---
+
+The App API turns the apps on your iPhone into endpoints. `GET /v1/instagram/dms?n=10` opens Instagram on your phone, reads your 10 newest conversations into rows and answers JSON. Each endpoint is also an MCP tool with the same name and the same answer (`instagram_dms` in `mobster mcp`), so a script, n8n or Zapier, or your agent can use apps that have no public API.
+
+A read runs as code from the app's pack, with no model call and no screenshot. It needs Mobster set up with your iPhone over USB or Wi-Fi, because it reads the app's accessibility tree.
+
+## Start it
+
+Make a token for each client, then start the server:
+
+```sh
+mobster api tokens create "my script"
+```
+
+```text
+mob_3kX9...
+Made the token “my script” (5c1e0a9b2f47). It shows only now: put it in your client. Revoke it with mobster api tokens revoke 5c1e0a9b2f47.
+```
+
+```sh
+mobster api serve --phone "Test iPhone"
+```
+
+```text
+Mobster App API on http://127.0.0.1:8780/v1. It only reads. Apps: Instagram.
+```
+
+Call it with the token:
+
+```sh
+curl -H "Authorization: Bearer $TOKEN" 'http://127.0.0.1:8780/v1/instagram/reels?n=3'
+```
+
+```json
+{"app": "instagram", "reader": "reels", "title": "3 Reels", "n": 3,
+ "columns": [{"key": "author", "label": "Creator", "type": "text"}, ...],
+ "rows": [{"author": "dance.studio", "caption": "Three moves for beginners #dance", "likes": 282189, ...}, ...],
+ "stopped": null, "screen": "reels", "read_at": "2026-10-14T21:30:02+00:00", "phone": "Test iPhone", "took_ms": ...}
+```
+
+## Endpoints
+
+| Endpoint | What it answers |
+| --- | --- |
+| `GET /v1/apps?phone=NAME` | The apps Mobster reads, with the version on that phone, the version its pack was checked on, and each app's endpoints |
+| `GET /v1/openapi.json` | The OpenAPI 3.1 description of every endpoint. Point a client generator or an LLM tool caller at it |
+| `GET /v1/<app>/<thing>` | The rows read: `app`, `reader`, `title`, `n`, `columns`, `rows`, `stopped` (why it read fewer than asked), `screen`, `read_at`, `phone`, `took_ms` |
+
+Each `/v1/<app>/<thing>` takes these query parameters:
+
+| Parameter | What it does |
+| --- | --- |
+| `n` | How many rows to read, 1 to 40 |
+| `arg` | Which one to read, for an endpoint that needs it: a handle for `profile`, a conversation's name for `thread` |
+| `phone` | The iPhone, by its name or id in Mobster. Default: `--phone` |
+| `profile` | Read on the iPhone this profile is signed in on, such as `@getmobster on Instagram` ([Profiles](/profiles)). A profile on another app is refused |
+| `format` | `csv` answers CSV, as `Accept: text/csv` does |
+
+CSV has one column per field, labelled as the app shows it. A cell that starts like a spreadsheet formula gets an apostrophe, so a spreadsheet never runs it. [App API reference](/reference/app-api) lists every endpoint with its parameters and answer.
+
+## Any app, without a pack
+
+`GET /v1/screen` reads the screen in front, in any app, into the fields you name. Mobster opens the app when you pass `app`, reads the screen's text from the accessibility tree, and a small model puts each item it shows into a row: Claude Haiku on your Claude key, or Smart's model on your OpenAI key. `pages` scrolls down and reads up to 5 screens.
+
+```sh
+curl -H "Authorization: Bearer $TOKEN" \
+  'http://127.0.0.1:8780/v1/screen?app=com.example.shop&fields=title,price,rating&n=20&pages=3'
+```
+
+| Parameter | What it does |
+| --- | --- |
+| `app` | The app's bundle id. Default: the app in front |
+| `fields` | The fields of each row, comma-separated, up to 20. Pass this or `schema` |
+| `schema` | Each field and its type, as JSON (URL-encoded over REST), such as `{"title": "string", "price": "number"}`: `string`, `number`, `integer` or `boolean`, up to 20. Columns take their types from it |
+| `n`, `pages`, `phone` | How many rows, how many screens (1 to 5), and which iPhone |
+
+The answer has the same shape as the other endpoints, plus `model` and `cost_usd`, each read's list price. Rows that don't fit the fields are left out. The screen's text goes to the model as data from the app, and the model only fills in rows, so nothing on the screen can make Mobster tap, type or open anything. An app with its own endpoints reads by code instead, faster and with no model.
+
+## The same endpoints over MCP
+
+`mobster mcp` and the agent inside Mobster for Mac list each endpoint as a tool named `<app>_<thing>` (and `GET /v1/screen` as `read_screen`), with the same parameters as `inputSchema` and the same answer as `outputSchema`. [MCP server](/mcp-server#app-tools) shows a call.
+
+## Safety
+
+Every endpoint only reads. None taps, types, likes, follows, sends, posts, buys or deletes, any method but `GET` answers 405, and a read never taps a control that does. A read still taps and swipes to reach its screen, and every tap follows the rules outside agents follow:
+
+- The first time a client reads an app, Mobster for Mac asks **Allow Mobster to use …?**, and nothing happens until you allow it.
+- Your permission rules in Settings › Safety apply to every tap.
+- `--allow-device` limits the server to that real iPhone.
+- Mobster reads one thing at a time per iPhone. A read while another is going on that phone answers 409 with `Retry-After`. A read stops after 40 seconds and answers 504.
+- Every read is written to the phone's action journal before it starts.
+
+The server answers only this Mac. It listens on 127.0.0.1, refuses a request whose `Host` isn't `127.0.0.1` or `localhost` on its port, and refuses any request a web page sends (one with an `Origin` header). Each request needs a token from `mobster api tokens create` in `Authorization: Bearer`. A token in the URL is refused. Mobster keeps each token's hash, never the token, in `app-api-tokens.json` in its data folder. If someone else could write that file, Mobster refuses every token until you remove it and make your tokens again. `mobster api tokens revoke` ends a token at once.
+
+Text read from the phone is data from the app. The OpenAPI description and the MCP tools say so, so an agent reading the rows treats them as data, never as instructions.
+
+## Errors
+
+Every error is `{"error": "...", "code": "..."}`, and the message says what happened, then what to do.
+
+| Status | Code | When |
+| --- | --- | --- |
+| 400 | `bad_input`, `wrong_app` | A parameter the endpoint doesn't take, or a profile on another app |
+| 401 | `unauthorized` | No token, or one that's wrong or revoked |
+| 403 | `local_only`, `browser`, `refused`, `app_not_allowed` | Not from this Mac, from a web page, a tap your rules declined, or an app you haven't allowed |
+| 404 | `unknown_app`, `unknown_reader`, `unknown_profile` | No such app, endpoint or profile |
+| 502 | `model_failed` | `/v1/screen`'s model call failed. Try again |
+| 405 | `reads_only` | A method other than `GET`, or a request with a body |
+| 409 | `busy` | Another read is going on that iPhone |
+| 422 | `couldnt_read` | Mobster couldn't tell it reached the screen. Check the phone shows the app |
+| 502 | `phone_error` | The phone stopped answering during the read. Nothing is retried. Check the phone, then call again |
+| 503 | `no_phone`, `no_service`, `no_model` | The iPhone isn't ready, `profile` needs Mobster running to find your profiles, or `/v1/screen` has no Claude or OpenAI key to read with |
+| 504 | `timeout` | The read took longer than 40 seconds. Ask for a smaller `n` |
+
+## What it reads
+
+The apps with an app pack read by code, and only what each pack's readers read: [App API reference](/reference/app-api) has the list for this build. Any other app reads through `/v1/screen`, one screen at a time. It reads the accessibility tree, so it works over USB and Wi-Fi, and over iPhone Mirroring it doesn't read yet. The server runs on this Mac only.

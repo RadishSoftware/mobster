@@ -1,0 +1,55 @@
+{
+"note": "Synthetic and inferred: built from labels seen in real runs' steps (a DM row, the Primary/General/Requests tabs) and Instagram's usual words; waiting for a recorded tree (REAL-QA-QUEUE.md, PRIORITY: app packs).",
+"rows": [
+{
+"role": "Button",
+"label": "Back",
+"rect": [
+0.02,
+0.07,
+0.08,
+0.04
+]
+},
+{
+"role": "StaticText",
+"label": "Saved",
+"rect": [
+0.4,
+0.07,
+0.2,
+0.03
+]
+},
+{
+"role": "Button",
+"label": "+",
+"rect": [
+0.88,
+0.07,
+0.08,
+0.04
+]
+},
+{
+"role": "Button",
+"label": "All posts",
+"rect": [
+0.04,
+0.14,
+0.44,
+0.22
+]
+},
+{
+"role": "Button",
+"label": "Recipes",
+"rect": [
+0.52,
+0.14,
+0.44,
+0.22
+]
+}
+]
+}

@@ -1,19 +1,10 @@
-"""O1, one message gets one approval: the Kate Bell take (5 Oct, Messages on an iOS 26.4 simulator) replayed
-offline. The run asked "Send this message to Kate Bell?" twice: before typing (a type-and-Return action, with
-an empty composer) and again at Send, because iOS 26 Messages' Return added a line instead of sending.
-
-Now a composer TYPE_SUBMIT types without asking, asks once with the text in the composer, then presses Return;
-if Return did not send, the Send tap for the same item, text, thread and app uses that approval once."""
-
 import json
 import os
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from mobile_agent import engines
-from mobile_agent import smart_result
-from mobile_agent import smart_events
+from mobile_agent import drivers, engines, smart_events, smart_result
 from mobile_agent.frontier import prompt_text
 from mobile_agent.state import Element, Snapshot
 
@@ -27,7 +18,6 @@ def fixture(name):
 
 
 def snapshots(data):
-    """{name: Snapshot} from a fixture's screens."""
     out = {}
     for name, rows in data["screens"].items():
         elements = [Element(r["id"], r["label"], r["role"], tuple(r["rect"]), editable=r.get("editable", False),
@@ -39,8 +29,7 @@ def snapshots(data):
     return out
 
 
-class Messages:
-    """A Messages thread: Return adds a line (it never sends), Send sends. ``sent`` is the screen after Send."""
+class Messages(drivers.Driver):
 
     def __init__(self, screens, sent="sent", newline="newline", start="list"):
         self.screens, self.state, self.sent, self.newline = screens, start, sent, newline
@@ -61,9 +50,11 @@ class Messages:
         elif operation == "TAP" and label == "Send":
             self.state = self.sent
 
+    def close(self):
+        pass
+
 
 class Model:
-    """Answers each decision from a list of chunks [(op, label, text)]; the contract call returns ``items``."""
 
     def __init__(self, steps, items, answer="Sent to Kate Bell: Running 10 minutes late, save me a seat!"):
         self.steps, self.items, self.answer, self.prompts = list(steps), items, answer, []
@@ -130,7 +121,6 @@ class KateBellReplayTests(unittest.TestCase):
         self.assertEqual(kinds.count("frontier_approval"), 2)  # asked once, reused once
         reused = [e for e in out if e["event"] == "frontier_approval" and e.get("reused")]
         self.assertEqual(len(reused), 1)
-        # The approval was asked after the typing step was shown, never before it.
         self.assertLess([e.get("text") for e in out if e["event"] == "step"].index("Wrote the message"),
                         len([e for e in out if e["event"] == "step"]))
         self.assertEqual((result["status"], summary["status"], summary["outcome"]), ("completed", "completed", "done"))
@@ -138,7 +128,7 @@ class KateBellReplayTests(unittest.TestCase):
     def test_a_bubble_that_is_only_a_text_view_with_delivered_under_it_is_proof(self):
         _, asked, result, summary, _ = self.replay(sent="sent_text_view_only")
         self.assertEqual(len(asked), 1)
-        self.assertEqual(result["contract"]["receipted"], 1)  # the send (its text is proven through it)
+        self.assertEqual(result["contract"]["receipted"], 1)
         self.assertEqual((summary["outcome"], summary["reason"]), ("done", None))
 
     def test_a_wrong_text_bubble_still_ends_check(self):
@@ -161,7 +151,6 @@ class KateBellReplayTests(unittest.TestCase):
         self.assertNotIn(("TAP", "Send", None), driver.actions)
 
     def test_new_typing_after_the_approval_asks_again(self):
-        """The reused approval needs the very text approved: typing again (even the same words) asks again."""
         driver = Messages(snapshots(self.DATA))
         asked = []
         steps = [[("TAP", "+1 (555) 564-8583, 12/31/00 ", None)], [("TYPE_SUBMIT", "Message", self.TEXT)],
@@ -174,7 +163,8 @@ class KateBellReplayTests(unittest.TestCase):
         driver = Messages(snapshots(self.DATA))
         out = []
         model = Model(list(self.STEPS), self.DATA["items"])
-        events = smart_events.SmartEvents(out.append, driver=driver, frame=lambda: None, apps={"com.apple.MobileSMS": "Messages"})
+        events = smart_events.SmartEvents(out.append, driver=driver, frame=lambda: None,
+                                          apps={"com.apple.MobileSMS": "Messages"})
         with patch.dict(os.environ, dict(CLEAN), clear=True):
             agent = engines.build_frontier(driver, model, apps=events.apps, emit=events, config=QUICK, skills=())
             events.agent = agent
@@ -187,8 +177,6 @@ if __name__ == "__main__":
 
 
 def compose_sheet_data(to_value):
-    """The New Message sheet as iOS 26 reads it (MobsterBench Real, 11 Oct): the bar named by its class, "New
-    Message" centred in it, a To field holding each token as an attachment mark, the token a button on its row."""
     def rows(message):
         out = [{"id": "1", "label": "CKComposeChat", "role": "NavigationBar", "rect": [0, .09, 1, .06]},
                {"id": "2", "label": "New Message", "role": "Button", "rect": [.32, .10, .37, .02]},
@@ -211,8 +199,6 @@ def compose_sheet_data(to_value):
 
 
 class ComposeSheetCardTests(unittest.TestCase):
-    """The card on the New Message sheet names the person in its To field, never the sheet's class name: every
-    MobsterBench Real Messages card read "Send this message to CKComposeChat (Bench Tester in your request)?"."""
 
     def card(self, to_value):
         data = compose_sheet_data(to_value)

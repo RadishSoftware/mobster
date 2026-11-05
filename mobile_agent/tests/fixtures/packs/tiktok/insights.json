@@ -1,0 +1,115 @@
+{
+ "note": "Synthetic and inferred: TikTok's usual iOS labels, every number made up; waiting for a recorded tree (REAL-QA-QUEUE.md, PRIORITY: app packs).",
+ "rows": [
+  {
+   "role": "Button",
+   "label": "Back",
+   "rect": [
+    0.02,
+    0.07,
+    0.08,
+    0.04
+   ]
+  },
+  {
+   "role": "StaticText",
+   "label": "Analytics",
+   "rect": [
+    0.3,
+    0.07,
+    0.4,
+    0.03
+   ]
+  },
+  {
+   "role": "StaticText",
+   "label": "Last 7 days",
+   "rect": [
+    0.05,
+    0.14,
+    0.4,
+    0.03
+   ]
+  },
+  {
+   "role": "StaticText",
+   "label": "Video views",
+   "rect": [
+    0.05,
+    0.22,
+    0.4,
+    0.03
+   ]
+  },
+  {
+   "role": "StaticText",
+   "label": "8,900",
+   "rect": [
+    0.05,
+    0.25,
+    0.3,
+    0.04
+   ]
+  },
+  {
+   "role": "StaticText",
+   "label": "Profile views",
+   "rect": [
+    0.05,
+    0.34,
+    0.4,
+    0.03
+   ]
+  },
+  {
+   "role": "StaticText",
+   "label": "260",
+   "rect": [
+    0.05,
+    0.37,
+    0.3,
+    0.04
+   ]
+  },
+  {
+   "role": "StaticText",
+   "label": "Followers",
+   "rect": [
+    0.05,
+    0.46,
+    0.4,
+    0.03
+   ]
+  },
+  {
+   "role": "StaticText",
+   "label": "-4",
+   "rect": [
+    0.05,
+    0.49,
+    0.3,
+    0.04
+   ]
+  },
+  {
+   "role": "StaticText",
+   "label": "Likes",
+   "rect": [
+    0.05,
+    0.58,
+    0.4,
+    0.03
+   ]
+  },
+  {
+   "role": "StaticText",
+   "label": "1,100",
+   "rect": [
+    0.05,
+    0.61,
+    0.3,
+    0.04
+   ]
+  }
+ ]
+}

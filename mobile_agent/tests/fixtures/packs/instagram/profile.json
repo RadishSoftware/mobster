@@ -1,0 +1,145 @@
+{
+"note": "Synthetic and inferred: built from labels seen in real runs' steps (a DM row, the Primary/General/Requests tabs) and Instagram's usual words; waiting for a recorded tree (REAL-QA-QUEUE.md, PRIORITY: app packs).",
+"rows": [
+{
+"role": "Button",
+"label": "Back",
+"rect": [
+0.02,
+0.07,
+0.08,
+0.04
+]
+},
+{
+"role": "StaticText",
+"label": "space",
+"rect": [
+0.3,
+0.07,
+0.4,
+0.03
+]
+},
+{
+"role": "Image",
+"label": "Verified",
+"rect": [
+0.62,
+0.07,
+0.03,
+0.02
+]
+},
+{
+"role": "StaticText",
+"label": "Space Agency",
+"rect": [
+0.04,
+0.2,
+0.6,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "4,021 posts",
+"rect": [
+0.32,
+0.13,
+0.18,
+0.04
+]
+},
+{
+"role": "Button",
+"label": "104M followers",
+"rect": [
+0.52,
+0.13,
+0.22,
+0.04
+]
+},
+{
+"role": "Button",
+"label": "77 following",
+"rect": [
+0.76,
+0.13,
+0.2,
+0.04
+]
+},
+{
+"role": "Button",
+"label": "Follow",
+"rect": [
+0.04,
+0.3,
+0.44,
+0.04
+]
+},
+{
+"role": "Button",
+"label": "Message",
+"rect": [
+0.5,
+0.3,
+0.44,
+0.04
+]
+},
+{
+"role": "Button",
+"label": "Posts",
+"rect": [
+0.0,
+0.38,
+0.33,
+0.03
+]
+},
+{
+"role": "Button",
+"label": "Reels",
+"rect": [
+0.33,
+0.38,
+0.33,
+0.03
+]
+},
+{
+"role": "Button",
+"label": "Tagged",
+"rect": [
+0.66,
+0.38,
+0.33,
+0.03
+]
+},
+{
+"role": "Button",
+"label": "Photo by space",
+"rect": [
+0.0,
+0.42,
+0.33,
+0.15
+]
+},
+{
+"role": "Button",
+"label": "Video by space",
+"rect": [
+0.33,
+0.42,
+0.33,
+0.15
+]
+}
+]
+}

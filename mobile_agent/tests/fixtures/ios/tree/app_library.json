@@ -1,0 +1,191 @@
+{
+"name": "app_library",
+"bundle": "com.apple.springboard",
+"keyboard": "",
+"w": 402.0,
+"h": 874.0,
+"elements": [
+{
+"role": "SearchField",
+"label": "dewey-search-field",
+"value": "App Library",
+"rect": [
+0.0597,
+0.1007,
+0.8756,
+0.0549
+],
+"editable": true,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Image",
+"label": "Search",
+"value": "",
+"rect": [
+0.3284,
+0.119,
+0.0597,
+0.0229
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "Other",
+"value": "",
+"rect": [
+0.0597,
+0.1922,
+0.4179,
+0.2197
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "WebDriverAgentRunner-Runner",
+"value": "",
+"rect": [
+0.0896,
+0.2059,
+0.1692,
+0.0778
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "Bluesky",
+"value": "",
+"rect": [
+0.2786,
+0.2059,
+0.1692,
+0.0778
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "Cinephile",
+"value": "",
+"rect": [
+0.0896,
+0.2929,
+0.1692,
+0.0778
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "Other folder",
+"value": "27 apps",
+"rect": [
+0.2786,
+0.2929,
+0.1692,
+0.0778
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "\uf8ff System",
+"value": "",
+"rect": [
+0.5174,
+0.1922,
+0.4179,
+0.2197
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "Watch",
+"value": "",
+"rect": [
+0.5473,
+0.2059,
+0.1692,
+0.0778
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "Files",
+"value": "",
+"rect": [
+0.7363,
+0.2059,
+0.1791,
+0.0778
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "Fitness",
+"value": "",
+"rect": [
+0.5473,
+0.2929,
+0.1692,
+0.0778
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "\uf8ff System folder",
+"value": "17 apps",
+"rect": [
+0.7363,
+0.2929,
+0.1791,
+0.0778
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "StaticText",
+"label": "2:59\u202fPM",
+"value": "2:59\u202fPM",
+"rect": [
+0.1393,
+0.0275,
+0.0896,
+0.0229
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+}
+]
+}

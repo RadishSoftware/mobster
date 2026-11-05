@@ -6,10 +6,20 @@ import re
 
 from . import harness_api
 from .agent_hooks import STOP_CODES
-from .engines import (ANTHROPIC_CREDIT, CREDIT_CODES, PROVIDER_ERROR, SMART, SMART_CONFIG, account_name, credit_provider,
-                      model_error, out_of_credit, plain_error, smart_model)
+from .engines import (
+    ANTHROPIC_CREDIT,
+    CREDIT_CODES,
+    PROVIDER_ERROR,
+    SMART,
+    SMART_CONFIG,
+    account_name,
+    credit_provider,
+    model_error,
+    out_of_credit,
+    plain_error,
+    smart_model,
+)
 from .smart_events import item_text
-
 
 STATUS = {"completed": "completed", "blocked": "blocked", "max_steps": "max_steps", "timeout": "timeout",
           "budget": "spend_cap", "error": "error", "approval_denied": "approval_denied",
@@ -21,16 +31,11 @@ STATUS = {"completed": "completed", "blocked": "blocked", "max_steps": "max_step
 # an instruction without it, and "I 95 is closed" or "I miss you" are the phone's own words.
 DROPS_SUBJECT = frozenset({"found", "sent", "made", "set", "put", "wrote", "took", "got", "saw", "ran", "read",
                            "left", "opened", "closed", "couldn't"})
-# Words ending in -ed that are not past tense ("I need…").
 NOT_PAST = frozenset({"need", "feed", "bleed", "breed", "speed", "exceed", "proceed", "succeed", "heed", "seed",
                       "weed", "bed", "wed", "red", "shed", "embed"})
 
 
 def without_first_person(answer):
-    """"I added the reminder…" → "Added the reminder…", for the one-line answer only: the run's answer and
-    data stay as the model wrote them. "I" goes only before a past-tense verb (DROPS_SUBJECT, or a word
-    ending in -ed); "I have added…" or "I did not find…" keep it. ``summarize`` applies it only to a
-    sentence about what the agent did (``tells_what_it_did``)."""
     found = re.match(r"I ([A-Za-z]+(?:['’][A-Za-z]+)?)\b", answer or "")
     if not found:
         return answer
@@ -41,10 +46,6 @@ def without_first_person(answer):
 
 
 def tells_what_it_did(sentence, contract, proof=()):
-    """Whether the answer's first sentence is the agent saying what it did, the only kind the one-line answer
-    loses its "I" in: the task had something to do (a COMMIT or WRITE item), and no proof quote holds the
-    sentence. A task that only reads (a note, a message, a list) answers in the phone's own words, where
-    "I left the keys under the mat." is the note speaking, not Mobster. Without a contract nobody knows."""
     from . import contract_screen as KS
     if contract is None or not any(item.kind in ("COMMIT", "WRITE") for item in contract.items):
         return False
@@ -53,7 +54,6 @@ def tells_what_it_did(sentence, contract, proof=()):
 
 
 SENTENCE_END = re.compile(r"[.!?](?=\s|$)")
-# A list's own number ("1." at a line's start, or after "today: "): it ends no sentence. "at 10." and "7:30." do.
 LIST_NUMBER = re.compile(r"(?:^|\n[ \t]*|[:;][ \t]+)\d{1,2}\.$")
 
 
@@ -73,19 +73,12 @@ _MARKS = ((re.compile(r"^(?:#{1,6}\s+|>\s*)"), ""),
 
 
 def plain_marks(text):
-    """A line without its Markdown marks: the headline is said in places that don't draw Markdown (a notification, a
-    sidebar row, the terminal's one line, Remote's list), so "## **Trips:** see [the page](https://…)" reads "Trips:
-    see the page"."""
     for pattern, replacement in _MARKS:
         text = pattern.sub(replacement, text)
     return text.strip()
 
 
 def first_sentence(text, limit=300):
-    """The answer's headline, for the one-line answer: its first sentence, or its first line when that line
-    has no sentence end and more lines follow ("Here are your reminders for today:" over a list). A sentence
-    under 12 characters ("Yes.") is no headline: the whole text stands in. The dashboard splits the full
-    answer the same way (result-status.ts › answerText)."""
     text = str(text or "").strip()
     if not text:
         return None
@@ -115,9 +108,6 @@ def _mentions(sentence, value):
 
 
 def lead_sentence(full, data):
-    """The headline for a structured answer: the first sentence when it states one of the answer's values, else
-    the answer's first sentence that does ("The locker code is 4817. Calculator shows 4817 minus 800 = 4017."
-    put the code, not the result, on top: 9 Oct). None when no sentence states one (the first one stands)."""
     values = _answer_values(data)
     if not values or not full:
         return None
@@ -186,10 +176,7 @@ def _findings(request, answer, notes, instruction):
 
 
 def _loose_call(client, messages, schema, timeout):
-    """One call through the client's ``complete`` (so ``meter`` records it), non-strict and without reasoning: a
-    user's schema is not always strict-compatible (strict needs every property required). The options go with the
-    call, not onto the shared client, so a concurrent call keeps its own: a client takes ``reasoning`` when it sets
-    ``per_call_reasoning`` and ``strict`` when it sets ``per_call_strict``."""
+    """One metered non-strict call; options ride on the call, not the shared client, so concurrent calls keep theirs."""
     options = {"timeout": timeout}
     if getattr(client, "per_call_reasoning", False) is True:
         options["reasoning"] = "none"
@@ -200,9 +187,7 @@ def _loose_call(client, messages, schema, timeout):
 
 
 def call_problem(error, limit=160):
-    """Why a structuring call failed, cut to ``limit`` characters for the run's record. An empty account is
-    read on the whole error first (the provider's code sits deep in the body) and keeps its status and code, so
-    ``model_failure`` still makes Smart unavailable and ``plain_error`` still says why."""
+    """Why a structuring call failed, cut to ``limit``; an empty account, read on the whole error, keeps its code."""
     text = f"{type(error).__name__}: {error}"
     if out_of_credit(text):
         status = PROVIDER_ERROR.search(text)
@@ -212,18 +197,16 @@ def call_problem(error, limit=160):
 
 
 def structure_note(output_format, problem):
-    """The run view's line for an automatic structure that didn't happen (``output_note``), with the curly
-    apostrophes every dashboard string uses."""
     name = AUTOMATIC_FORMATS[output_format]
     if out_of_credit(problem):
-        return (f"Your {account_name(credit_provider(problem))} account ran out of credit before Mobster could turn this answer "
-                f"into {name}, so it’s shown as text.")
+        return (
+            f"Your {account_name(credit_provider(problem))} account ran out of credit before Mobster could turn this "
+            f"answer into {name}, so it’s shown as text.")
     return f"Mobster couldn’t turn this answer into {name}, so it’s shown as text."
 
 
 def structure(client, request, answer, notes, schema, *, timeout=60):
-    """(data, None) with the answer as data matching the user's JSON schema, validated, or (None, why). One
-    small call (``_loose_call``)."""
+    """(data, None) with the answer as data matching the user's JSON schema, validated, or (None, why)."""
     from jsonschema import Draft202012Validator
     wrapped = {"type": "object", "additionalProperties": False, "required": ["data"], "properties": {"data": schema}}
     try:
@@ -236,7 +219,6 @@ def structure(client, request, answer, notes, schema, *, timeout=60):
     return value, None
 
 
-# Result formats that take a structure the user didn't write (Result: CSV, JSON or YAML, Schema: Automatic).
 AUTOMATIC_FORMATS = {"csv": "CSV", "json": "JSON", "yaml": "YAML"}
 # The automatic structure's one call: the findings as named columns and rows. Code turns them into records with a
 # schema, the shapes Fast's automatic output takes (output_contract.validate_automatic_schema): one flat record, or
@@ -250,9 +232,6 @@ CELL = ("string", "number", "integer", "boolean", "null")
 
 
 def structure_auto(client, request, answer, notes, output_format, *, timeout=60):
-    """(data, schema, None) with the answer as records for an automatic ``output_format`` (a key of
-    AUTOMATIC_FORMATS), or (None, None, why). One small call (``_loose_call``) names the columns and fills the
-    rows; code builds the records and their schema and checks both."""
     instruction = (f"Put the phone agent's findings into a table for a {AUTOMATIC_FORMATS[output_format]} export. "
                    "columns: one short, readable name per field, lower case, like title or due_date. rows: one row "
                    "per item the request asks about, one value per column in the same order. single: true when the "
@@ -265,9 +244,8 @@ def structure_auto(client, request, answer, notes, output_format, *, timeout=60)
 
 
 def table_records(out, output_format):
-    """(data, schema, None) from an automatic answer's table, validated, columns in their order, or (None, None,
-    why)."""
     from jsonschema import Draft202012Validator
+
     from .output_contract import validate_automatic_schema
     if not isinstance(out, dict):
         return None, None, "The answer did not come back as a table."
@@ -284,7 +262,7 @@ def table_records(out, output_format):
     records = [dict(zip(columns, row)) for row in rows]
     data = records[0] if single else records
     try:
-        validate_automatic_schema(output_format, schema)  # its copy sorts the keys: the columns keep their order here
+        validate_automatic_schema(output_format, schema)  # its copy sorts the keys: the columns keep their order
     except ValueError as error:
         return None, None, str(error)
     if any(True for _ in Draft202012Validator(schema).iter_errors(data)):
@@ -307,10 +285,7 @@ def shaped_answer(text, schema):
 
 
 def untouched_writes(contract):
-    """WRITE items the contract counts as done though nothing was typed or picked in their app: the model
-    judged the text already there (a reminder from an earlier task, 27 Sep), so Done would overstate it. A
-    search's typing counts when the WRITE is the query (B6: "Enter 'pasta carbonara recipe' in YouTube" was typed
-    into YouTube's search and still read "Already done, so Mobster changed nothing")."""
+    """WRITE items counted done though nothing was typed in their app: the model judged the text already there."""
     from . import contract_screen as KS
     if contract is None:
         return []
@@ -328,13 +303,6 @@ def untouched_writes(contract):
 
 def summarize(outcome, agent, events, *, request, output_format="auto", output_schema=None, cost_usd=None,
               report=None, markdown=None):
-    """The result of a Smart run: legacy fields the dashboard already reads (status, data, reason, actions)
-    plus the contract's outcome, answer, proof, engine and costUsd. ``events`` is the run's SmartEvents.
-
-    A long task's ``report`` (longform/report.py) and its ``markdown`` make the result: ``answer`` is the TL;DR's
-    first sentence, ``data`` the Markdown, the outcome ``done`` (``check`` when the report is partial or a commit
-    went unproven), the proof the report's first sources, and ``report`` and ``markdown`` ride along. A run with an
-    output schema or CSV, JSON or YAML gets its structure from the Markdown, as an answer's would."""
     if report is not None:
         return _summarize_report(outcome, agent, events, request=request, output_format=output_format,
                                  output_schema=output_schema, cost_usd=cost_usd, report=report, markdown=markdown)
@@ -350,7 +318,8 @@ def summarize(outcome, agent, events, *, request, output_format="auto", output_s
         status = "completion_not_confirmed"
     model = getattr(getattr(agent, "client", None), "model", None) or smart_model()
     reason = reason_of(status, kind, outcome.get("reason"), contract,
-                       bool(getattr(getattr(agent, "client", None), "model_failed", False)) and status == "error", model)
+                       bool(getattr(getattr(agent, "client", None), "model_failed", False)) and status == "error",
+                       model)
     if untouched:
         reason = "Already done, so Mobster changed nothing: " + "; ".join(item_text(i) for i in untouched[:3]) + "."
     proof = events.final_proof() if events is not None else []
@@ -371,7 +340,7 @@ def summarize(outcome, agent, events, *, request, output_format="auto", output_s
                                                                   "trusted", "helped", "practice", "corrections",
                                                                   "first")}
     if outcome.get("code"):
-        summary["code"] = outcome["code"]  # a phone-guard stop: phone_locked, unplugged, face_id ...
+        summary["code"] = outcome["code"]
         if outcome["code"] in STOP_CODES:
             # The field a Quick run and a refused preflight carry too: the reason is the phone's own sentence.
             summary["stop_code"] = outcome["code"]
@@ -379,7 +348,7 @@ def summarize(outcome, agent, events, *, request, output_format="auto", output_s
         failed = model_error(outcome.get("reason"),
                              bool(getattr(getattr(agent, "client", None), "model_failed", False)))
         if failed:
-            summary["model_error"] = failed  # the reason is plain_error's sentence for it
+            summary["model_error"] = failed
     automatic = output_schema is None and output_format in AUTOMATIC_FORMATS
     if full and status in ("completed", "completion_not_confirmed", "spend_cap", "max_steps", "timeout", "blocked"):
         if (output_schema is not None or automatic) and status != "blocked":
@@ -402,7 +371,7 @@ def summarize(outcome, agent, events, *, request, output_format="auto", output_s
                                data_status="validated", output_schema=schema, schema_source=source, full_answer=full)
                 lead = lead_sentence(said, data)
                 if lead:
-                    summary["answer"] = lead  # the headline states the value asked for
+                    summary["answer"] = lead
             elif automatic:
                 # The answer stands without a structure: its text, with a line that says why it isn't the format.
                 summary.update(data=full, resolved_output_format="text", data_status="observed", full_answer=full,
@@ -411,8 +380,9 @@ def summarize(outcome, agent, events, *, request, output_format="auto", output_s
                 summary.update(data_status="schema_validation_failed", resolved_output_format=output_format,
                                full_answer=full, structure_error=problem, schema_source=source)
                 if out_of_credit(problem):
-                    summary["output_note"] = (f"Your {account_name(credit_provider(problem))} account ran out of credit before "
-                                              "Mobster could fit this answer to your schema.")
+                    summary["output_note"] = (
+                        f"Your {account_name(credit_provider(problem))} account ran out of credit before "
+                        "Mobster could fit this answer to your schema.")
         else:
             summary.update(data=full, resolved_output_format="markdown" if output_format == "markdown" else "text",
                            data_status="observed")
@@ -432,7 +402,8 @@ def summarize(outcome, agent, events, *, request, output_format="auto", output_s
                     else:
                         summary["answer"] = blocks["blocks"][0].get("title") or "Here\u2019s what Mobster found."
     else:
-        summary.update(resolved_output_format=None, output_intent="action_only" if full is None and kind == "done" else None)
+        summary.update(resolved_output_format=None,
+                       output_intent="action_only" if full is None and kind == "done" else None)
     if not full and kind == "done":
         summary["answer"] = "Done."
     tool_blocks = tool_envelope(events, status, output_schema)
@@ -452,13 +423,12 @@ def _cell_words(value):
 
 
 def repeats_tool_rows(block, tool_blocks):
-    """Whether an answer's table copies rows a tool's card already holds: most of its first column's values are in a
-    tool block (its cells, or a list's titles and creators). The card stays; the copy goes."""
     if not isinstance(block, dict) or block.get("type") != "table":
         return False
     columns = block.get("columns") or ()
     first = columns[0].get("key") if columns and isinstance(columns[0], dict) else None
-    values = [_cell_words((row.get("cells") or {}).get(first)) for row in block.get("rows") or () if isinstance(row, dict)]
+    values = [_cell_words((row.get("cells") or {}).get(first)) for row in block.get("rows") or ()
+              if isinstance(row, dict)]
     values = [v for v in values if v and not v.isdigit()]
     if not values:
         return False
@@ -474,8 +444,6 @@ def repeats_tool_rows(block, tool_blocks):
 
 
 def tool_envelope(events, status, output_schema):
-    """The result cards the run's tools built (``result_blocks`` events), newest per id, as an envelope; None for a run
-    with a schema of its own, one that was stopped or declined, or none built."""
     blocks = list(getattr(events, "tool_blocks", None) or ())
     if not blocks or output_schema is not None or status in ("stopped", "approval_denied", "approval_timeout",
                                                              "error"):
@@ -506,8 +474,7 @@ def _summarize_report(outcome, agent, events, *, request, output_format, output_
     summary.update(answer=headline or summary.get("answer"), report=report, markdown=markdown,
                    outcome="check" if partial or unproven else "done")
     # A report comes from a long task (longform/report.py), so its helpers are there whenever this runs.
-    long_report = harness_api.hook("long_report")
-    helpers = long_report() if long_report is not None else None
+    helpers = harness_api.hooks().long_report()
     if not summary.get("proof") and helpers is not None:
         # What the report rests on, quoted as the screens showed it (the Mac app's proof).
         summary["proof"] = helpers.proof(report, getattr(events, "apps", None))

@@ -1,20 +1,11 @@
-"""What the person allowed, as allow rules, remembered on this Mac: an app Mobster may use (Always allow on "Allow
-Mobster to use Things?", policy.APP_OP), one kind of action in one app ("Don't ask again for sending messages in
-Messages", rules.RULE_OP), and one app's links (deeplinks.decide: "Don't ask again for Things"). Never for paying,
-buying, booking or deleting, a one-time code, or a link that acts as it opens (a call, FaceTime, a message, an email,
-running a shortcut): the approval card doesn't offer it, and the gate and deeplinks.decide never look one up.
-
-Kept in a small JSON file beside the run journal (``permission-exceptions.json``), at most ``LIMIT`` entries, each
-the app's bundle id, the folded label (the kind of action), the operation, the app's name and when it was added. Settings › Safety lists
-them and forgets one. The Mac app writes; ``mobster mcp`` (another process) reads, so a read notices a newer file.
-"""
+"""Allow rules kept on this Mac; never for paying, buying, booking, deleting, a one-time code or an acting link."""
 
 import json
 import os
-from pathlib import Path
 import tempfile
 import threading
 import time
+from pathlib import Path
 
 from .rules import norm
 
@@ -27,9 +18,7 @@ def key_of(app, label, op):
 
 
 def remember_in(store, spec):
-    """Keep in ``store`` what a card's "Don't ask again" or "Always allow" offered (``spec``, the request's
-    ``remember``): one allow rule, or each app on a card that lists several ("Allow Mobster to use Things and
-    Notes?")."""
+    """Keep in ``store`` what a card's "Don't ask again" or "Always allow" offered (``spec``)."""
     apps = spec.get("apps")
     entries = [one for one in apps if isinstance(one, dict)] if isinstance(apps, list) else [spec]
     for entry in entries:

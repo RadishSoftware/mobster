@@ -1,23 +1,11 @@
-"""What a person sends a running Smart task besides words: pause, continue, and "stop after this step".
-
-The run's ``SteeringQueue`` (seam S8) carries the messages and the ``paused`` flag; this module keeps the rest of the
-run's controls beside it, keyed by that queue, so the frontier (which holds the queue) and the HTTP routes (which
-hold the run) reach the same state. A control is never text: nothing here reads a message.
-
-- Pause: the loop stops at its next step boundary and touches nothing until Continue, Stop, "stop after this step",
-  or PAUSE_LIMIT_SECONDS (10 minutes), after which it ends "stopped". A pause Mobster makes itself carries a reason
-  (``{"code", "limit"?, ...}``: power_watch pauses for the phone's battery with ``phone_battery``); a person's pause
-  has none, and a person pausing or continuing clears it.
-- Stop after this step: the action in progress finishes, then the run ends "stopped" before anything new starts.
-"""
+"""Pause, continue and "stop after this step" for a running Smart task: controls, never text,
+so nothing here reads a message."""
 
 import threading
 import time
 import weakref
 
-# A pause longer than this ends the task (status "stopped"): nobody is coming back to it.
 PAUSE_LIMIT_SECONDS = 600
-# How often a paused loop looks at Stop while it waits (a pause, a continue or a stop request wakes it at once).
 POLL_SECONDS = 0.25
 
 
@@ -27,7 +15,6 @@ class Control:
     def __init__(self):
         self.condition = threading.Condition()
         self.stop_after = False
-        # Why Mobster paused the run itself ({"code", "limit"?, ...}), or None for a person's pause.
         self.reason = None
 
 
@@ -53,9 +40,7 @@ def paused(queue):
 
 
 def set_paused(queue, value, reason=None):
-    """Pause (True) or continue (False) the run that owns ``queue``. ``reason``: why Mobster pauses it itself (a dict
-    with ``code``, and ``limit`` in seconds to hold it longer or shorter than PAUSE_LIMIT_SECONDS); None is a
-    person's pause."""
+    """Pause (True) or continue (False) the run that owns ``queue``."""
     control = of(queue)
     with control.condition:
         if value:
@@ -89,8 +74,7 @@ def stop_after_requested(queue):
 
 
 def wait_while_paused(queue, *, cancelled=None, limit=None, clock=time.monotonic):
-    """Block while the run is paused. Returns "continued", "stopped" (Stop was pressed), "stop_after" or "timeout"
-    (paused for ``limit`` seconds: unless given, the pause reason's own limit, else PAUSE_LIMIT_SECONDS)."""
+    """Block while the run is paused."""
     control = of(queue)
     if limit is None:
         with control.condition:

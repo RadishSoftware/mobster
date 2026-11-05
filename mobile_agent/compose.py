@@ -1,19 +1,11 @@
 """Composition root: the driver for a run target, and best-effort shutdown."""
 
+from . import harness_api
 from .drivers import build_driver
-from .extensions import load as load_extensions
 
 
 def build_target_driver(*, wda_url=None, session=None, expected_bundle=None, connection=None, app_names=None,
                         labeller=None, icon_memory=None, **options):
-    """Select and construct the driver for one run target. No probing, no fallback.
-
-    WDA sessions get one configuration call (measured snapshot settings)
-    before the driver is returned. ``connection="mirroring"`` is the experimental
-    iPhone Mirroring driver (mirroring.py) and ``connection="cable_bt"`` the experimental
-    Cable + Bluetooth one (cable_bt.py, ``options``: its phone), each only with its setting on. Other
-    targets (``options``) exist only when an extension provides them (``extensions.py``).
-    """
     if connection == "mirroring":
         from . import mirroring
         if not mirroring.enabled():
@@ -31,9 +23,9 @@ def build_target_driver(*, wda_url=None, session=None, expected_bundle=None, con
         driver.configure()
         return driver
     options = {key: value for key, value in options.items() if value is not None}
-    hooks = load_extensions()
-    if options and hooks.target_driver is not None:
-        return hooks.target_driver(expected_bundle=expected_bundle, **options)
+    target_driver = harness_api.hooks().target_driver
+    if options and target_driver is not None:
+        return target_driver(expected_bundle=expected_bundle, **options)
     raise ValueError("A run needs --wda-url (and optionally --session)")
 
 
@@ -45,7 +37,6 @@ def _closer(client, name):
 
 
 def close_all(*clients):
-    """Best-effort shutdown for drivers and model clients. Never raises."""
     for client in clients:
         if client is None:
             continue

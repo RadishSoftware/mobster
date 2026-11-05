@@ -15,12 +15,12 @@ used by ``capture-truth``, ``--dry-plan --probe`` and fixture verification,
 never while an agent is being measured.
 """
 
-from dataclasses import dataclass
-from datetime import datetime, timezone
 import hashlib
 import json
-from pathlib import Path
 import time
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from pathlib import Path
 
 from ..evals.oracles import ProbeUnavailable, navigation_title, screen_text
 from ..state import SYMBOL_NAME as SF_SYMBOL  # one definition of an SF Symbol name
@@ -141,8 +141,6 @@ class TruthStore:
                                         sort_keys=True) + "\n")
 
 
-# ---------------------------------------------------------------- reading screens
-
 def _row_elements(snapshot, label):
     wanted = norm_text(label)
     return [e for e in snapshot.elements if norm_text(e.label) == wanted]
@@ -211,8 +209,6 @@ def capture_from_reset(snapshot, bundle):
             captured[key] = value
     return captured
 
-
-# ---------------------------------------------------------------- navigator
 
 class Navigator:
     """Read-only navigation by exact labels, for truth capture and fixture checks."""

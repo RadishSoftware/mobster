@@ -1,0 +1,67 @@
+#!/bin/sh
+# Starts Mobster's MCP server from Mobster for Mac, for the Claude Code plugin and the Claude Desktop bundle: the agent
+# inside the app with `mcp`, the same command Settings › Connectors › Use Mobster from… › Add writes:
+#
+#   /Applications/Mobster.app/Contents/MacOS/mobster-agent mcp [--env-file <data folder>/agent.env] [args]
+#
+# It looks for the app in MOBSTER_APP (a path to Mobster.app), /Applications, ~/Applications, then wherever
+# Spotlight finds the bundle id app.mobster.desktop. MOBSTER_APP_PATHS (Mobster.app paths separated by colons)
+# replaces that list and skips Spotlight. The app's settings file is passed with --env-file only when it exists and
+# only you can read it (mode 600), so Smart (`verify`) uses the key the app uses; the key itself never appears in a
+# config. Stdout belongs to the MCP protocol, so every message goes to stderr.
+#
+#   mobster-mcp --check    run `mcp doctor` instead of the server
+set -u
+
+BUNDLE_ID=app.mobster.desktop
+ENV_FILE="$HOME/Library/Application Support/$BUNDLE_ID/agent.env"
+
+agent_in() {
+  [ -n "$1" ] && [ -x "$1/Contents/MacOS/mobster-agent" ] && echo "$1/Contents/MacOS/mobster-agent"
+}
+
+find_agent() {
+  if [ -n "${MOBSTER_APP_PATHS+set}" ]; then
+    old_ifs=$IFS
+    IFS=:
+    for app in $MOBSTER_APP_PATHS; do
+      if agent_in "$app"; then IFS=$old_ifs; return 0; fi
+    done
+    IFS=$old_ifs
+    return 1
+  fi
+  for app in "${MOBSTER_APP:-}" /Applications/Mobster.app "$HOME/Applications/Mobster.app"; do
+    agent_in "$app" && return 0
+  done
+  if command -v mdfind >/dev/null 2>&1; then
+    found=$(mdfind "kMDItemCFBundleIdentifier == '$BUNDLE_ID'" 2>/dev/null | grep -v -e '^/Volumes/' -e '/AppTranslocation/' | head -n 1)
+    agent_in "$found" && return 0
+  fi
+  return 1
+}
+
+if ! agent=$(find_agent); then
+  echo "Mobster's MCP server runs from Mobster for Mac (looked in /Applications, ~/Applications and Spotlight)." \
+       "Download it from https://mobster.dev/download, move it to Applications and open it once. Then run /mcp" \
+       "in Claude Code, or restart Claude Desktop, to reconnect." >&2
+  exit 127
+fi
+
+case "$agent" in
+  /Volumes/*|*/AppTranslocation/*)
+    echo "Mobster is running from a temporary copy ($agent). Move Mobster to your Applications folder, open it" \
+         "from there, then run /mcp in Claude Code, or restart Claude Desktop, to reconnect." >&2
+    exit 126 ;;
+esac
+
+if [ "${1:-}" = "--check" ]; then
+  exec "$agent" mcp doctor
+fi
+
+if [ -f "$ENV_FILE" ] && [ -r "$ENV_FILE" ]; then
+  mode=$(stat -f '%Lp' "$ENV_FILE" 2>/dev/null || echo 777)
+  if [ $(( 0$mode & 077 )) -eq 0 ]; then
+    exec "$agent" mcp --env-file "$ENV_FILE" "$@"
+  fi
+fi
+exec "$agent" mcp "$@"

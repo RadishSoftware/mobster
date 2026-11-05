@@ -1,12 +1,49 @@
-"""The report is computed from records, and the verdict follows the pre-registered rule."""
+"""The report is computed from records, and its statistics hold."""
 
 import json
 import tempfile
 import unittest
 from pathlib import Path
 
-from mobile_agent.bench.report import compare, render, verdict_lines
+from mobile_agent.bench.metrics import bootstrap_ci, flaky_tasks, pass_hat_k, percentile, quantile, wilson
+from mobile_agent.bench.report import render
 from mobile_agent.bench.suite import build_suite
+
+
+class MetricsTests(unittest.TestCase):
+    def test_wilson_known_values(self):
+        low, high = wilson(8, 10)
+        self.assertAlmostEqual(low, .4902, places=3)
+        self.assertAlmostEqual(high, .9433, places=3)
+        low, high = wilson(0, 10)
+        self.assertEqual(low, 0)
+        self.assertAlmostEqual(high, .2775, places=3)
+        self.assertTrue(all(v != v for v in wilson(0, 0)))
+
+    def test_percentile(self):
+        self.assertEqual(percentile([1, 2, 3, 4], 50), 2.5)
+        self.assertEqual(percentile([5], 90), 5)
+        self.assertIsNone(percentile([None], 50))
+
+    def test_quantile(self):
+        self.assertEqual(quantile([4, 1, 3, 2], .5), 2.5)
+        self.assertEqual(quantile([5], .9), 5)
+        self.assertAlmostEqual(quantile([1, 2, 3, 10], .9), 7.9)
+        self.assertIsNone(quantile([], .5))
+
+    def test_pass_hat_k_and_flaky(self):
+        outcomes = {"a": [True, True, True], "b": [True, False, False], "c": [False, False, False]}
+        self.assertAlmostEqual(pass_hat_k(outcomes, 1), (1 + 1 / 3 + 0) / 3)
+        self.assertAlmostEqual(pass_hat_k(outcomes, 3), 1 / 3)
+        self.assertEqual(flaky_tasks(outcomes), ["b"])
+
+    def test_bootstrap_is_deterministic(self):
+        values = [0, 0, 1, 1, 1, .5]
+        self.assertEqual(bootstrap_ci(values, resamples=500), bootstrap_ci(values, resamples=500))
+        mean, low, high = bootstrap_ci(values, resamples=2000)
+        self.assertLessEqual(low, mean)
+        self.assertLessEqual(mean, high)
+
 
 TASKS = [task for task in build_suite()][:20]
 
@@ -31,30 +68,10 @@ def write_run(tmp, rows):
     run.mkdir()
     (run / "plan.json").write_text(json.dumps({"suite_hash": "f" * 64, "seed": 1, "repeats": 3,
                                                "device": "iphone15pro", "tasks": [t.id for t in TASKS],
-                                               "agents": {"mobster-smart": {"config": {}}, "gemini-cu": {"config": {}}}}))
+                                               "agents": {"mobster-smart": {"config": {}},
+                                                          "mobster-smart-codex": {"config": {}}}}))
     (run / "records.jsonl").write_text("\n".join(json.dumps(r) for r in rows) + "\n")
     return run
-
-
-class CompareTests(unittest.TestCase):
-    def test_faster_and_as_accurate_is_sota(self):
-        rows = records("mobster-smart", 1, 5000) + records("gemini-cu", 1, 20000)
-        c = compare([r for r in rows], "mobster-smart", "gemini-cu", resamples=500)
-        self.assertEqual(c["accuracy"], "not worse")
-        self.assertEqual(c["speed"], "faster")
-        self.assertIn("state of the art", verdict_lines({"gemini-cu": c}, 0, True)[0])
-
-    def test_less_accurate_is_not_sota_and_losses_are_listed(self):
-        rows = records("mobster-smart", 0, 5000) + records("gemini-cu", 1, 20000)
-        c = compare(rows, "mobster-smart", "gemini-cu", resamples=500)
-        self.assertEqual(c["accuracy"], "worse")
-        self.assertEqual(len(c["losing_tasks"]), len(TASKS))
-        self.assertIn("NOT", verdict_lines({"gemini-cu": c}, 0, True)[0])
-
-    def test_unsafe_mobster_disqualifies(self):
-        rows = records("mobster-smart", 1, 5000) + records("gemini-cu", 1, 20000)
-        c = compare(rows, "mobster-smart", "gemini-cu", resamples=500)
-        self.assertIn("NOT", verdict_lines({"gemini-cu": c}, 1, True)[0])
 
 
 class RenderTests(unittest.TestCase):
@@ -72,17 +89,16 @@ class RenderTests(unittest.TestCase):
 
     def test_render_has_every_section(self):
         with tempfile.TemporaryDirectory() as tmp:
-            rows = records("mobster-smart", 1, 5000) + records("gemini-cu", .5, 20000, unsafe=1)
+            rows = records("mobster-smart", 1, 5000) + records("mobster-smart-codex", .5, 20000, unsafe=1)
             rows.append({"key": "x", "repeat": 0, "task": TASKS[0].id, "category": TASKS[0].category,
-                         "agent": "som-pro", "verdict": "skipped", "error": "agent unavailable"})
+                         "agent": "mobster-smart-cc", "verdict": "skipped", "error": "agent unavailable"})
             out = Path(tmp) / "bench.md"
             text = render(write_run(tmp, rows), out, today="2026-09-23")
             for heading in ("## Success rate", "### By category", "## Speed and cost", "## Safety",
-                            "## Abstention and visual", "## Per task", "## Verdict", "### Where Mobster loses",
-                            "## Attempt accounting"):
+                            "## Abstention and visual", "## Per task", "## Attempt accounting"):
                 self.assertIn(heading, text)
             self.assertTrue(out.exists())
-            self.assertIn("| som-pro | 0 | 0 | 0 | 1 | 0 |", text)
+            self.assertIn("| mobster-smart-cc | 0 | 0 | 0 | 1 | 0 |", text)
 
 
 if __name__ == "__main__":

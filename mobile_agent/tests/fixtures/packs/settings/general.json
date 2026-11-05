@@ -1,0 +1,295 @@
+{
+"note": "Recorded on the test device (iPhone 15 Pro, iOS 26.0.1), 12 Oct 2026: the rows the agent saw, scrubbed (the account's name, the phone's name; serial and model numbers dropped).",
+"rows": [
+{
+"role": "NavigationBar",
+"label": "General",
+"rect": [
+0.0,
+0.07,
+1.0,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "Settings",
+"rect": [
+0.04,
+0.07,
+0.11,
+0.05
+]
+},
+{
+"role": "StaticText",
+"label": "General",
+"rect": [
+0.42,
+0.08,
+0.17,
+0.02
+]
+},
+{
+"role": "StaticText",
+"label": "General",
+"rect": [
+0.39,
+0.26,
+0.22,
+0.03
+]
+},
+{
+"role": "Button",
+"label": "Manage your overall setup and preferences for iPhone, such as software updates, device language, CarPlay, AirDrop, and more.",
+"rect": [
+0.08,
+0.31,
+0.83,
+0.09
+]
+},
+{
+"role": "Cell",
+"label": "About",
+"rect": [
+0.04,
+0.45,
+0.92,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "About",
+"rect": [
+0.08,
+0.46,
+0.22,
+0.04
+]
+},
+{
+"role": "Button",
+"label": "chevron",
+"rect": [
+0.9,
+0.47,
+0.02,
+0.02
+]
+},
+{
+"role": "Cell",
+"label": "Software Update",
+"rect": [
+0.04,
+0.51,
+0.92,
+0.07
+]
+},
+{
+"role": "Button",
+"label": "Software Update",
+"rect": [
+0.08,
+0.53,
+0.45,
+0.03
+]
+},
+{
+"role": "Button",
+"label": "chevron",
+"rect": [
+0.9,
+0.53,
+0.02,
+0.02
+]
+},
+{
+"role": "Cell",
+"label": "iPhone Storage",
+"rect": [
+0.04,
+0.57,
+0.92,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "iPhone Storage",
+"rect": [
+0.08,
+0.59,
+0.41,
+0.03
+]
+},
+{
+"role": "Button",
+"label": "chevron",
+"rect": [
+0.9,
+0.59,
+0.02,
+0.02
+]
+},
+{
+"role": "Cell",
+"label": "AppleCare & Warranty",
+"rect": [
+0.04,
+0.68,
+0.92,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "AppleCare & Warranty",
+"rect": [
+0.08,
+0.69,
+0.55,
+0.03
+]
+},
+{
+"role": "Button",
+"label": "chevron",
+"rect": [
+0.9,
+0.69,
+0.02,
+0.02
+]
+},
+{
+"role": "Cell",
+"label": "AirDrop",
+"rect": [
+0.04,
+0.78,
+0.92,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "AirDrop",
+"rect": [
+0.08,
+0.79,
+0.26,
+0.03
+]
+},
+{
+"role": "Button",
+"label": "chevron",
+"rect": [
+0.9,
+0.8,
+0.02,
+0.02
+]
+},
+{
+"role": "Cell",
+"label": "AirPlay & Continuity",
+"rect": [
+0.04,
+0.84,
+0.92,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "AirPlay & Continuity",
+"rect": [
+0.08,
+0.85,
+0.51,
+0.03
+]
+},
+{
+"role": "Button",
+"label": "chevron",
+"rect": [
+0.9,
+0.86,
+0.02,
+0.02
+]
+},
+{
+"role": "Cell",
+"label": "Picture in Picture",
+"rect": [
+0.04,
+0.9,
+0.92,
+0.07
+]
+},
+{
+"role": "Button",
+"label": "Picture in Picture",
+"rect": [
+0.08,
+0.92,
+0.45,
+0.03
+]
+},
+{
+"role": "Button",
+"label": "chevron",
+"rect": [
+0.9,
+0.92,
+0.02,
+0.02
+]
+},
+{
+"role": "Cell",
+"label": "Screen Capture",
+"rect": [
+0.04,
+0.96,
+0.92,
+0.04
+]
+},
+{
+"role": "Button",
+"label": "Screen Capture",
+"rect": [
+0.08,
+0.98,
+0.42,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "chevron",
+"rect": [
+0.9,
+0.99,
+0.02,
+0.01
+]
+}
+]
+}

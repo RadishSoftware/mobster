@@ -1,5 +1,4 @@
-"""The answer's headline states the value the request asked for (9 Oct: "The locker code is 4817." led a run whose
-answer was 4,017)."""
+"""The headline states the value asked for (9 Oct: "The locker code is 4817." led an answer of 4,017)."""
 
 import unittest
 from types import SimpleNamespace

@@ -1,0 +1,121 @@
+{
+"note": "Recorded on the test device (iPhone 15 Pro, iOS 26.0.1), 11 and 12 Oct 2026: the rows the agent saw (the MobsterBench notes are fictional).",
+"rows": [
+{
+"role": "NavigationBar",
+"label": "ICTK2NoteEditorView",
+"rect": [
+0.0,
+0.07,
+1.0,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "Search",
+"rect": [
+0.04,
+0.07,
+0.11,
+0.05
+]
+},
+{
+"role": "Button",
+"label": "Share",
+"rect": [
+0.7,
+0.08,
+0.11,
+0.04
+]
+},
+{
+"role": "Button",
+"label": "More",
+"rect": [
+0.84,
+0.08,
+0.11,
+0.04
+]
+},
+{
+"role": "TextView",
+"label": "Note",
+"rect": [
+0.0,
+0.0,
+1.0,
+1.0
+],
+"value": "Mobster Bench Scratchpad\\nNotes for the real-customer benchmark.",
+"editable": true
+},
+{
+"role": "Toolbar",
+"label": "Toolbar",
+"rect": [
+0.0,
+0.91,
+1.0,
+0.09
+]
+},
+{
+"role": "Button",
+"label": "Checklist",
+"rect": [
+0.08,
+0.92,
+0.12,
+0.05
+],
+"value": "Off, Page 1 of 3"
+},
+{
+"role": "Button",
+"label": "Attachments",
+"rect": [
+0.24,
+0.92,
+0.09,
+0.05
+],
+"value": "Page 1 of 3"
+},
+{
+"role": "Button",
+"label": "Handwriting",
+"rect": [
+0.39,
+0.92,
+0.09,
+0.05
+],
+"value": "Page 1 of 3"
+},
+{
+"role": "Button",
+"label": "Writing Tools",
+"rect": [
+0.52,
+0.92,
+0.1,
+0.05
+],
+"value": "Page 1 of 3"
+},
+{
+"role": "Button",
+"label": "New note",
+"rect": [
+0.81,
+0.92,
+0.1,
+0.05
+]
+}
+]
+}

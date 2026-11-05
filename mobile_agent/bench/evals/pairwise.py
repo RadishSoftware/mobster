@@ -153,7 +153,8 @@ def replay(set_dir, rows_path, judge, half="report", workers=4, ledger=None, cap
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(prog="python -m mobile_agent.bench.evals.pairwise", description=__doc__.split("\n\n")[0])
+    parser = argparse.ArgumentParser(prog="python -m mobile_agent.bench.evals.pairwise",
+                                     description=__doc__.split("\n\n")[0])
     parser.add_argument("set_dir")
     parser.add_argument("--rows", help="a golden run's rows (the candidate)")
     parser.add_argument("--calibrate", choices=("synthetic", "divergence"),

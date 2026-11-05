@@ -1,0 +1,107 @@
+{
+"note": "Recorded on the test device (iPhone 15 Pro, iOS 26.0.1), 12 Oct 2026: the rows the agent saw (example.com).",
+"rows": [
+{
+"role": "StaticText",
+"label": "This domain is for use in documentation examples without needing permission. This is not a service; avoid relying on it for testing and monitoring purposes.",
+"rect": [
+0.08,
+0.31,
+0.83,
+0.11
+]
+},
+{
+"role": "StaticText",
+"label": "هذا النطاق مُخصص للاستخدام في أمثلة التوثيق دون الحاجة إلى إذن. هذه ليست خدمة، يُرجى تجنب الاعتماد عليها لأغراض الاختبار والمراقبة.",
+"rect": [
+0.1,
+0.44,
+0.79,
+0.08
+]
+},
+{
+"role": "StaticText",
+"label": "该域名仅用于文档示例，无需获得许可。这并非一项服务，请勿将其用于测试和监控目的。",
+"rect": [
+0.09,
+0.54,
+0.81,
+0.05
+]
+},
+{
+"role": "StaticText",
+"label": "L’usage de ce domaine est réservé à des exemples de documentation, sans autorisation préalable. Il ne s’agit pas d’un service ; son utilisation à des fins de te",
+"rect": [
+0.1,
+0.6,
+0.79,
+0.13
+]
+},
+{
+"role": "StaticText",
+"label": "Данный домен предназначен для использования в примерах документации без необходимости получения предварительного разрешения. Это не сервис; не рекомендуется его",
+"rect": [
+0.08,
+0.75,
+0.83,
+0.15
+]
+},
+{
+"role": "Button",
+"label": "Back",
+"rect": [
+0.08,
+0.9,
+0.12,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "Page Menu",
+"rect": [
+0.24,
+0.91,
+0.1,
+0.05
+]
+},
+{
+"role": "TextField",
+"label": "Address",
+"rect": [
+0.37,
+0.92,
+0.27,
+0.02
+],
+"value": "example.com",
+"editable": true
+},
+{
+"role": "Button",
+"label": "refresh",
+"rect": [
+0.69,
+0.92,
+0.04,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "More",
+"rect": [
+0.79,
+0.9,
+0.12,
+0.06
+]
+}
+]
+}

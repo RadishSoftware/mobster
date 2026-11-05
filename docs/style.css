@@ -1,0 +1,1020 @@
+/* Mintlify loads every .css file in docs/ on every page. This one puts the docs in the same family as mobster.dev and
+   Mobster for Mac, from the same tokens: the brand's neutral greys in place of Mintlify's own, weights of 400, 500 and
+   600, flat soft cards with no outline, pill buttons, code in the site's colours, and colour steps of 150 ms with
+   nothing else animated. Below the generated regions, every colour, face, weight, radius and duration reads a --mob-*
+   token. Selectors stop at Mintlify's own hooks (ids, data-component-part and component class names). */
+
+/* The brand's tokens (docs/brand/tokens.json), as --mob-*: Mintlify switches appearance with a class. */
+/* brand:tokens prefix=mob- dark=:root.dark scan=docs */
+:root{--mob-paper:#f8f8f8;--mob-surface:#ffffff;--mob-sunken:#f0f0f0;--mob-ink:#181818;--mob-ink-2:#505050;--mob-ink-3:#636363;--mob-ink-4:#9f9f9f;--mob-line:#e4e4e4;--mob-line-strong:#d5d5d5;--mob-violet-text:#5b41e8;--mob-green:#0d6f44;--mob-amber:#8b5000;--mob-coral:#b3301f;--mob-card:color-mix(in srgb, var(--mob-ink) 3.5%, var(--mob-paper));--mob-card-hover:color-mix(in srgb, var(--mob-ink) 6%, var(--mob-paper));--mob-primary-hover:color-mix(in srgb, var(--mob-ink) 80%, var(--mob-paper));--mob-shadow-card:0 0 #0000;--mob-shadow-shot:0 0 0 1px rgb(0 0 0 / .1), 0 1px 2px rgb(24 24 24 / .06), 0 28px 56px -32px rgb(24 24 24 / .32);--mob-shadow-button-secondary:inset 0 0 0 1px var(--mob-line-strong), 0 1px 2px rgb(24 24 24 / .05);--mob-font-mono:"Mobster Code", ui-monospace, "SF Mono", Menlo, monospace;--mob-weight-body:400;--mob-weight-medium:500;--mob-weight-semibold:600;--mob-radius-xs:6px;--mob-radius-inner:8px;--mob-radius-input:12px;--mob-radius-container:16px;--mob-radius-card:20px;--mob-radius-full:999px;--mob-ease-out:cubic-bezier(.23, 1, .32, 1);--mob-ease-standard:cubic-bezier(.23, 1, .32, 1);--mob-duration-short:150ms;}:root.dark{--mob-paper:#121212;--mob-surface:#1b1b1b;--mob-sunken:#171717;--mob-ink:#f2f2f2;--mob-ink-2:#b3b3b3;--mob-ink-3:#939393;--mob-ink-4:#6a6a6a;--mob-line:#2b2b2b;--mob-line-strong:#3c3c3c;--mob-violet-text:#a493ff;--mob-green:#6ed2a0;--mob-amber:#edbb64;--mob-coral:#f58d79;--mob-card:color-mix(in srgb, #ffffff 4.5%, var(--mob-paper));--mob-card-hover:color-mix(in srgb, #ffffff 7%, var(--mob-paper));--mob-primary-hover:color-mix(in srgb, var(--mob-ink) 80%, var(--mob-paper));--mob-shadow-card:inset 0 0 0 1px rgb(255 255 255 / .06);--mob-shadow-shot:0 0 0 1px rgb(255 255 255 / .1), 0 28px 56px -32px rgb(0 0 0 / .7);--mob-shadow-button-secondary:inset 0 0 0 1px var(--mob-line-strong), 0 1px 2px rgb(24 24 24 / .05);}
+/* /brand:tokens */
+
+/* What Mintlify needs from the tokens in its own terms: Mobster Sans and Mobster Code, served from docs/fonts at their
+   whole weight range (docs.json names Mobster Sans, and Mintlify declares it at one weight, so 500 and 600 would be
+   faux bold), and Mintlify's grey ramp as the brand's greys. */
+/* brand:tokens as=mintlify */
+@font-face{font-family:"Mobster Sans";src:url("/fonts/google-sans-flex.woff2") format("woff2");font-weight:400 620;font-display:swap}@font-face{font-family:"Mobster Code";src:url("/fonts/google-sans-code.woff2") format("woff2");font-weight:400 500;font-display:swap}:root:not(.dark){--gray-50:240 240 240;--gray-100:240 240 240;--gray-200:228 228 228;--gray-300:213 213 213;--gray-400:159 159 159;--gray-500:99 99 99;--gray-600:80 80 80;--gray-700:80 80 80;--gray-800:24 24 24;--gray-900:24 24 24;--gray-950:24 24 24;--mint-color-text:#181818;--mint-foreground:#181818;--mint-token-constant:#181818;--mint-token-parameter:#181818;--mint-token-function:#181818;--mint-token-keyword:#5b41e8;--mint-token-link:#5b41e8;--mint-token-string:#0d6f44;--mint-token-string-expression:#0d6f44;--mint-token-comment:#636363;--mint-token-punctuation:#636363;--mint-color-background:#f0f0f0;--mint-background:#f0f0f0;}:root.dark{--gray-50:242 242 242;--gray-100:242 242 242;--gray-200:242 242 242;--gray-300:242 242 242;--gray-400:179 179 179;--gray-500:147 147 147;--gray-600:106 106 106;--gray-700:60 60 60;--gray-800:43 43 43;--gray-900:27 27 27;--gray-950:23 23 23;--mint-color-text:#f2f2f2;--mint-foreground:#f2f2f2;--mint-token-constant:#f2f2f2;--mint-token-parameter:#f2f2f2;--mint-token-function:#f2f2f2;--mint-token-keyword:#a493ff;--mint-token-link:#a493ff;--mint-token-string:#6ed2a0;--mint-token-string-expression:#6ed2a0;--mint-token-comment:#939393;--mint-token-punctuation:#939393;--mint-color-background:#1d1d1d;--mint-background:#1d1d1d;}
+/* /brand:tokens */
+
+/* Mintlify's prose keeps Tailwind's blue-cast greys for headings, links, quotes and tables, and a second set for dark
+   pages. Each takes the brand grey that does its job, as mobster.dev's long-form pages do: copy in Ink 2, headings,
+   links and strong text in Ink, markers and captions in Ink 3, rules in Line. --mob-* changes with the appearance, so
+   the dark set reads the same names. */
+.prose {
+  --tw-prose-body: var(--mob-ink);
+  --tw-prose-headings: var(--mob-ink);
+  --tw-prose-lead: var(--mob-ink-2);
+  --tw-prose-links: var(--mob-violet-text);
+  --tw-prose-bold: var(--mob-ink);
+  --tw-prose-counters: var(--mob-ink-3);
+  --tw-prose-bullets: var(--mob-ink-4);
+  --tw-prose-hr: var(--mob-line);
+  --tw-prose-quotes: var(--mob-ink-2);
+  --tw-prose-quote-borders: var(--mob-line-strong);
+  --tw-prose-captions: var(--mob-ink-3);
+  --tw-prose-kbd: var(--mob-ink);
+  --tw-prose-code: var(--mob-ink);
+  --tw-prose-th-borders: var(--mob-line-strong);
+  --tw-prose-td-borders: var(--mob-line);
+  --tw-prose-invert-body: var(--mob-ink);
+  --tw-prose-invert-headings: var(--mob-ink);
+  --tw-prose-invert-lead: var(--mob-ink-2);
+  --tw-prose-invert-links: var(--mob-violet-text);
+  --tw-prose-invert-bold: var(--mob-ink);
+  --tw-prose-invert-counters: var(--mob-ink-3);
+  --tw-prose-invert-bullets: var(--mob-ink-4);
+  --tw-prose-invert-hr: var(--mob-line);
+  --tw-prose-invert-quotes: var(--mob-ink-2);
+  --tw-prose-invert-quote-borders: var(--mob-line-strong);
+  --tw-prose-invert-captions: var(--mob-ink-3);
+  --tw-prose-invert-kbd: var(--mob-ink);
+  --tw-prose-invert-code: var(--mob-ink);
+  --tw-prose-invert-th-borders: var(--mob-line-strong);
+  --tw-prose-invert-td-borders: var(--mob-line);
+}
+
+/* Text Mintlify leaves uncoloured is Ink, not #000. */
+body {
+  color: var(--mob-ink);
+}
+
+/* Three weights, as everywhere else: 400 to read, 500 for headings, labels and buttons, 600 at most. Mintlify's
+   bold and extra-bold come down to 600. */
+:root {
+  --font-weight-normal: var(--mob-weight-body);
+  --font-weight-medium: var(--mob-weight-medium);
+  --font-weight-semibold: var(--mob-weight-semibold);
+  --font-weight-bold: var(--mob-weight-semibold);
+  --font-weight-extrabold: var(--mob-weight-semibold);
+}
+
+/* The page's section name over its title is
+   gone (Mintlify draws one on every page, in violet). The current page in the sidebar is Ink on the selected fill, as
+   in Mobster for Mac's sidebar (and in the menu on a phone), with its stretch of the rail in Ink; the current tab
+   is underlined in Ink. */
+#header .eyebrow {
+  display: none;
+}
+
+#navigation-items a[aria-current="page"] {
+  border-color: var(--mob-ink);
+  border-radius: 0 var(--mob-radius-inner) var(--mob-radius-inner) 0;
+  background-color: color-mix(in srgb, var(--mob-ink) 8%, transparent);
+  color: var(--mob-ink);
+  text-shadow: none;
+}
+
+#navigation-items a[aria-current="page"] svg {
+  background-color: var(--mob-ink);
+}
+
+.nav-tabs-item[data-active="true"] > div:last-child {
+  background-color: var(--mob-ink);
+}
+
+/* The same for the section you're reading in "On this page" and the open tab of a Tabs block. */
+#table-of-contents .toc-item[data-active] > a {
+  border-color: var(--mob-ink);
+  color: var(--mob-ink);
+}
+
+[data-component-part="tab-button"][data-active="true"] {
+  color: var(--mob-ink);
+}
+
+/* Callouts as Mobster for Mac's: a note on the card fill in Ink 2 with its icon in Ink 3, a warning on an amber wash
+   with its icon in amber, no outline and no blue. */
+.callout {
+  border-color: transparent;
+  border-radius: var(--mob-radius-input);
+  background-color: var(--mob-card);
+}
+
+.callout [data-component-part="callout-content"] {
+  color: var(--mob-ink-2);
+}
+
+.callout [data-component-part="callout-icon"] svg {
+  color: var(--mob-ink-3);
+}
+
+.callout[data-callout-type="warning"] {
+  background-color: color-mix(in srgb, var(--mob-amber) 10%, transparent);
+}
+
+.callout[data-callout-type="warning"] [data-component-part="callout-icon"] svg {
+  color: var(--mob-amber);
+}
+
+/* The footer's column titles in Ink and its links in Ink 3, darkening to Ink, instead of Mintlify's pure white and
+   its 50% of black or white. */
+#footer p {
+  color: var(--mob-ink);
+}
+
+#footer a {
+  color: var(--mob-ink-3);
+}
+
+#footer a:hover {
+  color: var(--mob-ink);
+}
+
+/* Links in the reading copy at 500, not Mintlify's 600. A tile is a link too, and keeps its own weights. */
+#content a.link:not(.tile) {
+  font-weight: var(--mob-weight-medium);
+}
+
+code,
+kbd,
+pre {
+  font-family: var(--mob-font-mono);
+}
+
+/* Long code wraps instead of hiding under a fade, and the copy button still copies each line as one line. Mintlify
+   sizes the code to its longest line (width: max-content), so the width is reset here. Each line is a block of its
+   own, so a wrapped line hangs 4 characters in and never starts back at the left edge under the line it continues
+   (product/VISUAL-LANGUAGE.md, Code). A block without a title keeps its copy button over its top right corner,
+   beside the first line only: a spacer beside the first line keeps text out from under the button, and the lines
+   below it get the full width. */
+pre.shiki code {
+  width: auto !important;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* The newlines between the lines are set at no size, so only the lines take room, and an empty line keeps its height. */
+pre.shiki code {
+  font-size: 0;
+  line-height: 0;
+}
+
+pre.shiki code .line {
+  display: inline-block;
+  width: 100%;
+  min-height: 1.375rem;
+  padding-left: 4ch;
+  text-indent: -4ch;
+  font-size: 0.875rem;
+  line-height: 1.375rem;
+}
+
+/* Output (a block marked text) at the caption size, 12/20, as on mobster.dev: a step's column then holds about 68
+   characters, so most of a command's output keeps its columns at 1280. A line too long for the plate folds under itself
+   at a space, never mid-word (D-std, 18 Oct). Commands keep the wrap above. */
+pre.shiki[language="text"] code {
+  overflow-wrap: normal;
+}
+
+/* Output is the output's grey (Ink 2), as on mobster.dev. The docs can't colour a ✓ or ✗ line, and a text block keeps
+   Copy, because the docs mark a line to paste (a prompt, a URL) the same way. */
+.code-block[language="text"] {
+  --mint-foreground: var(--mob-ink-2);
+  --mint-color-text: var(--mob-ink-2);
+}
+
+pre.shiki[language="text"] code .line {
+  min-height: 1.25rem;
+  font-size: 0.75rem;
+  line-height: 1.25rem;
+}
+
+.code-block[data-has-floating-buttons] {
+  --code-padding-right: 0px !important;
+}
+
+/* Nothing runs under the button now, so the fade Mintlify lays over the first line beside it only greys out text. */
+.code-block [data-fade-overlay] {
+  display: none;
+}
+
+.code-block[data-has-floating-buttons] pre.shiki code::before {
+  content: "";
+  float: right;
+  width: 2.75rem;
+  height: 1.375rem;
+}
+
+/* Mintlify ends every block with an empty line; it takes no room. */
+.code-block pre.shiki code .line:last-child {
+  min-height: 0;
+}
+
+.code-block[data-has-floating-buttons] pre.shiki code .line:first-child {
+  width: calc(100% - 2.75rem);
+}
+
+/* The assistant opens from the button beside search (and cmd+I). Its bar, floating at the bottom of every page, sat
+   over the text it was there to answer about, so it isn't drawn. */
+.chat-assistant-floating-input {
+  display: none !important;
+}
+
+/* A wider reading column on a laptop screen (Mintlify's 36rem made tables and terminal output wrap; Vercel's docs run
+   about 43rem), and wider again on a large display, so a page at 1920 isn't a narrow strip between the sidebar and
+   "On this page". Wide pages use it as their copy's measure. */
+@media (min-width: 1280px) {
+  :root {
+    --content-width: 40rem;
+  }
+}
+
+@media (min-width: 1536px) {
+  :root {
+    --content-width: 42rem;
+  }
+}
+
+@media (min-width: 1800px) {
+  :root {
+    --content-width: 46rem;
+  }
+}
+
+/* The home page is in wide mode, which Mintlify stretches to the window: at 1920 its copy ran 1,500 px a line. It
+   stops at 72rem, centred beside the sidebar, and its words keep the reading column's measure while the tile and the
+   buttons take the width. */
+html[data-page-mode="wide"] #content-area {
+  min-width: 0;
+  max-width: 72rem;
+}
+
+html[data-page-mode="wide"] :is(#header p, #content > :is(p, ul, ol, h2, h3, h4, span[data-as="p"])) {
+  max-width: var(--content-width, 40rem);
+}
+
+/* Code on the plate (product/VISUAL-LANGUAGE.md, The plate and Code), as on mobster.dev and in the app: the card
+   fill, no border in light and the card's own ring in dark, radius 12, 16 by 24 around the code, Mobster Code at
+   14/22. A file's name is the plate's first line in Ink 3 with no bar or divider, and Copy is a quiet icon. The colours
+   are the code roles (tokens.json "code"): docs.json sets Mintlify's "css-variables" theme, and the brand:tokens
+   as=mintlify region gives each --mint-token-* the role that does its job. Mintlify treats that theme as a dark one and
+   draws dark chrome around it, so each part of the block is set here. */
+.code-block {
+  padding: 0 !important;
+  border-radius: var(--mob-radius-input) !important;
+  background-color: var(--mob-card) !important;
+  box-shadow: var(--mob-shadow-card) !important;
+  color: var(--mob-ink) !important;
+}
+
+/* A shell command is Ink, all of it: Shiki calls a command's arguments strings, and a command reads best in one colour,
+   with only its comments in Ink 3 (mobster.dev's highlighter does the same). */
+.code-block:is([language="shellscript"], [language="bash"], [language="sh"], [language="zsh"], [language="shell"], [language="console"]) {
+  --mint-token-string: var(--mint-foreground);
+  --mint-token-string-expression: var(--mint-foreground);
+}
+
+.code-block [data-component-part="code-block-root"] {
+  border-radius: inherit;
+  background-color: transparent !important;
+}
+
+.code-block [data-component-part="scroll-area-viewport"] {
+  padding: 16px 24px !important;
+}
+
+.code-block [data-component-part="code-block-header"] {
+  padding: 12px 16px 0 24px;
+  border: 0;
+  background-color: transparent;
+}
+
+.code-block [data-component-part="code-block-header-filename"] {
+  color: var(--mob-ink-3) !important;
+  font-family: var(--mob-font-mono);
+  font-size: 0.75rem;
+  font-weight: var(--mob-weight-body);
+}
+
+.code-block[data-has-header] [data-component-part="scroll-area-viewport"] {
+  padding-top: 8px !important;
+}
+
+.code-block [data-floating-buttons] {
+  top: 12px;
+  right: 16px;
+}
+
+.code-block-copy-button button {
+  background-color: transparent !important;
+}
+
+.code-block-copy-button svg {
+  color: var(--mob-ink-3) !important;
+  transition: color var(--mob-duration-short) var(--mob-ease-standard);
+}
+
+.code-block-copy-button button:hover svg {
+  color: var(--mob-ink) !important;
+}
+
+@media (max-width: 640px) {
+  .code-block [data-component-part="scroll-area-viewport"] {
+    padding: 12px 16px !important;
+  }
+
+  .code-block [data-component-part="code-block-header"] {
+    padding-left: 16px;
+  }
+
+  .code-block pre.shiki code .line {
+    min-height: 1.25rem;
+    font-size: 0.75rem;
+    line-height: 1.25rem;
+  }
+}
+
+/* Inline code on the card fill at the reading weight, like mobster.dev: Mintlify's 500 and 8 px sides made every
+   command in a sentence a heavy chip. */
+#content :not(pre) > code {
+  padding: 1px 6px;
+  background-color: var(--mob-card);
+  font-weight: var(--mob-weight-body);
+}
+
+/* A link that is only a command (the CLI tables, the MCP tool lists): the command in violet, with no underline until
+   the pointer is on it. A column of underlined chips read as noise. */
+#content a.link:has(> code:only-child) {
+  border-bottom-color: transparent;
+}
+
+#content a.link:has(> code:only-child):hover {
+  border-bottom-color: var(--mob-violet-text);
+}
+
+#content a.link > code {
+  color: var(--mob-violet-text);
+}
+
+/* Headings: 500 for the title and sections, 600 for the small titles under them (the app's title weight), tight tracking
+   that grows with size. */
+#page-title {
+  font-weight: var(--mob-weight-medium);
+  letter-spacing: -0.025em;
+}
+
+#content h2 {
+  font-weight: var(--mob-weight-medium);
+  letter-spacing: -0.015em;
+}
+
+#content h3,
+#content h4 {
+  font-weight: var(--mob-weight-semibold);
+  letter-spacing: -0.012em;
+}
+
+/* Cards: a flat soft fill at the app's card radius, no outline. Hover deepens the fill. */
+.card {
+  border-color: transparent !important;
+  background-color: var(--mob-card) !important;
+  border-radius: var(--mob-radius-card);
+  transition: background-color var(--mob-duration-short) var(--mob-ease-standard);
+}
+
+.card:hover {
+  background-color: var(--mob-card-hover) !important;
+}
+
+[data-component-part="card-title"] {
+  font-weight: var(--mob-weight-semibold);
+  letter-spacing: -0.012em;
+}
+
+[data-component-part="card-icon"] svg {
+  background-color: var(--mob-ink-2) !important;
+}
+
+/* The landing page's tiles show a whole frame, and their descriptions wrap instead of cutting off. A tile is as tall
+   as its picture, so nothing in the picture is cut at its edge. */
+[data-component-part="tile-children-container"] {
+  height: auto;
+  flex-grow: 1;
+  background-color: var(--mob-card);
+  border-radius: var(--mob-radius-card);
+}
+
+[data-component-part="tile-children-inner-container"] {
+  padding: 24px 24px 0;
+  align-items: flex-end;
+}
+
+[data-component-part="tile-children-inner-container"] img {
+  border-radius: var(--mob-radius-input) var(--mob-radius-input) 0 0;
+  box-shadow: var(--mob-shadow-shot);
+}
+
+/* The landing tiles: a real report and a real verdict as text, on panels shaped like screenshots. */
+.mob-verdict {
+  align-self: stretch;
+  width: 100%;
+  padding: 20px 20px 24px;
+  border-radius: var(--mob-radius-input) var(--mob-radius-input) 0 0;
+  background-color: var(--mob-surface);
+  box-shadow: var(--mob-shadow-shot);
+  color: var(--mob-ink);
+  text-align: left;
+}
+
+.mob-verdict p {
+  margin: 0;
+}
+
+.mob-verdict-head {
+  font-size: 0.875rem;
+  color: var(--mob-ink-2);
+}
+
+.mob-verdict-head strong {
+  margin-right: 0.5em;
+  font-weight: var(--mob-weight-medium);
+  color: var(--mob-coral);
+}
+
+.mob-verdict .mob-verdict-check {
+  margin-top: 6px;
+  font-size: 1rem;
+  font-weight: var(--mob-weight-medium);
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+  text-wrap: pretty;
+}
+
+.mob-verdict-lines {
+  display: grid;
+  gap: 8px;
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Each line hangs on its mark, so a wrapped line lines up under the text, not the mark. */
+.mob-verdict-lines li {
+  margin: 0;
+  padding-left: 2ch;
+  text-indent: -2ch;
+  font-family: var(--mob-font-mono);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.mob-verdict .mob-pass {
+  color: var(--mob-green);
+}
+
+.mob-verdict .mob-fail {
+  color: var(--mob-coral);
+}
+
+/* The long-task tile: a finished report's head and its first findings, each with how many Reels it cites. */
+.mob-report .mob-verdict-head strong {
+  color: var(--mob-green);
+}
+
+.mob-report-lines {
+  display: grid;
+  gap: 10px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mob-report-lines li {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--mob-ink);
+  text-wrap: pretty;
+}
+
+.mob-report-src {
+  display: inline-block;
+  margin-left: 0.5em;
+  padding: 0 7px;
+  border-radius: var(--mob-radius-full);
+  background-color: var(--mob-sunken);
+  font-size: 0.75rem;
+  line-height: 1.6;
+  color: var(--mob-ink-2);
+  white-space: nowrap;
+}
+
+[data-component-part="tile-background-light"],
+[data-component-part="tile-background-dark"] {
+  opacity: 0.5;
+}
+
+[data-component-part="tile-title"] {
+  font-weight: var(--mob-weight-semibold);
+  font-size: 1.0625rem;
+}
+
+[data-component-part="tile-description"] {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  text-align: center;
+  text-wrap: balance;
+}
+
+/* The agent prompt sits on the same soft fill as a card. Its buttons are mobster.dev's pills: Copy is the Ink
+   primary (violet is never a button's fill), Open in Cursor the white secondary. */
+.prompt {
+  border-color: transparent;
+  background-color: var(--mob-card);
+  border-radius: var(--mob-radius-card);
+}
+
+.prompt [data-component-part="prompt-action-copy-button"],
+.prompt [data-component-part="prompt-action-cursor-button"] {
+  height: 28px;
+  padding-inline: 12px;
+  border: 0 !important;
+  border-radius: var(--mob-radius-full);
+  font-weight: var(--mob-weight-medium);
+  transition: background-color var(--mob-duration-short) var(--mob-ease-standard);
+}
+
+.prompt [data-component-part="prompt-action-copy-button"] {
+  background-color: var(--mob-ink) !important;
+  color: var(--mob-paper) !important;
+}
+
+.prompt [data-component-part="prompt-action-copy-button"]:hover {
+  background-color: var(--mob-primary-hover) !important;
+}
+
+.prompt [data-component-part="prompt-action-cursor-button"] {
+  background-color: var(--mob-surface) !important;
+  color: var(--mob-ink) !important;
+  box-shadow: var(--mob-shadow-button-secondary);
+}
+
+/* Pill buttons, as on mobster.dev: Ink with a Paper label for the main action, a soft fill for the quiet one. */
+.mob-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 24px 0;
+}
+
+/* Right under the page's lead (the home page), the content's own top margin is the gap. */
+#content > .mob-actions:first-child {
+  margin-top: 0;
+}
+
+.mob-button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 18px;
+  border-radius: var(--mob-radius-full);
+  border: 0 !important;
+  background-color: var(--mob-ink);
+  color: var(--mob-paper) !important;
+  font-weight: var(--mob-weight-medium);
+  font-size: 0.9375rem;
+  letter-spacing: -0.011em;
+  text-decoration: none !important;
+  transition: background-color var(--mob-duration-short) var(--mob-ease-standard),
+    color var(--mob-duration-short) var(--mob-ease-standard), scale var(--mob-duration-short) var(--mob-ease-out);
+}
+
+/* mobster.dev's hover: Ink lightens toward Paper, with no lean to violet and no glow. Press scales to .96. */
+.mob-button:hover {
+  background-color: var(--mob-primary-hover);
+}
+
+.mob-button:active {
+  scale: 0.96;
+}
+
+.mob-button-quiet {
+  background-color: var(--mob-card);
+  color: var(--mob-ink) !important;
+}
+
+.mob-button-quiet:hover {
+  background-color: var(--mob-card-hover);
+}
+
+/* A price on the pricing cards, at heading size. #content raises it over the body's `#content :is(p, li, td, th)`,
+   which otherwise sets it at 1rem. */
+#content .mob-price {
+  margin: 4px 0 0;
+  font-size: 1.5rem;
+  font-weight: var(--mob-weight-medium);
+  letter-spacing: -0.02em;
+  color: var(--mob-ink);
+}
+
+#content .mob-price span {
+  font-size: 0.875rem;
+  font-weight: var(--mob-weight-body);
+  letter-spacing: 0;
+  color: var(--mob-ink-2);
+  white-space: nowrap;
+}
+
+/* A command name in a narrow card stays on one line. */
+.card code {
+  white-space: nowrap;
+}
+
+/* Keys as Mobster for Mac's key chips: the code face on a quiet fill, no keycap outline. */
+kbd {
+  display: inline-block;
+  min-width: 1.6em;
+  padding: 0.1em 0.45em;
+  border-radius: var(--mob-radius-xs);
+  background-color: color-mix(in srgb, var(--mob-ink) 7%, transparent);
+  font-size: 0.85em;
+  line-height: 1.4;
+  text-align: center;
+  color: var(--mob-ink);
+}
+
+/* Pager: show the previous page's name, and don't cut the next page's description. */
+#pagination [data-component-part="pagination-description"] {
+  display: none;
+}
+
+#pagination [data-component-part="pagination-prev"] [data-component-part="pagination-label"] {
+  display: none;
+}
+
+#pagination [data-component-part="pagination-prev"]::after {
+  content: attr(aria-label);
+}
+
+#pagination [data-component-part="pagination-prev"],
+#pagination [data-component-part="pagination-next"] > div {
+  background-color: var(--mob-card);
+  border-radius: var(--mob-radius-container);
+}
+
+/* The two sides share the row and match the next side's 4rem, and a long title wraps instead of ending in "…". On a
+   phone the sides stack, so neither is squeezed. */
+#pagination [data-component-part="pagination-prev"],
+#pagination [data-component-part="pagination-next"] {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+#pagination [data-component-part="pagination-prev"] {
+  min-height: 4rem;
+  justify-content: flex-start;
+}
+
+#pagination [data-component-part="pagination-title"] {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+@media (max-width: 639px) {
+  #pagination {
+    flex-direction: column;
+    gap: 4px;
+  }
+}
+
+/* Links and buttons change colour in 150 ms on the standard curve. Nothing else moves. */
+#content a {
+  transition: color var(--mob-duration-short) var(--mob-ease-standard),
+    text-decoration-color var(--mob-duration-short) var(--mob-ease-standard);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .mob-button,
+  #content a {
+    transition: none;
+  }
+
+  video {
+    display: none;
+  }
+}
+
+/* Changelog (<Update>): the date, then the release's name, then its tags, as plain text in the left column. No pill.
+   The column starts on the page title's edge (Mintlify pads each part 4 px in), and a release reads at the page's
+   body size, not Mintlify's prose-sm (14 px under a 16 px intro). */
+.update-container > div:first-child { gap: 0.25rem; }
+.update-container :is([data-component-part="update-label"], [data-component-part="update-description"], [data-component-part="update-tag-list"]) { padding-inline: 0; }
+.update-container [data-component-part="update-label"] { order: 1; background: none; border-radius: 0; cursor: default; font-size: 1rem; font-weight: var(--mob-weight-medium); color: var(--mob-ink); }
+.update-container [data-component-part="update-description"] { order: 2; margin-top: 0; font-size: 1rem; font-weight: var(--mob-weight-semibold); color: var(--mob-ink); }
+.update-container [data-component-part="update-tag-list"] { order: 3; margin-top: 0.5rem; gap: 0.75rem; }
+.update-container .prose-sm { font-size: 1rem; line-height: 1.75rem; }
+.update-container .prose-sm h2 { font-size: 1.25rem; line-height: 1.75rem; }
+/* The release's column keeps Mintlify's 2 px inner padding for focus rings but starts on the text edge, so at 390 its copy
+   lines up under the date. */
+.update-container > div:last-child { margin-inline-start: -0.125rem; }
+.update-container [data-component-part="update-tag"] { font-size: 0.9375rem; font-weight: var(--mob-weight-body); color: var(--mob-ink-2); }
+
+/* Diagrams (mermaid) on the same plate (product/VISUAL-LANGUAGE.md, Diagrams): a node is Surface with a Line Strong
+   hairline and radius 8, its words Ink at 14; edges are Ink 4 at 1.5 px with small heads; an edge's label is Ink 3 at 12
+   on the plate's own fill, never a grey chip. Mermaid writes its theme into the svg under the diagram's id, so these
+   rules need !important to win. */
+.mermaid {
+  padding: 24px;
+  border-radius: var(--mob-radius-input);
+  background-color: var(--mob-card);
+  box-shadow: var(--mob-shadow-card);
+}
+
+.mermaid svg {
+  display: block;
+  margin-inline: auto;
+  font-family: inherit !important;
+}
+
+/* Mermaid measures a label off the page, in its own face, then draws it here in Mobster Sans, and the docs' body rule
+   gives a label's paragraph the reading size and line height, so a box came out short and cut its words mid-line. A
+   node's label keeps the diagram's 14/20 and an edge's label its 13/18 (below), and neither is clipped to the box it
+   was measured for. Mermaid draws both in a foreignObject. */
+.mermaid foreignObject {
+  overflow: visible;
+}
+
+.mermaid foreignObject p {
+  margin: 0;
+  font-size: 0.875rem !important;
+  line-height: 1.25rem !important;
+}
+
+.mermaid .edgeLabel p {
+  font-size: 0.8125rem !important;
+  line-height: 1.125rem !important;
+}
+
+/* On a phone a diagram keeps its words at about 12 px instead of shrinking to the column (a three-wide diagram fell to
+   7 px at 390): it is drawn 40rem wide and scrolls sideways inside its plate. */
+@media (max-width: 640px) {
+  .mermaid {
+    padding: 16px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+  }
+
+  .mermaid svg {
+    min-width: 40rem;
+  }
+}
+
+.mermaid .node :is(rect, polygon, circle, ellipse, path) {
+  fill: var(--mob-surface) !important;
+  stroke: var(--mob-line-strong) !important;
+  stroke-width: 1px !important;
+}
+
+/* In dark, Line Strong on a Surface node over the card fill all but vanished (Codex, round 6), so a node's ring is Ink 4
+   there, the edges' grey: the structure reads, and the subject's Ink ring still stands out. */
+:root.dark .mermaid .node:not(.focus) :is(rect, polygon, circle, ellipse, path) {
+  stroke: var(--mob-ink-4) !important;
+}
+
+.mermaid :is(.node, .cluster) rect {
+  rx: 8px;
+  ry: 8px;
+}
+
+/* The one node a diagram is about (`class <node> focus` in its source): ringed in Ink. */
+.mermaid .node.focus :is(rect, polygon, path) {
+  stroke: var(--mob-ink) !important;
+  stroke-width: 1.5px !important;
+}
+
+
+.mermaid :is(.nodeLabel, .label, .label p) {
+  color: var(--mob-ink) !important;
+  fill: var(--mob-ink) !important;
+  font-size: 0.875rem;
+}
+
+.mermaid .flowchart-link {
+  stroke: var(--mob-ink-4) !important;
+  stroke-width: 1.5px !important;
+}
+
+.mermaid .marker {
+  fill: var(--mob-ink-4) !important;
+  stroke: var(--mob-ink-4) !important;
+}
+
+/* An edge's label is set at 13 px: the diagram is drawn at its own width and scaled to the column, so at 1440 a 12 px
+   label showed at about 10 (Codex, round 6). */
+.mermaid :is(.edgeLabel, .labelBkg, .edgeLabel p) {
+  background-color: var(--mob-card) !important;
+  color: var(--mob-ink-3) !important;
+  font-size: 0.8125rem;
+}
+
+.mermaid .edgeLabel rect {
+  fill: var(--mob-card) !important;
+  opacity: 1 !important;
+}
+
+.mermaid .cluster rect {
+  fill: transparent !important;
+  stroke: var(--mob-line) !important;
+}
+
+/* Figures (<Frame>) as the visual language's (product/VISUAL-LANGUAGE.md, Figures and screenshots): the picture on
+   the plate with 24 around it (16 on a phone), with no grid pattern behind it and no hairline over it, the picture at
+   radius 8 inside the plate's 12, and the caption under the plate, left-aligned, in Ink 3 at 14/20. Mintlify draws the
+   frame itself as the plate, so the plate moves to the picture's wrapper and the frame keeps only the caption. */
+.frame[data-name="frame"] {
+  padding: 0 !important;
+  border-radius: 0 !important;
+  background-color: transparent !important;
+}
+
+.frame[data-name="frame"] > div.absolute {
+  display: none;
+}
+
+.frame[data-name="frame"] > div.relative {
+  padding: 24px;
+  border-radius: var(--mob-radius-input) !important;
+  background-color: var(--mob-card);
+  box-shadow: var(--mob-shadow-card);
+}
+
+.frame[data-name="frame"] img {
+  border-radius: var(--mob-radius-inner) !important;
+}
+
+.frame[data-name="frame"] figcaption {
+  margin-top: 12px;
+  padding: 0 !important;
+  color: var(--mob-ink-3) !important;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  text-align: left !important;
+}
+
+@media (max-width: 640px) {
+  .frame[data-name="frame"] > div.relative {
+    padding: 16px;
+  }
+}
+
+/* The docs' accent, from the brand's violet text colour: the links, the card icons, the rail beside the page you're
+   on and the tab you're in. Body text is Ink at 16 px, not Ink 2, and the headings step up in size so a page has a
+   top, a middle and a footnote. Cards are hairline outlines on the page, with the accent on hover. */
+:root {
+  --mob-accent: var(--mob-violet-text);
+}
+
+#content :is(p, li, td, th) {
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+#page-title {
+  font-size: 2.25rem;
+  line-height: 1.1;
+}
+
+#content h2 {
+  margin-top: 3rem;
+  padding-top: 1.75rem;
+  border-top: 1px solid var(--mob-line);
+  font-size: 1.75rem;
+  line-height: 1.2;
+}
+
+#content h3 {
+  font-size: 1.25rem;
+  line-height: 1.3;
+}
+
+#navigation-items a[aria-current="page"] {
+  border-color: var(--mob-accent);
+  color: var(--mob-accent);
+}
+
+#navigation-items a[aria-current="page"] svg {
+  background-color: var(--mob-accent);
+}
+
+.nav-tabs-item[data-active="true"] > div:last-child {
+  background-color: var(--mob-accent);
+}
+
+#table-of-contents .toc-item[data-active] > a {
+  border-color: var(--mob-accent);
+  color: var(--mob-accent);
+}
+
+#content a.link:not(.tile) {
+  color: var(--mob-accent);
+}
+
+.card {
+  border: 1px solid var(--mob-line) !important;
+  background-color: transparent !important;
+}
+
+.card:hover {
+  border-color: var(--mob-accent) !important;
+  background-color: color-mix(in srgb, var(--mob-accent) 5%, transparent) !important;
+}
+
+[data-component-part="card-icon"] svg {
+  background-color: var(--mob-accent) !important;
+}
+
+/* A product shot on a page: a framed picture across the column, at its own aspect, with a hairline and one soft shadow. */
+.mob-hero {
+  max-width: 44rem;
+  margin: 2rem 0 0.5rem;
+  border-radius: var(--mob-radius-card);
+  box-shadow: var(--mob-shadow-shot);
+  overflow: hidden;
+}
+
+.mob-hero img {
+  width: 100%;
+  height: auto;
+  margin: 0;
+}
+
+/* Inside a changelog entry the groups (Added, Changed, Fixed) are the larger step and each feature under one is the smaller. */
+.update-container .prose-sm h2 {
+  font-size: 1.5rem;
+  line-height: 2rem;
+}
+
+.update-container .prose-sm h3 {
+  margin-top: 1.5rem;
+  font-size: 1.0625rem;
+  line-height: 1.5rem;
+}
+
+.mob-hero-small {
+  max-width: 32rem;
+}
+
+/* A card's title is a heading element, but it is a label, not a section: no rule above it and the body's size. */
+#content .card :is(h2, h3),
+#content [data-component-part="card-title"] {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+  font-size: 1.0625rem;
+  line-height: 1.4;
+}
+
+[data-component-part="card-icon"] {
+  margin-bottom: 0.75rem;
+}
+
+/* On a phone the page menu (Copy page) sits between the subtitle and the first thing to do, so it goes: the
+   header's text, the buttons and the cards come first. */
+@media (max-width: 639px) {
+  #page-context-menu {
+    display: none;
+  }
+}
+
+/* Partner marks (docs/images/marks*, written by scripts/gen_agent_marks.py) are a page's or a card's icon, which
+   Mintlify draws as an <img>. A one-colour mark is drawn in the light ink, and on a dark page it is inverted, which
+   with 5% more light gives the dark ink (#181818 to #f2f2f2). A mark with its own version for dark grounds takes it. */
+:root.dark img[src*="/images/marks-ink/"] {
+  filter: invert(1) brightness(1.05);
+}
+
+:root.dark img[src$="/images/marks/opencode.svg"] {
+  content: url("/images/marks/opencode-dark.svg");
+}
+
+/* A partner's mark beside its name in a table: the body's cap height, before the name. */
+.mob-mark {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  margin: 0 0.5rem 0 0;
+  vertical-align: -0.1875rem;
+}

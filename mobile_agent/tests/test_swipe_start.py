@@ -3,7 +3,7 @@
 import unittest
 from types import SimpleNamespace
 
-from mobile_agent.wda_gestures import clear_stroke_start
+from mobile_agent.wda.gestures import clear_stroke_start
 
 
 def screen(*controls):

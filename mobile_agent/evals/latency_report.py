@@ -16,28 +16,21 @@ With no --db/--jsonl it reads the desktop app's state journals.
 """
 
 import argparse
-from datetime import datetime
 import glob
 import json
 import os
 import sqlite3
 import statistics
+from datetime import datetime
+
+from ..bench.metrics import quantile
+from ..latency_overlap import temporal_overlap_ms
 
 DEFAULT_DBS = os.path.expanduser("~/Library/Application Support/app.mobster.desktop/state/*.sqlite3")
 
 # Legacy attribution: which model call wins an interval when several overlap.
 CALL_PRIORITY = ["decision", "action_verification", "text", "recovery", "planning", "extraction",
                  "verification"]
-
-
-def quantile(values, q):
-    values = sorted(values)
-    if not values:
-        return None
-    k = (len(values) - 1) * q
-    lo = int(k)
-    hi = min(lo + 1, len(values) - 1)
-    return values[lo] + (values[hi] - values[lo]) * (k - lo)
 
 
 def stats(values):
@@ -48,8 +41,6 @@ def stats(values):
             "p90": round(quantile(values, .9), 1), "p99": round(quantile(values, .99), 1),
             "max": round(max(values), 1)}
 
-
-# -- loading -----------------------------------------------------------------------------
 
 def load_journal(path):
     db = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
@@ -87,10 +78,8 @@ def load_jsonl(path):
     return runs
 
 
-# -- per-run phases ----------------------------------------------------------------------
-
 def traced(run):
-    """(wall_ms, phases [(name, start, dur)], calls [(purpose, lane, start, dur, attrs)], marks) or None."""
+    """(wall_ms, phases, calls, marks, dropped) for a traced run, or None."""
     trace = run.get("trace")
     if trace is None:
         trace = next((e for e in run.get("events", ()) if e.get("event") == "latency_trace"), None)
@@ -99,7 +88,7 @@ def traced(run):
     phases = [(item[0], item[1], item[2]) for item in trace.get("phases", ())]
     calls = [tuple(item[:4]) + ((item[4] if len(item) > 4 else {}),) for item in trace.get("calls", ())]
     marks = [(item[0], item[1], item[2] if len(item) > 2 else {}) for item in trace.get("marks", ())]
-    return trace.get("wall_ms") or 0, phases, calls, marks
+    return trace.get("wall_ms") or 0, phases, calls, marks, trace.get("dropped") or {}
 
 
 def _legacy_label(prev, nxt, ctx):
@@ -174,21 +163,19 @@ def legacy(run):
             name = _legacy_label(event, nxt, ctx)
         spans.append((name, event["timestamp"] - first, duration))
     wall = events[-1]["timestamp"] - first
-    return wall, spans, calls, []
+    return wall, spans, calls, [], {}
 
 
 def family(name):
     return name.split(".", 1)[0]
 
 
-# -- report ------------------------------------------------------------------------------
-
 def analyze(runs):
     per_phase, per_family_run, walls = {}, {}, []
     calls_by_purpose, off_lane, overlaps, unattributed = {}, [], [], []
     marks, reused = {}, []
     first_decision, later_decision = [], []
-    example = None
+    incomplete_overlaps = 0
     rows = []
     for run in runs:
         parsed = traced(run)
@@ -198,7 +185,8 @@ def analyze(runs):
             kind = "legacy"
         if parsed is None:
             continue
-        wall, phases, calls, run_marks = parsed
+        wall, phases, calls, run_marks, dropped = parsed
+        incomplete_overlaps += bool(dropped.get("phases") or dropped.get("calls"))
         walls.append(wall)
         sums = {}
         for name, _, duration in phases:
@@ -218,9 +206,8 @@ def analyze(runs):
                 (later_decision if decision_seen else first_decision).append(duration)
                 decision_seen = True
         off = sum(duration for _, lane, _, duration, _ in calls if lane != "main")
-        waited = sum(duration for name, _, duration in phases if ".wait" in name)
         off_lane.append(off)
-        overlaps.append(max(0.0, off - waited))
+        overlaps.append(temporal_overlap_ms(phases, calls, wall))
         for name, _, _ in run_marks:
             marks[name] = marks.get(name, 0) + 1
         rows.append({"id": run["id"], "kind": kind, "wall": wall, "phases": phases, "goal": run.get("goal")})
@@ -243,7 +230,8 @@ def analyze(runs):
         "calls": {f"{purpose}@{lane}": stats(values) for (purpose, lane), values in sorted(calls_by_purpose.items())},
         "first_decision_ms": stats(first_decision), "later_decision_ms": stats(later_decision),
         "connection_reuse_rate": round(sum(reused) / len(reused), 3) if reused else None,
-        "overlap": {"off_lane_model_ms_per_run": stats(off_lane), "hidden_ms_per_run": stats(overlaps)},
+        "overlap": {"off_lane_model_ms_per_run": stats(off_lane),
+                    "temporal_ms_per_run": stats(overlaps), "incomplete_trace_runs": incomplete_overlaps},
         "unattributed_ms_per_run": stats(unattributed),
         "marks": marks,
         "median_run": {"id": example["id"], "goal": (example["goal"] or "")[:80], "wall_ms": round(example["wall"], 1),
@@ -277,8 +265,10 @@ def print_report(report):
         print(f"\nFirst decision of a run p50/p90 {fd['p50']:.0f}/{fd['p90']:.0f} ms; later "
               f"{ld.get('p50', 0):.0f}/{ld.get('p90', 0):.0f} ms. Connection reuse: {report['connection_reuse_rate']}")
     ov = report["overlap"]
-    print(f"Overlap: off-lane model ms/run mean {ov['off_lane_model_ms_per_run'].get('mean')}, hidden ms/run mean "
-          f"{ov['hidden_ms_per_run'].get('mean')}. Unattributed ms/run mean {report['unattributed_ms_per_run'].get('mean')}")
+    print(f"Overlap: off-lane model ms/run mean {ov['off_lane_model_ms_per_run'].get('mean')}, "
+          f"temporal overlap ms/run mean {ov['temporal_ms_per_run'].get('mean')} "
+          f"({ov['incomplete_trace_runs']} traces incomplete). Unattributed ms/run mean "
+          f"{report['unattributed_ms_per_run'].get('mean')}")
     if report["marks"]:
         print("Marks: " + ", ".join(f"{k}={v}" for k, v in sorted(report["marks"].items())))
     example = report["median_run"]

@@ -1,98 +1,92 @@
-"""Proof-gated completion (frontier Bet 1): the task contract, the declared-commit policy, the source
-ledger and the DONE gate in code.
-
-One text-only call (reasoning none, run while the first screen is read) compiles the request into typed
-items: READ a source, WRITE a value, COMMIT an act other people see or that spends, REPORT a detail,
-FORBID an act the request rules out. Code then does three jobs the prompt used to do:
-
-- Commits pass only when declared. A tap or long press on a control whose first words name a commit
-  ("Send", "Pay $42.00", "Place Order"), or Return in a message composer, passes only when every commit
-  verb in it belongs to the act family of an open COMMIT item of the current app, or is the first commit
-  word of that item's verbatim quote ("Request a CityRideX" allows "Request" whatever act it compiled
-  to); its amount must meet
-  the item's bounds ("under $50"); a message needs text the agent typed in a field on screen (a feed's
-  share "Send" has none); an object commit (Follow) needs its object's name on screen. A COMMIT whose
-  quote is not verbatim in the request is dropped. F1 replay (26 Sep, 88 runs): the regex guard refused
-  63 required commits; this policy allows all 63 and refuses every unrequested one.
-- Receipts close items: a sent message shows in a non-editable row and has left the composer; a booking,
-  order, payment or follow shows a new confirmation row; a write reads back in its app on a screen recorded
-  after this run first wrote or committed there (typing, a picker, a tap on a control that names an act), with
-  numbers as whole tokens, or the model cites the row that showed it already so ("already: <row>"); a write that adds
-  with nothing typed for it needs a new row per object it names; a reported value
-  was on a screen at or before the turn it was recorded (the ledger); a named source was seen in its app.
-  A closed commit refuses repeats (a second Follow tap unfollows); "each" items stay open.
-- DONE is accepted when every item has its receipt, or with at most LOW_TURNS turns left, when the
-  answer names what is unproven. A missing receipt reopens its item with a one-line reason (at most
-  MAX_REOPENS times an item, then it is marked unproven so the gate cannot eat the budget).
-
-Elements are duck-typed (label, role, rect as screen fractions, editable, value): state.Element in the
-agent, recorded rows in the offline replay.
-"""
+"""Proof-gated completion: the task contract, the declared-commit policy, the source ledger and the DONE gate."""
 
 import re
 from types import SimpleNamespace
 
-from .contract_screen import (ACTS, ACT_LABEL, ADDRESS, ADDS, ALREADY, APP_STORE, ATOM, COMMIT_WORDS, COMPUTED_ITEM,
-                              CONFIRM_ITEM, CONFIRM_WORDS, DELIVERY, EMPTY_STATE, FAMILIES, FOLDERS, GENERIC, Gate,
-                              Item, KINDS, LOW_TURNS, MAX_ITEMS, MAX_REOPENS, MESSAGE, MESSAGE_ACTS, MONEY,
-                              MONEY_ACTS, MORE_THAN_ONE, NONE_VALUE, NOTEBOOK_KINDS, NO_RESULTS, NUMBER, OBJECT_ACTS,
-                              OBJECT_STOP, OFF_VALUES, ON_VALUES, OTHERS, Pending, ROW_ROLES, STATE_ACTS, STATE_ON,
-                              SUMMARY_ITEM, SWITCH_ROLES, TAINT_CHARS, TO_FIELD, WRITE_OPS, center_y, as_float,
-                              overlaps, shows, squash, addressed_to, bounds, commit_amount, composer_field,
-                              control_state, counterparty, deletes, element_text, is_on, is_search_field, label_head,
-                              label_verbs, list_rows, message_key, name_match, plain, point_in, quoted,
-                              receipt_patterns, recipient, row_name, row_of, same_control, screen_title, shown_count,
-                              store_verbs, typed_query)
-
-
-# ---------------------------------------------------------------- compile
-
-SYSTEM = """Compile a phone agent's task contract from the user's request, before any work starts. Code enforces \
-the contract: the agent may only perform the commits you declare, and the task counts as done only when every \
-item has on-screen proof.
-
-Item kinds:
-- READ: every app, folder, list, record or tab the request names as a place to look, check or review (one item \
-per source).
-- WRITE: every text or value the agent must enter or change (a note, a document section, a comment body, a \
-message body, a cell, an alarm, a form field). payload = the exact text only when the request dictates it word \
-for word (a title in quotes, a time), else "".
-- COMMIT: every act the request asks for that other people can see, that spends, moves or requests money, that \
-orders, books or reserves, that follows or subscribes, that reacts to a post, that saves, archives, cancels or \
-deletes, shares or calls, that gets, installs or buys an app from the App Store (act install, what = the app's \
-name): anything a user would want to approve before it happens. One item per act and object. \
-Declare only acts the request asks for; never infer one from a goal ("plan my trip" does not ask to book). A \
-conditional act ("if rain, message X") is still declared, with its condition. A message, reply, comment or post \
-the request asks the agent to compose, write or draft is also to be sent or posted, unless the request says not \
-to: declare that COMMIT too, quoting the words that ask for the message.
-- REPORT: every separate detail the user asks to be told or to have confirmed.
-- FORBID: every act the request rules out ("do not delete anything", "don't send it yet"), with that act.
-
-Fields:
-- app: the app's name from the list, or "" if none.
-- what: the source (READ), the target (WRITE), the object acted on (COMMIT, FORBID), or the detail (REPORT). \
-Name the object as the request does (a person, a company, a document title).
-- act: for a COMMIT or FORBID, its kind; "none" for other items.
-- count: for a COMMIT, "1", a number, or "each" when the request says each, all or any; "" for other items.
-- condition: the request's condition for the item, else "".
-- quote: the request's own words that ask for this item, copied verbatim as one contiguous span. For a COMMIT \
-the quote must include the words that ask for that act.
-Keep the request's order; at most 24 items."""
-
-SCHEMA = {"type": "object", "additionalProperties": False, "required": ["items"], "properties": {
-    "items": {"type": "array", "maxItems": MAX_ITEMS, "items": {
-        "type": "object", "additionalProperties": False,
-        "required": ["kind", "app", "what", "payload", "act", "count", "condition", "quote"],
-        "properties": {
-            "kind": {"type": "string", "enum": list(KINDS)},
-            "app": {"type": "string"}, "what": {"type": "string"}, "payload": {"type": "string"},
-            "act": {"type": "string", "enum": list(ACTS)}, "count": {"type": "string"},
-            "condition": {"type": "string"}, "quote": {"type": "string"}}}}}}
+from .contract_prompt import SCHEMA, SYSTEM
+from .contract_screen import (
+    ACT_LABEL,
+    ADDRESS,
+    ADDS,
+    ALREADY,
+    APP_STORE,
+    ATOM,
+    COMMIT_WORDS,
+    COMPUTED_ITEM,
+    CONFIRM_ITEM,
+    CONFIRM_WORDS,
+    DELIVERY,
+    EMPTY_STATE,
+    FAMILIES,
+    FOLDERS,
+    GENERIC,
+    KINDS,
+    LOW_TURNS,
+    MAX_ITEMS,
+    MAX_REOPENS,
+    MESSAGE,
+    MESSAGE_ACTS,
+    MONEY,
+    MONEY_ACTS,
+    MORE_THAN_ONE,
+    NO_RESULTS,
+    NONE_VALUE,
+    NOTEBOOK_KINDS,
+    OBJECT_ACTS,
+    OBJECT_STOP,
+    OFF_VALUES,
+    ON_VALUES,
+    OTHERS,
+    ROW_ROLES,
+    STATE_ACTS,
+    STATE_ON,
+    SUMMARY_ITEM,
+    SWITCH_ROLES,
+    TAINT_CHARS,
+    TO_FIELD,
+    WRITE_OPS,
+    Gate,
+    Item,
+    Pending,
+    addressed_to,
+    as_float,
+    bounds,
+    card_of,
+    center_y,
+    commit_amount,
+    composer_field,
+    control_state,
+    counterparty,
+    deletes,
+    element_text,
+    is_on,
+    is_search_field,
+    label_head,
+    label_verbs,
+    list_rows,
+    message_key,
+    name_match,
+    overlaps,
+    plain,
+    point_in,
+    quoted,
+    receipt_patterns,
+    recipient,
+    row_name,
+    row_of,
+    same_control,
+    screen_title,
+    shown_count,
+    shows,
+    squash,
+    store_verbs,
+    typed_query,
+)
+from .contract_view import hidden_row, holds_atom
 
 
 def compile_contract(client, request, apps=(), timeout=60):
-    """The request's Contract (one text-only call at reasoning "none"), or None if the call fails or
-    yields no items: the agent then runs without one, under the regex guard (frontier.guard)."""
+    """The request's Contract (one text-only call at reasoning "none"), or None if the call fails or yields no items."""
     messages = [{"role": "system", "content": SYSTEM}, {"role": "user", "content": [
         {"type": "text", "text": f"Request: {request}\n\nApps: " + ", ".join(apps)}]}]
     # A client that takes reasoning per call is not touched: the first decision may be in flight on it.
@@ -112,11 +106,18 @@ def compile_contract(client, request, apps=(), timeout=60):
     return contract if contract.items else None
 
 
-# ---------------------------------------------------------------- the contract
-
 def excludes_others(item):
     """A FORBID whose words rule out only the acts the request doesn't name (OTHERS): "Delete nothing else."."""
     return item.kind == "FORBID" and bool(OTHERS.search(f"{item.quote} {item.what}"))
+
+
+# A quoted name followed by one of these is where a commit puts its object, not the object ("to 'Want to Try' list").
+DESTINATION_AFTER = re.compile(r"\s*(?:list|folder|playlist|album|board|collection|category|label|tag|shelf|space)s?\b",
+                               re.I)
+# A quoted name after these is how the act is done, not what it acts on ("reaction 'Insightful'").
+PARAMETER_BEFORE = re.compile(r"\b(?:reaction|react(?:ion)? with|with (?:a|the) reaction)\s*$", re.I)
+# The top and bottom bars: a control there is a toolbar's, not a list's.
+BAR_TOP, BAR_BOTTOM = .13, .9
 
 
 class Contract:
@@ -129,23 +130,19 @@ class Contract:
         self.pending = []
         self.money = []             # receipted money commits: (amount, names, step)
         self.events = []            # receipts and refusals, for the trace
-        # Parallel to ``screens``: (step, app, title, {row: the row as shown}). The rows above are folded for
-        # matching; the Mac app quotes proof as the screen showed it, in the place it showed it.
+        # Parallel to ``screens``; the Mac app quotes proof as the screen showed it, not folded.
         self.shown = []
-        # A long task's notebook (longform/notebook.py): its REPORT items are proven by what the notebook holds,
-        # since the report is written from it. None for every other run.
+        # A long task's notebook (longform/notebook.py): its REPORT items are proven by what it holds; None otherwise.
         self.notebook = None
-        # app -> the number of screens recorded when this run first wrote or committed there: a WRITE is proven only
-        # by a screen recorded after that (a value already on screen before the run touched the app proves nothing).
+        # app -> screens recorded when this run first wrote or committed there;
+        # a WRITE is proven only by a later screen.
         self.first_writes = {}
-        # (step, app, rows): the rows of each screen that sit in a list (a Cell, or inside a Cell's frame). A saved
-        # location, contact or alarm is a row of its app's list; a page's own title is not.
+        # (step, app, rows): the rows of each screen that sit in a list; a page's own title is not a row.
         self.listed = []
 
     @classmethod
     def from_items(cls, raw, request):
-        """Validated items: kinds and acts known; a COMMIT whose quote is not verbatim in the request is
-        dropped (the model cannot declare an act the user never asked for)."""
+        """Validated items: kinds and acts known, and a COMMIT whose quote is not verbatim in the request dropped."""
         items, dropped, asked = [], [], plain(request)
         for entry in list(raw)[:MAX_ITEMS]:
             if not isinstance(entry, dict) or entry.get("kind") not in KINDS:
@@ -168,8 +165,6 @@ class Contract:
             item.id = index + 1
         return cls(items, request, dropped)
 
-    # ------------------------------------------------ prompt
-
     def lines(self):
         """The contract as the model sees it: ``6. [open] COMMIT pay (SplitPay): pending requests [each]``."""
         out = []
@@ -183,8 +178,7 @@ class Contract:
             elif item.receipts:
                 mark = f"[{len(item.receipts)} done, open]"
             elif item.kind in ("READ", "WRITE") and self.proof(item)[0]:
-                # Proven from the screens already seen: shown as such, or the model reopens the source "to verify"
-                # (two turns, ~9.5 s, in a 9 Oct run: a READ the search row had already proven stayed "[ ]").
+                # Proven from the screens already seen, or the model reopens the source "to verify" (~9.5 s, 9 Oct).
                 mark = "[seen on screen]" if item.kind == "READ" else "[done: shown on screen]"
             else:
                 mark = "[ ]"
@@ -198,8 +192,6 @@ class Contract:
               "exact value as shown, or missing; mark other items done when you finish them. Sent messages, "
               "confirmations and saved text are checked on screen. A WRITE that was already so before you acted: mark "
               "it done with value \"already: \" and the exact row that shows it):")
-
-    # ------------------------------------------------ the model's marks
 
     def update(self, updates, step):
         """Apply a turn's checklist_updates; returns the items that changed."""
@@ -226,8 +218,6 @@ class Contract:
                     item.already = (step, plain(value), True)  # a bare value counts only as a whole row
             changed.append(item)
         return changed
-
-    # ------------------------------------------------ the ledger
 
     def _wrote(self, app):
         self.first_writes.setdefault(plain(app), len(self.screens))
@@ -288,7 +278,7 @@ class Contract:
             key = message_key(pending.payload)
 
             def composing(text, editable):
-                # The composer still holding the text: unsent. Known by its label; else any field (as before).
+                # The composer still holding the text is unsent; known by its label, else any field.
                 return editable and (not pending.composer or text.startswith(pending.composer))
             held = any(key and key in t for t, editable, _ in rows if composing(t, editable))
             if held:
@@ -296,8 +286,8 @@ class Contract:
             shown = [t for t, editable, _ in rows if key and key in t and not editable]
             if shown:
                 return f"sent: {shown[-1][:120]}"
-            # The bubble itself (a text view in iOS 26 Messages) with its delivery mark, in the thread where the
-            # send was approved: "Delivered" under the exact text (O2, Kate Bell: sent, then "not confirmed").
+            # The sent bubble is a text view in iOS 26 Messages: "Delivered" under the exact text,
+            # in the approved thread.
             bubbles = [t for t, editable, _ in rows if key and key in t and not composing(t, editable)]
             same_thread = not pending.title or not title or plain(title) == plain(pending.title)
             if len(bubbles) > pending.hits and same_thread and any(DELIVERY.match(t) for t, _, _ in rows):
@@ -314,9 +304,7 @@ class Contract:
 
     @staticmethod
     def _state_receipt(pending, elements):
-        """A like's or a follow's receipt: the control the agent tapped, where it was, now on (selected, its words for
-        on, a value turned on) when it was not before, or the count on or beside it up by one. A change anywhere else
-        (a banner closing, a page opening) is none."""
+        """A like's or a follow's receipt."""
         before = pending.control
         if before is None:
             return None
@@ -348,8 +336,7 @@ class Contract:
         needed = item.needed()
         if needed is not None and len(item.receipts) >= needed:
             item.status = "closed"
-        # For the Mac app's proof: the receipt's row as shown (the receipt itself is folded and cut), the
-        # commit's exact text and the screen's title.
+        # For the Mac app's proof: the receipt's row as shown, the commit's exact text and the screen's title.
         row = receipt.split(": ", 1)[1] if receipt.startswith(("sent: ", "shown: ")) else None
         shown = next((original for text, original in (originals or {}).items() if row and text.startswith(row)), None)
         self.events.append({"event": "receipt", "item": item.id, "step": step, "receipt": receipt, "shown": shown,
@@ -370,12 +357,8 @@ class Contract:
                 self.empty_searches.append((step, app, query))
                 return
 
-    # ------------------------------------------------ the commit gate
-
     def check(self, operation, element, snapshot, app, *, text=None, chain_typed=(), bind=True):
-        """Gate one action. Not a commit: Gate(True). A commit: allowed only for an open declared item.
-        ``chain_typed``: text typed earlier in this model call's chain. ``bind=False`` skips the message
-        and object bindings (label-level measurement only)."""
+        """Gate one action: a commit passes only for an open declared item."""
         elements = list(getattr(snapshot, "elements", ()) or ())
         if element is None:
             return Gate(True)
@@ -393,6 +376,8 @@ class Contract:
                     element.label) else verbs
             if not verbs and element.role in SWITCH_ROLES and COMMIT_WORDS.search(element.label or ""):
                 return self._toggle(element, app)
+            if verbs and self._opens_a_place(element, elements, app):
+                return Gate(True)
         elif operation in ("SUBMIT", "TYPE_SUBMIT") and composer_field(element, elements, self.typed_texts()):
             verbs = {"send"}
             value = getattr(element, "value", "") or ""
@@ -408,14 +393,15 @@ class Contract:
         if not verbs:
             return Gate(True)
         verbs = frozenset(verbs)
-        what = f"{'Return in' if operation in ('SUBMIT', 'TYPE_SUBMIT') else 'tapping'} {label_head(element.label) or element.label!r}"
+        what = (f"{'Return in' if operation in ('SUBMIT', 'TYPE_SUBMIT') else 'tapping'} "
+                f"{label_head(element.label) or element.label!r}")
         declared = [i for i in self.items if i.kind == "COMMIT" and self._app_ok(i, app) and verbs <= i.family()
                     and (i.act != "install" or store)]  # an app is installed from the App Store only
         for item in self.items:
             if item.kind == "FORBID" and self._app_ok(item, app) and verbs & item.family():
                 if excludes_others(item) and any(i.status != "closed" for i in declared):
-                    # "Delete nothing else": the deletes the request names go on, bound to their object and asked
-                    # for; once those are done, or for any act the request doesn't name, this still refuses.
+                    # "Delete nothing else": the deletes the request names go on, bound to their object;
+                    # any other act still refuses.
                     continue
                 return self._refuse(verbs, f"Refused: {what} would {item.act} -- the request rules it out "
                                            f"(\"{item.quote}\").")
@@ -432,7 +418,9 @@ class Contract:
             done = declared[0]
             return self._refuse(verbs, f"Refused: item {done.id} ({done.what}) is already done and shown on "
                                        "screen; doing it again would repeat or undo it.")
-        amount = commit_amount(element, elements) if any(i.act in MONEY_ACTS for i in open_) else None
+        typed = [(None, text) for text in chain_typed] + [(t["field"], t["text"]) for t in self.typed
+                                                          if t["app"] == app]
+        amount = commit_amount(element, elements, typed) if any(i.act in MONEY_ACTS for i in open_) else None
         if amount is None and any(i.act == "install" for i in open_):
             # An app's price is on its own button ("$4.99"); a Get button is free whatever else the page shows.
             price = MONEY.search(element.label or "")
@@ -470,12 +458,22 @@ class Contract:
                 payload = payload or bound
             if bind and item.act in OBJECT_ACTS and item.act != "install":
                 row = row_of(element, elements)
-                tokens = self.distinctive(item)
+                tokens = self.object_tokens(item)
                 if row is not None and tokens and not any(token in plain(element_text(row)) for token in tokens):
-                    # A control in a row acts on that row: the row must name the object (a Follow or a Delete on
-                    # the row above the named one would act on someone else while the card named the right one).
+                    # A control in a row acts on that row, so the row must name the object (a Follow on the row above
+                    # would act on someone else).
                     reasons.append(f"this {', '.join(sorted(verbs))} belongs to the row "
                                    f"{' '.join(element_text(row).split())[:60]!r}, not to {item.what!r}")
+                    continue
+                card = card_of(element, elements) if row is None and item.act == "react" and tokens else None
+                if card is not None and not any(re.search(rf"(?<!\w){re.escape(token)}(?!\w)", plain(element_text(e)))
+                                                for e in card for token in tokens):
+                    # A feed's posts are no rows: a reaction acts on the post it closes, which must name the object.
+                    texts = [element_text(e) for e in card if element_text(e).strip()]
+                    first = next((t for t in texts if re.search(r"[A-Z][a-z]+ [A-Z][a-z]+", t)),
+                                 texts[0] if texts else "")
+                    reasons.append(f"this {', '.join(sorted(verbs))} belongs to the post "
+                                   f"{' '.join(first.split())[:60]!r}, not to {item.what!r}")
                     continue
             if (bind and item.act in OBJECT_ACTS and item.needed() == 1 and MORE_THAN_ONE.search(element.label or "")
                     and not MORE_THAN_ONE.search(f"{item.quote} {item.what}")):
@@ -494,8 +492,8 @@ class Contract:
         return self._refuse(verbs, f"Refused: {what}: " + "; ".join(dict.fromkeys(reasons)) + ".")
 
     def screen_text_in(self, text, request=""):
-        """A run of TAIL_CHARS or more of ``text`` that a screen of this run showed and the request doesn't hold, or
-        None: text copied from the screen into a message (the taint check)."""
+        """A run of TAIL_CHARS or more of ``text`` that a screen of this run showed and the request doesn't hold,
+        or None."""
         wanted = plain(text)
         if len(wanted) < TAINT_CHARS:
             return None
@@ -510,13 +508,36 @@ class Contract:
                         return piece
         return None
 
+    def _opens_a_place(self, element, elements, app):
+        """Whether a control named for a folder the request reads ("READ (CloudDrive): Archive folder") opens it: its
+        name is a folder's (FOLDERS), it sits in a list of places (another one, named by a READ item or a folder word,
+        in its column or on its line) and out of the top and bottom bars. Then it archives or deletes nothing (iOSWorld
+        mem-042, 18 Oct: opening Archive was refused as an archive the request never asked for). A toolbar's Archive
+        or a row's swipe action has no place beside it and stays a commit."""
+        name = plain(element.label)
+        if name not in FOLDERS:
+            return False
+        row = row_of(element, elements)
+        if row is not None and plain(row.label) != name:
+            return False  # Archive beside Trash still acts on the file row they belong to.
+        middle = center_y(element)
+        if middle < BAR_TOP or middle > BAR_BOTTOM:
+            return False
+        places = {plain(re.sub(r"\s+folder\b.*$", "", item.what, flags=re.I)) for item in self.items
+                  if item.kind == "READ" and self._app_ok(item, app) and re.search(r"\bfolder\b", item.what, re.I)}
+        if name not in places:
+            return False
+        return any(other is not element and (plain(other.label) in places or plain(other.label) in FOLDERS)
+                   and (abs(other.rect[0] - element.rect[0]) <= .02 or abs(center_y(other) - middle) <= .02)
+                   for other in elements)
+
     def _toggle(self, element, app):
-        """A switch whose label names a thing, not an act ("9:30, Client call, Weekdays" is an alarm): it
-        changes that thing, so it passes only when a WRITE or COMMIT of this app names it."""
+        """A switch whose label names a thing, not an act ("9:30, Client call, Weekdays" is an alarm)."""
         tokens = {t for t in re.findall(r"\d{1,2}:\d{2}|[a-z]{3,}", plain(element.label))} - {"the", "and", "for"}
         for item in self.items:
             if item.kind in ("WRITE", "COMMIT") and self._app_ok(item, app):
-                named = set(re.findall(r"\d{1,2}:\d{2}|[a-z]{3,}", plain(" ".join((item.what, item.payload, item.quote)))))
+                named = set(re.findall(r"\d{1,2}:\d{2}|[a-z]{3,}",
+                                       plain(" ".join((item.what, item.payload, item.quote)))))
                 if len(tokens & named) >= 2 or any(":" in t for t in tokens & named):
                     return Gate(True, verbs=frozenset({"toggle"}))
         return self._refuse({"toggle"}, f"Refused: switching {element.label[:40]!r} changes something the request "
@@ -528,12 +549,7 @@ class Contract:
                                 and i.status != "closed" and self._app_ok(i, app)) if who]
 
     def _recipient_pick(self, operation, element, elements, app, text=None):
-        """A refusal while choosing who a message goes to, else None. MobsterBench Real, 12 Oct: the contact search
-        showed nothing yet, Return in the To field made the typed name an address of its own ("benchtester"), and
-        the message was about to go there. By names and roles only:
-        - Return in a To field holding a typed name (not a phone number or an email) is refused: pick the row.
-        - Among suggestions or results for a typed name, a row that isn't the request's name exactly is refused
-          when another row is; with no exact row and two or more close ones, the agent asks instead of guessing."""
+        """A refusal while choosing who a message goes to, else None."""
         names = self._recipient_names(app)
         if not names:
             return None
@@ -572,7 +588,7 @@ class Contract:
 
     def _made_address(self, item, elements):
         """(token, name) when the To field holds the request's name squashed into an address ("jordanlee" for "Jordan
-        Lee"): Return made the typed name a recipient of its own. Else None."""
+        Lee"): Return made the typed name a recipient of its own."""
         who = recipient(item)
         to = addressed_to(SimpleNamespace(elements=elements)) if who else None
         for token in (to or "").split(", "):
@@ -613,20 +629,39 @@ class Contract:
         skip = {plain(item.app)} | GENERIC
         return [plain(w) for w in words if plain(w) not in skip]
 
+    @staticmethod
+    def object_tokens(item):
+        """Tokens that name what a commit acts on, for binding it to the screen: ``distinctive``'s, less a quoted
+        name that is where the object goes or how it's done ("to 'Want to Try' list", "reaction 'Insightful'"),
+        which a screen shows only after the tap. Then the capitalized words outside the quotes name the object
+        (iOSWorld tasterank-001 and multi-092, 18 Oct: "Save to list" and a Like under the right post were
+        refused because the list's and the reaction's names weren't on screen). With nothing left, the quoted names
+        stay, as before."""
+        spans = [m for m in re.finditer(r"(?<![\w])'([^']{2,}?)'(?![\w])|\"([^\"]{2,}?)\"", item.what or "")]
+        if not spans:
+            return Contract.distinctive(item)
+        what = item.what
+        aside = [m for m in spans if DESTINATION_AFTER.match(what[m.end():])
+                 or PARAMETER_BEFORE.search(what[:m.start()])]
+        if not aside:
+            return Contract.distinctive(item)
+        kept = [plain(m.group(1) or m.group(2)) for m in spans if m not in aside]
+        outside = re.sub(r"(?<![\w])'[^']{2,}?'(?![\w])|\"[^\"]{2,}?\"", " ", what)
+        skip = {plain(item.app)} | GENERIC
+        words = [plain(w) for w in re.findall(r"(?<![\w'])([A-Z][\w&.-]+)", outside) if plain(w) not in skip]
+        return kept + words or Contract.distinctive(item)
+
     def _object_on_screen(self, item, elements, typed=()):
-        """The commit's object is named on screen, or is one the agent is making (a new alarm labeled
-        'Gym' it typed the label of)."""
-        tokens = self.distinctive(item)
+        """The commit's object is named on screen, or is one the agent is making."""
+        tokens = self.object_tokens(item)
         if not tokens:
             return True
         texts = [plain(element_text(e)) for e in elements] + [plain(t) for t in typed]
         return any(token in text for token in tokens for text in texts)
 
     def _beside_object(self, item, element, elements):
-        """The control names its object itself, or is the App Store button nearest a row that names it (within
-        an app row's height). Near is not enough: a compact list puts a Get on every row, .09 of the screen
-        apart, and the row above's Get is as near the name as its own; the approval would name one app while
-        the tap installed another. A tie is refused."""
+        """The control names its object itself, or is the App Store button nearest a row that names it
+        (within an app row's height)."""
         tokens = self.distinctive(item)
         if not tokens or any(token in plain(element.label) for token in tokens):
             return True
@@ -671,8 +706,6 @@ class Contract:
                                     gate.amount, gate.names, screen_title(before), composer, hits, gate.verbs,
                                     control))
 
-    # ------------------------------------------------ receipts per item
-
     def _seen(self, predicate, app=None, until=None):
         for step, screen_app, rows, keyboard in self.screens:
             if until is not None and step > until:
@@ -702,17 +735,15 @@ class Contract:
             if item.executions:
                 return False, "done but not shown: open the screen that shows it (the sent message, the confirmation)"
             if state:
-                # A like or a follow is proven only by its own control turning on after the agent tapped it: a tap on
-                # a point, or a change elsewhere (a banner closing), leaves it open (MobsterBench Real, 11 Oct).
+                # A like or a follow is proven only by its own control turning on after the tap,
+                # not by a point tap or a banner closing.
                 return False, ("not shown done: a like or a follow counts once the control you TAP turns on (selected, "
                                "\"Liked\" or \"Following\", or its count up by one). If it already shows on, don't tap "
                                "it: that would undo it")
             if item.claim == "done" and item.act not in MESSAGE_ACTS and (
                     not item.app or any(plain(item.app) == plain(a) for a in self.visited)):
-                # Its control named no commit word ("Add to Wishlist"), so no receipt was awaited: the
-                # object must still be on a screen of its app. Not a message: its Send is always a commit
-                # word, and a chat that already holds the same words from before proves nothing (27 Sep:
-                # a declined draft's twin in the history was taken for the message sent, and nothing was).
+                # No commit word, so no receipt was awaited: the object must still be on a screen of its app, and a
+                # chat's earlier twin proves nothing.
                 tokens = self.distinctive(item)
                 if not tokens or self._seen(lambda t, e, k: any(x in t for x in tokens), item.app) is not None:
                     return True, ""
@@ -725,15 +756,15 @@ class Contract:
 
     def _write_proof(self, item):
         typed = [t for t in self.typed if not t["search"] and not t.get("picker") and self._app_ok(item, t["app"])]
-        # A message body is proven by the message's own receipt: the sent bubble may be a text view, which never
-        # counts as shown while the keyboard is up (O2).
+        # A message body is proven by its own receipt; a text-view bubble never counts as shown while the
+        # keyboard is up.
         texts = [item.payload] if item.payload else [t["text"] for t in typed]
         if any(other.kind == "COMMIT" and other.act in MESSAGE_ACTS and self._app_ok(item, other.app)
                and any(receipt.get("payload") and overlaps(receipt["payload"], text)
                        for receipt in other.receipts for text in texts if text) for other in self.items):
             return True, ""
         if item.already is not None:
-            # The model quoted the row that shows it already so ("already: <row>", or a value that is a whole row):
+            # The model quoted the row that shows it already so:
             # proven when that row was on a screen of its app by then.
             step, row, whole = item.already
             if row and self._seen(lambda text, e, k: row == text or not whole and row in text, item.app,
@@ -758,10 +789,8 @@ class Contract:
         if not keys:
             if item.claim != "done":
                 return False, "nothing typed for it yet" if not item.payload else f"\"{item.payload}\" not entered yet"
-            # Nothing typed for it: a write that adds (log, add, create) counts only once each object it names has a
-            # new row in its app. A row from before proves nothing (iOSWorld dev, 12 Oct: runs logged a shake, took
-            # the oatmeal row already in the log for the oatmeal, and ended done). A change of state or a picker keeps
-            # the model's "done".
+            # Nothing typed: a write that adds counts only once each named object has a new row;
+            # a row from before proves nothing.
             missing = [] if not ADDS.search(item.what + " " + item.quote) or any(
                 t.get("picker") and self._app_ok(item, t["app"]) for t in self.typed) else [
                 words for words in self._objects(item) if not self._new_row(item, words, after)]
@@ -776,16 +805,14 @@ class Contract:
         return False, "not read back on screen after it was entered: save it and show the saved text"
 
     def _objects(self, item):
-        """The objects a WRITE names, in the request's words, one list per part split at "and", "&" and commas:
-        "protein shake and oatmeal breakfast log" -> [["post-run", "protein", "shake"], ["oatmeal", "breakfast"]]."""
+        """The objects a WRITE names, in the request's words, one list per part split at "and", "&" and commas."""
         asked, app = plain(self.request), set(plain(item.app).split())
         parts = ([w for w in re.findall(r"[a-z][a-z'-]{3,}", part) if w in asked and w not in OBJECT_STOP | app]
                  for part in re.split(r"\s*(?:,|&|\band\b)\s*", plain(item.what)))
         return [words for words in parts if words]
 
     def _new_row(self, item, words, after):
-        """More rows name one of ``words`` on a screen of the item's app from ``after`` on than on any before it. A
-        screen holding a search the run typed shows what was looked for, not what exists."""
+        """More rows name one of ``words`` on a screen of the item's app from ``after`` on than on any before it."""
         searches = [plain(t["text"])[:20] for t in self.typed if t["search"]]
         counts = {False: 0, True: 0}
         for index, (_, app, rows, _) in enumerate(self.screens):
@@ -795,11 +822,7 @@ class Contract:
         return counts[True] > counts[False]
 
     def _listed_already(self, item, until, cited):
-        """A WRITE the model marked as already so, citing its value but not a row: proven when that value is a whole
-        row of a list in the item's app ("New York" in its saved locations), on a screen seen by then and before
-        this run typed anything in that app (a list of search results shows what was looked for, not what exists).
-        ab1, 11 Oct: "already: New York row in My Locations (59° Mostly Cloudy)" matched no row, though the list
-        showed New York; a forecast page titled "New York" is no list row, and proves nothing."""
+        """A WRITE the model marked as already so, citing its value but not a row."""
         value = plain(item.payload)
         if not value or value not in (cited or ""):
             return False
@@ -832,18 +855,18 @@ class Contract:
         if CONFIRM_ITEM.search(item.what):
             related = [i for i in self.items if i.kind in ("COMMIT", "WRITE") and (
                 not item.app or not i.app or plain(i.app) == plain(item.app))]
-            # "confirm the job was saved" is about the save, not the reply in the same app
+            # "confirm the job was saved" is about the save, not the reply in the same app.
             words = set(re.findall(r"[a-z]{4,}", plain(item.what))) - CONFIRM_WORDS
-            named = [i for i in related if words & set(re.findall(r"[a-z]{4,}", plain(i.what + " " + i.act + " " + i.quote)))]
+            named = [i for i in related if words & set(re.findall(r"[a-z]{4,}",
+                                                                  plain(i.what + " " + i.act + " " + i.quote)))]
             related = named or related
             unproven = [i for i in related if not self.proof(i)[0] and not i.unproven]
             return (not unproven), ("" if not unproven else "its action is not shown yet: " +
                                     ", ".join(f"item {i.id}" for i in unproven))
         book = getattr(self, "notebook", None)
         if book is not None and item.status in ("open", "found") and getattr(book, "kind", None) in NOTEBOOK_KINDS:
-            # A long read (feed, survey, browse): its summary item ("what you learned", "the most promising") is the
-            # report, written from the kept items (DESIGN §11). Any other value is proven when an item's own text
-            # holds it (never the model's notes), else on the screens as for any run. A chain keeps screen proof.
+            # A long read's summary item is the report, written from the kept items; any other value needs an item's own
+            # text, never the model's notes.
             if SUMMARY_ITEM.search(item.what + " " + item.quote) and book.counters.get("kept"):
                 return True, ""
             if item.status == "found" and self._in_notebook(item.value):
@@ -853,8 +876,7 @@ class Contract:
         if item.status == "missing":
             if item.app and not any(plain(item.app) == plain(app) for app in self.visited):
                 return False, f"marked missing but {item.app} was never opened"
-            # An absence is a finding too: proven like a "none" (dev runs, 10-12 Oct: "Terminal not shown; gate E13"
-            # after the boarding pass alone, while the trip's own page showed "Terminal 2, Gate E13").
+            # An absence is a finding too: proven like a "none".
             if self._absence_shown(item):
                 return True, ""
             return False, ("marked missing, but no screen showed it absent: look where it would be (open the row "
@@ -888,16 +910,14 @@ class Contract:
         return False, f"\"{value[:60]}\" not seen on any screen before you recorded it: read it where it is shown"
 
     def _absence_shown(self, item):
-        """Whether a screen of the item's app showed it absent by the time it was marked: a search the run typed that
-        came back empty, or the app's own "No Results", "No Events", an empty list."""
+        """Whether a screen of the item's app showed it absent by the time it was marked."""
         if any(self._app_ok(item, s[1]) for s in self.empty_searches):
             return True
         return self._seen(lambda t, e, k: bool(EMPTY_STATE.match(t) or NO_RESULTS.search(t)),
                           item.app or None, item.value_step) is not None
 
     def _in_notebook(self, value):
-        """Whether the long task's kept items (what they showed: creator, summary, text) hold ``value``: its atoms,
-        else its words. The model's own notes don't count: they are what it says, not what a screen showed."""
+        """Whether the long task's kept items hold ``value``, never the model's notes."""
         book = getattr(self, "notebook", None)
         if book is None or not value:
             return False
@@ -916,20 +936,14 @@ class Contract:
         return bool(words) and sum(w in pool for w in words) >= max(1, len(words) / 2)
 
     def _seen_atom(self, atom, until):
-        if atom.startswith("$") or re.fullmatch(r"\d[\d,]*(?:\.\d+)?", atom):
-            number = as_float(atom.lstrip("$").strip())
-            if number is None:
-                return None
-            return self._seen(lambda t, e, k: any(abs((as_float(n) or -1e18) - number) < .005
-                                                  for n in NUMBER.findall(t)), None, until)
-        key = plain(atom)
-        return self._seen(lambda t, e, k: key in t, None, until)
+        return self._seen(lambda t, e, k: holds_atom(atom, t), None, until)
 
-    # ------------------------------------------------ DONE
+    def hidden_row(self, elements, step):
+        """The row that holds a value marked at ``step`` when every row holding it is hidden below (contract_view)."""
+        return hidden_row(self.items, elements, step)
 
     def done_gate(self, answer, turns_left):
-        """(accepted, feedback, answer). Every item needs its receipt; with LOW_TURNS or fewer turns
-        left the answer is accepted and names what is unproven."""
+        """(accepted, feedback, answer)."""
         open_ = []
         for item in self.items:
             proven, reason = self.proof(item)
@@ -963,11 +977,12 @@ class Contract:
             if item.kind != "REPORT" or item.status != "found" or not item.value or CONFIRM_ITEM.search(item.what):
                 continue
             atoms = ATOM.findall(item.value)
-            present = all(plain(a) in text or a.lstrip("$") in text for a in atoms) if atoms else plain(item.value) in text
+            present = (all(plain(a) in text or a.lstrip("$") in text for a in atoms) if atoms
+                       else plain(item.value) in text)
             if not present:
                 extra.append(f"- {item.what}: {item.value}")
-        # Actions the screen never confirmed are named (the user must know); a reported value stays as
-        # given, since a doubt added to a right answer costs more than it tells.
+        # Unconfirmed actions are named; a reported value stays as given, since a doubt on a right answer costs more
+        # than it tells.
         unproven = [item for item in self.unproven() if item.kind in ("COMMIT", "WRITE")]
         if unproven:
             extra.append("Not confirmed on screen: " + "; ".join(item.what for item in unproven) + ".")

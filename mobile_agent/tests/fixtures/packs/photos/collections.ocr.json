@@ -1,0 +1,230 @@
+{
+"note": "Recorded on the test device (iPhone 15 Pro, iOS 26.0.1), 11 and 12 Oct 2026: the rows the agent saw, scrubbed (album names renamed; the photos map's places left out). The same screen read by Vision OCR (iPhone Mirroring's reading).",
+"rows": [
+{
+"text": "11:44 €",
+"confidence": 1,
+"rect": [
+0.0948,
+0.0249,
+0.173,
+0.0206
+]
+},
+{
+"text": "Collections",
+"confidence": 1,
+"rect": [
+0.0407,
+0.0782,
+0.4949,
+0.0344
+]
+},
+{
+"text": "Memories ›",
+"confidence": 1,
+"rect": [
+0.0607,
+0.1508,
+0.3363,
+0.0271
+]
+},
+{
+"text": "Type to Create",
+"confidence": 1,
+"rect": [
+0.1831,
+0.4116,
+0.2441,
+0.0172
+]
+},
+{
+"text": "Pinned >",
+"confidence": 1,
+"rect": [
+0.061,
+0.4945,
+0.2508,
+0.0235
+]
+},
+{
+"text": "Favorites",
+"confidence": 1,
+"rect": [
+0.0846,
+0.632,
+0.1562,
+0.0161
+]
+},
+{
+"text": "Recently",
+"confidence": 1,
+"rect": [
+0.3727,
+0.6147,
+0.163,
+0.0163
+]
+},
+{
+"text": "Saved",
+"confidence": 1,
+"rect": [
+0.3863,
+0.6335,
+0.1054,
+0.0146
+]
+},
+{
+"text": "Albums ›",
+"confidence": 1,
+"rect": [
+0.061,
+0.698,
+0.2712,
+0.0235
+]
+},
+{
+"text": "Mobster-",
+"confidence": 1,
+"rect": [
+0.0847,
+0.8153,
+0.156,
+0.0158
+]
+},
+{
+"text": "Bench Re...",
+"confidence": 1,
+"rect": [
+0.0847,
+0.8356,
+0.1899,
+0.0159
+]
+},
+{
+"text": "Mobster-",
+"confidence": 1,
+"rect": [
+0.3863,
+0.8165,
+0.1596,
+0.0148
+]
+},
+{
+"text": "Bench Dogs",
+"confidence": 1,
+"rect": [
+0.3898,
+0.8357,
+0.1966,
+0.0156
+]
+},
+{
+"text": "Library",
+"confidence": 1,
+"rect": [
+0.139,
+0.9499,
+0.1017,
+0.0141
+]
+},
+{
+"text": "Collections",
+"confidence": 1,
+"rect": [
+0.339,
+0.9499,
+0.1593,
+0.0125
+]
+},
+{
+"text": "100•",
+"confidence": 1,
+"rect": [
+0.8475,
+0.0266,
+0.0712,
+0.0172
+]
+},
+{
+"text": "••.",
+"confidence": 0.3,
+"rect": [
+0.7153,
+0.0908,
+0.061,
+0.0094
+]
+},
+{
+"text": "AG",
+"confidence": 1,
+"rect": [
+0.861,
+0.0861,
+0.0746,
+0.0219
+]
+},
+{
+"text": "Portraits",
+"confidence": 1,
+"rect": [
+0.7119,
+0.3959,
+0.2068,
+0.0235
+]
+},
+{
+"text": "FROM 2025-2026",
+"confidence": 1,
+"rect": [
+0.7119,
+0.4225,
+0.278,
+0.0141
+]
+},
+{
+"text": "Garden",
+"confidence": 1,
+"rect": [
+0.6914,
+0.834,
+0.0917,
+0.0174
+]
+},
+{
+"text": "Q",
+"confidence": 1,
+"rect": [
+0.8407,
+0.9249,
+0.0542,
+0.0297
+]
+}
+],
+"hash": "collections",
+"window": {
+"w": 589,
+"h": 1278
+}
+}

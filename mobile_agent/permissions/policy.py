@@ -1,33 +1,9 @@
-"""The user's permission settings: the mode, the per-task override, and which apps Mobster may use.
+"""The user's permission settings: the mode, the per-task override, and which apps Mobster may use."""
 
-Saved in the agent's env file beside the other settings (Settings › Safety writes them through POST
-/api/permissions):
-
-- ``MOBSTER_PERMISSION_MODE``: ask_all | ask_important (default) | dont_ask. Unset, the older
-  ``MOBSTER_ASK_BEFORE_ACTING=0`` reads as dont_ask, so nobody's choice changes under them.
-- ``MOBSTER_APP_ACCESS``: ask (default) | all (scripts and tests only: POST /api/permissions never sets it). With ask,
-  apps are approved once per task (the owner, 14 Oct): one card at the start lists every app the task names that
-  isn't approved yet, "Allow Mobster to use Things and Notes?". Allow covers them for this task; Always allow keeps
-  them in the "Don't ask again" store (``permission-exceptions.json``, ``APP_OP`` entries), and Settings › Safety ›
-  Apps lists the kept apps, each switched off anytime (then it asks again). An app the task opens later that wasn't on
-  the card asks then. Every app is treated the same: there is no list of apps that start off. ``all`` counts every app
-  as approved (scripts, and the tests).
-- ``MOBSTER_APPS_ALLOWED``: apps approved in the env file, as if allowed on the card (scripts and tests only).
-- ``MOBSTER_BLOCKED_APPS`` (the existing never-open list): apps never opened, without asking.
-- ``MOBSTER_OUTSIDE_BLOCKED_APPS``: apps the user turned off for agents outside Mobster (an MCP client, Mobster
-  Remote). Otherwise those agents use the same apps as everyone, always asking before acting (``effective_mode``):
-  nothing is refused for being a kind of app; what an outside agent may open is the user's choice.
-
-The modes work like a coding harness's. An app the person allowed is the boundary, as a granted folder is: in it,
-reading and moving around never ask. ask_important (the default) asks before anything with an effect outside the
-phone; ask_all also before a change that stays on it; dont_ask is full access and doesn't ask. Typing a one-time code
-asks in every mode. The Home Screen is always allowed.
-"""
-
-from dataclasses import dataclass, field
 import os
-from pathlib import Path
 import re
+from dataclasses import dataclass, field
+from pathlib import Path
 
 ASK_ALL, ASK_IMPORTANT, DONT_ASK = "ask_all", "ask_important", "dont_ask"
 MODES = (ASK_ALL, ASK_IMPORTANT, DONT_ASK)
@@ -35,7 +11,8 @@ DEFAULT_MODE = ASK_IMPORTANT
 
 
 def mode_for_ask(ask, current):
-    """The mode the older askBeforeActing switch sets: off is full access; on keeps a mode that asks, else the default."""
+    """The mode the older askBeforeActing switch sets: off is full access; on keeps a mode that asks,
+    else the default."""
     if not ask:
         return DONT_ASK
     return current if current in (ASK_ALL, ASK_IMPORTANT) else DEFAULT_MODE
@@ -44,9 +21,7 @@ def mode_for_ask(ask, current):
 # Strictest first: an override may always move left; moving right needs the Mac app.
 STRICTNESS = {ASK_ALL: 2, ASK_IMPORTANT: 1, DONT_ASK: 0}
 MODE_LABELS = {ASK_ALL: "Ask before every change", ASK_IMPORTANT: "Ask before acting", DONT_ASK: "Full access"}
-# Origins where an outside agent or tool started the task, or a notification did: never below ask_important (Remote's
-# design, rule 1). "hook": a workflow another tool started through its webhook URL (outlets/hooks.py). "trigger": a task
-# a notification trigger started (triggers/actions.py). "console": a team member, from the team's console.
+# Origins where an outside agent, a tool or a notification started the task: never below ask_important (Remote, rule 1).
 OUTSIDE_ORIGINS = frozenset({"mcp", "remote", "hook", "trigger", "console"})
 
 ENV_MODE = "MOBSTER_PERMISSION_MODE"
@@ -68,8 +43,7 @@ SETTINGS = "com.apple.Preferences"
 MAX_LISTED = 300
 _BUNDLE = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_.-]*[A-Za-z0-9_]")
 
-# Bank, payment, brokerage, crypto, Wallet and password apps by bundle id: "Don't ask again" is never offered or used
-# in them (rules.money_context). Never whether Mobster may open them: every app asks alike, once per task.
+# Bank, payment, crypto, Wallet and password apps: "Don't ask again" is never offered in them; opening one asks alike.
 SENSITIVE_BUNDLES = {
     "com.apple.Passbook": "wallet", "com.apple.Passwords": "passwords", "com.apple.PassKit": "wallet",
     "com.chase": "finance", "com.bankofamerica.BofA": "finance", "com.bofa.mobile": "finance",
@@ -77,7 +51,8 @@ SENSITIVE_BUNDLES = {
     "com.citigroup.citimobile": "finance", "com.usbank.mobilebanking": "finance", "com.ally.MobileBanking": "finance",
     "com.discoverfinancial.mobile": "finance", "com.americanexpress.amelia": "finance",
     "com.americanexpress.amexservice": "finance", "com.schwab.mobile": "finance", "com.fidelity.iphone": "finance",
-    "com.vanguard.ios": "finance", "com.etrade.mobilepro.iphone": "finance", "com.robinhood.release.Robinhood": "finance",
+    "com.vanguard.ios": "finance", "com.etrade.mobilepro.iphone": "finance",
+    "com.robinhood.release.Robinhood": "finance",
     "com.vilcsak.bitcoin2": "finance", "com.coinbase.wallet": "finance", "com.revolut.revolut": "finance",
     "co.uk.getmondo": "finance", "com.transferwise.Transferwise": "finance", "com.sofi.mobile": "finance",
     "com.1debit.ChimeProdApp": "finance", "com.zellepay.zelle": "finance", "net.kortina.labs.Venmo": "finance",
@@ -141,17 +116,14 @@ class AppPolicy:
     blocked: frozenset = field(default_factory=frozenset)
     outside_blocked: frozenset = field(default_factory=frozenset)
 
-    def allows(self, bundle, name=None, outside=False):
-        """Whether Mobster may use ``bundle`` at all (``outside``: for an agent outside Mobster): False only for the
-        never-open list and, for outside agents, the apps turned off for them. An app not approved yet is allowed
-        here: it asks, once per task (``approved``). None or the Home Screen: always."""
+    def allows(self, bundle, outside=False):
+        """Whether Mobster may use ``bundle``: False only if never-open or, ``outside``, off for outside agents."""
         if not bundle or bundle == SPRINGBOARD:
             return True
         return not (bundle in self.blocked or outside and bundle in self.outside_blocked)
 
     def approved(self, bundle, grants=None):
-        """Whether ``bundle`` opens without asking: the Home Screen, ``access`` all, the env's allow list, or an
-        approval in ``grants`` (the "Don't ask again" store). Never an app on the never-open list."""
+        """Whether ``bundle`` opens without asking (Home Screen, access all, allow list, a grant), unless never-open."""
         if not bundle or bundle == SPRINGBOARD:
             return True
         if bundle in self.blocked:
@@ -163,9 +135,8 @@ class AppPolicy:
         except Exception:
             return False  # an unreadable store asks again
 
-    def status(self, bundle, name=None, grants=None):
-        """{allowed, why, outside} for one app, as Settings › Safety and the Apps view show it: allowed is approved;
-        why says what happens otherwise ("asks" once per task, or "blocked")."""
+    def status(self, bundle, grants=None):
+        """{allowed, why, outside} for one app, as Settings › Safety and the Apps view show it."""
         allowed = self.approved(bundle, grants)
         why = None if allowed else ("blocked" if bundle in self.blocked else "asks")
         return {"allowed": allowed, "why": why, "outside": bundle not in self.blocked
@@ -197,11 +168,10 @@ def app_card_reason(count=1):
 
 
 def task_card_reason(count=1, conversation=False):
-    """The line under a task's app card, "Allow Mobster to use Things and Notes?": what Allow and Always allow mean (at
-    most 120 characters). In a conversation Allow lasts for the conversation, so a follow-up isn't asked again."""
+    """The line under a task's app card, "Allow Mobster to use Things and Notes?"."""
     scope = "conversation" if conversation else "task"
-    return (f"Allow is for this {scope}. Always allow keeps {'it' if count == 1 else 'them'} for later tasks, until you "
-            f"turn {'it' if count == 1 else 'one'} off in Settings › Safety.")
+    return (f"Allow is for this {scope}. Always allow keeps {'it' if count == 1 else 'them'} for later tasks, "
+            f"until you turn {'it' if count == 1 else 'one'} off in Settings › Safety.")
 
 
 ALWAYS_ALLOW = "Always allow"  # the task card's second button: the apps it lists are kept in the store
@@ -236,8 +206,7 @@ _file_cache = {}
 
 
 def from_file(path=None):
-    """The settings in the Mac app's agent.env, for a process that doesn't load it (``mobster mcp``): read again
-    whenever the file changes. The process environment wins for a key it sets, as everywhere else."""
+    """The settings in the Mac app's agent.env, for a process that doesn't load it (``mobster mcp``)."""
     if path is None:
         from ..paths import user_data_dir
         path = user_data_dir() / "agent.env"
@@ -267,8 +236,7 @@ def from_file(path=None):
 
 
 def changes_for(body, current):
-    """The env lines a Settings › Safety change saves: {ENV: value}. ValueError for anything else. (Approving an app
-    or taking it back is the store's: register.post_permissions.)"""
+    """The env lines a Settings › Safety change saves: {ENV: value}."""
     allowed = {"permissionMode", "appAccess", "blockedApps", "block", "unblock", "outsideOn", "outsideOff"}
     if not isinstance(body, dict) or not body or set(body) - allowed:
         raise ValueError("Send permissionMode, blockedApps, block/unblock for one app, allow/revoke for one app, or "
@@ -280,8 +248,7 @@ def changes_for(body, current):
         # The older switch follows, so the terminal and an older app read the same choice.
         saved[ENV_LEGACY] = "0" if body["permissionMode"] == DONT_ASK else "1"
     if "appAccess" in body:
-        # Every app allowed without asking is for scripts and tests (MOBSTER_APP_ACCESS=all in the env file), never a
-        # choice the app's settings make.
+        # Every app allowed without asking (MOBSTER_APP_ACCESS=all) is for scripts and tests, never a setting.
         if body["appAccess"] != "ask":
             raise ValueError("appAccess can only be ask here; MOBSTER_APP_ACCESS=all is for scripts and tests")
         saved[ENV_ACCESS] = body["appAccess"]
@@ -302,7 +269,8 @@ def changes_for(body, current):
         saved[ENV_OUTSIDE_BLOCKED] = ",".join(outside)
     if "blockedApps" in body or "block" in body or "unblock" in body:
         if len(blocked_apps) > MAX_LISTED:
-            raise ValueError(f"blockedApps allows at most {MAX_LISTED} app bundle ids; remove one before adding another")
+            raise ValueError(
+                f"blockedApps allows at most {MAX_LISTED} app bundle ids; remove one before adding another")
         saved[ENV_BLOCKED] = ",".join(blocked_apps)
     return saved
 

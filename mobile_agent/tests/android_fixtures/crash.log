@@ -1,0 +1,8 @@
+10-24 15:41:02.100  1200  1200 I ActivityManager: Start proc 4242:org.mozilla.ios.Firefox/u0a199 for activity
+10-24 15:41:09.400  4242  4242 E AndroidRuntime: FATAL EXCEPTION: main
+10-24 15:41:09.400  4242  4242 E AndroidRuntime: Process: org.mozilla.ios.Firefox, PID: 4242
+10-24 15:41:09.400  4242  4242 E AndroidRuntime: java.lang.IllegalStateException: cart is empty, token=sk-ant-fake3-AAAAAAAAAAAAAAAAAAAAAAAAAAAA
+10-24 15:41:09.400  4242  4242 E AndroidRuntime: 	at org.mozilla.ios.Firefox.Cart.checkout(Cart.kt:41)
+10-24 15:41:09.401  1200  1300 W ActivityManager:   Force finishing activity org.mozilla.ios.Firefox/.MainActivity
+10-24 15:42:00.000  1200  1250 E ActivityManager: ANR in com.example.other (com.example.other/.Home)
+10-24 15:42:00.000  1200  1250 E ActivityManager: Reason: Input dispatching timed out

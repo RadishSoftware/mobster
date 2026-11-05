@@ -1,9 +1,7 @@
 # MobsterBench-iOS
 
-A pre-registered benchmark that decides whether Mobster's iPhone agent is state of the art on
-accuracy **and** speed. It runs Mobster and strong screenshot baselines on the same real phone,
-with the same tasks, budgets, gestures, safety monitor and graders. Nothing here runs by itself:
-every command below is explicit.
+A pre-registered benchmark of Mobster's iPhone agent on a real phone: frozen tasks, budgets, a safety monitor and
+graders that never read the agent's own claims. Nothing here runs by itself: every command below is explicit.
 
 ## Decision rule (pre-registered, hashed with the suite)
 
@@ -12,8 +10,8 @@ CI over tasks. The result is **better** if the lower bound is above 0, **not wor
 −5 pp, and **worse** otherwise. Speed is compared only on tasks both agents solved at least once:
 the median ratio of per-task p50 agent time (Mobster/baseline), with a bootstrap CI. It is
 **faster** if the upper bound is below 1. **State of the art** means better or not-worse accuracy,
-faster, and zero unsafe attempts, against *every* baseline that ran. The report says where Mobster
-loses: each task and category where a baseline is more accurate or faster.
+faster, and zero unsafe attempts, against *every* baseline that ran. No baseline is in this tree, so the report
+makes no comparison; the rule stays because it is hashed with the suite.
 
 ## The suite
 
@@ -105,82 +103,20 @@ The visual tasks are dry runs. The agent judges images and must not act on them.
 
 ## Agents under test
 
-All agents share the same controls:
+Every agent runs with the same controls:
 
-- **Inputs:** the same goal text and the same answer field names. Mobster gets them as its
-  `output_schema`; the baselines get them in the prompt, and they end with
-  `{"status": "done" | "infeasible", "answer": …}`.
-- **Budgets:** the same step and time budgets, which are hard. A late answer counts as a timeout.
-- **Gestures:** the same WDA gestures (`phone.py`), matching Mobster's driver: a W3C tap with a
-  40 ms hold, XCTest drag, `/wda/keys`, `pressButton`, and `apps/activate`.
-- **Safety:** the same safety monitor (`safety.py`). It checks every action *before* dispatch.
-  Refused actions are never sent, the run stops, and the attempt fails with the event recorded.
-- **Timing:** agent time excludes time that only the harness spends:
-  - the AX read that maps a baseline's coordinate to an element for the safety check (`monitor_ms`);
-  - provider throttling. HTTP 429 and 503 responses and dropped connections are retried with
-    backoff. The time is recorded as `throttle_ms` and given back to the budget, because it is
-    infrastructure rather than the agent.
-
-  Resets and grading are never timed.
+- **Inputs:** the goal text, and the answer field names as Mobster's `output_schema`.
+- **Budgets:** the task's step and time budgets, which are hard. A late answer counts as a timeout.
+- **Safety:** the safety monitor (`safety.py`) checks every action *before* dispatch. Refused actions are never
+  sent, the run stops, and the attempt fails with the event recorded.
+- **Timing:** agent time excludes harness-only safety reads (`monitor_ms`). Resets and grading are never timed.
 
 | agent | what it is |
 | --- | --- |
 | `mobster-smart` | Mobster's agent (`frontier.FrontierAgent`), in process, composed by `engines.build_frontier` as the app composes it: device lease, WDA session from `/status`, FrameClock attached in `on` mode, the task's apps, and its answer fields as `output_schema`. The verdict is about this arm. Its other models are under "Smart, the held-out tranche and A/Bs" below. |
-| `gemini-cu` | Gemini's computer-use tool, `ENVIRONMENT_MOBILE`, on Vertex `generateContent`. `--cu-model auto` picks the first model that answers from 3.8 → 3.7 → 3.6 → 3.5 Flash. |
-| `som-pro` / `som-flash` | A frontier VLM with Set-of-Marks over the WDA accessibility boxes, using an M3A-style action space (`--som-model auto`: 3.1 Pro preview first). |
 
-### Baseline fidelity notes
-
-**gemini-cu**, implemented from Google's Vertex "Computer use" guide (read 2026-09-23):
-
-- **Tool and action set:** the mobile predefined action set, with none excluded and no custom
-  functions. Coordinates use the guide's 0–999 grid and `v/1000 × screen`.
-- **Conversation:**
-  - Each model turn is echoed verbatim, so thought signatures round-trip.
-  - Every call gets a `functionResponse` that carries the new screenshot, and parallel calls each
-    get one.
-  - The loop ends on the first turn without a function call.
-- **Confirmations:** `require_confirmation` is never granted, because there is no human in the
-  loop. The attempt ends as `safety_confirmation`, which counts as a failure but not as an unsafe
-  action.
-- **History:** screenshots are kept on the last 3 turns only, as in Google's reference agent.
-- **iOS mappings the guide leaves to the client:**
-  - `go_back` is the left-edge swipe. iOS has no Back key.
-  - `press_key` handles enter, home, back and delete.
-  - `open_app` resolves the name against Mobster's app catalog.
-  - `type` sends keystrokes to the focused field.
-  - There is a fixed 1 s settle after each turn, as in the guide's loop.
-- **Settings and prompt:**
-  - Thinking uses the provider default.
-  - Screenshots are downscaled to 1280 px on the long side. Coordinates are normalized, so this
-    only bounds the upload.
-  - The system instruction states the answer format and the "never send, buy…" rule.
-- **Caveats:**
-  - Google's guide notes that mobile performance of some models is not fully optimized.
-  - On 2026-09-23, `gemini-3.8-flash` returned HTTP 429 on almost every call from this project, so
-    `auto` fell back to `gemini-3.7-flash`. That model took about 29 s per call in a 2-call check.
-    The run config records which model ran.
-
-**som-pro / som-flash**, following Set-of-Mark prompting (Yang et al. 2023) as used by AndroidWorld's M3A:
-
-- **Marks:** numbered boxes drawn on the screenshot (at most 180), listed as
-  `[i] Role "label" (value)`. They come from the **same** WDA accessibility read Mobster uses, so
-  the baseline sees what Mobster sees, plus the pixels.
-- **Action space:** click, long_press, input_text, scroll, navigate_back (the nav-bar back button,
-  else an edge swipe), navigate_home, open_app, keyboard_enter, wait, and status. `status` carries
-  the answer.
-- **Deviations from M3A:**
-  - There is one model call per step. M3A's second "summarise the step" call is dropped.
-  - The history holds each step's reason, action and outcome, and whether the screen changed.
-  - M3A's `answer` action is folded into `status`.
-- **Output and settle:** JSON mode with a response schema, and a fixed 1 s settle.
-
-**Other known asymmetries (reported, not hidden):**
-
-- Mobster's own model calls are not retried on throttling. That is product behaviour.
-- The baselines' safety check needs an extra AX read, which is excluded from their time.
-- Mobster can fail the Calculator tasks because the display is drawn and not in the AX tree. These
-  tasks are tagged `known_gap_mobster_ax_drawn_display`.
+**Known gap:** Mobster can fail the Calculator tasks because the display is drawn and not in the AX tree. These
+tasks are tagged `known_gap_mobster_ax_drawn_display`.
 
 ## Metrics (`report.py`)
 
@@ -196,8 +132,7 @@ All agents share the same controls:
   - Time to first action.
 - **Model calls and cost:**
   - Model calls per task.
-  - Dollars per task and in total. Baselines use Vertex standard global rates (`vertex.py`); the
-    3.6–3.8 Flash introductory rates are half until 2026-12-31. Mobster uses its own telemetry.
+  - Dollars per task and in total, from Mobster's own telemetry.
   - Unpriced calls are counted and never treated as zero.
 - **Safety:** unsafe or risky attempts that were blocked, and unintended actions (both must be 0).
 - **Abstention:** whether abstentions were correct.
@@ -213,12 +148,12 @@ Before each attempt, the runner does four things:
   A locked phone halts the run, and so do 2 consecutive infrastructure failures.
 - **Yield:** it waits while the Mobster app on :8765 has a queued or running task. It only sends
   GET requests there and never POSTs to :8765.
-- **Lease:** it takes the same exclusive device lease `serve` uses for resets, baselines and grading.
+- **Lease:** it takes the same exclusive device lease `serve` uses for resets and grading.
 - **Reset:** it resets and verifies the start app.
 
 These rules apply throughout:
 
-- **Timeouts:** short everywhere (health 3 s, screenshot 6 s, AX read 6–8 s), because WDA serves one
+- **Timeouts:** short everywhere (health 3 s, AX read 6–8 s), because WDA serves one
   request at a time.
 - **Session:** the WDA session always comes from `/status`, never a new one, and the WDA runner is
   never restarted.
@@ -233,7 +168,6 @@ PY=mobile_agent/.venv/bin/python
 
 # Offline checks: suite hash, truth coverage, fixtures, agents, runtime/cost estimate
 $PY -m mobile_agent.bench dry-plan
-$PY -m mobile_agent.bench dry-plan --probe-models              # + one tiny Vertex call per model
 
 # Once, with the phone free and unlocked (read-only navigation by the harness)
 $PY -m mobile_agent.bench capture-truth --wda-url http://127.0.0.1:8100
@@ -248,9 +182,6 @@ $PY -m mobile_agent.bench run --repeats 3 --verify-fixtures --out research/bench
 $PY -m mobile_agent.bench run --resume research/bench-runs/full-YYYY-MM-DD      # after any halt
 $PY -m mobile_agent.bench report --run research/bench-runs/full-YYYY-MM-DD      # -> research/bench-<date>.md
 ```
-
-Add `--agents mobster-smart,gemini-cu,som-pro,som-flash` to include the Flash
-Set-of-Marks variant.
 
 ## Smart, the held-out tranche and A/Bs (October 2026)
 

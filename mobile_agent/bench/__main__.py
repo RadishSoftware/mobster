@@ -4,23 +4,25 @@
   python -m mobile_agent.bench freeze                    # (pre-registration) write manifest.json
   python -m mobile_agent.bench fixtures --out DIR        # image folders + setup sheet for the phone
   python -m mobile_agent.bench capture-truth --wda-url http://127.0.0.1:8100
-  python -m mobile_agent.bench dry-plan [--probe] [--probe-models]
+  python -m mobile_agent.bench dry-plan [--probe]
   python -m mobile_agent.bench run --wda-url http://127.0.0.1:8100 --out research/bench-runs/NAME
   python -m mobile_agent.bench report --run research/bench-runs/NAME
+  python -m mobile_agent.bench evals [--dir DIR]         # the local trace evals, replayed offline (trace_evals.py)
 
 Secrets: the env file is loaded into this process only; no key, token or
 project id is ever printed.
 """
 
 import argparse
-from datetime import date
 import json
-from pathlib import Path
 import sys
+from datetime import date
+from pathlib import Path
 
-from . import suite as suite_module
 from ..paths import source_checkout
-from .agents import AGENT_NAMES, DEFAULT_AGENTS, build_agents
+from . import suite as suite_module
+from . import trace_evals
+from .agents import AGENT_NAMES, build_agents
 from .fixtures import Fixtures
 from .truth import TruthStore
 
@@ -34,18 +36,10 @@ REPO = HERE.parent.parent
 RUNS = REPO if source_checkout() else Path.cwd()
 DEFAULT_ENV = Path.home() / "Library" / "Application Support" / "app.mobster.desktop" / "agent.env"
 
-# Planning priors (estimates, not benchmark results): agent seconds per attempt, decision steps per
-# attempt, and $ per decision step. Mobster: latency breakdown, 23 Sep 2026. Baselines: one
-# wire-format check on 2026-09-23 against Vertex with a synthetic Settings screen (n=2 calls each):
-# computer use on gemini-3.7-flash took ~29 s per call (gemini-3.8-flash was returning HTTP 429), and
-# set-of-marks on gemini-3.1-pro-preview ~4 s per call; plus screenshot, AX read and the 1 s settle.
-# Every estimate is capped by the task's time budget.
-PRIOR_STEPS = {"navigation": 4, "retrieval": 5, "settings_state": 4, "text_entry": 6, "multi_app": 12,
-               "web": 4, "scroll": 7, "visual": 30}
+# Planning priors (estimates, not benchmark results): agent seconds per attempt and $ per attempt.
+# Mobster: latency breakdown, 23 Sep 2026. Every estimate is capped by the task's time budget.
 PRIOR_MOBSTER_S = {"navigation": 9, "retrieval": 10, "settings_state": 9, "text_entry": 14, "multi_app": 30,
                    "web": 10, "scroll": 16, "visual": 60}
-PRIOR_STEP_S = {"gemini-cu": 31.0, "som-pro": 6.5, "som-flash": 5.0}
-PRIOR_STEP_USD = {"gemini-cu": 0.008, "som-pro": 0.012, "som-flash": 0.007}
 PRIOR_MOBSTER_USD = 0.003
 OVERHEAD_S = 7.0   # health + reset + grading per attempt
 
@@ -113,14 +107,8 @@ def estimate(tasks, agent_names, repeats):
     for name in agent_names:
         seconds = usd = 0.0
         for task in tasks:
-            if name.startswith("mobster"):
-                seconds += min(PRIOR_MOBSTER_S.get(task.category, 15), task.max_seconds)
-                usd += PRIOR_MOBSTER_USD
-            else:
-                steps = min(PRIOR_STEPS[task.category], task.max_steps,
-                            max(1, int(task.max_seconds // PRIOR_STEP_S[name])))
-                seconds += min(steps * PRIOR_STEP_S[name], task.max_seconds)
-                usd += steps * PRIOR_STEP_USD[name]
+            seconds += min(PRIOR_MOBSTER_S.get(task.category, 15), task.max_seconds)
+            usd += PRIOR_MOBSTER_USD
         rows[name] = (repeats * (seconds + OVERHEAD_S * len(tasks)), repeats * usd)
     return rows
 
@@ -158,11 +146,8 @@ def cmd_dry_plan(args):
     names = [n for n in args.agents.split(",") if n]
     agents = build_agents(names, env_file=args.env_file)
     for name, agent in agents.items():
-        if name.startswith("mobster") or args.probe_models:
-            ok, reason = agent.available()
-            print(f"agent {name:13} {'available' if ok else 'UNAVAILABLE'}: {reason}")
-        else:
-            print(f"agent {name:13} not probed (pass --probe-models to make one tiny Vertex call per model)")
+        ok, reason = agent.available()
+        print(f"agent {name:13} {'available' if ok else 'UNAVAILABLE'}: {reason}")
     print(f"\nplan: {len(tasks)} tasks x {len(names)} agents x {args.repeats} repeats = "
           f"{len(tasks) * len(names) * args.repeats} attempts")
     total_s = total_usd = 0.0
@@ -282,7 +267,6 @@ def _select(args):
 
 def cmd_run(args):
     from ..evals.oracles import WDAProbe
-    from .phone import Phone
     from .runner import RunHalted, Runner, git_state
     from .truth import fixture_verifier
     _, digest, frozen = _suite_tasks(args)
@@ -293,15 +277,12 @@ def cmd_run(args):
     if not tasks:
         raise SystemExit("no tasks selected")
     names = [n for n in args.agents.split(",") if n]
-    cu_model, som_model = _resolve_models(args, names)
-    agents = build_agents(names, env_file=args.env_file, cu_model=cu_model, som_model=som_model,
-                          settle=args.settle)
+    agents = build_agents(names, env_file=args.env_file)
     fixtures = Fixtures()
     out = Path(args.resume or args.out or RUNS / "research" / "bench-runs" / f"run-{date.today().isoformat()}")
     runner = Runner(tasks=tasks, agents=agents, out_dir=out, wda_url=args.wda_url, device=args.device,
                     truth=TruthStore(args.device), fixtures=fixtures, repeats=args.repeats, seed=args.seed,
                     yield_to=None if args.no_yield else args.yield_to, probe_factory=WDAProbe,
-                    phone_factory=lambda url, session: Phone(url, session),
                     fixture_verifier_factory=lambda probe: fixture_verifier(probe, fixtures), order_mode=args.order)
     if args.verify_fixtures:
         verify = fixture_verifier(WDAProbe(args.wda_url), fixtures)
@@ -317,30 +298,6 @@ def cmd_run(args):
         return 2
     print(f"\nrecords: {runner.records_path}")
     return 0
-
-
-def _resolve_models(args, names):
-    """'auto' picks the best model that answers now; a resumed run keeps the models it started with."""
-    from .vertex import CU_PREFERENCE, SOM_PREFERENCE, Vertex, pick_model
-    cu_model, som_model = args.cu_model, args.som_model
-    plan = Path(args.resume) / "plan.json" if args.resume else None
-    if plan and plan.exists():
-        agents = json.loads(plan.read_text()).get("agents", {})
-        cu_model = (agents.get("gemini-cu", {}).get("config") or {}).get("model", cu_model)
-        som_model = (agents.get("som-pro", {}).get("config") or {}).get("model", som_model)
-    if "auto" in (cu_model, som_model) and any(n in names for n in ("gemini-cu", "som-pro")):
-        vertex = Vertex()
-        if cu_model == "auto" and "gemini-cu" in names:
-            print("choosing the computer-use model:")
-            cu_model = pick_model(vertex, CU_PREFERENCE, print) or CU_PREFERENCE[0]
-        if som_model == "auto" and "som-pro" in names:
-            print("choosing the set-of-marks model:")
-            som_model = pick_model(vertex, SOM_PREFERENCE, print) or SOM_PREFERENCE[0]
-    return (CU_PREFERENCE_DEFAULT if cu_model == "auto" else cu_model,
-            SOM_PREFERENCE_DEFAULT if som_model == "auto" else som_model)
-
-
-CU_PREFERENCE_DEFAULT, SOM_PREFERENCE_DEFAULT = "gemini-3.8-flash", "gemini-3.1-pro-preview"
 
 
 def cmd_report(args):
@@ -391,26 +348,22 @@ def main(argv=None):
 
     p = sub.add_parser("dry-plan")
     device_args(p)
-    p.add_argument("--agents", default=",".join(DEFAULT_AGENTS))
+    p.add_argument("--agents", default="mobster-smart")
     p.add_argument("--repeats", type=int, default=3)
     p.add_argument("--only")
     p.add_argument("--probe", action="store_true", help="read-only device checks (resets start apps)")
     p.add_argument("--verify-fixtures", action="store_true", help="with --probe: read-only fixture checks")
-    p.add_argument("--probe-models", action="store_true", help="one tiny Vertex call per baseline model")
     p.set_defaults(func=cmd_dry_plan)
 
     p = sub.add_parser("run")
     device_args(p)
-    p.add_argument("--agents", default=",".join(DEFAULT_AGENTS), help=f"comma list of {AGENT_NAMES}")
+    p.add_argument("--agents", default="mobster-smart", help=f"comma list of {AGENT_NAMES}")
     p.add_argument("--repeats", type=int, default=3)
     p.add_argument("--seed", type=int)
     p.add_argument("--only", help="comma list of task ids or categories")
     p.add_argument("--out")
     p.add_argument("--resume", help="an existing run directory")
     p.add_argument("--max-attempts", type=int, help="stop after this many attempts (smoke tests)")
-    p.add_argument("--cu-model", default="auto", help="auto = best of vertex.CU_PREFERENCE that answers now")
-    p.add_argument("--som-model", default="auto", help="auto = best of vertex.SOM_PREFERENCE that answers now")
-    p.add_argument("--settle", type=float, default=1.0, help="baselines' fixed post-action settle (s)")
     p.add_argument("--yield-to", default="http://127.0.0.1:8765", help="GET-only: wait while the app is busy")
     p.add_argument("--no-yield", action="store_true")
     p.add_argument("--verify-fixtures", action="store_true")
@@ -418,6 +371,10 @@ def main(argv=None):
     p.add_argument("--order", choices=("shuffle", "abba"), default="shuffle",
                    help="abba: two agents, each task run A B B A (a paired A/B)")
     p.set_defaults(func=cmd_run)
+
+    p = sub.add_parser("evals", help="replay the local trace evals offline: no phone, no model")
+    trace_evals.add_arguments(p)
+    p.set_defaults(func=lambda args: trace_evals.command(args))
 
     p = sub.add_parser("report")
     p.add_argument("--run", required=True)

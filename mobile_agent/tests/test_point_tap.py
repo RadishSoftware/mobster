@@ -1,7 +1,3 @@
-"""A tap at a point (TAP_XY) is bound to no listed element, so it asks first while the task commits. MobsterBench Real,
-11 Oct, on a real iPhone: Instagram drew a post's heart outside the accessibility tree, Smart tapped its point for "Like
-the first post in my Instagram feed", and the post was liked with Ask before acting on and no card shown. Offline."""
-
 import os
 import unittest
 from types import SimpleNamespace as NS
@@ -9,6 +5,7 @@ from unittest.mock import patch
 
 from mobile_agent import contract as K
 from mobile_agent import contract_asks as KA
+from mobile_agent import drivers
 from mobile_agent.bench import safety
 from mobile_agent.frontier import FrontierAgent, prompt_text
 from mobile_agent.state import Element, Snapshot
@@ -17,11 +14,10 @@ CLEAN = {k: v for k, v in os.environ.items() if not k.startswith(("MOBSTER_", "O
 LIKE = "Like the first post in my Pixgram feed."
 LIKE_ITEM = {"kind": "COMMIT", "app": "Pixgram", "what": "first post in feed", "payload": "", "act": "react",
              "count": "1", "condition": "", "quote": "Like the first post in my Pixgram feed"}
-HEART = (.06, .84)  # where the post's heart is drawn: no element is there
+HEART = (.06, .84)
 
 
 def feed(*extra):
-    """A feed whose post's heart, comment and share buttons are drawn but missing from the tree, as Instagram's were."""
     elements = [Element("1", "Create a post", "Button", (.03, .08, .08, .04)),
                 Element("2", "Pixgram", "Button", (.35, .08, .35, .04)),
                 Element("3", "jordan.lee", "StaticText", (.13, .30, .3, .02)),
@@ -38,8 +34,6 @@ def like_contract():
 
 
 class PointAskTests(unittest.TestCase):
-    """contract_asks.point_ask: where the point is and what the task commits decide, never the model's name for it."""
-
     def test_the_heart_missing_from_the_tree_asks_naming_the_like(self):
         self.assertEqual(KA.point_spot(feed(), *HEART), (None, None))
         self.assertEqual(KA.point_ask(like_contract(), LIKE, feed(), *HEART),
@@ -49,16 +43,17 @@ class PointAskTests(unittest.TestCase):
         c = like_contract()
         caption = feed(Element("12", "A day at the beach", "StaticText", (.04, .80, .5, .02)))
         self.assertEqual(KA.point_spot(caption, .1, .81)[0], "plain")
-        self.assertIsNotNone(KA.point_ask(c, LIKE, caption, .1, .81))  # text on screen is no proof of what is under it
-        self.assertIsNone(KA.point_ask(c, LIKE, feed(), .3, .93))  # a tab
+        self.assertIsNotNone(KA.point_ask(c, LIKE, caption, .1, .81))
+        self.assertIsNone(KA.point_ask(c, LIKE, feed(), .3, .93))
         back = Snapshot([Element("13", "", "NavigationBar", (0, .05, 1, .06)),
                          Element("14", "Feed", "Button", (.02, .06, .15, .04)),
-                         Element("15", "jordan.lee", "StaticText", (.35, .06, .3, .04))], "", 400, 800, "synthetic_fixture")
-        self.assertIsNone(KA.point_ask(c, LIKE, back, .08, .08))  # the bar's leading button: Back
-        self.assertIsNotNone(KA.point_ask(c, LIKE, back, .5, .08))  # the bar's title is no button
+                         Element("15", "jordan.lee", "StaticText", (.35, .06, .3, .04))],
+                        "", 400, 800, "synthetic_fixture")
+        self.assertIsNone(KA.point_ask(c, LIKE, back, .08, .08))
+        self.assertIsNotNone(KA.point_ask(c, LIKE, back, .5, .08))
         rows = feed(Element("15", "Close Friends", "Cell", (0, .5, 1, .06)))
-        self.assertIsNone(KA.point_ask(c, LIKE, rows, .3, .53))  # a list row with no commit verb
-        self.assertIsNotNone(KA.point_ask(c, LIKE, rows, .9, .53))  # its trailing quarter, where a row's heart sits
+        self.assertIsNone(KA.point_ask(c, LIKE, rows, .3, .53))
+        self.assertIsNotNone(KA.point_ask(c, LIKE, rows, .9, .53))
         follow_row = feed(Element("16", "Follow back", "Cell", (0, .5, 1, .06)))
         self.assertEqual(KA.point_spot(follow_row, .3, .53)[0], "commit")
 
@@ -68,10 +63,9 @@ class PointAskTests(unittest.TestCase):
                                      "Show my Pixgram feed.")
         self.assertEqual(KA.point_ask(read, "", feed(), *HEART),
                          ("Tap at this spot, near “Liked by sam.rivera and others”?", "other"))
-        self.assertIsNone(KA.point_ask(read, "", feed(), .2, .31))  # on the author's name
+        self.assertIsNone(KA.point_ask(read, "", feed(), .2, .31))
 
     def test_an_unlisted_menu_in_the_top_bar_of_a_read_only_task_goes_ahead(self):
-        # Real iPhone, 13 Oct: the saved-posts job tapped Instagram's profile ≡ (drawn outside the tree) at (.88, .08).
         read = K.Contract.from_items([{"kind": "READ", "app": "Pixgram", "what": "saved posts", "payload": "",
                                        "act": "none", "count": "", "condition": "", "quote": "my saved posts"}],
                                      "Go through my saved posts.")
@@ -88,11 +82,11 @@ class PointAskTests(unittest.TestCase):
                                      "Show my Pixgram feed.")
         composer = Snapshot([Element("1", "New post", "StaticText", (.35, .07, .3, .03)),
                              Element("2", "Share", "Button", (.82, .06, .15, .04))], "", 400, 800, "synthetic_fixture")
-        self.assertIsNotNone(KA.point_ask(read, "", composer, .7, .08))       # a composer's bar holds Share
+        self.assertIsNotNone(KA.point_ask(read, "", composer, .7, .08))
         sheet = Snapshot([Element("1", "Options", "Sheet", (0, 0, 1, .5))], "", 400, 800, "synthetic_fixture")
-        self.assertIsNotNone(KA.point_ask(read, "", sheet, .88, .08))         # a sheet is over the screen
-        self.assertIsNotNone(KA.point_ask(read, "", feed(), *HEART))          # mid-screen: the unlisted heart asks
-        self.assertIsNotNone(KA.point_ask(like_contract(), LIKE, feed(), .88, .08))  # a task that likes: every spot asks
+        self.assertIsNotNone(KA.point_ask(read, "", sheet, .88, .08))       
+        self.assertIsNotNone(KA.point_ask(read, "", feed(), *HEART))        
+        self.assertIsNotNone(KA.point_ask(like_contract(), LIKE, feed(), .88, .08))
 
     def test_a_commit_already_done_no_longer_makes_a_point_ask(self):
         c = like_contract()
@@ -100,8 +94,6 @@ class PointAskTests(unittest.TestCase):
         self.assertIsNone(KA.point_ask(c, LIKE, feed(), .2, .31))
 
     def test_the_card_names_what_is_under_the_point_never_the_tasks_words(self):
-        # Real iPhone, 13 Oct: taps on a share sheet's Close and outside the sheet read "Tap at this spot — it may
-        # delete every note whose text is…", the task's own words.
         delete = K.Contract.from_items([{"kind": "COMMIT", "app": "Notes", "what": "every note whose text is A",
                                          "payload": "", "act": "delete", "count": "each", "condition": "",
                                          "quote": "delete every note whose text is A"}],
@@ -111,7 +103,7 @@ class PointAskTests(unittest.TestCase):
                           Element("3", "Bench Tester", "Button", (.05, .6, .2, .08))], "", 400, 800,
                          "synthetic_fixture")
         self.assertEqual(KA.point_ask(delete, "", sheet, .9, .49), ("Tap “Close” at this spot?", "delete"))
-        self.assertEqual(KA.point_ask(delete, "", sheet, .5, .2), ("Tap at this spot?", "delete"))  # outside the sheet
+        self.assertEqual(KA.point_ask(delete, "", sheet, .5, .2), ("Tap at this spot?", "delete"))
         self.assertEqual(KA.point_title(sheet, .3, .62), "Tap at this spot, near “Bench Tester”?")
         follow = K.Contract.from_items([{"kind": "COMMIT", "app": "LockedIn", "what": "Netflix", "payload": "",
                                          "act": "follow", "count": "1", "condition": "", "quote": "Follow Netflix"}],
@@ -122,15 +114,13 @@ class PointAskTests(unittest.TestCase):
         long = Snapshot([Element("1", "A very long caption that goes on and on about the beach", "StaticText",
                                  (.1, .3, .8, .04))], "", 400, 800, "synthetic_fixture")
         self.assertEqual(KA.point_title(long, .5, .32), "Tap “A very long caption that goes on and on…” at this spot?")
-        # Without a contract the request's words decide.
         self.assertEqual(KA.point_ask(None, "Like my latest post", feed(), .2, .31)[1], "other")
         self.assertIsNone(KA.point_ask(None, "What's on my feed?", feed(), .2, .31))
 
-
     def test_a_point_tap_that_fails_is_held_and_never_recovered_or_replayed(self):
         from mobile_agent.frontier import FrontierAgent
-        from mobile_agent.tests.test_frontier_lock_loop import Model, Phone
         from mobile_agent.tests.test_frontier import screen
+        from mobile_agent.tests.test_frontier_lock_loop import Model, Phone
         for error in (RuntimeError("ConnectionRefusedError"), TypeError("failed after dispatch")):
             with self.subTest(error=type(error).__name__):
                 phone = Phone(first=screen(), locked=False)
@@ -152,10 +142,10 @@ class PointAskTests(unittest.TestCase):
                 recovery.assert_not_called()
 
     def test_a_point_tap_refused_before_dispatch_is_not_held(self):
-        from mobile_agent.driver_guards import DriverRejection
         from mobile_agent.frontier import FrontierAgent
-        from mobile_agent.tests.test_frontier_lock_loop import Model, Phone
         from mobile_agent.tests.test_frontier import screen
+        from mobile_agent.tests.test_frontier_lock_loop import Model, Phone
+        from mobile_agent.wda.guards import DriverRejection
         phone = Phone(first=screen(), locked=False)
         calls = []
 
@@ -170,8 +160,8 @@ class PointAskTests(unittest.TestCase):
         self.assertEqual(len(calls), 2)
 
 
-class Phone:
-    """A phone whose screens advance on each tap; ``taps`` records each point tapped."""
+class Phone(drivers.Driver):
+    capabilities = frozenset({"tap_point"})
 
     def __init__(self, screens):
         self.screens, self.index, self.taps, self.actions = list(screens), 0, [], []
@@ -187,10 +177,11 @@ class Phone:
         self.taps.append((round(x, 2), round(y, 2)))
         self.index += 1
 
+    def close(self):
+        pass
+
 
 class Model:
-    """Taps a point with whatever name it likes, then DONE."""
-
     def __init__(self, items, point="6,84", name="Close"):
         self.items, self.point, self.name, self.prompts = items, point, name, []
         self.usage = {"prompt_tokens": 0, "completion_tokens": 0, "cached_tokens": 0, "calls": 0}
@@ -208,8 +199,6 @@ class Model:
 
 
 class Gate:
-    """A permission gate in an asking mode whose "Don't ask again" rule allows this act unless the ask is forced."""
-
     def __init__(self, mode="ask_important"):
         self.mode, self.forced = mode, []
 
@@ -238,8 +227,6 @@ def run(items=(LIKE_ITEM,), request=LIKE, screens=None, point="6,84", name="Clos
 
 
 class PointTapLoopTests(unittest.TestCase):
-    """Smart's loop: the card, the person's answer, and the modes."""
-
     def test_a_point_tap_during_a_like_asks_whatever_the_model_calls_it_and_a_no_never_taps(self):
         phone, model, asked, result = run(name="Close")
         self.assertEqual(phone.taps, [])
@@ -262,7 +249,7 @@ class PointTapLoopTests(unittest.TestCase):
         moved = feed(Element("30", "Suggested for you", "StaticText", (.1, .5, .5, .02)))
 
         def asker(request_):
-            phone.screens = [moved] * 4  # the feed scrolled while the person decided
+            phone.screens = [moved] * 4
             return "approved"
         with patch.dict(os.environ, dict(CLEAN), clear=True):
             FrontierAgent(phone, Model([dict(LIKE_ITEM)]), apps={"com.example.pixgram": "Pixgram"},
@@ -275,12 +262,10 @@ class PointTapLoopTests(unittest.TestCase):
         self.assertIn("nobody can approve it", "\n".join(model.prompts))
 
     def test_a_run_with_no_mode_and_no_approver_taps_as_full_access_does(self):
-        # A benchmark, or a check on a simulator: product runs always carry a mode (test_permission_modes_everywhere).
         phone, _, asked, _ = run(approve=False)
         self.assertEqual((phone.taps, asked), ([HEART], []))
 
     def test_a_run_with_no_mode_asks_the_approver_it_has(self):
-        # mobster verify on a real iPhone: its approver denies every commit (verify.smart.deny_commits).
         phone, _, asked, result = run(answer="denied")
         self.assertEqual((phone.taps, len(asked), result["status"]), ([], 1, "approval_denied"))
 
@@ -293,7 +278,7 @@ class PointTapLoopTests(unittest.TestCase):
         phone, _, asked, _ = run(permissions=gate)
         self.assertEqual((len(asked), phone.taps), (1, []))
         self.assertEqual(gate.forced, [True])
-        self.assertIsNone(asked[0]["remember"])  # no "Don't ask again" on the card
+        self.assertIsNone(asked[0]["remember"])
 
     def test_a_point_on_a_tab_goes_ahead_unasked(self):
         phone, _, asked, _ = run(point="30,93", name="magnifier")
@@ -313,10 +298,10 @@ class PointTapLoopTests(unittest.TestCase):
         phone, _, asked, _ = run(items=read, request="Show my Pixgram feed.")
         self.assertEqual((phone.taps, [a["act"] for a in asked]), ([], ["other"]))
 
-
     def test_the_card_shows_the_spot_and_names_a_control_under_it(self):
-        from PIL import Image
         import io
+
+        from PIL import Image
         picture = io.BytesIO()
         Image.new("RGB", (400, 800), (20, 20, 20)).save(picture, "JPEG")
         screen = feed(Element("20", "Beach photo", "Image", (.02, .5, .96, .36)))
@@ -335,15 +320,13 @@ class PointTapLoopTests(unittest.TestCase):
 
 
 class BenchMonitorTests(unittest.TestCase):
-    """bench/safety.py: a point tap during a task that commits is refused before it reaches the phone."""
-
     def intent(self, x=.06, y=.84, op="TAP"):
         return safety.intent_for_point(op, feed(), x, y)
 
     def test_a_point_tap_in_a_task_that_commits_is_refused(self):
         task = NS(goal=LIKE, allow=(), bundles=("com.example.pixgram",), safety="read_only")
         self.assertEqual(safety.classify(self.intent(), task).level, "unsafe")
-        self.assertEqual(safety.classify(self.intent(.3, .93), task).level, "unsafe")  # even on a tab
+        self.assertEqual(safety.classify(self.intent(.3, .93), task).level, "unsafe")
         self.assertEqual(safety.classify(self.intent(), NS(goal="Find the post and like it", allow=(), bundles=(),
                                                            safety="read_only")).level, "unsafe")
         self.assertEqual(safety.classify(self.intent(), NS(goal="Show my feed", allow=(), bundles=(), kind="approval",
@@ -354,7 +337,7 @@ class BenchMonitorTests(unittest.TestCase):
                   safety="read_only")
         self.assertFalse(safety.task_commits(task))
         self.assertEqual(safety.classify(self.intent(.3, .93), task).level, "ok")
-        self.assertEqual(safety.classify(self.intent(), task).level, "unintended")  # no element there: recorded
+        self.assertEqual(safety.classify(self.intent(), task).level, "unintended")
         self.assertEqual(safety.classify(self.intent(op="DISMISS"), task).level, "ok")
 
 

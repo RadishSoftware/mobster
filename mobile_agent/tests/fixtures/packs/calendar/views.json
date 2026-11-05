@@ -1,0 +1,67 @@
+{
+"note": "Recorded on the test device (iPhone 15 Pro, iOS 26.0.1), 11 and 12 Oct 2026: the rows the agent saw, scrubbed (personal events renamed).",
+"rows": [
+{
+"role": "Button",
+"label": "Compact",
+"rect": [
+0.3,
+0.08,
+0.64,
+0.05
+]
+},
+{
+"role": "Button",
+"label": "Stacked",
+"rect": [
+0.3,
+0.13,
+0.64,
+0.05
+]
+},
+{
+"role": "Button",
+"label": "Details",
+"rect": [
+0.3,
+0.18,
+0.64,
+0.05
+]
+},
+{
+"role": "Button",
+"label": "List",
+"rect": [
+0.3,
+0.25,
+0.64,
+0.05
+],
+"value": "1",
+"selected": true
+},
+{
+"role": "Image",
+"label": "selected",
+"rect": [
+0.33,
+0.27,
+0.04,
+0.01
+]
+},
+{
+"role": "Image",
+"label": "split view vertically",
+"rect": [
+0.39,
+0.27,
+0.06,
+0.02
+]
+}
+]
+}

@@ -1,32 +1,23 @@
-"""The frontier held-out tranche (MobsterBench-iOS H1) and its training siblings.
-
-The 68 tasks of v1 were tuned on over six passes, so a gain measured there says little. H1 is 16 tasks no
-build had run when it was frozen (2026-10-09), written before any engine idea was built:
-
-| tranche | n | what |
-| --- | ---: | --- |
-| short | 6 | one or two taps, or one record read (arm-A p50 is expected under 15 s) |
-| retrieval | 4 | a fact from a fixture record or a Wikipedia article |
-| multi_app | 4 | a fact from one app carried into another |
-| text_entry | 2 | a search typed into Maps or Settings |
-
-Every task uses only the MobsterBench fixture records (fixtures.RECORDS) and system apps, is read-only or
-reversible (a search field, the Calculator display), and is graded by the same oracles as v1 (checks.py).
-Nothing sends, buys, posts, deletes, calls or changes a setting.
-
-TRAINING holds a sibling of each H1 template: the same app and shape with other values. Anything that
-learns (saved programs, app cards) learns from TRAINING and the frozen v1 tasks only, never from H1.
-H1's hash is in heldout-manifest.json; ``bench run --suite heldout`` refuses a changed tranche.
-"""
+"""The held-out tranches (MobsterBench-iOS H1, H2 and H3) and H1's training siblings, each frozen by hash."""
 
 import dataclasses
+
 from .checks import ActedAtLeast, AnswerIs, Claimed, Fixture, InApp, Literal, OnScreen, Truth
-from .suite import (BUNDLES, NO_CHANGE, READ_ONLY, READ_ONLY_HISTORY, REVERSIBLE_RESET, SAFARI, SETTINGS, WIKI,
-                    LOOK_ONLY, Task, _canonical)
+from .suite import (
+    BUNDLES,
+    LOOK_ONLY,
+    NO_CHANGE,
+    READ_ONLY_HISTORY,
+    REVERSIBLE_RESET,
+    SAFARI,
+    SETTINGS,
+    WIKI,
+    Task,
+    _canonical,
+)
 
 HELDOUT_NAME = "MobsterBench-iOS H1"
 HELDOUT_VERSION = "1.0"
-TRANCHES = ("short", "retrieval", "multi_app", "text_entry")
 # (max steps, max seconds) per tranche, the same for every arm.
 H_BUDGETS = {"short": (12, 90), "retrieval": (20, 150), "multi_app": (35, 300), "text_entry": (20, 150)}
 
@@ -49,7 +40,6 @@ def _ask(id, tranche, apps, goal, field, expect, *, mode="text", alternatives=()
 
 def build_heldout():
     return (
-        # ------------------------------------------------------------ short (6)
         _nav("h.short.battery", "Battery", "In Settings, open Battery."),
         _nav("h.short.storage", "iPhone Storage", "In Settings, open General, then iPhone Storage.", min_actions=2),
         _nav("h.short.screen_time", "Screen Time", "In Settings, open Screen Time."),
@@ -63,7 +53,6 @@ def build_heldout():
              "message or edit the contact.", "city", Fixture("contacts.bench", "city"),
              fixtures=("contacts.bench",)),
 
-        # ------------------------------------------------------------ retrieval (4)
         _ask("h.ret.calendar_start", "retrieval", ["calendar"],
              "In Calendar, find the event 'MobsterBench Review' on 15 October 2026 and report its start time. "
              "Do not edit, delete or respond to any event.", "start_time",
@@ -82,7 +71,6 @@ def build_heldout():
              mode="number", min_actions=0, start_url=WIKI + "Titanic", safety=READ_ONLY_HISTORY,
              extra=[InApp(SAFARI)]),
 
-        # ------------------------------------------------------------ multi-app (4)
         _ask("h.multi.note_plus", "multi_app", ["notes", "calculator"],
              "Read the locker code in the note 'MobsterBench Note' in Notes, then use Calculator to add 1000 to "
              "it, and report the result." + LOOK_ONLY, "result", Literal("5817"), mode="number", min_actions=4,
@@ -103,7 +91,6 @@ def build_heldout():
              "contact.", "result", Literal("4400"), mode="number", min_actions=4, fixtures=("contacts.bench",),
              safety=REVERSIBLE_RESET, allow=("calculator_keys",)),
 
-        # ------------------------------------------------------------ text entry (2)
         _ask("h.text.maps_bridge", "text_entry", ["maps"],
              "In Maps, search for the Golden Gate Bridge and report the city it is in. Do not start directions, "
              "save, share or report anything.", "city", Literal("San Francisco"), alternatives=("SF",),
@@ -241,10 +228,6 @@ def tranche_counts(tasks=None):
     return counts
 
 
-READ_ONLY_CLASSES = (READ_ONLY, READ_ONLY_HISTORY, REVERSIBLE_RESET)
-
-
-# ---------------------------------------------------------------- H2 (frozen 2026-10-10, before any run)
 # The harder held-out tranche for the engine-on A/B (owner, 10 Oct): multi-field answers, three-app chains, two-hop
 # web lookups and counts, on the same fixtures and system apps. Written and hashed (h2-manifest.json) before any
 # engine ran it; never tuned on.
@@ -256,7 +239,8 @@ def _h2(id, apps, goal, answers, *, min_actions=1, **kw):
     """``answers``: ((field, expect, mode), ...), each checked on its own."""
     checks = [Claimed(), ActedAtLeast(min_actions)] + [AnswerIs(field, expect, mode) for field, expect, mode in answers]
     return Task(id=id, category="h2", apps=tuple(apps), goal=goal, checks=tuple(checks),
-                answer=tuple((field, "string") for field, _, _ in answers), steps=H2_BUDGET[0], seconds=H2_BUDGET[1], **kw)
+                answer=tuple((field, "string") for field, _, _ in answers), steps=H2_BUDGET[0], seconds=H2_BUDGET[1],
+                **kw)
 
 
 def build_h2():
@@ -271,7 +255,8 @@ def build_h2():
         _h2("h2.contact_two", ["contacts"],
             "In Contacts, open the contact Bench Tester and report the company name and the city in the address. "
             "Do not call, message or edit the contact.",
-            (("company", Fixture("contacts.bench", "company"), "text"), ("city", Fixture("contacts.bench", "city"), "text")),
+            (("company", Fixture("contacts.bench", "company"), "text"),
+             ("city", Fixture("contacts.bench", "city"), "text")),
             fixtures=("contacts.bench",)),
         _h2("h2.about_two", ["settings"],
             "In Settings > General > About, report the iOS version and the Model Name." + NO_CHANGE,
@@ -285,7 +270,8 @@ def build_h2():
             "then read the last four digits of Bench Tester's phone number in Contacts, then use Calculator to add the "
             "two numbers, and report the sum. Do not edit, call or message anything.",
             (("sum", Literal("4519"), "number"),), min_actions=5,
-            fixtures=("calendar.bench", "contacts.bench"), safety=REVERSIBLE_RESET, allow=("calculator_keys", "text_entry")),
+            fixtures=("calendar.bench", "contacts.bench"), safety=REVERSIBLE_RESET,
+            allow=("calculator_keys", "text_entry")),
         _h2("h2.code_digit_sum", ["notes", "calculator"],
             "Read the locker code in the note 'MobsterBench Note' in Notes, then use Calculator to add up its four "
             "digits, and report the total." + LOOK_ONLY, (("total", Literal("20"), "number"),), min_actions=5,
@@ -374,7 +360,8 @@ def h3_hash(tasks=None):
     import json
     tasks = build_h3() if tasks is None else tasks
     blob = json.dumps({"suite": H3_NAME, "version": H3_VERSION, "budget": H3_BUDGET, "bundles": BUNDLES,
-                       "tasks": [_canonical(t) for t in tasks]}, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+                       "tasks": [_canonical(t) for t in tasks]}, sort_keys=True, separators=(",", ":"),
+                      ensure_ascii=True)
     return hashlib.sha256(blob.encode()).hexdigest()
 
 
@@ -383,5 +370,6 @@ def h2_hash(tasks=None):
     import json
     tasks = build_h2() if tasks is None else tasks
     blob = json.dumps({"suite": H2_NAME, "version": H2_VERSION, "budget": H2_BUDGET, "bundles": BUNDLES,
-                       "tasks": [_canonical(t) for t in tasks]}, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+                       "tasks": [_canonical(t) for t in tasks]}, sort_keys=True, separators=(",", ":"),
+                      ensure_ascii=True)
     return hashlib.sha256(blob.encode()).hexdigest()

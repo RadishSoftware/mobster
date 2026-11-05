@@ -1,39 +1,8 @@
-"""Which actions have an effect the person must approve first: several independent signals, any one of which asks.
-Pure and deterministic, no I/O, and independent of the task contract and task_policy: a second, separate reading
-of every action that can only add asks (HARDENING-RESEARCH #6). The permission gate reads it (``PermissionGate.reading``)
-on every path that acts on a phone: Mobster's own agent, a coding agent's phone tools, and an outside agent over MCP.
+"""Which actions the person must approve first: independent signals that only add asks, never remove one. No I/O."""
 
-Signals, each read without the others:
-
-- ``label``: the control's own words name an act that reaches other people, spends money, or destroys or undoes
-  something (Send, Post, Buy, Delete, Unsend, Clear History, Reset, Erase, Sign Out, Unmatch, Leave group, Archive,
-  Block, Report, Remove from Account), in English and the largest iOS languages ("Eliminar", "Löschen", "削除"), or an
-  SF Symbol that does (trash, paperplane, heart, person.badge.plus). A row or a text names one only as its first
-  word, with no comma, in at most four words: the song "Like a Prayer, Madonna" and the reminder "Call the dentist,
-  Incomplete" are content. A calculator's or a dial pad's Clear and Delete keys name none, and neither does the Clear
-  button of a search bar (``clears_query_field``).
-- ``return``: Return in a message composer, or in any field but a search, address or To field of a messaging app.
-  A path that has the control in hand asks to be told with certainty first (``query_return``): Return in a search
-  field or a browser's address bar goes ahead on every path, in any other field it asks.
-- ``share``: Share or Post while a field on the screen holds the agent's text (a caption): that publishes it.
-- ``dialog``: a button inside an alert, a sheet or a menu that says it deletes, erases, signs out or charges, other
-  than the one that backs out (Cancel, Close, Not Now, Keep...). The confirmation's own OK is the act.
-- ``screen``: a confirming button (Continue, Confirm, OK, Yes...) on a screen that says what it destroys ("All data
-  will be erased", "This can't be undone") or what it charges (a price, an App Store or Apple Pay sheet).
-- ``reaction``: an emoji-only button, or a Tapback, in a messaging app: it sends a reaction on tap.
-- ``reply_chip``: a sentence-like button just above a message composer: a quick reply that sends on tap.
-- ``shortcut``: a shortcut's tile in Shortcuts runs it on tap.
-- ``swipe``: a row's swipe in an app where the swipe is the act (Gmail, Outlook, Spark).
-- ``setting``: switching off a protection (Find My, Stolen Device Protection, two-factor, a passcode).
-- ``scope``: any other switch the request doesn't ask to change (``names_switch``).
-
-Measured on the red-team suite (``python -m mobile_agent.evals.redteam``, 14 Oct 2026): every must-ask action asks or
-is refused on all three paths, and no harmless step in the navigation set asks.
-"""
-
-from dataclasses import dataclass
 import re
 import unicodedata
+from dataclasses import dataclass
 
 from ..contract_screen import APP_STORE
 from .rules import CONTENT_ROLES, RETURN_OPS, ROW_WORDS, SEARCH_WORDS, TAP_OPS, _phrases, norm, words_of
@@ -88,8 +57,7 @@ _ACTS = (
               r"^(?:like|react to) (?:this|post|photo|video|comment)\b"),
 )
 ACTS = tuple((act, re.compile(pattern, re.I)) for act, pattern in _ACTS)
-# The same acts in the largest iOS languages other than English (Spanish, Portuguese, French, German, Italian, Dutch,
-# Swedish, Polish, Turkish, Russian, Japanese, Chinese, Korean): a phone set to Spanish says "Eliminar", not "Delete".
+# The same acts in the largest iOS languages other than English: a phone set to Spanish says "Eliminar", not "Delete".
 _LOCALIZED = {
     "unsend": ("anular envío", "deshacer envío", "cancelar envío", "senden widerrufen", "annuler l’envoi",
                "annuler l'envoi", "annulla invio", "送信を取り消す", "送信取消", "撤回", "보내기 취소"),
@@ -162,8 +130,7 @@ PROTECTIONS = re.compile(r"\b(?:find my|stolen device protection|two.factor|2fa|
 SHORTCUTS_NAV = re.compile(r"^(?:shortcuts|automation|gallery|search|edit|select|done|back|cancel|add|new shortcut|"
                            r"\+|more|all shortcuts|share sheet|apple watch|my shortcuts|folders?|new folder|"
                            r"details|settings|library|sort|filter|close)$", re.I)
-# A search field's words (its label or placeholder), and what a browser's address bar is called. A web page's own
-# fields never count as an address bar: they sit inside a web view.
+# A search field's words and a browser's address bar's names; a web page's own fields sit in a web view and never count.
 ADDRESS_LABEL = re.compile(r"^(?:address(?: bar)?|address and search|web address|url)$", re.I)
 BROWSERS = frozenset({"com.apple.mobilesafari", "com.google.chrome.ios", "org.mozilla.ios.Firefox",
                       "com.microsoft.msedge", "com.brave.ios.browser", "com.duckduckgo.mobile.ios",
@@ -184,9 +151,7 @@ class Reading:
 
 
 def label_act(label, role=None, rect=None, pixels=False):
-    """The act a control's own label names, or None (``label`` signal). A row or a text names one only in its first
-    word, without a comma, in at most ROW_WORDS words; a field never does; a bare opener (Share, Reply, Comment)
-    names none; a folder's row (Trash, Junk) names none."""
+    """The act a control's own label names, or None (``label`` signal)."""
     text = " ".join(str(label or "").split())
     if not text or role in FIELD_ROLES:
         return None
@@ -270,8 +235,7 @@ def _composer(elements):
 
 
 def _beside_written_composer(element, elements):
-    """Whether ``element`` sits on the line of the message composer, right of it, while the composer holds text that
-    isn't its placeholder."""
+    """Whether ``element`` sits right of the message composer on its line while the composer holds text of its own."""
     composer = _composer(elements)
     if composer is None or element is composer:
         return False
@@ -296,9 +260,7 @@ def _act_from_text(text):
 
 
 def read(action, elements=()):
-    """The Reading for ``action`` (permissions.rules.Action) on a screen of ``elements``, or None when no signal says
-    it acts beyond the phone or destroys something. ``elements``: the screen's elements (state.Element), () when
-    unknown: only the label and Return signals read then."""
+    """The Reading for ``action`` on a screen of ``elements``, or None when no signal says it acts past the phone."""
     op = (action.op or "").upper()
     role = action.role
     label = " ".join(str(action.label or "").split())
@@ -332,7 +294,8 @@ def read(action, elements=()):
     if glyph is not None and label_act(label, role, rect, pixels) is None:
         return Reading(glyph, "glyph", f"It looks like a {action.glyph}; it's called “{label[:24]}”")
     # App Store: Get, Install, a price (on pixels in an app Mobster can't name, a bare Get or price too).
-    if (bundle == APP_STORE or pixels and not bundle and re.fullmatch(r"get|[$€£¥]\s?[\d.,]+", folded)) and re.match(r"^(?:get|install|redownload|re-download|buy|purchase|[$€£¥]\s?\d)", folded):
+    if ((bundle == APP_STORE or pixels and not bundle and re.fullmatch(r"get|[$€£¥]\s?[\d.,]+", folded))
+            and re.match(r"^(?:get|install|redownload|re-download|buy|purchase|[$€£¥]\s?\d)", folded)):
         return Reading("buy", "label", "Gets an app from the App Store")
     # dialog: a button in an alert, a sheet or a menu that says it destroys or charges.
     container = _container(element, elements) if element is not None else None
@@ -379,14 +342,13 @@ def read(action, elements=()):
     if role not in ("Switch", "Toggle") and re.match(r"^turn off\b", folded) and PROTECTIONS.search(
             label + " " + _screen_texts(elements)):
         return Reading("turn off", "setting", "Turns off a protection")
-    # beside_composer: a control on the line of a message box that holds what was written, right of it, that names no
-    # tool of the box. iOS names an unlabelled SF Symbol by its shape ("Up" for arrow.up.circle), so a send can read
-    # as anything; it asks (red-team live run, 17 Oct: "Up" in Messages and "Direct" in Instagram sent unasked).
+    # iOS names an unlabelled SF Symbol by its shape ("Up"): a control right of a written message box asks.
     if element is not None and (role == "Button" or pixels) and _beside_written_composer(element, elements) \
             and not COMPOSER_TOOLS.search(folded) and not SAFE.match(folded):
         return Reading("send", "beside_composer", "It's beside your message; it may send it")
     if bundle in MESSAGE_APPS or pixels and not bundle:
-        # reaction: an emoji button, or a Tapback (in a menu; on pixels, any Tapback word in Messages or an unknown app).
+        # reaction: an emoji button, or a Tapback (in a menu; on pixels,
+        # any Tapback word in Messages or an unknown app).
         if _emoji_only(label) or (folded in TAPBACKS and (container is not None and bundle == "com.apple.MobileSMS"
                                                           or pixels and bundle in ("", "com.apple.MobileSMS"))):
             return Reading("react", "reaction", "Sends a reaction")
@@ -411,10 +373,7 @@ BAR_TOP, BAR_BOTTOM = .13, .9
 
 
 def glyph_act(glyph, rect, elements, bundle=""):
-    """The act an icon's glyph performs where it is drawn, or None. A trash can, a person-plus and a repost always do.
-    A paper plane does unless it sits in a top or tab bar with no message box on its line (Instagram's inbox); a heart
-    or a thumbs-up does unless it sits in a top or tab bar (Activity); an arrow up does beside a message box, or in a
-    messaging app."""
+    """The act an icon's glyph performs where it is drawn, or None."""
     act = GLYPH_ACTS.get(glyph or "")
     if act is None:
         return None
@@ -422,8 +381,7 @@ def glyph_act(glyph, rect, elements, bundle=""):
         return act
     cy = rect[1] + rect[3] / 2
     bar = cy < BAR_TOP or cy > BAR_BOTTOM
-    # A message box on the icon's line: a field, words like a composer's, or (on pixels, where typed text is a line of
-    # text) any words left of it on that line.
+    # A message box on the icon's line: a field, a composer's words, or on pixels any words left of it on that line.
     composer = any(abs(e.rect[1] + e.rect[3] / 2 - cy) <= .04 and e.rect[0] + e.rect[2] <= rect[0] + .01
                    and (getattr(e, "role", None) in ("TextField", "TextView") or COMPOSER.search(e.label or "")
                         or getattr(e, "role", None) == "StaticText" and len((e.label or "").strip()) >= 2)
@@ -441,8 +399,7 @@ KEYPAD = re.compile(r"^(?:clear|all clear|ac|c|delete|backspace|⌫)$", re.I)
 
 
 def keypad_key(label, role, elements, pixels=False):
-    """A keypad's Clear or Delete key (Calculator, a dial pad): six or more digit keys on the screen. On pixels the
-    keys are lines of text."""
+    """A keypad's Clear or Delete key (Calculator, a dial pad): six or more digit keys on the screen."""
     keys = ("Button", "Key") + (("StaticText",) if pixels else ())
     if role not in keys or not KEYPAD.match(norm(label)):
         return False
@@ -452,9 +409,7 @@ def keypad_key(label, role, elements, pixels=False):
 
 
 def query_field(element, elements, bundle="", pixels=False):
-    """Whether ``element`` is a search field or a browser's address bar, told with certainty: Return in it runs a
-    search or loads a page, and a Clear beside it empties a query. Neither sends or posts what the field holds. A field
-    that is only probably one is not: no word that says so, a Send or Post on its line, a screen read from pixels."""
+    """Whether ``element`` is a search field or a browser's address bar, told with certainty."""
     if element is None or pixels or getattr(element, "role", None) not in ("SearchField", "TextField"):
         return False
     if _send_on_line(element, elements):
@@ -473,8 +428,7 @@ def query_return(action, elements=()):
 
 
 def clears_query_field(label, role, element, elements, bundle="", pixels=False):
-    """A bare Clear button on the line of a search field or an address bar, at or just past its end (Instagram's
-    search bar): it empties the query. A Clear beside any other field, or on a line that holds one, is not this."""
+    """A bare Clear button at or just past the end of a search field or address bar: it empties the query."""
     if pixels or role != "Button" or element is None or not CLEAR_BUTTON.match(norm(label)):
         return False
     y = element.rect[1] + element.rect[3] / 2
@@ -512,8 +466,7 @@ _STOP = frozenset({"the", "and", "for", "with", "my", "your", "this", "that", "t
 
 
 def names_switch(goal, label):
-    """Whether a request asks to change the switch ``label``: it asks for a change and shares a word with it (a word's
-    first five letters: "notification" names "Notifications"). "Show my notification settings" names none."""
+    """Whether a request asks to change the switch ``label``."""
     if not goal or not CHANGE_ASKED.search(re.sub(r"[^.!?]*\b(?:do not|don't|never|without)\b[^.!?]*", " ", goal)):
         return False
     stems = lambda text: {w[:5] for w in re.findall(r"[^\W\d_]{2,}", norm(text)) if w not in _STOP}  # noqa: E731
@@ -538,8 +491,7 @@ def _return(action, elements):
     rect = tuple(getattr(action, "rect", ()) or ())
     if (getattr(action, "pixels", False) and not action.app and not NOT_MESSAGE_FIELD.search(words)
             and (not rect or rect[1] + rect[3] / 2 > .45)):
-        # Pixels in an app Mobster can't name: Return in a field in the lower part of the screen (where a message
-        # box sits; a search or address bar sits at the top) may send.
+        # Pixels in an app Mobster can't name: Return low on the screen, where a message box sits, may send.
         return Reading("send", "return", "Return may send this")
     return None
 
@@ -557,7 +509,8 @@ def _element(action, elements):
     return None
 
 
-REASONS = {"request": "Sends a request", "unsend": "Takes back a message others may see", "erase": "Erases data for good",
+REASONS = {"request": "Sends a request", "unsend": "Takes back a message others may see",
+           "erase": "Erases data for good",
            "reset": "Resets settings or data", "delete": "Deletes something", "clear": "Clears data",
            "remove": "Removes something", "sign out": "Signs you out", "unmatch": "Ends a match for good",
            "leave": "Leaves a group others see", "end call": "Ends a call", "block": "Changes who can reach you",
@@ -571,7 +524,8 @@ REASONS = {"request": "Sends a request", "unsend": "Takes back a message others 
 REASON_TITLES = {SWIPE_ACTS: "Archive or delete this?", SWIPE_MAY: "Archive or delete this?"}
 
 # The card's title for each act this module names.
-TITLES = {"request": "Send this request?", "unsend": "Unsend this message?", "erase": "Erase this?", "reset": "Reset this?", "delete": "Delete this?",
+TITLES = {"request": "Send this request?", "unsend": "Unsend this message?", "erase": "Erase this?",
+          "reset": "Reset this?", "delete": "Delete this?",
           "clear": "Clear this?", "remove": "Remove this?", "sign out": "Sign out?", "unmatch": "Unmatch?",
           "leave": "Leave this group?", "end call": "End this call?", "block": "Block this?",
           "report": "Report this?", "junk": "Mark this as junk?", "archive": "Archive this?",

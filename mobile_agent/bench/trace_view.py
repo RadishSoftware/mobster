@@ -36,13 +36,15 @@ def attempt_lines(folder, record):
             out = (prompts.get(event.get("step")) or {}).get("out") or {}
             ops = " | ".join(f"{a.get('operation')} {a.get('target') or a.get('target_label') or a.get('app') or ''}"
                              + (f" {a.get('text')!r}" if a.get("text") else "") for a in out.get("actions") or ())
-            lines.append(f"- t={event['t_ms'] / 1000:6.1f} step {event.get('step')} [{event.get('source') or 'planner'}] "
-                         f"{', '.join(pending_ms)} ${pending_cost:.4f} :: {event.get('thought', '')[:90]!r} :: {ops[:160]}"
+            lines.append(f"- t={event['t_ms'] / 1000:6.1f} step {event.get('step')} "
+                         f"[{event.get('source') or 'planner'}] {', '.join(pending_ms)} ${pending_cost:.4f} :: "
+                         f"{event.get('thought', '')[:90]!r} :: {ops[:160]}"
                          + (f" :: next={event.get('next')}" if event.get("next") else ""))
             pending_cost, pending_ms = 0.0, []
         elif kind == "frontier_action":
             lines.append(f"    {event.get('operation')} {str(event.get('target_label'))[:50]!r} "
-                         f"changed={event.get('changed')} exec={event.get('exec_ms')}ms settle={event.get('settle_ms')}ms")
+                         f"changed={event.get('changed')} exec={event.get('exec_ms')}ms "
+                         f"settle={event.get('settle_ms')}ms")
         elif kind in ("frontier_refused", "frontier_chunk_stop", "frontier_failed"):
             lines.append(f"    ! {kind} {event.get('label') or event.get('reason') or event.get('error') or ''} "
                          f"{str(event.get('wanted') or event.get('detail') or '')[:80]}")

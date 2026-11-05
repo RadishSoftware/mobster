@@ -1,0 +1,57 @@
+---
+title: "Running checks in Codemagic"
+sidebarTitle: "Codemagic"
+keywords: ["codemagic", "codemagic.yaml", "hosted runner", "ci token"]
+description: "Run your checks on every pull request on a Codemagic Mac, with simulators and a CI token."
+icon: "cloud"
+hidden: true
+noindex: true
+---
+
+<Warning>CI tokens are not enabled yet, so hosted runners cannot run your checks today. Run them on [your own Mac](/ci#a-mac-of-yours).</Warning>
+
+Codemagic builds on macOS machines it hosts. `mobster ci init --host codemagic` writes the workflow. [CI](/ci) has the parts every host shares.
+
+## Set it up
+
+```sh
+mobster ci init --host codemagic
+```
+
+It writes `codemagic.yaml`. When that file exists, it leaves it as it is and writes the workflow to `.mobster/hosts/codemagic.yaml` for you to merge. Then put `MOBSTER_CI_TOKEN` in a variable group named `mobster` (Codemagic › Teams › Global variables and secrets), commit the file and open a pull request.
+
+```yaml codemagic.yaml
+workflows:
+  mobster:
+    name: Mobster checks
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    triggering:
+      events:
+        - pull_request
+    environment:
+      groups:
+        - mobster
+      vars:
+        MOBSTER: /Applications/Mobster.app/Contents/MacOS/mobster-agent
+        MOBSTER_BASE_BRANCH: main   # the branch your pull requests merge into
+    scripts:
+      - name: Install Mobster
+        script: brew install --cask radishsoftware/tap/mobster-app
+      - name: Prepare a simulator
+        script: $MOBSTER sim doctor --fix
+      - name: Test what this PR changed
+        script: $MOBSTER ci run
+    artifacts:
+      - .mobster/ci/**
+```
+
+Set `MOBSTER_BASE_BRANCH` to the branch your pull requests merge into. The report, the JUnit file and the comment text are the build's artifacts. Codemagic gets no comment from Mobster: GitHub and GitLab are the hosts where `mobster ci comment` posts.
+
+## Sign in with a CI token
+
+The job signs in with a CI token, not with Mobster for Mac. It is part of your plan, adds no seat and counts no runs. It licenses simulator checks only (`mobster ci run` and `mobster test`), it ends after 90 days unless you choose up to 365, and it never licenses an iPhone. Make one with `mobster account ci-token create NAME` or in the console under Settings › CI tokens, and revoke it from either. Store it as `MOBSTER_CI_TOKEN`, as a secret of the service. `mobster ci doctor` in the job checks that it is live and says what to fix if it isn't.
+
+## What this runner doesn't do
+
+A hosted Mac has no iPhone, so the checks run on simulators. To test on a phone, use [a Mac of yours](/ci/mac-runner).

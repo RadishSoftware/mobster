@@ -1,0 +1,101 @@
+{
+"note": "Recorded on the test device (iPhone 15 Pro, iOS 26.0.1), 11 and 12 Oct 2026: the rows the agent saw (the MobsterBench notes are fictional). The same screen read by Vision OCR (iPhone Mirroring's reading).",
+"rows": [
+{
+"text": "9:55C",
+"confidence": 1,
+"rect": [
+0.1051,
+0.0156,
+0.1559,
+0.0203
+]
+},
+{
+"text": "4 Safari",
+"confidence": 1,
+"rect": [
+0.0271,
+0.036,
+0.122,
+0.0141
+]
+},
+{
+"text": "•ll7",
+"confidence": 0.3,
+"rect": [
+0.7119,
+0.0282,
+0.1119,
+0.0172
+]
+},
+{
+"text": "804",
+"confidence": 1,
+"rect": [
+0.8475,
+0.0282,
+0.0678,
+0.0141
+]
+},
+{
+"text": "Mobster Bench",
+"confidence": 1,
+"rect": [
+0.0678,
+0.1487,
+0.5424,
+0.0282
+]
+},
+{
+"text": "Scratchpad",
+"confidence": 1,
+"rect": [
+0.0642,
+0.1918,
+0.431,
+0.0342
+]
+},
+{
+"text": "Notes for the real-customer benchmark.",
+"confidence": 1,
+"rect": [
+0.0678,
+0.241,
+0.8237,
+0.0188
+]
+},
+{
+"text": "0-",
+"confidence": 1,
+"rect": [
+0.1017,
+0.939,
+0.0678,
+0.0141
+]
+}
+],
+"hash": "note",
+"window": {
+"w": 589,
+"h": 1278
+},
+"icons": [
+[
+"More",
+[
+0.8712,
+0.0908,
+0.061,
+0.0094
+]
+]
+]
+}

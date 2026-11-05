@@ -1,47 +1,4 @@
-"""iOSWorld scoring, paired A/B comparison and pooled full-mix estimates, from recorded runs.
-
-$0, offline, seconds: it reads the run folders ``bench/iosworld.py`` writes (``task.json``,
-``trajectory.json``, ``prompts.jsonl``) and the worker logs beside them. It calls no model
-and no simulator.
-
-**The pass rule is iOSWorld's own.** ``scripts/judge_trajectories.py`` ``_aggregate`` counts a
-task as passed only when every rubric criterion is satisfied, and falls back to the judge's
-``success`` flag only when the evaluation has no rubric results. The judge's ``success`` flag is
-its own overall opinion, and it disagreed with the rule on 4 of the 32 round-2 A/B runs, so it
-is shown beside the official verdict, never instead of it.
-
-    python -m mobile_agent.bench.iosworld report --run research/iosworld-runs/NAME
-    python -m mobile_agent.bench.iosworld compare --a runs/ab6-a1 runs/ab6-a2 --b runs/ab6-b1 runs/ab6-b2
-    python -m mobile_agent.bench.iosworld estimate research/iosworld-runs/* --model gpt-5.6-sol
-
-**Mechanism counts** (the research's primary A/B metrics, section 3 of the 26 Sep report),
-per run:
-
-- ``guard_refusals``: taps the commit guard refused (``frontier_refused`` events whose label is
-  a control, not loop/repeat/idle_wait/dismiss_exhausted). Exact.
-- ``required_refusals`` / ``unrequested_commits``: a guard refusal the task asked for, and an
-  executed commit-class TAP or LONG_PRESS it did not ask for. **Approximate**: "asked for" means
-  the task's goal or its rubric criteria use the control's act or a synonym (``commit_requested``).
-  It is lenient (a noun such as "my recent order" counts as asking for an order), so required
-  refusals are an upper bound and unrequested commits a lower bound. A labels file
-  (``--commit-labels``) overrides it per (task, label). Commits sent with Return (SUBMIT,
-  TYPE_SUBMIT) are not seen.
-- ``done_deferrals``: turns whose DONE the code deferred (``verify_before_done``, or the proof gate's
-  ``proof_gate``: an item not yet shown on screen). Exact.
-- ``false_claims``: runs that ended DONE ("completed") yet failed the official rule.
-  **Approximate, an upper bound**: it also counts judge misses (the work was done but the frames
-  did not show it) and wrong answers. Telling these apart needs a human reading the frames.
-- ``wda_crash``: the run ended in ``error`` on a WDA transport failure (connection refused or
-  reset, a dropped HTTP connection). Exact for the recorded reason.
-- ``calls``: model calls (``task.json`` ``model_calls``; else prompts.jsonl lines).
-- ``revisits``: turns back on a screen already seen earlier in the run, other than the turn just
-  before (circling). ``stays`` counts turns on the same screen as the turn before; the research's
-  ``revisit.py`` counted both together. **Approximate**: a screen is the ordered role+label list of
-  its first 40 elements in the turn's prompt, so values (typed text, a toggled switch) are ignored.
-
-Worker logs add what a run folder cannot show: tasks the harness never ran ("NOT RUN", a failed
-reset) and workers that died with a traceback.
-"""
+"""iOSWorld scoring and paired A/Bs from recorded runs, offline; mobile_agent/docs/benchmarks.md has the method."""
 
 import collections
 import dataclasses
@@ -56,6 +13,7 @@ import re
 import statistics
 
 from ..task_policy import COMMIT_CONTROL, GUARD_WORDS, SHEET_OPENERS
+from .metrics import quantile
 
 # iOSWorld's 133 tasks by category (tasks.json, 26 Sep 2026).
 FULL_MIX = {"single_app": 27, "multi_app": 60, "memory": 46}
@@ -98,8 +56,6 @@ ACT_WORDS = {
 _CONFIRMABLE = _SEND | _POST | _PAY | _BOOK | _FOLLOW | _SUBMIT
 
 
-# -- the official verdict -------------------------------------------------------------------
-
 def official_pass(evaluation):
     """iOSWorld's pass rule (judge_trajectories.py ``_aggregate``): every rubric criterion
     satisfied; the judge's ``success`` only when there are no rubric results at all."""
@@ -114,8 +70,6 @@ def rubric_score(evaluation):
     """The judge's rubric score, as ``_aggregate`` averages it (missing counts as 0)."""
     return float((evaluation or {}).get("score") or 0.0)
 
-
-# -- commits: which the task asks for --------------------------------------------------------
 
 def _words(text):
     text = re.sub(r"([a-z])([A-Z])", r"\1 \2", text or "")
@@ -144,7 +98,7 @@ def commit_acts(label):
 def commit_requested(label, request_text, overrides=None, task=None):
     """True when the request (goal plus rubric criteria) asks for the act ``label`` commits, False when
     it does not, None when ``label`` names no commit. A hand label in ``overrides`` wins:
-    {task: {label: true|false}}. Approximate: see the module docstring."""
+    {task: {label: true|false}}. Approximate: see mobile_agent/docs/benchmarks.md."""
     if overrides and task in overrides and label in overrides[task]:
         return bool(overrides[task][label])
     acts = commit_acts(label)
@@ -157,8 +111,6 @@ def commit_requested(label, request_text, overrides=None, task=None):
         return any(_says(words, joined, w) for w in _CONFIRMABLE)
     return all(any(_says(words, joined, w) for w in ACT_WORDS.get(act, {act})) for act in others)
 
-
-# -- one run of one task ---------------------------------------------------------------------
 
 @dataclasses.dataclass
 class TaskRun:
@@ -306,8 +258,6 @@ def load_overrides(path):
     return json.loads(pathlib.Path(path).read_text(encoding="utf-8")) if path else None
 
 
-# -- statistics ------------------------------------------------------------------------------
-
 def mean(xs):
     xs = list(xs)
     return sum(xs) / len(xs) if xs else None
@@ -319,15 +269,6 @@ def se(xs):
     return statistics.stdev(xs) / math.sqrt(len(xs)) if len(xs) > 1 else None
 
 
-def percentile(sorted_xs, q):
-    if not sorted_xs:
-        return None
-    k = (len(sorted_xs) - 1) * q
-    lo = int(k)
-    hi = min(lo + 1, len(sorted_xs) - 1)
-    return sorted_xs[lo] + (sorted_xs[hi] - sorted_xs[lo]) * (k - lo)
-
-
 def bootstrap_mean_ci(values, n=BOOTSTRAP, seed=SEED, level=.95):
     """Percentile CI of the mean of ``values`` (one value per task: the resampled unit is a task)."""
     values = list(values)
@@ -336,7 +277,7 @@ def bootstrap_mean_ci(values, n=BOOTSTRAP, seed=SEED, level=.95):
     rng = random.Random(seed)
     k = len(values)
     means = sorted(sum(rng.choices(values, k=k)) / k for _ in range(n))
-    return percentile(means, (1 - level) / 2), percentile(means, 1 - (1 - level) / 2)
+    return quantile(means, (1 - level) / 2), quantile(means, 1 - (1 - level) / 2)
 
 
 def by_task(runs):
@@ -345,8 +286,6 @@ def by_task(runs):
         grouped[run.task].append(run)
     return grouped
 
-
-# -- paired A/B ------------------------------------------------------------------------------
 
 MECHANISMS = (
     # (key, label, per-run value, approximate?)
@@ -428,7 +367,8 @@ def format_compare(result, a_name="A", b_name="B", logs=None):
         cells = []
         for arm in ("a", "b"):
             x = row[arm]
-            cells.append(f"{x['official']}/{x['runs']:<3}".rjust(8) + f" {_fmt(x['rubric'], 2):>9} {_fmt(x['calls'], 1):>8}")
+            cells.append(f"{x['official']}/{x['runs']:<3}".rjust(8) + f" {_fmt(x['rubric'], 2):>9} "
+                         f"{_fmt(x['calls'], 1):>8}")
         marks = []
         for arm in ("a", "b"):
             x = row[arm]
@@ -470,22 +410,23 @@ def format_compare(result, a_name="A", b_name="B", logs=None):
     lines.append("")
     lo, hi = result["pass_diff_ci"]
     lines.append(f"paired over {result['paired_tasks']} tasks, {b_name} - {a_name}:")
-    lines.append(f"  pass rate    {_pct(result['pass_diff'])} points, SE {_fmt(result['pass_diff_se'] and 100 * result['pass_diff_se'], 1)}, "
-                 f"95% bootstrap CI [{_pct(lo)}, {_pct(hi)}]")
+    lines.append(f"  pass rate    {_pct(result['pass_diff'])} points, SE "
+                 f"{_fmt(result['pass_diff_se'] and 100 * result['pass_diff_se'], 1)}, 95% bootstrap "
+                 f"CI [{_pct(lo)}, {_pct(hi)}]")
     lo, hi = result["rubric_diff_ci"]
     lines.append(f"  rubric score {result['rubric_diff']:+.3f}, SE {_fmt(result['rubric_diff_se'])}, "
-                 f"95% bootstrap CI [{lo:+.3f}, {hi:+.3f}]" if result["rubric_diff"] is not None else "  rubric score -")
+                 f"95% bootstrap CI [{lo:+.3f}, {hi:+.3f}]" if result["rubric_diff"] is not None
+                 else "  rubric score -")
     for arm, name in (("a", a_name), ("b", b_name)):
         if result[arm]["disagreements"]:
             lines.append(f"{name}: judge success flag disagrees with the official rule on "
                          + ", ".join(f"{run}/{task} (official {'pass' if o else 'fail'})"
                                      for run, task, o, _ in result[arm]["disagreements"]))
         if result[arm]["events_capped"]:
-            lines.append(f"{name}: {result[arm]['events_capped']} runs hit the {EVENTS_CAP}-event cap: counts may be short")
+            lines.append(f"{name}: {result[arm]['events_capped']} runs hit the "
+                         f"{EVENTS_CAP}-event cap: counts may be short")
     return "\n".join(lines)
 
-
-# -- pooled full-mix estimate ----------------------------------------------------------------
 
 def _category_rate(tasks, weighting):
     if weighting == "run":
@@ -526,7 +467,7 @@ def estimate(runs, mix=None, weighting="task", n_boot=BOOTSTRAP, seed=SEED, leve
         categories[c] = {"tasks": len(tasks), "runs": len(runs_c), "passes": sum(r.official for r in runs_c),
                          "rate": _category_rate(tasks, weighting) if tasks else None}
     missing = [c for c in mix if not groups[c]]
-    return {"estimate": point, "ci": (percentile(draws, (1 - level) / 2), percentile(draws, 1 - (1 - level) / 2)),
+    return {"estimate": point, "ci": (quantile(draws, (1 - level) / 2), quantile(draws, 1 - (1 - level) / 2)),
             "se": statistics.stdev(draws) if len(draws) > 1 else None, "weighting": weighting,
             "runs": len(judged), "tasks": len({r.task for r in judged}), "passes": sum(r.official for r in judged),
             "categories": categories, "mix": mix, "missing": missing}
@@ -550,8 +491,6 @@ def format_estimate(result):
         lines.append(f"  no runs in {', '.join(result['missing'])}: the estimate covers the other categories only")
     return "\n".join(lines)
 
-
-# -- one run folder's report -----------------------------------------------------------------
 
 def report_lines(runs):
     """The ``iosworld report`` summary: official passes first, the judge's flag where it disagrees."""

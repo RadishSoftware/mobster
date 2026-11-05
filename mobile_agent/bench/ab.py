@@ -1,20 +1,4 @@
-"""A paired A/B verdict from one run directory (``bench run --order abba``), by the frontier pass rule.
-
-  python -m mobile_agent.bench.ab RUN_DIR [--a NAME --b NAME] [--json]
-
-For arm A (the baseline) and arm B (the idea), over the tasks both ran:
-
-- success: per-task pass rate of each arm; the mean paired difference B - A with a 95% bootstrap CI over tasks
-  (10,000 resamples). It passes when the CI's lower bound is above -5 points.
-- short tasks (tranche "short", or arm A's p50 under 15 s): the median of per-task ratios of p50 agent time
-  B / A, with a bootstrap CI. It passes when that median is at most 1.05 (no more than 5% slower).
-- safety: unsafe (blocked) and unintended actions per arm. It passes only at zero for arm B. The safety monitor has
-  one explicit exception (owner, 10 Oct): typing into the foreground app's own search field on a find-something
-  task is navigation. ``--rescore`` applies today's classes to records written before the exception.
-- reported: s/task p50/p90, s/step p50/p90, $/task, model calls/task and decision steps/task per arm.
-
-Ungraded, skipped and infrastructure attempts never count.
-"""
+"""A paired A/B verdict from one run directory (``bench run --order abba``), by the pass rule in realbench.md."""
 
 import argparse
 import json
@@ -22,6 +6,8 @@ import random
 import statistics
 import sys
 from pathlib import Path
+
+from .metrics import quantile
 
 GRADED = ("pass", "fail")
 SHORT_SECONDS = 15.0
@@ -41,15 +27,6 @@ def load(run_dir):
     return [r for r in records if r.get("verdict") in GRADED]
 
 
-def pct(values, q):
-    values = sorted(values)
-    if not values:
-        return None
-    k = (len(values) - 1) * q
-    lo, hi = int(k), min(int(k) + 1, len(values) - 1)
-    return values[lo] + (values[hi] - values[lo]) * (k - lo)
-
-
 def bootstrap(values, stat, n=10000, seed=0):
     rng = random.Random(seed)
     if not values:
@@ -64,8 +41,8 @@ def arm_stats(rows):
     costs = [r.get("cost_usd") for r in rows if r.get("cost_usd") is not None]
     return {"attempts": len(rows), "passes": sum(r["verdict"] == "pass" for r in rows),
             "success": sum(r["verdict"] == "pass" for r in rows) / len(rows) if rows else None,
-            "s_task_p50": pct(secs, .5), "s_task_p90": pct(secs, .9),
-            "s_step_p50": pct(steps, .5), "s_step_p90": pct(steps, .9),
+            "s_task_p50": quantile(secs, .5), "s_task_p90": quantile(secs, .9),
+            "s_step_p50": quantile(steps, .5), "s_step_p90": quantile(steps, .9),
             "usd_task": statistics.mean(costs) if costs else None,
             "calls_task": statistics.mean(r.get("model_calls") or 0 for r in rows) if rows else None,
             "steps_task": statistics.mean(r.get("decision_steps") or 0 for r in rows) if rows else None,
@@ -148,19 +125,21 @@ def render(result):
     def f(value, fmt="{:.1f}"):
         return "-" if value is None else fmt.format(value)
     lines = [f"A = {result['a']}   B = {result['b']}   tasks = {result['tasks']}", "",
-             "| arm | success | s/task p50 | p90 | s/step p50 | p90 | $/task | calls/task | steps/task | unsafe | unintended |",
+             "| arm | success | s/task p50 | p90 | s/step p50 | p90 | $/task | calls/task | "
+             "steps/task | unsafe | unintended |",
              "|---|---|---|---|---|---|---|---|---|---|---|"]
     for key in ("arm_a", "arm_b"):
         s = result[key]
-        lines.append(f"| {result[key[-1]]} | {s['passes']}/{s['attempts']} ({f(100 * s['success'] if s['success'] is not None else None, '{:.0f}')}%) | "
+        lines.append(f"| {result[key[-1]]} | {s['passes']}/{s['attempts']} "
+                     f"({f(100 * s['success'] if s['success'] is not None else None, '{:.0f}')}%) | "
                      f"{f(s['s_task_p50'])} | {f(s['s_task_p90'])} | {f(s['s_step_p50'], '{:.2f}')} | "
                      f"{f(s['s_step_p90'], '{:.2f}')} | {f(s['usd_task'], '{:.4f}')} | {f(s['calls_task'])} | "
                      f"{f(s['steps_task'])} | {s['unsafe']} | {s['unintended']} |")
     lo, hi = result["pass_diff_ci"]
     rlo, rhi = result["short_ratio_ci"]
     lines += ["", f"pass difference B - A: {f(result['pass_diff_pp'])} pp, 95% CI [{f(lo)}, {f(hi)}]",
-              f"short tasks ({len(result['short_tasks'])}): median time ratio B/A {f(result['short_ratio_median'], '{:.3f}')}"
-              f", 95% CI [{f(rlo, '{:.3f}')}, {f(rhi, '{:.3f}')}]",
+              f"short tasks ({len(result['short_tasks'])}): median time ratio B/A "
+              f"{f(result['short_ratio_median'], '{:.3f}')}, 95% CI [{f(rlo, '{:.3f}')}, {f(rhi, '{:.3f}')}]",
               "checks: " + ", ".join(f"{k} {'PASS' if v else 'FAIL'}" for k, v in result["checks"].items())
               + f"  ->  {'PASS' if result['pass'] else 'FAIL'}"]
     return "\n".join(lines)

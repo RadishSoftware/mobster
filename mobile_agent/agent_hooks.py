@@ -1,45 +1,15 @@
-"""Seams between the agent loop (frontier), the phone guard (lockscreen) and skills. Frozen for this sprint.
-
-Who does what:
-
-- ``frontier.FrontierAgent(..., guard=None, skills=())`` calls ``PhoneGuard.check`` when a launch fails
-  (``launch_failed``), when the screen and the tree disagree or a model tap lands on a SpringBoard passcode keypad
-  (``lock_suspected``), after any wait for the user of RESUME_AFTER_SECONDS or more (``resume``), and after an
-  App Store Get or Buy (``sheet_suspected``). It emits ``phone_guard`` for each check it makes; the guard itself
-  emits ``unlock_started`` / ``unlock_finished`` / ``handoff_waiting`` / ``handoff_finished``.
-  ``handoff_waiting {kind, seconds}``: kind is ``lock_screen`` (or ``passcode_keypad``) when a task a person started
-  waits for them to unlock the phone at its preflight (lockscreen.UNLOCK_WAIT_S), ``face_id`` or
-  ``apple_confirmation`` for a sheet; ``handoff_finished {kind, ok, waited_s}`` ends the wait (ok: the phone reads
-  clear). A wait only reads the phone: nothing is pressed, tapped or typed while it lasts.
-- A verdict of ``stop`` ends the run (status ``blocked``) with the verdict's sentence as its reason; ``unlocked``
-  adds the history line UNLOCKED_LINE and nothing else (the model never sees the keypad); ``ready`` goes on.
-- The server (preflight) and ``mcp_server.direct`` call ``check(cause="preflight")`` themselves, and the
-  server calls ``finish`` when the run ends.
-- A skill's ``prepare`` may navigate but never writes; when its ``Prepared.title`` is set the frontier asks for
-  approval (``kind`` = the op in lower case, e.g. ``use_code``) before ``perform``. A denial means no ``perform``,
-  and so does a run that cannot ask (no ``approve``): a skill with a title never runs unasked.
-  The ``act`` both receive is the model's action with ``"element"``: the resolved target (a ``state.Element`` of
-  ``snapshot``) when ``needs_target``, else None. Skill exceptions are reported to the model by type only.
-- Every string in ``SkillResult.secrets`` is replaced by MASK in every later screen row, note, history line,
-  read list, contract ledger and answer, and ``secret_rects`` are blurred in later screenshots.
-
-No event, approval payload or verdict ever carries a passcode, a code, or a digit count.
-"""
+"""Seams between the agent loop (frontier), the phone guard (lockscreen) and skills."""
 from dataclasses import dataclass
 from typing import Callable, Optional, Protocol
 
-# The most pictures one skill result shows the model (SkillResult.images).
 SKILL_IMAGES = 2
-# What a masked secret reads as, everywhere the model or a person could see it.
 MASK = "••••••"
 # A wait for the user this long (approvals, hand-offs) or longer is followed by check(cause="resume").
 RESUME_AFTER_SECONDS = 20
 # The history line the model sees after the guard unlocked the phone (never a frame of the keypad).
 UNLOCKED_LINE = "Mobster unlocked the iPhone"
 
-# Why the phone guard stopped a run before it acted: a run result's ``stop_code``, a refused start's ``stop`` detail,
-# and ``mobster run``'s ``error_type`` name these. Each comes with one plain sentence (alerts.CODES) and none ever
-# carries a passcode, a code or a digit count.
+# Why the phone guard stopped a run; none carries a passcode, a code or a digit count.
 STOP_CODES = ("phone_locked", "unlock_declined", "passcode_failed", "face_id", "app_locked", "apple_confirmation",
               "unplugged", "keychain_locked", "blocked_app", "system_dialog")
 
@@ -47,9 +17,7 @@ STOP_CODES = ("phone_locked", "unlock_declined", "passcode_failed", "face_id", "
 @dataclass(frozen=True)
 class GuardVerdict:
     state: str                 # "ready" | "unlocked" | "stop"
-    code: str = ""             # when stop: phone_locked | unlock_declined | passcode_failed | face_id | app_locked |
-                               #            apple_confirmation | unplugged | keychain_locked | blocked_app |
-                               #            system_dialog (an iOS prompt Mobster leaves to the user)
+    code: str = ""             # when stop: one of STOP_CODES
     message: str = ""          # one plain sentence for the user; never a passcode, a code, or a digit count
 
 
@@ -75,13 +43,10 @@ class SkillResult:
     secrets: tuple = ()        # strings frontier masks ("••••••") in every later row, note, history line and answer
     secret_rects: tuple = ()   # (x, y, w, h) screen fractions frontier blurs in screenshots until that field changes
     stop: Optional[GuardVerdict] = None
-    # Track harness: seconds the skill waited for the person (a question), which never count against the task's time,
-    # and a status that ends the run with ``feedback`` as its reason: "approval_timeout" (nobody answered) or
-    # "stopped" (Stop was pressed meanwhile).
+    # Seconds the skill waited for the person, which never count against the task's time.
     waited: float = 0.0
     status: Optional[str] = None
-    # Pictures the model sees once, on its next turn, before the screen: ((mime, bytes), ...), at most
-    # SKILL_IMAGES (WATCH's contact sheet of the frames it kept). Only a run that sends screenshots sends them.
+    # Shown to the model once, on its next turn, before the screen; only a run that sends screenshots sends them.
     images: tuple = ()
 
 
@@ -92,20 +57,17 @@ class SkillContext:
     app_bundle: Optional[str]
     emit: Callable[[dict], None]
     guard: Optional[PhoneGuard] = None
-    # Seam S7 (optional; the defaults keep every caller working):
     approve: Optional[Callable[[dict], str]] = None   # the frontier's approver, or None; replayed commit steps only
     clarify: Optional[Callable[[dict], str]] = None   # run.request_approval limited to kind "clarify"; others raise
     run: Optional[object] = None                      # the run's harness_api.RunContext, or None (benchmarks, tests)
-    # A skill that needs the user's OK returns Prepared(title=...) from prepare(): the frontier's existing path asks
-    # (SmartEvents.approving flushes steps and records declined text), and with no approver the skill never runs.
+    # A skill that needs the user's OK returns Prepared from prepare(); with no approver it never runs.
 
 
 class Skill(Protocol):
     op: str                    # e.g. "USE_CODE", "READ_NOTIFICATIONS"; must not clash with frontier.OPERATIONS
     prompt: str                # one "- OP ...: ..." line appended to frontier.SYSTEM's action list
     needs_target: bool         # True: the first action targets an element id (USE_CODE: the code field)
-    # Optional, for tools other tracks register (harness/tools: the policy): interactive_only = True offers the tool
-    # only in a run a person watches (ASK_USER).
+    # interactive_only offers the tool only in a run a person watches.
     def available(self, ctx: SkillContext) -> bool: ...
     def prepare(self, ctx: SkillContext, act: dict, snapshot) -> Prepared: ...   # may navigate; no writes
     def perform(self, ctx: SkillContext, prepared: Prepared, act: dict, snapshot) -> SkillResult: ...
@@ -125,8 +87,7 @@ def mask(text, secrets):
 
 
 def safe_check(guard, driver, cause):
-    """``guard.check(driver, cause=cause)``, or None without a guard. A guard that raises is a stop that names
-    nothing secret: a failing guard must never let a run act on a phone it could not read."""
+    """``guard.check(driver, cause=cause)``, or None without a guard; a guard that raises is a stop, never a go."""
     if guard is None:
         return None
     try:

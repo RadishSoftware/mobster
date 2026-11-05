@@ -14,10 +14,10 @@ import re
 import time
 
 from ..drivers import WDA
-from ..wda_observe import WDA_SOURCE_PATH
 from ..errors import MobsterError
 from ..state import from_wda
 from ..transport import HTTP
+from ..wda.observe import WDA_SOURCE_PATH
 
 
 class ProbeUnavailable(MobsterError):
@@ -31,13 +31,8 @@ SPRINGBOARD = "com.apple.springboard"
 
 
 class WDAProbe:
-    """The harness's own eyes on a USB iPhone, separate from the run under test.
-
-    Reads go through WDA's sessionless routes on a dedicated HTTP connection:
-    the probe never shares the agent's driver object, its evidence, or its
-    cached observations. WDA serves one session per device, so resets (which
-    must act) use that session through a WDA driver owned by the probe.
-    """
+    """The harness's own eyes on a USB iPhone, separate from the run under test. WDA serves one session per device,
+    so resets act through the probe's own driver on that session."""
 
     # Apps whose foreground check needed the hinted source read, per WDA URL (process-wide).
     _overlay_apps = {}
@@ -79,8 +74,8 @@ class WDAProbe:
             # reset failed "not in the foreground"): the session's tree, hinted with the app, names it instead.
             stale = bundle == SPRINGBOARD and expected not in (None, SPRINGBOARD) and self._simulator()
             if bundle == SPRINGBOARD and expected not in (None, SPRINGBOARD) and not stale:
-                # A phone on iOS 26.4 does the same once an app it was asked to open isn't there (the bench phone, 11 Oct:
-                # after activating a deleted Mail, every later read named SpringBoard with Settings in front). The
+                # A phone on iOS 26.4 does the same once an app it was asked to open isn't there (the bench phone, 11
+                # Oct: after activating a deleted Mail, every later read named SpringBoard with Settings in front). The
                 # session's own activeAppInfo answers in one short read. A hinted tree read is not asked here: it
                 # names the hinted app even when SpringBoard is in front.
                 bundle = self._session_app(min(timeout, 3)) or bundle
@@ -154,12 +149,8 @@ class WDAProbe:
         return driver
 
     def reset(self, bundle_id, url=None, max_back=12):
-        """Relaunch the app and pop it to its root screen, verified.
-
-        iOS restores an app's navigation stack across relaunches, so a task could
-        start on the screen its answer is on. The probe pops back through the
-        navigation bar until no back button remains, and confirms the app.
-        """
+        """Relaunch the app and pop it to its root screen, verified. iOS restores an app's navigation stack across
+        relaunches, so a task could otherwise start on the screen its answer is on."""
         try:
             # WDA issues a new session whenever its runner restarts.
             self.session = self._current_session()
@@ -275,12 +266,8 @@ def navigation_back(snapshot):
 
 
 def navigation_title(snapshot):
-    """The nav-bar title: an inert label in the top band of the screen.
-
-    Needed because a row label is not a location. Settings' General screen lists
-    a row called About, so asserting that the text 'About' appears anywhere on
-    screen passes while the agent is still one screen away from it.
-    """
+    """The nav-bar title: an inert label in the top band of the screen. A row label is not a location: Settings'
+    General lists a row called About."""
     bars = [element for element in snapshot.elements if element.role == "NavigationBar"]
     if bars:
         # WDA names the bar after its title; every WDA element advertises TAP,

@@ -1,0 +1,250 @@
+---
+title: "Projects"
+sidebarTitle: "Projects"
+description: "A project is your app's folder in Mobster for Mac: its Xcode or Expo app, its checks, its simulators and its branch, read from the folder each time you look."
+icon: "folder-git-2"
+keywords: ["project", "projects", "repository", "repo", "clone", "git clone", "open folder", "workspace", ".mobster", "xcode project", "expo", "branch", "monorepo"]
+---
+
+A project is one folder on your Mac, usually a git repository. Mobster reads it each time you look: the app it builds, the checks in `.mobster/checks`, the simulators in `.mobster/matrix.yaml`, the workflow files in `.mobster/workflows` and the branch you're on. The folder is the source of truth. Mobster keeps only where the folder is, its name, how it came in and when you last opened it.
+
+Projects are part of Mobster for Mac. The `mobster` command finds a project on its own: it walks up from where you run it to the folder that holds `.mobster/` ([The project folder](/checks#the-project-folder)).
+
+## In Mobster for Mac
+
+Each of your projects has a row under **Projects** in the sidebar, which opens its page. **Projects** in ⌘K opens the page that lists them all, the one you opened last first. Each row there shows the app's own icon, its name, and under it the folder, the branch, how many checks it has and how the last `mobster test` went. The app, its bundle id and the simulators are on the project's page.
+
+### Add a project
+
+1. Open **Projects** and choose **Add project**, or choose **Add a project** in ⌘K.
+2. Pick one of three ways:
+   - **Import from GitHub**: your repositories, the one you pushed to last first, private ones too. Type a name to find one, then choose **Import**. It needs GitHub connected in **Connectors**; until it is, the row says so.
+   - **Open a folder**: choose **Choose folder…** and pick the folder with your Xcode project or Expo app.
+   - **Clone a repository**: paste its URL and choose **Clone**.
+
+   A clone or an import goes in `~/Mobster/Projects`; **Change folder** puts a clone somewhere else. A bar shows how far git got.
+3. The project opens.
+
+The folders where you ran `mobster test` on this Mac are under **Recent folders**, each with **Add**. When Mobster refuses a folder or a URL, the sentence under the field says why and what to choose instead.
+
+### A project's page
+
+- **Checks**: each check in `.mobster/checks`, what needs you first, with its last 20 results as dots, newest at the right, and its pass rate. **Flaky** or **Failing** shows when its history says so, and a check that hasn't run says **Not run yet**. Point at a check's **Show in Finder**, or move to it with `tab`, for its file. A check's results come from `.mobster/test-results/history.json`, or from the project's own suites when that file doesn't have them (a suite from an earlier Mobster). **Copy the Terminal command** in the title's **More** menu copies the command that runs them all. It quotes the full folder path, so spaces and punctuation stay part of the path.
+- **Run checks** builds the app from the folder as it is, then runs every check on the simulators. While it runs, the page shows what it's doing and how many runs are done, and **Stop** stops it. The results land under **Runs by branch**. A build that fails says so with its first errors.
+- A project with no checks offers **Set up checks**, which adds a starter check for the app.
+- **Runs by branch**: the project's `mobster test` runs grouped by the branch they tested, the branch you have checked out first, three runs each. A branch with a pull request on GitHub links to it, with **Open**, **Draft**, **Merged** or **Closed**, when GitHub is connected in **Connectors**. The newest run shows each check that didn't pass: one sentence of why (the expectation that didn't hold and what the screen showed instead), every expectation it read, the screen it was judged on, its steps, and its log and crash. A run in another folder never shows here. Runs that name no branch (from before Mobster wrote one, or outside git) are one list, **Last runs**.
+- **Workflows**: each file in `.mobster/workflows` with its workflow, and **Open**. One that isn't in step says so: **Conflict**, with **Keep the file** and **Keep Mobster's** (the other stays in Versions); **File deleted**, with **Write it again**; **Can't read**, with the line; **Not written**, with why. A project without workflow files has no section ([Workflows as files](#workflows-as-files)).
+- Under them: the app, the simulators `.mobster/matrix.yaml` names, the repository (a GitHub repository opens on GitHub), and the files changed and the commits ahead on this Mac.
+- The title switches to another project. **Show in Finder** opens the folder. **Remove from Mobster…** asks first, then forgets the project. The folder stays.
+
+### Set up checks
+
+**Set up checks** writes two files and changes nothing else:
+
+- `.mobster/.gitignore`, unless there is one. It keeps runs, builds and test results out of git.
+- `.mobster/checks/app-opens.yaml`, a check for the project's app:
+
+```yaml
+version: 1
+name: IceCubesApp opens to its first screen
+app:
+  bundle: com.thomasricouard.IceCubesApp
+tags:
+- smoke
+expect:
+- visible:
+    label: /.+/
+  name: The first screen shows something
+```
+
+It opens the app and passes when the app stays in front, doesn't crash and shows something with a label. It needs no model and no key. Edit it like any check ([Checks](/checks)). A project that has checks already is refused (`has_checks`), and Mobster never writes over a file. A folder with no Xcode project or Expo app is refused (`no_app`), and so is an app whose bundle id Mobster can't read from its project file (`no_bundle`). For those, `mobster test add smoke --bundle YOUR.BUNDLE.ID` writes one.
+
+### Run checks
+
+While the build has no measured percentage, its progress bar stays muted. The phase text tells you what is running.
+
+**Run checks** is `mobster test` with a build first:
+
+1. Mobster builds the app the way `mobster test pr` does: the Xcode project's scheme for the simulator, or an Expo app's Release build, into `.mobster/build`. A check of that app runs the new build.
+2. Every check runs on the simulators in `.mobster/matrix.yaml`, else on each check's own simulator. With the testing sections on (`MOBSTER_EXPERIMENTAL_TESTS_PAGE=1`), the menu beside **Run checks** picks one of those simulators or a plugged-in iPhone, and the checks with one tag. An iPhone runs the checks only with a plan that covers phones and while no task holds it; otherwise Run checks uses simulators only.
+3. The results go in the project's `.mobster/test-results`, and its page shows them.
+
+One run per project goes at a time, and two projects at most. A run that fails or stops is never started again by itself. **Stop** ends the build and every process it started, or stops the suite before its next step. The checks that finished keep their results. Quitting Mobster stops a run.
+
+| Code | What happened |
+|---|---|
+| `build_failed` | The build failed. `error` names its first errors, and `log` is the build's log in the project |
+| `no_checks` | The project has no checks. Set up checks first |
+| `running` | This project's checks are running already |
+| `busy` | Two projects' checks are running |
+| `usage` | A check or `.mobster/matrix.yaml` can't be read. `error` says which and why |
+
+## What Mobster reads from the folder
+
+| What | Where it comes from |
+|---|---|
+| Apps | An Expo or React Native app from `package.json` and `app.json` at the root. Each Xcode workspace, or else each project, at the root or one folder down, with its bundle id from the project file. `node_modules`, `Pods`, `Carthage`, `DerivedData`, `build`, `dist` and `vendor` are never searched |
+| The app's icon | Expo's `icon` from `app.json`, else the largest iPhone image in an asset catalog's `AppIcon` set, up to four folders down. Only a PNG inside the project |
+| Checks | The check files in `.mobster/checks` and its folders, as `mobster test` finds them |
+| Simulators | `.mobster/matrix.yaml`. A file that can't be read is named with its line, and the project still opens |
+| Workflow files | The `.yaml` files in `.mobster/workflows` |
+| Policy | `.mobster/policy.yaml`, where Mobster asks first in this project ([Project policy](/safety#project-policy)). Read while `MOBSTER_POLICY=on` |
+| Branch | The branch checked out, and the `origin` remote. A user name or token in the remote URL is never shown |
+| Last run | The newest `mobster test` suite that ran in the folder on this Mac |
+
+Reading a folder never writes to it. Mobster runs git with no terminal prompt, without taking git's index lock and with no fsmonitor hook, so your own git keeps working and a folder's git config can't make Mobster run a program.
+
+## Add a folder
+
+Send the folder's full path. `~` works.
+
+```sh
+curl -s -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -X POST http://127.0.0.1:8765/api/projects -d '{"path": "~/Developer/IceCubesApp"}'
+```
+
+```json
+{"project": {"id": "2b52a768d70f", "name": "IceCubesApp", "path": "/Users/you/Developer/IceCubesApp", "shownPath": "~/Developer/IceCubesApp",
+  "source": {"kind": "folder"}, "addedAt": 1792311095627, "openedAt": 1792311095627, "state": "ready", "problem": null,
+  "mobster": true, "apps": [{"kind": "xcode", "name": "IceCubesApp", "path": "IceCubesApp.xcodeproj", "bundle": "com.thomasricouard.IceCubesApp"}],
+  "icon": null, "checks": 1, "workflows": 0, "simulators": ["iPhone 17 Pro@iOS 26.4"], "matrixProblem": null,
+  "git": {"branch": "main", "remote": "git@github.com:Dimillian/IceCubesApp.git", "repo": "Dimillian/IceCubesApp"}, "lastRun": null}}
+```
+
+The project is the folder you give. A `.mobster` folder means the folder that holds it. Adding a folder that is a project already opens it and answers `200` instead of `201`.
+
+Mobster refuses a folder that holds more than one project, with a sentence that says what to choose instead:
+
+```json
+{"error": "~/Documents holds more than one project. Choose your app's own folder inside it.", "code": "too_broad"}
+```
+
+| Code | When |
+|---|---|
+| `too_broad` | `/`, your home folder, Desktop, Documents, Downloads, Library, Applications, the system's folders, or a folder whose own folders are two or more repositories |
+| `missing` | Nothing is at the path |
+| `not_folder` | The path is a file |
+| `unreadable` | Mobster can't read the folder. Allow Mobster in **System Settings › Privacy & Security › Files and Folders** |
+| `mobster_data` | The folder is Mobster's own data folder |
+| `invalid_path` | The path isn't a full path |
+
+Mobster keeps up to 100 projects. When a project's folder moves or is deleted, the project says so (`state` is `missing`) until you remove it.
+
+## Clone a repository
+
+Send the repository's URL. Mobster clones it into `~/Mobster/Projects/<name>`, or into the folder you name, and adds the clone as a project when git is done.
+
+```sh
+curl -s -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -X POST http://127.0.0.1:8765/api/projects/clones -d '{"url": "octocat/Hello-World"}'
+```
+
+```json
+{"clone": {"id": "07adcc8c0831", "url": "https://github.com/octocat/Hello-World.git", "path": "/Users/you/Mobster/Projects/Hello-World",
+  "shownPath": "~/Mobster/Projects/Hello-World", "name": "Hello-World", "state": "cloning", "phase": null, "percent": 0,
+  "code": null, "error": null, "projectId": null, "startedAt": 1792311004370, "endedAt": null}}
+```
+
+`GET /api/projects/clones/{id}` answers how far it got: `phase` is git's (`Receiving objects`, `Resolving deltas`), `percent` runs from 0 to 100, and `state` becomes `done` with the new `projectId`, or `failed` with a `code` and a sentence. On 17 Oct 2026 the clone above took 2.0 s on this Mac.
+
+The URL is an https or SSH URL (`https://github.com/Dimillian/IceCubesApp`, `git@github.com:Dimillian/IceCubesApp.git`, `ssh://git@host/team/app.git`), `github.com/owner/name`, or `owner/name` for a GitHub repository. `folder` names the folder to clone into and `name` the folder the clone makes.
+
+Mobster clones with your Mac's git sign-in: the Keychain's saved password, or your SSH key and agent. An https URL on github.com is cloned with your GitHub connector's sign-in when you have one, so a private repository clones too. That sign-in reaches git through its environment and goes to github.com only: never into the command, the URL, a log or the clone's `.git/config`. It never asks for a password, never opens a sign-in window and never waits on a question about an SSH host. A URL with a password or token in it is refused (`credentials_in_url`), so the token is never kept or shown. A clone that fails is never tried again by itself:
+
+| Code | What to do |
+|---|---|
+| `no_access` | The host refused. Check the URL, and that git on this Mac is signed in to an account that can read the repository |
+| `offline` | Mobster couldn't reach the host. Check your connection |
+| `host_key` | SSH doesn't know the host yet. Run `ssh -T git@github.com` in Terminal once, or clone with the https URL |
+| `exists` | Something is already at the folder the clone would make (`details.path`). Add that folder, or clone under another `name` |
+| `no_git` | Install the Xcode command line tools: `xcode-select --install` |
+| `timeout` | The clone took longer than 30 minutes. Clone it in Terminal, then add the folder |
+| `unwritable`, `disk_full` | Choose another folder, or free some space |
+
+A clone that fails or is stopped (`DELETE /api/projects/clones/{id}`) removes the folder it made, and only that folder. If another process creates or replaces that folder, Mobster leaves it alone. Mobster runs at most three clones at once.
+
+## Workflows as files
+
+A project's workflows can live in its repository, in `.mobster/workflows/<name>.yaml`, so a pull request shows a change to one the way it shows a change to code. Mobster keeps each file and its workflow in step both ways, and looks every 1.5 seconds.
+
+```yaml
+# .mobster/workflows/onboarding-smoke.yaml
+# A Mobster workflow. Mobster for Mac keeps this file and its canvas in step: edit either.
+version: 1
+name: Onboarding smoke
+limits:
+  maxSpendUsd: 5
+  maxMinutes: 240
+nodes:
+- id: start
+  type: trigger.manual
+  at: [0, 0]
+- id: open
+  type: phone.task
+  at: [40, 160]
+  config:
+    text: Open Ice Cubes, sign in and check Home shows your timeline
+edges:
+- from: start
+  to: open
+```
+
+The format is the workflow's graph ([The graph](/workflows#the-graph)) written to read in a diff. Keys always come in the same order. An input keeps its type, default and `required` setting, including `false` and `0` defaults. A node's config leaves out the fields at their default. An edge names its ends as `node`, or `node.port` when the port isn't `out` or `in`. A moved node changes its one `at` line. `inputs`, `vars` and a node's `title`, `notes`, `parent` and `retry` appear when they're set.
+
+| What happens | What Mobster does |
+|---|---|
+| A new file appears (you wrote it, or a pull brought it) | It becomes a workflow, published, with its schedule off until you turn it on |
+| The file changes | Its graph is checked as any save is, then published as a new revision. Versions keeps the one before |
+| You publish the workflow, rename it or bring back an older version | The file is written. Saving a draft never writes it |
+| The file doesn't parse or check | The workflow keeps running as it was. The file shows as `invalid`, with the line or the step |
+| The file is deleted | The workflow stays and shows `missing`. Publishing it writes the file again |
+| You delete the workflow in Mobster | Its file is deleted too, when it is as Mobster last wrote it |
+
+**Conflicts.** If the file changes while the workflow has an unpublished draft, or after you published it and before Mobster wrote the file, nothing is overwritten. The workflow shows `conflict` until you choose: keep the file's version (your draft stays in Versions), or keep Mobster's (your draft is published and written over the file). In the API that's `POST /api/projects/workflows/{workflowId}/resolve {"keep": "file"}` or `{"keep": "mobster"}`.
+
+**On the workflow's canvas.** The file's name shows beside **Publish**, with a word when it isn't in step: **Writing**, **Changed in both**, **Deleted**, **Can’t be read** or **Not written**. Its project and path show on hover, and it opens the project's page, where you settle a conflict. When the file brings a newer version, a canvas with no changes takes it. One with changes says **The file changed**, with **Reload** (your changes go) and **Keep editing** (your next save says the workflow changed elsewhere). The canvas never writes the file itself: **Publish** does. A published workflow with no file offers **Keep it in a project** on its canvas, when nothing is selected: pick the project, and Mobster writes the file there.
+
+**What stays on your Mac.** The workflow's phone, profile and destination, whether its schedule is on, and pinned test data never go in the file. Mobster won't write a workflow whose step runs on one named iPhone, or whose graph holds what looks like a key, a password or a card number, including input defaults, variables and notes. The file shows `blocked` and says why. Mobster does not follow links in `.mobster/workflows` or its parent folder, so a link cannot redirect a publish outside your project.
+
+A workflow you made in the app gets a file with `POST /api/projects/{id}/workflows {"workflowId"}`. Workflows with the same name get separate files, such as `answer-dms.yaml` and `answer-dms-2.yaml`. File names are unique regardless of letter case. Each workflow's `file` in `GET /api/workflows` says where it is and how it stands: `synced`, `pending`, `conflict`, `missing`, `invalid` or `blocked`, with a sentence when it isn't synced. The `workflows` topic of `GET /api/events` has `workflow_file` when that changes. On 18 Oct 2026 on this Mac, a new file showed as a workflow 0.3 s after it was saved, and a publish reached the file in 1.3 s.
+
+A task a project's workflow starts belongs to the project ([Tasks and memory in a project](#tasks-and-memory-in-a-project)).
+
+## Tasks and memory in a project
+
+A task belongs to a project when it starts with the project's id: `POST /api/runs` takes `"project": "<id>"`, and the task keeps `project` in its `extras` as `{id, path, name}`. A project Mobster doesn't have is refused with a sentence. Memory learns and recalls a project's facts under its id ([Memory](/memory)). Adding or opening a project tells memory where its folder is, so what it learned in the folder before it was a project moves to it.
+
+## Remove a project
+
+`DELETE /api/projects/{id}` makes Mobster forget the project. The folder and everything in it stay where they are, and its workflows stay in Mobster without their files. Mobster writes in a project only its workflow files and what you ask for: Set up checks writes new files only, and Run checks builds into `.mobster/build`.
+
+## What a project never holds
+
+A file in your repository never names a real iPhone. You choose a phone on the command line (`--device`) or in the app. Secrets never go in `.mobster/`.
+
+## API
+
+| Route | What it does |
+|---|---|
+| `GET /api/projects` | Your projects (the one opened last first), `suggestions` (folders `mobster test` ran in that aren't projects yet), `clones`, and where a clone goes (`cloneFolder`, and as a sentence shows it, `cloneFolderShown`) |
+| `POST /api/projects` | Adds a folder: `{path, name?}`. The Mac app's session is needed |
+| `GET /api/projects/{id}` | One project, with `checkFiles`, `workflowFiles` (each with its workflow and how it stands, and each file that isn't a workflow yet with its problem) and, in a git repository, `git.head`, `git.upstream`, `git.ahead`, `git.behind` and `git.changed` (changed tracked files) |
+| `GET /api/projects/{id}/icon` | The app's own icon as a PNG, or `404` (`no_icon`). `icon` in a project changes when the file does |
+| `GET /api/projects/{id}/frame?run=&path=` | A frame one of the project's runs took, as JPEG or PNG, from `.mobster/runs/<run>/frames`: the screen a failed check was judged on. Only a run's id and a frame's file name are taken (`bad_frame`); a frame that's gone is `404` (`no_frame`) |
+| `GET /api/projects/{id}/tests` | The project's own test results: each check's last 20 results with its pass rate and flake state (`checks`), and its last 5 `mobster test` suites with what didn't pass and why (`suites`). Runs in other folders never show |
+| `GET /api/projects/{id}/tests` | The project's own test results: each check's last 20 results with its pass rate and flake state (`checks`), and its last 20 `mobster test` suites with what didn't pass and why and the branch and commit each tested (`suites`, each with `git`). Runs in other folders never show |
+| `GET /api/projects/{id}/pulls` | `{signedIn, repo, pulls}`: the GitHub repository's pull requests by branch (`number`, `title`, `url`, `state`: `open`, `draft`, `merged` or `closed`), the newest for each branch, from your GitHub connector's sign-in. A pull request from a fork is left out. Kept a minute. The Mac app's session is needed |
+| `POST /api/projects/{id}/workflows` | Gives a workflow a file in the project: `{workflowId}`. The Mac app's session is needed |
+| `POST /api/projects/workflows/{workflowId}/resolve` | Settles a workflow file's conflict: `{"keep": "file"}` or `{"keep": "mobster"}`. The Mac app's session is needed |
+| `POST /api/projects/{id}/open` | Makes it the project opened last, which the app shows first |
+| `POST /api/projects/{id}/setup` | Set up checks: `{}`, or `{app}` with an app's `path` from `apps`. Answers `201 {project, created}`, the files it wrote. The Mac app's session is needed |
+| `POST /api/projects/{id}/runs` | Run checks: `{}`, or with the testing sections on `{sims}` or `{device}`, and `{tags}` or `{links: true}`. Answers `202 {run}`, with the run's `choice`. An iPhone answers `403 plan_required`, `404 device_not_found` or `409 device_busy` when it can't run. The Mac app's session is needed |
+| `GET /api/projects/runs/{id}` | A run: `state` (`building`, `running`, `done`, `failed` or `stopped`), `line` (what it's doing), `done` and `total` (check runs), `targets`, `suite` (its folder in `.mobster/test-results`), `summary`, `exitCode`, and for a failed run `code`, `error`, `fix` and `log`. A project carries its newest run as `run` |
+| `DELETE /api/projects/runs/{id}` | Stops a run. The Mac app's session is needed |
+| `DELETE /api/projects/{id}` | Forgets the project. The Mac app's session is needed |
+| `GET /api/projects/github` | `{signedIn, repos}`: the repositories your GitHub connector's sign-in can open, the one pushed to last first, each with `projectId` when it is a project already. `?refresh=1` reads them again; otherwise the list is kept a minute. The Mac app's session is needed |
+| `POST /api/projects/clones` | Starts a clone: `{url, folder?, name?}`. The Mac app's session is needed |
+| `GET /api/projects/clones/{id}` | A clone's state |
+| `DELETE /api/projects/clones/{id}` | Stops a clone and removes the folder it made. The Mac app's session is needed |
+
+The events `project_added`, `project_opened`, `project_removed`, `project_changed`, `clone_changed`, `clone_ended`, `run_changed` and `run_ended` arrive on the `projects` topic of `GET /api/events`. `run_changed` comes at most four times a second, with `run`. Sending a request is in [Scripting](/scripting).

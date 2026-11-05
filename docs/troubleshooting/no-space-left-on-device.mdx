@@ -1,0 +1,25 @@
+---
+title: "No space left on device"
+sidebarTitle: "No space left on device"
+description: "Your Mac's disk is full, so Xcode couldn't write Mobster's helper. Free up space and build again."
+icon: "triangle-alert"
+keywords: ["disk full", "xcodebuild", "build", "storage"]
+"article:modified_time": "2026-10-26"
+---
+
+You see this: `xcodebuild` prints `error: unable to open output file ... 'No space left on device'` while it compiles the helper.
+
+## Why it happens
+
+The build writes to Mobster's `wda-build` folder in `~/Library/Application Support/app.mobster.desktop/`. Xcode stops when the disk has no room.
+
+## Fix
+
+1. Free up space on your Mac.
+2. Build again from Mobster for Mac.
+
+## Check it worked
+
+`mobster sim doctor` prints a `Free space` line with the room left.
+
+Checked 26 Oct 2026 against Mobster 0.4.0. Back to [Troubleshooting](/troubleshooting#iphone).

@@ -1,0 +1,328 @@
+{
+"note": "Synthetic: the shape of Instagram 448.0.0's screen on a real iPhone (13 Oct 2026), every name, handle and text made up.",
+"rows": [
+{
+"role": "Cell",
+"label": "sundial-viewer-video-cell",
+"rect": [
+0.0,
+0.0,
+1.0,
+0.9
+]
+},
+{
+"role": "Button",
+"label": "ufi-like-button",
+"rect": [
+0.87,
+0.41,
+0.11,
+0.05
+]
+},
+{
+"role": "Button",
+"label": "Like",
+"rect": [
+0.87,
+0.41,
+0.11,
+0.05
+]
+},
+{
+"role": "Button",
+"label": "348 likes",
+"rect": [
+0.88,
+0.46,
+0.09,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "ufi-comment-button",
+"rect": [
+0.87,
+0.5,
+0.11,
+0.08
+]
+},
+{
+"role": "Button",
+"label": "Comment",
+"rect": [
+0.87,
+0.5,
+0.11,
+0.05
+]
+},
+{
+"role": "StaticText",
+"label": "44 comments",
+"rect": [
+0.88,
+0.54,
+0.09,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "Repost",
+"rect": [
+0.87,
+0.58,
+0.11,
+0.05
+]
+},
+{
+"role": "Button",
+"label": "3 likes",
+"rect": [
+0.88,
+0.64,
+0.09,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "ufi-send-button",
+"rect": [
+0.87,
+0.67,
+0.11,
+0.08
+]
+},
+{
+"role": "Button",
+"label": "Send",
+"rect": [
+0.87,
+0.67,
+0.11,
+0.05
+]
+},
+{
+"role": "StaticText",
+"label": "271 shares",
+"rect": [
+0.88,
+0.72,
+0.09,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "Save",
+"rect": [
+0.87,
+0.75,
+0.11,
+0.08
+]
+},
+{
+"role": "Button",
+"label": "Save post",
+"rect": [
+0.87,
+0.75,
+0.11,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "ufi-more-options-button",
+"rect": [
+0.88,
+0.84,
+0.1,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "More actions",
+"rect": [
+0.88,
+0.84,
+0.1,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "Ad",
+"rect": [
+0.89,
+0.79,
+0.07,
+0.03
+]
+},
+{
+"role": "Button",
+"label": "Install now",
+"rect": [
+0.04,
+0.68,
+0.31,
+0.04
+]
+},
+{
+"role": "Button",
+"label": "Seen too often",
+"rect": [
+0.04,
+0.85,
+0.45,
+0.04
+]
+},
+{
+"role": "Button",
+"label": "Not too often",
+"rect": [
+0.51,
+0.85,
+0.45,
+0.04
+]
+},
+{
+"role": "Button",
+"label": "Post by trade.app",
+"rect": [
+0.04,
+0.77,
+0.31,
+0.04
+]
+},
+{
+"role": "Button",
+"label": "trade.app's profile picture",
+"rect": [
+0.05,
+0.77,
+0.09,
+0.04
+],
+"value": "Double tap to view story"
+},
+{
+"role": "Button",
+"label": "Follow trade.app",
+"rect": [
+0.38,
+0.77,
+0.16,
+0.03
+]
+},
+{
+"role": "StaticText",
+"label": "Trade on the go. New users get credits to start.",
+"rect": [
+0.04,
+0.82,
+0.79,
+0.03
+]
+},
+{
+"role": "Button",
+"label": "friend.two, clips_viewer_clips_tab",
+"rect": [
+0.04,
+0.86,
+0.69,
+0.02
+]
+},
+{
+"role": "StaticText",
+"label": "Liked by friend.two and 347 others",
+"rect": [
+0.14,
+0.86,
+0.59,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "Main feed",
+"rect": [
+0.0,
+0.9,
+0.2,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "Reels",
+"rect": [
+0.2,
+0.9,
+0.2,
+0.06
+],
+"value": "1",
+"selected": true
+},
+{
+"role": "Button",
+"label": "Direct messages , 6 unread messages",
+"rect": [
+0.4,
+0.9,
+0.2,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "6",
+"rect": [
+0.52,
+0.93,
+0.02,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "Explore",
+"rect": [
+0.6,
+0.9,
+0.19,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "Profile",
+"rect": [
+0.79,
+0.9,
+0.2,
+0.06
+]
+}
+]
+}

@@ -19,16 +19,16 @@ memory; no model is called; the report holds counts and ratios only.
 import argparse
 import base64
 import json
-from pathlib import Path
 import re
 import subprocess
 import time
 import urllib.request
 import xml.etree.ElementTree as ET
+from pathlib import Path
 
 from ..compose import build_target_driver
-from ..wda_observe import WDA_SOURCE_PATH
 from ..paths import build_dir
+from ..wda.observe import WDA_SOURCE_PATH
 
 OCR = build_dir() / "ocr"
 ACTIONABLE = {"Button", "Cell", "Link", "TextField", "SearchField", "TextView", "Switch", "Slider",

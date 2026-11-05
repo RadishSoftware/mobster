@@ -1,0 +1,278 @@
+{
+"note": "Synthetic: the shape of Instagram 448.0.0's screen on a real iPhone (13 Oct 2026), every name, handle and text made up.",
+"rows": [
+{
+"role": "Button",
+"label": "trail.runner and coach.kim",
+"rect": [
+0.13,
+0.14,
+0.68,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "Post options",
+"rect": [
+0.89,
+0.12,
+0.11,
+0.07
+]
+},
+{
+"role": "Cell",
+"label": "page-cell",
+"rect": [
+0.0,
+0.18,
+1.0,
+0.46
+]
+},
+{
+"role": "Image",
+"label": "Video by trail.runner",
+"rect": [
+0.0,
+0.18,
+1.0,
+0.46
+]
+},
+{
+"role": "Cell",
+"label": "action-cell",
+"rect": [
+0.0,
+0.64,
+1.0,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "Like",
+"rect": [
+0.01,
+0.64,
+0.1,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "16767 likes",
+"rect": [
+0.11,
+0.66,
+0.1,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "Comment",
+"rect": [
+0.21,
+0.64,
+0.1,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "171 comments",
+"rect": [
+0.32,
+0.66,
+0.07,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "Send",
+"rect": [
+0.56,
+0.64,
+0.1,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "Save",
+"rect": [
+0.89,
+0.64,
+0.1,
+0.05
+]
+},
+{
+"role": "StaticText",
+"label": "trail.runner Hill repeats, week 3 #running",
+"rect": [
+0.03,
+0.7,
+0.94,
+0.04
+]
+},
+{
+"role": "Link",
+"label": "trail.runner",
+"rect": [
+0.03,
+0.7,
+0.2,
+0.02
+]
+},
+{
+"role": "StaticText",
+"label": "22 hours ago",
+"rect": [
+0.03,
+0.75,
+0.94,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "shoe.brand",
+"rect": [
+0.13,
+0.8,
+0.68,
+0.02
+]
+},
+{
+"role": "StaticText",
+"label": "Sponsored",
+"rect": [
+0.13,
+0.82,
+0.3,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "Post options",
+"rect": [
+0.89,
+0.78,
+0.11,
+0.07
+]
+},
+{
+"role": "Button",
+"label": "Shop now",
+"rect": [
+0.0,
+0.86,
+1.0,
+0.03
+]
+},
+{
+"role": "Button",
+"label": "Create a post, story or live video",
+"rect": [
+0.03,
+0.08,
+0.08,
+0.04
+]
+},
+{
+"role": "Button",
+"label": "Instagram Main Feed",
+"rect": [
+0.35,
+0.08,
+0.35,
+0.04
+]
+},
+{
+"role": "Button",
+"label": "Notifications",
+"rect": [
+0.9,
+0.08,
+0.07,
+0.04
+],
+"value": "Unread"
+},
+{
+"role": "Button",
+"label": "Main feed",
+"rect": [
+0.0,
+0.9,
+0.2,
+0.06
+],
+"value": "1",
+"selected": true
+},
+{
+"role": "Button",
+"label": "Reels",
+"rect": [
+0.2,
+0.9,
+0.2,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "Direct messages , 6 unread messages",
+"rect": [
+0.4,
+0.9,
+0.2,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "6",
+"rect": [
+0.52,
+0.93,
+0.02,
+0.02
+]
+},
+{
+"role": "Button",
+"label": "Explore",
+"rect": [
+0.6,
+0.9,
+0.19,
+0.06
+]
+},
+{
+"role": "Button",
+"label": "Profile",
+"rect": [
+0.79,
+0.9,
+0.2,
+0.06
+]
+}
+]
+}

@@ -63,7 +63,8 @@ def main(argv=None):
             title = next((c.get("title") for c in unit.cards if c.get("title")), None)
             print(f"CARD {unit.key}: {title!r}")
     for n in false_asks:
-        print(f"NAV {n.id}/{n.path}/{n.contract}@{n.connection}: asked {[c.get('title') for c in n.asked]} sent={n.sent}")
+        print(f"NAV {n.id}/{n.path}/{n.contract}@{n.connection}: asked "
+              f"{[c.get('title') for c in n.asked]} sent={n.sent}")
     return 0 if not failed else 1
 
 

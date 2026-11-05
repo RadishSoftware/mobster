@@ -1,0 +1,126 @@
+---
+title: "Add steps, save checks and script them"
+sidebarTitle: "Steps and saved checks"
+description: "Add steps to a check, save it to your project, and use its exit code in scripts."
+icon: "footprints"
+keywords: ["verify steps", "smart", "save check", "exit code", "json"]
+---
+
+Give a check steps to prove a flow, such as finishing a lesson and seeing the streak go up, then save it and run it from a script. This picks up where [Quickstart: test your app](/quickstart/test) ends.
+
+## Add steps
+
+Steps run on Mobster's agent (Smart): it performs them on your Claude or OpenAI key, then Mobster checks your assertions, as for a launch-only check. No model grades the outcome. To drive the steps with your coding agent and no key, use [the key-less loop](/mcp-server#the-key-less-loop) instead.
+
+<Steps>
+  <Step title="Write the steps and the expectations">
+    Each quoted argument is one step, in plain English. Write each expectation so it holds only after the steps:
+
+    ```sh
+    mobster verify "Pick the word that fills the blank, then tap Check." "Tap Continue until the lesson ends." \
+      --name "Lesson complete raises the streak" \
+      --app .mobster/build/Build/Products/Debug-iphonesimulator/YourApp.app --open-url yourapp://lesson/last \
+      --text "Lesson complete" --expect '{"value": {"id": "streak_days"}, "equals": 4}' \
+      --env-file ~/.config/mobster/agent.env
+    ```
+
+    `--env-file` names a file with one line, `ANTHROPIC_API_KEY=…` or `OPENAI_API_KEY=…`, that only you can read.
+  </Step>
+  <Step title="Read the verdict">
+    With a key, it prints the verdict, one line per assertion, the report and the Rerun command, as a launch-only check does. The exit code is the verdict.
+
+    Without a key, it stops before it starts the simulator and exits 3. On 18 Oct 2026 (Mobster 0.4.0, no key set, no `--env-file`) it printed:
+
+    ```text
+    ✗ couldn't run  Lesson complete raises the streak  (0.1 s)
+      These steps need Smart, and no OpenAI or Anthropic key is set.
+      Set OPENAI_API_KEY or ANTHROPIC_API_KEY for Smart, or let your coding agent drive through `mobster mcp`.
+      Report  .mobster/runs/20261018-112359-c246/report.html
+      Rerun   mobster verify --check .mobster/runs/20261018-112359-c246/check.yaml
+    ```
+  </Step>
+</Steps>
+
+<Note>If every expectation already holds right after launch, the run ends `needs_review`, because it doesn't show that the flow works.</Note>
+
+| Flag | Default | What it does |
+|---|---|---|
+| `--max-usd` | 0.25, at most 1.00 | Caps the run's spend. The result's `cost_usd` is what it spent |
+| `--max-seconds` | 180, at most 600 | Caps the time the steps may take |
+| `--env-file` | `$MOBSTER_ENV_FILE` | Loads the key. Variables already set win |
+| `--name` | the first step | The check's name in the output and the report |
+
+Smart runs on Claude whenever an Anthropic key is set, and on OpenAI with an OpenAI key alone or with `MOBSTER_SMART_PROVIDER=openai`. `MOBSTER_SMART_MODEL` picks another model, and then only that provider's key will do. Smart sends each screen's image and accessibility text to that provider; launch-only and key-less runs send nothing anywhere.
+
+## Save the check
+
+Add `--save NAME` to any run to keep its check as `.mobster/checks/NAME.yaml`. The same command with `--save lesson-complete` printed `Saved .mobster/checks/lesson-complete.yaml` before the verdict and wrote:
+
+```yaml .mobster/checks/lesson-complete.yaml
+# yaml-language-server: $schema=https://mobster.dev/schema/check.json
+# A Mobster check. Run it with: mobster verify --check <this file>
+version: 1
+name: Lesson complete raises the streak
+app:
+  path: .mobster/build/Build/Products/Debug-iphonesimulator/YourApp.app
+launch:
+  url: yourapp://lesson/last
+steps:
+- Pick the word that fills the blank, then tap Check.
+- Tap Continue until the lesson ends.
+expect:
+- text: Lesson complete
+- value:
+    id: streak_days
+  equals: 4
+```
+
+It saves the check even when the run couldn't run, as here, so you can fix the setup and run it again. The file is plain YAML you can edit and commit. Run it with:
+
+```sh
+mobster verify --check .mobster/checks/lesson-complete.yaml
+```
+
+[Checks](/checks#the-check-file) documents every key.
+
+## Use it in scripts
+
+The exit code is the verdict:
+
+| Exit | Verdict | Means |
+|---|---|---|
+| 0 | `passed` | The assertions and execution checks passed |
+| 1 | `failed` | An assertion or another check failed, such as crash detection |
+| 2 | `needs_review` | The run needs review, for example because evidence or required measurements are missing |
+| 3 | `couldnt_run` | The run could not finish, for example because of an invalid check, an execution error or a resource limit |
+
+With `--json`, or when stdout isn't a terminal, stdout carries exactly one JSON object, [the result](/checks#the-result-json). Progress stays on stderr. A script can branch on the exit code and read the result with `jq`:
+
+```sh check.sh
+mobster verify --check .mobster/checks/lesson-complete.yaml --json > result.json
+case $? in
+  0) echo "lesson ok" ;;
+  1) jq -r '.summary, .report' result.json; exit 1 ;;
+  *) jq -r '.reason.message' result.json; exit 1 ;;
+esac
+```
+
+With no key set, `sh check.sh` took the last branch, printed this and exited 1 (18 Oct 2026, Mobster 0.4.0):
+
+```text
+These steps need Smart, and no OpenAI or Anthropic key is set.
+```
+
+## Next
+
+<CardGroup cols={3}>
+  <Card title="Run every check" icon="list-checks" href="/testing">
+    `mobster test`: simulators and your iPhone, retries, flaky checks, JUnit and HTML.
+  </Card>
+  <Card title="Checks reference" icon="file-check" href="/checks">
+    The check file, every assertion and the verdict rules.
+  </Card>
+  <Card title="When a check couldn't run" icon="wrench" href="/troubleshooting#checks">
+    Each `reason.class` and its fix.
+  </Card>
+</CardGroup>

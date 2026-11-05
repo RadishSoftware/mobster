@@ -4,7 +4,6 @@ import unittest
 
 from ..output_contract import validate_automatic_schema, validate_format, validate_output
 
-
 ROW = {"type": "object", "additionalProperties": False,
        "properties": {"name": {"type": "string"}, "count": {"type": ["integer", "null"]}}}
 TABLE = {"type": "array", "items": ROW, "maxItems": 20}
@@ -53,3 +52,16 @@ class OutputContractTests(unittest.TestCase):
         for value in ("JSON", "xml", "", None, [], {}):
             with self.subTest(value=value), self.assertRaises(ValueError):
                 validate_output(value, ROW)
+
+    def test_an_automatic_schema_is_never_null(self):
+        for output_format in ("text", "csv", "json", "yaml", "markdown"):
+            with self.subTest(output_format=output_format), self.assertRaises(ValueError):
+                validate_automatic_schema(output_format, None)
+
+    def test_automatic_text_is_a_string_or_a_flat_row_and_a_table_is_csv_only(self):
+        string = {"type": "string"}
+        self.assertEqual(validate_automatic_schema("text", string), string)
+        self.assertEqual(validate_automatic_schema("text", ROW), ROW)
+        with self.assertRaises(ValueError):
+            validate_automatic_schema("text", TABLE)
+        self.assertEqual(validate_automatic_schema("csv", TABLE), TABLE)

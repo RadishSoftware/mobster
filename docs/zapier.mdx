@@ -1,0 +1,74 @@
+---
+title: "Start tasks from Zapier"
+"og:title": "Start tasks and workflows from Zapier"
+sidebarTitle: "Zapier"
+description: "Mobster for Zapier lets a Zap run a task or a workflow on your iPhone, find your workflows, and start another Zap when a task finishes."
+icon: "/images/marks/zapier.svg"
+keywords: ["zapier", "zap", "automation", "trigger", "action", "task finished", "run workflow", "run task", "oauth", "mobster remote", "no-code"]
+---
+
+Mobster for Zapier lets any Zap run a task or a saved workflow on your iPhone and use the answer in its next step. You sign in to Mobster once. The Zap runs through [Mobster Remote](/remote), so Mobster for Mac must be open, awake and signed in, with Remote on.
+
+Zapier never sees your phone. It sends the words of a task to Mobster on your Mac, and Mobster runs them. Mobster asks you on your Mac before anything that sends, buys, posts or deletes, and a Zap can't approve it for you. Passwords, one-time codes and card numbers in an answer are masked as `••••••`, and Mobster doesn't read out a code when a task asks for one.
+
+## Connect Zapier
+
+1. Open [Mobster's Zapier invite](https://zapier.com/developer/public-invite/247944/04cf4a14f2a6abd73ee4ca9283dd6ee7/) and accept it. Mobster's Zapier app is private until Zapier lists it, and the invite adds it to your Zapier account. **Add to Zapier** in **Settings › Connectors › Use Mobster from…** opens the same page.
+2. In the Zap editor, choose **Mobster** as the app for a step, then **Sign in**.
+3. Sign in to Mobster Remote's web page with the account you use in Mobster for Mac, and choose the Mac and the iPhone if you have more than one.
+4. Mobster for Mac asks "Allow Zapier to use Sam's iPhone?". Choose **Allow**.
+
+The connection can use that one iPhone and the three permissions every Remote app gets ([What apps can and can't do](/remote#what-apps-can-and-cant-do)). **Settings › Remote** lists Zapier like Claude or ChatGPT, and **Remove** disconnects it at once and stops its running tasks. Mobster pauses the connection after five approvals you decline in a row.
+
+## What a Zap can do
+
+| Step | Kind | What it does |
+|---|---|---|
+| **Run Task on iPhone** | Action | Hands the words you write to Mobster's agent and waits up to 20 seconds for the answer |
+| **Run Workflow on iPhone** | Action | Starts a workflow you pick from a list and fills its blanks from earlier steps |
+| **Find Workflow** | Search | Finds a workflow by part of its name |
+| **Task Finished** | Trigger | Starts a Zap when a task or workflow this connection started ends |
+
+Each action returns the task's `Task ID`, `Status`, `Answer` and, when the task produced structured data, `Data (JSON)`. A task that needs you returns `Status` `waiting_for_approval` with `Waiting for your OK to` set. The step doesn't fail: the task waits for you in Mobster, and **Task Finished** starts a Zap when it ends.
+
+### Pick a workflow
+
+**Run Workflow on iPhone** lists only workflows that have a webhook URL. A webhook URL is how you tell Mobster that another tool may start a workflow, so a workflow you never opened to other tools is never listed or started, and the Zap can't reach it by typing its name.
+
+1. Open the workflow in **Workflows**, choose **Edit**, then **More**.
+2. Under **Start from another tool**, choose **Make a webhook URL**. Zapier doesn't use the URL or its secret. Having one is the permission.
+
+Choose the workflow in the Zap, and the step shows one field for each blank. A blank left empty takes its default, and a blank with no default is required. A value is text of at most 300 characters. A Zap can't change a workflow's steps, its app, the iPhone or where its result goes.
+
+### Follow a task to its end
+
+Zapier's steps end after 30 seconds, and a task on a phone often takes longer. Start the task in one Zap, and build a second Zap on **Task Finished**.
+
+**Task Finished** checks every 1 to 15 minutes, depending on your Zapier plan, and returns up to 25 recent tasks that ended. It lists only tasks this connection started. A task started in Claude, in the Mac app or by a webhook URL isn't listed. Each task starts a Zap once.
+
+| `Status` | Means |
+|---|---|
+| `completed` | The task finished and has an answer |
+| `stopped` | You or the app stopped it |
+| `approval_denied`, `approval_timeout` | You declined, or nobody answered in time |
+| `error` | The task failed. `Why it ended` says why |
+
+## When a step fails
+
+A step fails with the sentence Mobster gives an assistant, so the Zap history says what to do.
+
+| The Zap shows | Why |
+|---|---|
+| "Sam's MacBook Pro is offline, so Mobster can't reach Sam's iPhone…" | The Mac is asleep, offline or Mobster is closed. Nothing started |
+| "Mobster Remote is off on Sam's MacBook Pro…" | Turn Remote on in Mobster, in Settings under Remote |
+| "…has no active Mobster plan" | The account's plan ended. See [Pricing](/pricing) |
+| "Sam's iPhone is locked. Ask the user to unlock it." | Mobster never unlocks a phone. Nothing started |
+| "Zapier has started 50 tasks on this Mac today…" | The daily limit of 50 tasks for one app (200 for all apps on a Mac) |
+| "Mobster doesn't read out codes or passwords over Remote." | The task or a value asked Mobster to read out a code |
+| "No workflow that other tools may start is called…" | The workflow has no webhook URL, or the name is wrong |
+
+A step that reaches your Mac but gets no answer in 30 seconds ends with "Mobster on Sam's MacBook Pro didn't answer in time. The task may still be running". Mobster doesn't repeat it: check **Task Finished** or Mobster before you run the Zap again.
+
+## For developers
+
+The app is in `packaging/zapier/` in the Mobster repository. It signs in with Mobster Remote's OAuth server (PKCE, no client secret) and calls the `/mcp` endpoint with `tools/call` for `phone_task`, `run_workflow`, `list_workflows` and `list_tasks`. There is no second API. Run its tests with `npm test` in that folder; they use no network.

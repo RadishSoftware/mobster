@@ -1,0 +1,166 @@
+{
+  "checkout.yaml": {
+    "outcome": "imported",
+    "reason": null,
+    "checks": {
+      "checkout.yaml": {
+        "version": 1,
+        "name": "Checkout with a promo code",
+        "app": {
+          "bundle": "com.example.shop"
+        },
+        "reset": "none",
+        "tags": [
+          "maestro"
+        ],
+        "steps": [
+          "Tap \"Cart\"",
+          "Tap the element with accessibility id \"promo_field\"",
+          "Type \"SPRING10\" into the focused text field",
+          "TODO (Maestro runScript, not imported): runs JavaScript, which Mobster doesn't run. Look at the screen and do what this point in the flow needs, or nothing if it needs nothing",
+          "TODO (Maestro takeScreenshot, not imported): Mobster records a frame for every step of every run. Look at the screen and do what this point in the flow needs, or nothing if it needs nothing",
+          "Go back one screen with the Back button on screen, or by swiping from the left edge",
+          "Scroll down"
+        ],
+        "expect": [
+          {
+            "visible": {
+              "label": "/^(?:Total: .*)$/i"
+            },
+            "name": "Total: .* is visible"
+          },
+          {
+            "absent": {
+              "label": "/^Cart is empty$/i"
+            },
+            "name": "Cart is empty is not visible"
+          }
+        ]
+      }
+    },
+    "refused": [],
+    "notes": [
+      "command 7 (back): iOS has no back key, so the step taps the Back button on screen or swipes from the left edge",
+      "2 commands became a step marked TODO: the first run (Smart) fills it, then replay keeps what it did; read that run's report before you trust the check"
+    ]
+  },
+  "login.yaml": {
+    "outcome": "imported",
+    "reason": null,
+    "checks": {
+      "login-part-1.yaml": {
+        "version": 1,
+        "name": "Sign in and open the profile (part 1 of 2)",
+        "app": {
+          "bundle": "com.example.shop"
+        },
+        "reset": "data",
+        "tags": [
+          "maestro",
+          "smoke",
+          "sign-in"
+        ],
+        "launch": {
+          "url": "shop://welcome"
+        },
+        "steps": [
+          "Tap \"Sign in\"",
+          "Tap the element with accessibility id \"email_field\"",
+          "Type \"sam@example.com\" into the focused text field",
+          "Tap the element with accessibility id \"password_field\"",
+          "Type \"correct-horse\" into the focused text field",
+          "Dismiss the keyboard",
+          "Tap the element whose text matches the pattern \"Continue.*\""
+        ],
+        "expect": [
+          {
+            "visible": {
+              "label": "/^Welcome back$/i"
+            },
+            "name": "Welcome back is visible"
+          },
+          {
+            "absent": {
+              "label": "/^Sign in$/i"
+            },
+            "name": "Sign in is not visible"
+          }
+        ]
+      },
+      "login-part-2.yaml": {
+        "version": 1,
+        "name": "Sign in and open the profile (part 2 of 2)",
+        "app": {
+          "bundle": "com.example.shop"
+        },
+        "reset": "data",
+        "tags": [
+          "maestro",
+          "smoke",
+          "sign-in"
+        ],
+        "launch": {
+          "url": "shop://welcome"
+        },
+        "steps": [
+          "Tap \"Sign in\"",
+          "Tap the element with accessibility id \"email_field\"",
+          "Type \"sam@example.com\" into the focused text field",
+          "Tap the element with accessibility id \"password_field\"",
+          "Type \"correct-horse\" into the focused text field",
+          "Dismiss the keyboard",
+          "Tap the element whose text matches the pattern \"Continue.*\"",
+          "Tap the element with accessibility id \"tab_profile\"",
+          "Scroll down until \"Log out\" is visible"
+        ],
+        "expect": [
+          {
+            "visible": {
+              "id": "profile_email"
+            },
+            "name": "id profile_email is visible"
+          }
+        ]
+      }
+    },
+    "refused": [],
+    "notes": [
+      "assertions in the middle of the flow became 2 checks; each one replays the steps up to its assertions"
+    ]
+  },
+  "regex.yaml": {
+    "outcome": "imported",
+    "reason": null,
+    "checks": {
+      "regex.yaml": {
+        "version": 1,
+        "name": "regex",
+        "app": {
+          "bundle": "com.example.shop"
+        },
+        "reset": "none",
+        "tags": [
+          "maestro"
+        ],
+        "expect": [
+          {
+            "visible": {
+              "label": "/^(?:Order #[0-9]+ placed)$/i"
+            },
+            "name": "Order #[0-9]+ placed is visible"
+          },
+          {
+            "visible": {
+              "label": "/^\\/literal slashes\\/$/i"
+            },
+            "name": "/literal slashes/ is visible"
+          }
+        ]
+      }
+    },
+    "refused": [],
+    "notes": [
+      "the last 2 steps come after the final assertion, so no check runs them; nothing judges them"
+    ]
+  }
+}

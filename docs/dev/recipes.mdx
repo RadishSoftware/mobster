@@ -1,0 +1,121 @@
+---
+title: "Checks for TestFlight, purchases and push"
+sidebarTitle: "TestFlight, purchases and push"
+keywords: ["testflight", "in-app purchase", "storekit", "paywall test", "push notification test", "simctl push", "recipes", "real iphone testing"]
+description: "Check a TestFlight build on your iPhone, a paywall with its prices, and the screen a push notification opens, with mobster test."
+icon: "book-open"
+---
+
+Three things every iOS team tests by hand before a release, as checks Mobster runs on your simulators and your own iPhones. Each one ends with proof: the frame, the video, and the reason in plain words when it fails.
+
+## Write a recipe as a check
+
+`mobster test add` writes a recipe as a normal check into `.mobster/checks`, so you edit it and commit it like one you wrote:
+
+```sh
+mobster test add --list
+mobster test add paywall --bundle com.example.yourapp --set url=yourapp://paywall
+```
+
+```text
+smoke    the app launches and shows the text you name
+paywall  the paywall shows its plans and a restore button
+```
+
+```text
+Saved .mobster/checks/paywall.yaml from the paywall recipe. Run it with: mobster test .mobster/checks/paywall.yaml
+```
+
+- `--bundle` names your app. `--set KEY=VALUE` sets a param of the recipe, as many times as it has.
+- A param you leave out drops the line that uses it, so the check never holds an empty value.
+- Mobster never replaces a file that exists: `--force` replaces it.
+- A recipe adds no runner. `mobster test`, `mobster verify --check` and `mobster ci run` run the file as any other.
+
+## A TestFlight build on your iPhone
+
+Test the build your testers have, not only the one Xcode made:
+
+```sh
+mobster testflight install --app com.example.yourapp --device "Test iPhone"
+mobster test --device "Test iPhone" --testflight com.example.yourapp --video
+```
+
+1. `mobster testflight install` opens your app in the TestFlight app on the phone and taps Install or Update ([App Store Connect](/dev/app-store-connect)). `--build 45` picks a build, and the report names it.
+2. `--testflight` lets your checks drive that build as your own. Mobster never clears its data on a phone.
+3. `mobster asc feedback --app com.example.yourapp --crashes` then lists what your testers hit on the same build.
+
+In CI, the runner's owner lists the app in `MOBSTER_RUNNER_TESTFLIGHT` ([CI](/ci#your-iphone-in-ci)), and `mobster test nightly on --device all --testflight com.example.yourapp` checks it every night ([Overnight runs](/testing#overnight-runs)).
+
+## A paywall and its prices
+
+On a simulator a check may buy, because no money exists there. On your iPhone Mobster never confirms a purchase. So a paywall check asserts the plans and prices on screen, and a second check buys:
+
+```yaml .mobster/checks/paywall.yaml
+version: 1
+name: The paywall shows three plans with Annual at $39.99 a year
+app:
+  bundle: com.example.yourapp
+  path: .mobster/build/Build/Products/Debug-iphonesimulator/YourApp.app
+tags: [smoke, paywall, screenshot]
+launch:
+  url: yourapp://paywall
+  args: ["-StoreKitProducts", "local"]   # your app reads this and shows its local product list
+expect:
+  - text: Choose your plan
+  - count: { id: /^plan_/ }
+    equals: 3
+  - value: { id: plan_annual }
+    equals: $39.99 / year
+  - visible: { label: Restore Purchases, role: button }
+```
+
+- A simulator launched by `simctl`, as Mobster launches it, doesn't load the StoreKit configuration file Xcode's scheme names. Have the app read a launch argument (here `-StoreKitProducts local`) and show products from your `.storekit` file or a fixed list, so prices are the same on every run. Xcode loads that file by copying it to the device through its own device service when you press Run, and `xcrun simctl` has no option for it (checked against Xcode's frameworks and `simctl help`, 24 Oct 2026), so Mobster can't load a `.storekit` file for you. To test with StoreKit Testing in Xcode, run the check from an Xcode test plan that names the file.
+- On your iPhone, a TestFlight or development build loads products from the App Store sandbox, so the same check proves the real prices: `mobster test .mobster/checks/paywall.yaml --device "Test iPhone"`.
+- Tagged `screenshot`, the same check makes the paywall's App Store screenshot in every size and language ([App Store screenshots](/dev/screenshots)).
+
+### Buy on a simulator
+
+A check on a simulator may tap Buy in your app, and `dialogs.purchase` answers the purchase sheet iOS puts over it:
+
+```yaml .mobster/checks/buy-annual.yaml
+version: 1
+name: Buying Annual unlocks Premium
+app:
+  bundle: com.example.yourapp
+launch:
+  url: yourapp://paywall
+  args: ["-StoreKitProducts", "local"]
+steps:
+  - tap Annual, then tap Subscribe
+dialogs:
+  purchase: confirm        # cancel tests that declining leaves the paywall up
+expect:
+  - text: Premium unlocked
+```
+
+The sheet is answered with no model call. Run the same check with `--device` and Mobster stops at the sheet and reports it; a phone's purchase is yours to confirm ([What a simulator may do](/testing#what-a-simulator-may-do-that-an-iphone-may-not)).
+
+## The screen a push opens
+
+A push is delivered by Apple, and Mobster checks what your app does with it: the screen its link opens. Give the payload's deep link to a check:
+
+```yaml .mobster/checks/push-order-shipped.yaml
+version: 1
+name: The order-shipped push opens the order with its tracking number
+app:
+  bundle: com.example.yourapp
+  path: .mobster/build/Build/Products/Debug-iphonesimulator/YourApp.app
+launch:
+  url: yourapp://orders/1042?from=push
+expect:
+  - text: Shipped
+  - visible: { id: tracking_number }
+```
+
+To watch the banner itself on a simulator, send the payload with Xcode's tools while the app runs:
+
+```sh
+xcrun simctl push booted com.example.yourapp push.apns
+```
+
+`push.apns` is the JSON your server sends, with `"Simulator Target Bundle"` set to your bundle ID. On your iPhone, send a test push from your provider's console, then run the check above with `--device`.

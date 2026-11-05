@@ -1,0 +1,17 @@
+{
+  "name": "mobster",
+  "owner": {
+    "name": "Radish Retail, LLC",
+    "url": "https://mobster.dev"
+  },
+  "description": "Use Mobster with Claude Code to test iOS screens on a simulator and control your iPhone through Mobster for Mac.",
+  "plugins": [
+    {
+      "name": "mobster",
+      "source": "./plugins/mobster",
+      "description": "Includes Mobster’s MCP server from Mobster for Mac, the ios-testing skill, /mobster:verify and /mobster:test-pr. Verify iOS UI changes on a simulator managed by Mobster and control the iPhone you set up in the app.",
+      "category": "development",
+      "tags": ["ios", "iphone", "simulator", "testing", "mcp"]
+    }
+  ]
+}

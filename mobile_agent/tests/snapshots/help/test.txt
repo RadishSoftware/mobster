@@ -1,0 +1,175 @@
+usage: mobster test [-h] [--sim TYPE[@RUNTIME]] [--device NAME] [--testflight BUNDLE]
+                    [--matrix FILE] [--locale LANG[,LANG]] [--spread] [--parallel N] [--retries N]
+                    [--repeat K] [--strict] [--quarantine FILE] [--auto-quarantine] [--tag TAG]
+                    [--audit NAME] [--a11y [LEVEL]] [--update-a11y-baseline] [--check NAME]
+                    [--update-snapshots] [--shard I/N] [--keyless] [--replay] [--fresh] [--no-heal]
+                    [--xctest] [--test-plan NAME] [--only-testing ID] [--junit FILE] [--html DIR]
+                    [--video] [--history] [--json] [--include KIND] [--share] [--share-days DAYS]
+                    [--assert-timeout S] [--run RUN_ID] [--name TEXT] [-o PATH] [--bundle ID]
+                    [--app PATH] [--skip-unsupported] [--dry-run] [--force] [--arg ARG] [--link URL]
+                    [--list] [--set KEY=VALUE] [--base REF] [--no-build] [--scheme NAME]
+                    [--project PATH] [--drafts {run,write,off}] [--no-gifs] [--tested-with]
+                    [--comment FILE] [--github {check,comment,off}] [--at HH:MM] [--accept]
+                    [--reject] [--bad-app PATH] [--control-app PATH] [--isolated] [--max-attempts N]
+                    [--env-file PATH]
+                    [PATH ...]
+
+Run every check in .mobster/checks (or the paths given) on one or more devices, in
+parallel, with retries, flake detection, and JUnit and HTML reports with the frames.
+A check is a saved YAML file; `mobster verify` runs one without saving it.
+
+positional arguments:
+  PATH                        check files or folders (default: .mobster/checks); `record` saves a
+                              task; `capsule` inspects evidence; `compare` reads suites; `scenario`
+                              runs ordered checks; `minimize` tries a paired local reproducer
+
+options:
+  -h, --help                  show this help and exit
+  --env-file PATH             load KEY=VALUE lines, such as OPENAI_API_KEY or ANTHROPIC_API_KEY for
+                              Smart steps; variables already set win; default: $MOBSTER_ENV_FILE
+
+where checks run:
+  --sim TYPE[@RUNTIME]        a simulator device type, with an optional runtime, such as "iPhone 17
+                              Pro@iOS 26.4"; repeatable (default: each check's own, or
+                              .mobster/matrix.yaml)
+  --device NAME               a device from `mobster devices`, or all: every iPhone ready on this
+                              Mac, side by side in one report; repeatable. On a real iPhone, checks
+                              drive only builds you installed, never App Store apps
+  --testflight BUNDLE         with --device: your app's bundle ID, installed from TestFlight, which
+                              checks may drive as your own build; repeatable
+  --matrix FILE               a YAML file of simulators to run every check on (simulators only)
+  --locale LANG[,LANG]        run every check once in each language, such as de,ja,ar: the app
+                              launches in that language and region, and the screens are read for
+                              truncated text, untranslated strings and, in a right-to-left language,
+                              a layout that didn't mirror
+  --spread                    with two or more devices: run each check once, on whichever device is
+                              free, instead of on every one (the report groups checks by device)
+  --parallel N                simulators running checks at once (default: 1); each iPhone runs one
+                              check at a time
+
+retries and flakes:
+  --retries N                 attempts after a failure, from a fresh app (default: 1, or 0 with
+                              --repeat)
+  --repeat K                  run each check K times and report its pass rate (flake hunting)
+  --strict                    a flaky check fails the run
+  --quarantine FILE           checks that run and are reported but never fail the run (default:
+                              .mobster/quarantine.yaml)
+  --auto-quarantine           quarantine for this run the checks whose last 20 results say flaky;
+                              without it Mobster only suggests them
+
+which checks:
+  --tag TAG                   only checks with this tag; repeatable
+  --audit NAME                also audit what each check reads: a11y finds controls with no label,
+                              tap targets under 44 pt, images with no label and text clipped at a
+                              large text size; no model is called
+  --a11y [LEVEL]              audit the screens each check reads for accessibility: warn (the
+                              default) reports findings and passes, strict fails on a new one;
+                              findings in .mobster/a11y-baseline.json never fail
+  --update-a11y-baseline      write this run's accessibility findings to
+                              .mobster/a11y-baseline.json, so later runs fail only on new ones
+  --check NAME                only the check with this name or file name; repeatable
+  --update-snapshots          write each snapshot's baseline from this run, in .mobster/snapshots/
+                              (with --check, only those checks'); the run doesn't fail on a changed
+                              screen
+  --shard I/N                 run the I-th of N even shards, such as 2/4
+  --keyless                   never call a model: checks with steps couldn't run
+
+replay:
+  --replay                    replay each check's recorded path with no model, and heal a step that
+                              changed (the default)
+  --fresh                     run every step with Smart and record the path again
+  --no-heal                   replay, and fail a check whose screen changed instead of healing it
+                              (strict CI)
+
+your XCTest targets:
+  --xctest                    also build your Xcode project once and run its XCTest and Swift
+                              Testing targets on a simulator beside the checks; failures join the
+                              report, the JUnit file, the history and the PR comment. Pass --scheme
+                              and --project to name them
+  --test-plan NAME            with --xctest: the test plan to run (default: the scheme's)
+  --only-testing ID           with --xctest: run only this Target, Target/Class or
+                              Target/Class/test; repeatable
+
+reports:
+  --junit FILE                also write the JUnit XML here
+  --html DIR                  also write the HTML report (with each run's report) here
+  --video                     record each run's screen, on a simulator or an iPhone, into the report
+  --history                   print each check's last 20 results (pass rate, duration trend, flake
+                              score) and run nothing
+  --json                      print JSON on stdout instead of the summary
+  --include KIND              with capsule export: copy selected raw junit, report or visual
+                              evidence locally; repeatable
+  --share                     also upload the report, sealed, to your team's hosted reports and
+                              print its link (Team plan: one of the team's Macs, or MOBSTER_TEAM_KEY
+                              in CI)
+  --share-days DAYS           how long a shared report is kept: 7, 30 or 90 (default: 30)
+  --assert-timeout S          how long expectations may wait for the screen to settle (default: 5)
+
+mobster test record:
+  --run RUN_ID                the finished task to make a check from
+  --name TEXT                 the check's name (default: the task)
+  -o PATH, --output PATH      with record: write the check here; with import: checks folder; with
+                              capsule export: new output directory
+
+mobster test import:
+  --bundle ID                 the app's bundle ID for flows with no appId, and over the appId of the
+                              others
+  --app PATH                  write this .app (built for the iOS Simulator) into each check
+  --skip-unsupported          drop commands Mobster can't run instead of turning each into a step
+                              marked TODO, and list each one; an assertion is never dropped
+  --dry-run                   say what would be written, and write nothing
+  --force                     replace checks that already exist
+
+mobster test repro:
+  --arg ARG                   a launch argument the crash needs, such as -MyFlag; repeatable
+                              (--bundle and --app name the app)
+  --link URL                  a link that opens the app on the crashing screen
+
+mobster test add:
+  --list                      list the recipes, one line each
+  --set KEY=VALUE             a recipe param; repeatable (`mobster test add --list` shows each
+                              recipe's)
+
+mobster test pr:
+  --base REF                  the branch the PR merges into (default: $GITHUB_BASE_REF, else
+                              origin/main)
+  --no-build                  don't build the app: test the builds the checks name
+  --scheme NAME               the Xcode scheme to build (default: the only one); also the scheme
+                              --xctest builds
+  --project PATH              the .xcodeproj or .xcworkspace to build (default: the one in the
+                              project); also the one --xctest builds
+  --drafts {run,write,off}    checks for changed screens no check covers: write and run them
+                              (default), only write them, or neither. Drafts never fail the PR
+  --no-gifs                   don't make a GIF of each failed check
+  --tested-with               end the PR comment with a "Tested with Mobster" line that links to
+                              mobster.dev
+  --comment FILE              also write the PR comment's Markdown here
+  --github {check,comment,off}
+                              put the verdict on the pull request with Mobster Checks, the GitHub
+                              App: a check run (check, the default), the check run and one comment
+                              kept up to date (comment), or nothing (off)
+
+mobster test nightly:
+  --at HH:MM                  with nightly on: the time to run every night, on a 24-hour clock, such
+                              as 02:00
+
+mobster test heal:
+  --accept                    keep the healed steps of these checks (default: all)
+  --reject                    keep failing: put the recorded steps back and fail when they change
+                              again
+
+mobster test minimize:
+  --bad-app PATH              with minimize: the exact saved bad simulator .app build
+  --control-app PATH          with minimize: the exact saved clean-control simulator .app build
+  --isolated                  with minimize: confirm the external fixture is isolated for every
+                              trial
+  --max-attempts N            with minimize: total bad and control suite dispatches, 5–8 (default:
+                              8)
+
+exit codes: 0 passed, 1 failed, 2 needs review, 3 couldn't run, 130 ctrl+c
+
+examples:
+  mobster test
+  mobster test --sim "iPhone 17 Pro" --sim "iPhone SE (3rd generation)" --parallel 2
+  mobster test --junit build/junit.xml --html build/mobster-report
+  mobster test record --run 3f9c2a1b7d0e --name paywall

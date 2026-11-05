@@ -1,0 +1,319 @@
+---
+title: "Mobster's MCP server"
+sidebarTitle: "MCP server"
+description: "How your coding agent checks a screen, drives a simulator or your iPhone, and hands Mobster a task through mobster mcp."
+icon: "/images/marks-ink/mcp.svg"
+keywords: ["mobster mcp", "mcp tools", "verify_start", "key-less loop", "phone_task", "run_tests", "allow-device", "allow-testflight"]
+---
+
+`mobster mcp` lets your coding agent check a screen it built, drive a simulator or your USB iPhone, and hand a whole task to Mobster's agent. This page shows how the tools fit together. [MCP tools](/reference/mcp-tools) lists each one with its arguments.
+
+| To | Use | Section |
+|---|---|---|
+| Check a screen and get passed or failed | `verify_start`, the phone tools, `verify_finish` | [The key-less loop](#the-key-less-loop) |
+| Have Mobster's agent run the steps | `verify_start` with `smart` | [The Smart loop](#the-smart-loop) |
+| Run the saved checks, or test a pull request | `run_tests` | [Run your checks](#run-your-checks) |
+| Compare two completed local suites | `compare_test_suites` | [Run your checks](#run-your-checks) |
+| Drive a simulator or iPhone outside a check | the phone tools with `device` | [Drive a device directly](#drive-a-device-directly) |
+| Read an app into rows, by code | `<app>_open`, `<app>_read`, `<app>_<thing>` | [App packs](#app-packs) |
+| Hand over a whole task | `phone_task`, `run_workflow` | [Hand a task to Mobster's agent](#hand-a-task-to-mobsters-agent) |
+
+## Set up your client
+
+[Add Mobster to your agent](/agents) has the steps for every client. This section says what the setup writes and which clients have run it.
+
+### Add it from the Mac app
+
+In Mobster for Mac, open Settings › Connectors › **Use Mobster from…** and click **Add** next to Claude Code or Codex. **Add** writes the same entry as `mobster mcp install`, with the agent inside the app as the command:
+
+```json
+{
+  "mcpServers": {
+    "mobster": {
+      "command": "/Applications/Mobster.app/Contents/MacOS/mobster-agent",
+      "args": ["mcp", "--env-file", "/Users/you/Library/Application Support/app.mobster.desktop/agent.env"]
+    }
+  }
+}
+```
+
+- Mobster adds `--env-file` when the app holds your model key, so [Smart](#the-smart-loop) uses the key the app uses. It never writes the key itself into a client's config.
+- Mobster adds Claude Code and Codex with their own `mcp add` commands when they're installed in `~/.local/bin`, `/opt/homebrew/bin` or `/usr/local/bin`, and edits other clients' files in place.
+- Running `mobster mcp install` again keeps each client's saved Mobster server options and environment, including `--allow-device` and `--allow-testflight`. An option you pass replaces that option's saved values for the named client: `--allow-device "Lab iPhone"` replaces its old phone list. Use `--reset-server-options` to start with fresh server options and environment. Mobster leaves a launch entry it cannot interpret untouched so you can review it first. The Mac app's **Add** keeps saved phone and TestFlight restrictions while selecting its private settings file when available.
+- Only the Mac app's window can add or remove it. The local API's `/api/integrations/clients` answers `403 app_only` to anything else, including `mobster serve` started in a terminal.
+- Mobster refuses while macOS runs the app from a temporary copy (opened from Downloads or the disk image). Move Mobster to Applications, open it from there and add it again.
+- **Remove** takes out only the `mobster` entry. **Another agent** shows the command to add by hand. Claude and ChatGPT connect through [Mobster Remote](/remote) with **Copy URL**.
+
+### Which clients are tested
+
+A client counts as tested only when Mobster's integration matrix has passing end-to-end tests of it reading through Mobster (in) and acting through Mobster (out). Only Claude Code and Codex meet this rule. On 7 Oct 2026, sessions of Claude Code, Codex, opencode and oh-my-pi called Mobster's read-only `status` tool. For every other client, a parser loaded the file Mobster wrote. Each format follows the client's own documentation as it read that day.
+
+| Client | Version | How Mobster is added | Checked how |
+|---|---|---|---|
+| Claude Code | 2.1.290 | `claude mcp add --scope user` | Tested: headless sessions called `status`; `claude mcp list` connected |
+| Codex | 0.161.0 | `codex mcp add` | Tested: `codex exec` called `status`; `codex mcp list --json` read the entry |
+| opencode | 1.17.18 | Edits `opencode.json` or `opencode.jsonc` | `opencode run` called `status`; `opencode mcp list` connected |
+| oh-my-pi (omp) | 18.2.8 | Edits `~/.omp/agent/mcp.json` | `omp -p` called `status`; valid against omp's schema |
+| Xcode's agents | 26.4 | Edits `ClaudeAgentConfig/.claude.json` and `codex/config.toml` in `~/Library/Developer/Xcode/CodingAssistant` | Parsed; paths from Apple's docs and Xcode 26.4's strings |
+| Cursor | 3.23 | Edits `~/.cursor/mcp.json` | Parsed; Cursor has no headless agent on the test Mac |
+| Claude Desktop | 2.9939 | Edits `claude_desktop_config.json` | Parsed |
+| VS Code | not installed | Edits the user `mcp.json` | Parsed with `jsonc-parser`, the parser VS Code uses |
+| Gemini CLI | not installed | Edits `~/.gemini/settings.json` | Valid against Gemini CLI's settings schema |
+| Windsurf, Copilot CLI, Zed, Goose, Amp, Cline | not installed | Edits each client's file ([the list](/agents#add-it-by-hand)) | Parsed; Goose's has every field Goose requires |
+
+## Your own agent
+
+Any SDK that speaks MCP over stdio connects to `mobster mcp`. On 7 Oct 2026, each of these listed the tools without a key:
+
+| SDK | Version | Run |
+|---|---|---|
+| Claude Agent SDK (Python) | `claude-agent-sdk` 0.2.164 | Listed the tools; an agent called `status` (\$0.04) |
+| OpenAI Agents SDK (Python) | `openai-agents` 0.23.1 | Listed the tools |
+| Vercel AI SDK (TypeScript) | `ai` 7.0.131, `@ai-sdk/mcp` 2.0.69 | Listed the tools |
+| LangChain | `langchain` 1.4.3, `langchain-mcp-adapters` 0.3.2 | Listed the tools |
+
+A check spans several calls on one server, from `verify_start` to `verify_finish`, so keep one MCP session open for the whole run. LangChain's `MultiServerMCPClient.get_tools()` starts a new server for each call, so load the tools from one `client.session()` instead.
+
+## The key-less loop
+
+Your agent drives the app with its own model. Mobster checks the declared assertions without calling a model or needing a key.
+
+<Steps>
+  <Step title="Build for the simulator">
+    The agent builds your scheme with `xcodebuild … -destination 'generic/platform=iOS Simulator' -derivedDataPath .mobster/build CODE_SIGNING_ALLOWED=NO build`.
+  </Step>
+  <Step title="Start">
+    `verify_start` takes the absolute `app_path`, the steps in plain English, and `expect`: the assertions Mobster checks. They're fixed now, before the agent touches the app. Mobster installs and launches the app and returns the first screen.
+  </Step>
+  <Step title="Drive">
+    The agent reads the screen and acts with `screen`, `tap`, `type_text`, `swipe`, `alert`, `open_url` and `launch_app`. Each action returns the new screen.
+  </Step>
+  <Step title="Finish">
+    `verify_finish` checks the declared expectations and returns the verdict and report path, with an overlay frame when available.
+  </Step>
+  <Step title="Fix and repeat">
+    On `failed`, the agent fixes the code, rebuilds and verifies again.
+  </Step>
+</Steps>
+
+The screen comes back as an outline that names each element the agent can act on, with a ref. A lesson question in your app, as `screen` returns it:
+
+```text
+Screen  com.example.yourapp  402×874 pt  keyboard: none  alert: none
+e1  button  "Close"                         id=lesson_close
+e2  text    "Fill in the blank"
+e3  text    "Je voudrais un ___ au lait, s’il vous plaît."
+e4  button  "livre"                         id=answer_livre
+e5  button  "café"                          id=answer_cafe
+e6  button  "chien"                         id=answer_chien
+e7  button  "Check"                         id=lesson_check  disabled
+(7 shown)
+```
+
+`tap` with `{"target": {"id": "answer_cafe"}}` answers `Tapped “café”; the screen changed.` A ref is good until the screen changes; after that, `tap` with an old ref says so, and the agent calls `screen` again. A `target` selector works in place of a ref when it matches exactly one element.
+
+A key-less check that a finished lesson raises the streak, as tool calls:
+
+```json
+{"tool": "verify_start", "arguments": {
+  "app_path": "/abs/path/YourApp/.mobster/build/Build/Products/Debug-iphonesimulator/YourApp.app",
+  "launch_args": ["-SkipOnboarding", "YES"], "launch_env": {"STREAK_DAYS": "3"},
+  "open_url": "yourapp://lesson/last",
+  "steps": ["Pick the word that fills the blank, then tap Check.", "Tap Continue until the lesson ends."],
+  "expect": [{"text": "Lesson complete"}, {"value": {"id": "streak_days"}, "equals": 4}]}}
+{"tool": "tap", "arguments": {"run_id": "…", "target": {"id": "answer_cafe"}}}
+{"tool": "tap", "arguments": {"run_id": "…", "target": {"id": "lesson_check"}}}
+{"tool": "tap", "arguments": {"run_id": "…", "target": {"id": "lesson_continue"}}}
+{"tool": "verify_finish", "arguments": {"run_id": "…"}}
+```
+
+The check starts with a 3-day streak and expects 4 days after the steps. When the app doesn't count the day, it fails with `value id=streak_days == 4 failed: was "3 days"`. The launch fields and the assertions are in [Checks](/checks).
+
+A real key-less session on a sample SwiftUI app's onboarding, from `scripts/mcp_smoke.py` on 28 Sep 2026, with the simulator already up. Each line is a tool call, its time from the client's side, and the first line it returned:
+
+```text
+verify_start   3.94 s  Run 20260928-151841-816e is ready. Drive the app with the refs below, then call verify_finish.
+tap            1.86 s  Tapped “Continue”; the screen changed.
+tap            2.13 s  Tapped “Continue”; the screen changed.
+tap            1.89 s  Tapped “Turn on reminders”; the screen didn't change.
+screen         0.46 s  Screen  com.example.yourapp  402×874 pt  keyboard: none  alert: "“YourApp” Would Like to Send You Notifications …"
+alert          2.13 s  Dismissed the alert "“YourApp” Would Like to Send You Notifications …".
+tap            4.13 s  Tapped “Get started”; the screen changed.
+wait_for       4.50 s  All 1 hold (4.5 s).
+verify_finish  3.07 s  Verdict: passed  Complete onboarding. Don't allow notifications.  (24.1 s)
+```
+
+Across four such sessions that day, the median action took 2.1–2.2 s.
+
+## The Smart loop
+
+With your Claude or OpenAI key, `verify_start` with `smart: true` has Mobster's agent run the steps itself, and your agent waits for the verdict. Mobster checks the declared assertions, as in a key-less run. No model grades the outcome.
+
+- `verify_start` then takes at least one step, `expect` is optional, `max_usd` defaults to 0.25 (at most 1.00) and `max_seconds` to 180 (at most 600).
+- A run that finishes within 40 seconds returns its result. A longer one returns `{"status": "running", "run_id": …}`, and the agent calls `wait`.
+- Smart runs on Claude Sonnet 5.5 when a Claude key is set, and on GPT-5.6 Sol with an OpenAI key alone. `MOBSTER_SMART_PROVIDER=openai` puts OpenAI first, and `MOBSTER_SMART_MODEL` picks another model. `mobster mcp --keyless` never offers Smart.
+- Smart sends each screen's image and accessibility text to Anthropic or OpenAI. Key-less and launch-only runs send nothing anywhere.
+
+Give the server your key in a file only you can read ([Turn on Mobster's agent](/agents#turn-on-mobsters-agent)). `status` then names the model and whose key pays:
+
+```text
+Mobster 0.4.0. Smart: on (claude-sonnet-5-5, on the user's Anthropic key).
+```
+
+## Drive a device directly
+
+The phone tools (`screen`, `tap`, `type_text`, `swipe`, `hold_point`, `flick_point`, `drag_point`, `alert`, `open_url`, `wait_for`, `launch_app`, `home` and `stop`) take `run_id` or `device`. With `device` and no `run_id`, they drive that device outside a check (with neither, they drive [your own simulator](#several-agents-on-one-mac)): a USB iPhone set up in the Mac app, a Mobster simulator, or a WebDriverAgent address, as `list_devices` names them.
+
+- Mobster takes the device's lock on the first call, so no other Mobster app or command drives it meanwhile. `stop` with the `device`, or 90 idle seconds, releases it.
+- One device can be driven directly beside the one open check, and each device can be open once.
+- A direct session has no verdict: `verify_finish` and `save_check` refuse it.
+- A real iPhone's frames go to `runs/` in Mobster's data folder unless `--out` or `$MOBSTER_RUNS_DIR` names one, so your phone's screens never land in the repository.
+
+`verify_start` takes `device` too. On a USB iPhone, it runs an app already installed there (`bundle_id`, not `app_path`) with `reset` `none`, because Mobster never clears an app's data on a phone. `mobster mcp --device` sets the default device for both.
+
+## Several agents on one Mac
+
+Each MCP client runs its own `mobster mcp`, and each server leases its own simulator. A phone tool called with no `run_id` and no `device` leases a Mobster simulator for that server on the first call, and every later call with no device uses it. You don't name a UDID.
+
+- The simulator is yours until the client disconnects, you call `stop` with its `device`, or it sits idle for 30 minutes. `list_devices` marks it `yours`.
+- A second client on the same Mac gets a second simulator, up to `MOBSTER_MAX_SIMS` (default 4) and the Mac's free memory. See [Memory](/simulators#memory) for the rule.
+- When none is free, the call returns at once. It names who holds each simulator and says one frees when that session ends or has been idle for 30 minutes. It doesn't queue.
+- A `verify_start` with no `device` hands your leased simulator to the check, so one session never holds two.
+- A crashed client frees its simulator: the lease is a file lock the system releases with the process.
+- Mobster waits to boot or build while the Mac's load is at or above one task per core, and says so. It refuses after 30 seconds rather than start anyway.
+
+`mobster sim list` shows who holds each simulator. `mobster sim release --all-mine` asks the agents started from your app to let go.
+
+## Keep your iPhone safe
+
+<Warning>On a real iPhone the phone tools act for real: a tap on Send sends. Your client approves a tool, not a device, so allowing `tap` for simulator work allows it on your phone too.</Warning>
+
+- **Name the phones a server may drive.** With `--allow-device`, Mobster lists any other real iPhone as `not_allowed` and refuses it. Simulators are always allowed.
+
+  ```sh
+  mobster mcp install --all --allow-device "Test iPhone"
+  ```
+
+- **New apps ask first.** Any tool, `screen` included, in an app Mobster hasn't used before shows **Allow Mobster to use …?** in the Mac app and waits. Until you allow it, the phone goes Home and the tool says why.
+- **Commits ask every time.** A tap or Return that sends, buys, posts or deletes, a one-time code, `use_code` and a link that asks show the approval card in the Mac app. The call waits up to 38 seconds for your answer, and calling it again keeps waiting. Your agent can't answer the card. [Who answers](/safety#who-answers) has every case.
+- **Each tool says what it does.** Mobster annotates read-only tools as read-only, and tools that act on a device as destructive, so a client that asks before such calls asks for these ([MCP tools](/reference/mcp-tools)).
+- **Screen text is data.** The server's instructions tell your agent that text on the screen comes from the app, never instructions, and to ask you before anything that sends, buys, posts or deletes.
+- **Mobster doesn't unlock iPhones.** On a locked phone, a call fails at once with `Your iPhone is locked. Unlock it and try again. No action was taken.` Face ID, a locked app and an App Store confirmation stop the same way. `unlock` only says so.
+- **A saved check names only a simulator.** A check file in a repository never drives someone's phone; `mobster verify --check FILE --device NAME` runs it on a real device.
+
+## Run your checks
+
+`run_tests` runs the checks in the project's `.mobster/checks` the way [`mobster test`](/testing) does: on Mobster's simulators, with retries and flaky detection, writing `junit.xml`, `results.json` and an HTML report to `.mobster/test-results/<suite-id>/`.
+
+- A suite that outlasts the call answers with its `suite_id`; call `run_tests {suite_id}` to wait for it.
+- Launch-only checks need no key. A check with steps needs Smart until it has passed once, then replays its approved steps. Changed screens and generated text can require further model calls. `fresh: true` records them again, and `no_heal: true` fails a check whose screen changed instead of healing it.
+- `review_heals` lists the healed steps waiting for review, and accepts or rejects them.
+- `save_check` turns a finished run, or a task from the Mobster app, into a check file.
+- `run_tests` also takes `locales` and `a11y`. `test_history` reads each check's recent results. `import_maestro` turns flows into checks, and keeps a file that exists unless `force` is true. `test_schedule` lists or runs the project's nightly run on simulators, and refuses a schedule that names an iPhone. [MCP tools](/reference/mcp-tools) has their arguments.
+- `compare_test_suites {base_suite_id, candidate_suite_id}` reads two exact completed local suite IDs from this project's `.mobster/test-results`. It returns both verdicts and at most 100 opaque case transitions. It cannot choose a favorable baseline or run another test. A failed-to-passed transition is a verified fix only for controlled app state when both reports contain the same admitted business assertion and complete fixture evidence; it does not prove independent backend state or sole causation. This local tool adds no remote test access.
+
+`run_tests` with `pr: true` tests what the branch changed ([Test a pull request](/testing#test-a-pull-request)). It picks the checks that cover the changed screens, drafts one for each changed screen none covers, builds the app and runs them. It runs on a real iPhone only when the server's `--allow-device` names it, and on a TestFlight build only when `--allow-testflight` names the app too:
+
+```sh
+mobster mcp install claude-code --allow-device "Test iPhone" --allow-testflight com.example.yourapp
+```
+
+## App packs
+
+Mobster for Mac knows Instagram, TikTok, Messages, Settings, Calendar, Notes, Maps, Photos, Safari, X, YouTube, Threads, LinkedIn and Reddit ([What Mobster knows about your apps](/app-packs)). For each, `<app>_open` goes to a screen by code, such as `instagram_open` with `dms`, and `<app>_read` reads it into rows, with no taps from your agent.
+
+A pack never likes, follows, comments, sends or posts. For an act, `<app>_open` names the control, and your agent's own `tap` on it asks you in the Mac app. Packs follow the same rules as `tap`: on a real iPhone the app must be one you let outside agents use, each tap passes your rules in Settings › Safety, and opening a DM thread marks it seen.
+
+## App tools
+
+Each app pack also gives one tool per thing it reads, named `<app>_<thing>`: `instagram_dms`, `instagram_reels`, `instagram_profile`. A call opens that screen on the iPhone and reads it into rows by code, with no model call and no screenshot:
+
+```json
+{"name": "instagram_profile", "arguments": {"arg": "nasa"}}
+```
+
+It returns the rows as text fenced as phone data and as `structuredContent`: `{app, reader, title, n, columns, rows, stopped, screen, read_at, phone, took_ms}`. `n` asks for up to 40 rows. `phone` names the iPhone, or `profile` names one from Settings › Profiles, such as `"@getmobster on Instagram"`.
+
+- For an app with no pack, `read_screen` reads the screen in front into the fields you name (`{"app": "com.example.shop", "fields": "title,price"}`), with one small model call per screen on your key.
+- Each tool is also `GET /v1/<app>/<thing>` on the [App API](/app-api) (`mobster api serve`), with the same parameters and answer.
+- The app tools only read. They still tap and swipe to reach their screen, so the rules above apply. Mobster reads one thing at a time per iPhone; a second read on a busy phone answers that it's busy.
+
+## Hand a task to Mobster's agent
+
+`phone_task` gives the whole task to Mobster's own agent, in a conversation, instead of driving step by step. It needs Mobster for Mac or `mobster serve` running on this Mac, and through the Mac app, an active plan or free trial ([What needs a plan](/account#what-needs-a-plan)).
+
+- It answers within `wait_seconds` with the task's status, and `phone_task_status` follows it from there. If Mobster accepts the task but its status read fails, the response keeps its `thread_id` and `run_id` or `group_id` with `status_unavailable`. Use `phone_task_status` with that ID; do not start the task again. `waiting_for_phone` means you have to unlock, plug in or bring back the iPhone.
+- When Mobster doesn't confirm the start, because its reply was lost, it timed out or it answered with a server error, the error says "Mobster didn't confirm this task, so whether it started is unknown." Check the conversation in the Mobster app before you send the task again. A server error that says `"started": false` is different: Mobster recorded and sent nothing, so the error is Mobster's own sentence, such as "Mobster's helper on your iPhone is restarting. No action was taken. Try again in a moment."
+- When the call has too little of its 44 seconds left to send the task and read it once, `phone_task` sends nothing and says "phone_task ran out of time before it sent the task, so nothing started." `run_workflow` and each `workflow_*` tool do the same, and name the workflow run.
+- A later `phone_task` with the same `thread_id` sees what earlier tasks found ("now reply to her").
+- `profile` (from `list_profiles`) runs the task on the iPhone that profile is signed in on, and Mobster confirms the profile on screen before it posts or sends. `phones` runs the same task on 2 to 100 devices as one. `profiles` (`"all"`, or a list from `list_profiles`) runs the task as each of those profiles at once, each on its own iPhone, as one task with a result for each profile; profiles that share a phone go one after another, and one that fails doesn't stop the others. Leave `profile`, `device` and `phones` out with it, and it can't be used with `--allow-device`.
+- When the phone is in use, the task waits in line with status `queued`, and nothing happens on the phone until it starts. `queue: false` fails at once instead ([Sharing a phone](/devices#sharing-a-phone)).
+- The task asks you before it sends, buys, posts or deletes, in the Mac app, and your agent can never answer. It uses only the apps you let outside agents use (Settings › Safety), and nothing you told Mobster to remember ([Conversations](/conversations#mcp-phone_task)).
+- A task with the same words as one that finished repeats its learned steps, and the model runs only where code can't ([Learned steps from any task](/schedules#learned-steps-from-any-task)). `MOBSTER_PROGRAMS=off` turns this off.
+
+The server you add from the Mac app is the agent inside the app. Without a plan, every tool that drives a real iPhone answers with the same sentence and does nothing. `status`, `list_devices`, the other read-only tools, `stop` and everything on a simulator keep working ([The agent inside the app](/account#the-agent-inside-the-app)).
+
+### Run a saved workflow
+
+`list_workflows` lists your saved [workflows](/schedules). `run_workflow` runs one with a value for each blank, through the Mac app or `mobster serve`, with the same rules as `phone_task`:
+
+```json
+{"name": "run_workflow", "arguments": {"workflow": "Reels digest", "values": {"topic": "basketball"}}}
+```
+
+A workflow of several steps ([Workflow builder](/workflows#the-graph)) answers with its `status`, its `result` and each step's state. A workflow you turn into a tool (**Run from other apps**) appears as its own tool, `workflow_<its name>`, with its blanks as typed inputs, from your agent's next session.
+
+If a graph is still running or its status read fails after Mobster accepts it, call `graph_status` with its `workflow_id` and `batch_id`. That tool reads the accepted graph without starting it again. For a one-task workflow, use `phone_task_status` with its `run_id`. A start Mobster doesn't confirm says "Mobster didn't confirm this workflow run, so whether it started is unknown." Check the Mobster app before you run it again. An MCP server started with `--allow-device` refuses both `run_workflow` and published `workflow_*` starts: a saved workflow can route a graph step to another phone, and this API cannot constrain every step to the server's device list. `list_workflows` and `graph_status` remain read-only.
+
+## More phone tools
+
+Each works on a device driven directly (`device`) or in a check (`run_id`). [MCP tools](/reference/mcp-tools) has their arguments.
+
+| Tool | What it does | What it never does |
+|---|---|---|
+| [`use_code`](/reference/mcp-tools#use_code) | Types the sign-in code the phone received (from the keyboard's suggestion, Notification Center or Messages, at most 10 minutes old) into the code field | Show your agent the code; type into anything but a code field |
+| [`read_notifications`](/reference/mcp-tools#read_notifications) | Reads up to 30 rows from Notification Center, codes masked | Tap a notification; show apps kept from outside agents |
+| [`set_clipboard`](/reference/mcp-tools#set_clipboard) | Puts up to 64 KB of text, or a picture, on the clipboard | Read the clipboard: no tool does |
+| [`open_url`](/reference/mcp-tools#open_url) | Opens a link or deep link in one call (`maps://?q=coffee`, `App-prefs:WIFI`); with `app` and `query`, lists the links Mobster keeps | Open `tel:`, `sms:`, `mailto:` or another app's link on a real iPhone without asking you ([Links](/safety#links)) |
+| [`alert`](/reference/mcp-tools#alert) | Accepts or dismisses an iOS alert, by button name | Grant a privacy permission on a real iPhone |
+| [`hold_point`](/reference/mcp-tools#hold_point), [`flick_point`](/reference/mcp-tools#flick_point), [`drag_point`](/reference/mcp-tools#drag_point) | One gesture at a point on the last screenshot, on a direct session | Repeat a gesture whose answer was lost; cross a switch, a field or a send control |
+| [`press_button`](/reference/mcp-tools#press_button), [`set_display`](/reference/mcp-tools#set_display) | Home, volume and lock; light or dark, and orientation | Unlock the phone after `lock` |
+| [`install_app`](/reference/mcp-tools#install_app) | Installs a signed `.app` or `.ipa` from an absolute path | Install from a link |
+| [`expo_preview`](/reference/mcp-tools#expo_preview), [`expo_reload`](/reference/mcp-tools#expo_reload) | Opens and reloads an Expo app from Metro. When Metro can't bundle it, the error has Metro's text, the file and the line ([Expo and React Native](/dev/expo)) | Open a React Native app without Expo |
+| [`device_status`](/reference/mcp-tools#device_status), [`listen`](/reference/mcp-tools#listen), [`ios_docs`](/reference/mcp-tools#ios_docs) | Battery and heat; what the iPhone plays, as text ([Watch and hear](/watch)); how iOS itself works | Tap anything |
+
+`mobster mcp --allow-files` adds `list_files`, `put_file`, `get_file` and `send_media`, and `--allow-photos` adds `pull_media` ([Files](/files#mcp)). Without the flags they aren't listed.
+
+## Timeouts and the first run
+
+Every tool call returns within 45 seconds, and `wait` within 50, so no client's tool timeout cuts one off. Longer work carries on under a `run_id`:
+
+- The first run on a Mac creates the simulator, boots it and builds WebDriverAgent. `verify_start` returns `status: "preparing"`, and the agent calls `wait`. `mobster sim doctor --fix` does this ahead of time.
+- While a call waits, the server sends a progress notification every 5 seconds to clients that ask for them, which keeps Claude Code's idle timer from firing.
+- One run is open at a time per server. The server stops a key-less run idle for 15 minutes, and any run ends after 60 minutes. When the client disconnects, the server stops its open run and exits.
+
+## After you update Mobster
+
+A server your client started before an update keeps running the old files. A failing tool then says `Mobster was updated after this server started. Reconnect it: run /mcp in Claude Code, or restart your agent app.` Reconnect, and the client starts the new server.
+
+## Where files go
+
+Runs go to `--out`, else `$MOBSTER_RUNS_DIR`, else `.mobster/runs` in the folder your client starts the server in. When that folder is `/` or your home folder, runs go to `runs/` in Mobster's data folder. Saved checks go to `checks/` beside the runs folder. Each run folder is readable by you only and holds `report.html`, `result.json`, the frames and the run's check ([The run folder](/checks#the-run-folder)).
+
+Before a direct action, Mobster saves an `action_started` record in the run's `actions.jsonl`, and refuses the action if it can't. Mobster records an action that fails or times out as `unknown`. Don't repeat it: look at the device and the journal first. `install_app` past the call timeout may still finish in the background.
+
+`app_path` must be absolute, because clients start servers in different folders. [`mobster mcp`](/reference/cli#mobster-mcp) lists the server's flags.
+
+## Next
+
+<CardGroup cols={3}>
+  <Card title="MCP tools" icon="wrench" href="/reference/mcp-tools">
+    Every tool, its arguments, and whether it acts on a device.
+  </Card>
+  <Card title="Checks" icon="list-checks" href="/checks">
+    Assertions, selectors and the run folder.
+  </Card>
+  <Card title="Connectors" icon="plug" href="/connectors">
+    Let Mobster's own agent use other MCP servers.
+  </Card>
+</CardGroup>

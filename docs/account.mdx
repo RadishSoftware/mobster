@@ -1,0 +1,328 @@
+---
+title: "Your Mobster account"
+sidebarTitle: "Your account"
+description: "Sign in to Mobster for Mac with Apple, Google, GitHub or an email code. Your plan lives in your account: buy in the app, and run it on one Mac at a time, moved to another Mac in one click."
+icon: "user-round"
+keywords: ["account", "sign in", "sign in with apple", "sign in with google", "sign in with github", "email code", "magic link", "no password", "plan", "free trial", "trial", "lifetime", "monthly", "yearly", "subscription", "billing", "invoices", "receipts", "macs", "move to another mac", "one mac at a time", "remove a mac", "sign out", "offline", "delete account"]
+---
+
+Mobster for Mac signs in to a Mobster account. Your plan lives in the account, so another Mac needs only a sign-in, and moving Mobster there is one click.
+
+An account grants nothing on your iPhone by itself. It says who you are, what you paid for and which Macs are yours. Every approval and every rule in [Approvals and safety](/safety) holds whoever is signed in.
+
+## Sign in
+
+The welcome screen says "Welcome to Mobster" and "Test your app and manage your social accounts on your iPhone. Sign in to start."
+
+<Steps>
+  <Step title="Choose how">
+    Choose **Continue with Apple**, **Continue with Google**, **Continue with GitHub** or **Continue with email**. For email, enter your address, then choose **Continue with email** to receive a code.
+  </Step>
+  <Step title="Apple, Google or GitHub: finish in your browser">
+    Finish signing in on Apple's, Google's or GitHub's page in your browser. While you sign in, the button stays pressed. For GitHub, Mobster says "Finish signing in with GitHub in your browser. You'll return to Mobster automatically." If you close the tab, choose **Open the page again**. Choose **Cancel** to stop signing in.
+  </Step>
+  <Step title="Email: enter the code">
+    Mobster says "Check your email". An email from Mobster (hello@mail.mobster.dev) brings a 6-digit code and a **Sign in to Mobster** button. Type or paste the code; six digits sign in by themselves, and on a Mac, Safari and Mail can fill it in for you. Or open the email on this Mac and choose the button: your browser hands the sign-in back to Mobster. The code and the button work once, for 10 minutes, and a new email replaces the last one. **Send a new code** sends another, at most one a minute. **Use another way** goes back to the buttons.
+  </Step>
+  <Step title="Back in Mobster">
+    After a browser sign-in, the browser says "You're signed in" and "Go back to Mobster. You can close this tab." Mobster comes forward by itself and says "Checking your account" for a moment. A new account goes on to Setup. An account that had a plan before, on a Mac that was set up before, gets the plan sheet over the app.
+  </Step>
+</Steps>
+
+Under the buttons, "By continuing, you agree to the Terms and the Privacy Policy." links to [mobster.dev/terms](https://mobster.dev/terms) and [mobster.dev/privacy](https://mobster.dev/privacy). It covers every way to sign in. A new address gets an account when its code is entered, and Mobster says the same thing whether or not an address already has one.
+
+### Product updates and the changelog
+
+Under the buttons, **Send me product updates and the changelog** is a box you can tick. It starts unticked, and signing in works the same either way. Ticked, your account's email gets product updates and the changelog as soon as you're signed in, with no email to confirm: Apple, Google or GitHub already confirmed the address, or your code did. Mobster keeps a record of the choice: when, from where, and the words you agreed to ([Privacy](https://mobster.dev/privacy)).
+
+Turn it on or off any time in Settings › Account › **Product updates**. Every update has an unsubscribe link, and your mail app can show a one-click unsubscribe. Emails about your account, such as receipts and team invites, come either way.
+
+### No password
+
+There's no password to make, keep or leak. Apple, Google and GitHub sign you in with an account you already have, in your browser, so Mobster never sees their passwords. With email, the code proves the inbox is yours.
+
+**What each way gives Mobster:**
+
+| Way | What your Mobster account keeps |
+|---|---|
+| Apple | The email Apple gives Mobster (with Hide My Email, a private relay address) and Apple's id for you |
+| Google | Your Google email, Google's id for you, and the name and profile photo address on your Google account |
+| GitHub | Your primary verified email, your GitHub username and id, and the name and avatar address on your profile. GitHub asks you to allow `read:user` and `user:email`: your profile and your email addresses, nothing in your repositories |
+| Email code | The address |
+
+Mobster uses the email and the ids to sign you in, and doesn't use the names or photos. [Privacy](/privacy) has the rest.
+
+**One account per email.** Google, GitHub and an email code that share a verified address sign in to the same account, with the same plan and Macs. Each provider says which of its addresses it verified, and GitHub can match any of yours. An address nobody confirmed never joins an account.
+
+**Hide My Email works.** With Apple, you can share a private relay address instead of your email. Mobster works the same with it, and its sign-in code reaches the relay address too. A relay address is its own address, so it's its own account: sign in the same way on every Mac. Stripe's receipts need an address that accepts their mail, so Checkout asks you to type one when you buy.
+
+Sign in the same way on every Mac, so your plan can move between them.
+
+## Plans
+
+A new account sets up its iPhone before it picks a plan, so the free trial doesn't run while Xcode downloads or the helper installs. Setup works without a plan. Tasks don't: until you have one, Mobster's agent answers only Setup's requests from the app, and refuses a task with "Choose a plan or start your free trial in Mobster to run tasks. Setup works without one."
+
+### What needs a plan
+
+Every task the Mac app's agent runs needs an active plan or free trial, wherever it starts:
+
+- the app's task box, a conversation, a workflow you run and a schedule that fires;
+- [Mobster Remote](/remote);
+- the local API (`POST /api/runs`, `/v1/runs`), with any token, including the one in the token file beside Mobster's data;
+- `mobster chat` and your coding agent's `phone_task` and `run_workflow` while they talk to the app.
+
+The agent checks the plan itself before each task. It reads the signed plan the app keeps for this Mac and account, verifies the signature with Mobster's public key built into the app, and checks the Mac, the account and the date, offline. Without an active plan or free trial it starts nothing. It answers `403 plan_required` with one sentence that says what happened and what to do. When the 7-day free trial has ended, it is "Your 7-day free trial on this Mac has ended, so Mobster did nothing: choose a plan at mobster.dev/pricing, then ask again." When the Mac has no plan at all, or a paid plan has ended, it is "This Mac has no active Mobster plan or free trial, so Mobster did nothing: open Mobster to start your free trial or sign in, or choose a plan at mobster.dev/pricing, then ask again." On a Mac whose seat moved to another of your Macs, it names that Mac: "Mobster moved to Studio, so it did nothing on this Mac. Mobster runs on one Mac at a time: to use it here, open Mobster on this Mac and choose Move it back, then ask again." If the agent can't read or verify the plan, it gives the second sentence too. A scheduled run at that time is skipped and shows **Couldn't start**.
+
+The offline grace is 7 days after the last check for every plan, and a plan's own end comes first when it's sooner. A plan that ends while a task runs doesn't stop that task.
+
+### The agent inside the app
+
+Mobster's agent ships inside the app, at `/Applications/Mobster.app/Contents/MacOS/mobster-agent`. It checks the same plan when you run it yourself, from a terminal or from your coding agent's MCP settings:
+
+| Without an active plan or free trial | What happens |
+|---|---|
+| `mobster-agent run`, and tasks in `serve`, the terminal UI and `chat` | refused with the message above; `run` exits `3` |
+| `mobster-agent ci run`, `verify` and `test` with `--device` naming a real iPhone, and the `phone` verbs that change the phone (`open`, `button`, `install`, `clipboard set`, `file put`, `photos add`) | the same sentences as above, exit `3` |
+| MCP tools that drive a real iPhone or run a task (`tap`, `type_text`, `swipe`, `open_url`, `launch_app`, `phone_task`, `run_workflow` and the rest, and `verify_start` with a phone as `device`) | the same sentences, as the tool's error |
+| `setup`, `login`, `doctor`, `devices`, `screen`, `history`, `sim`, `wifi`, the `phone` verbs that only read, the scripted demo, `verify` and `test` on a simulator, MCP's read-only tools (`status`, `list_devices`, `screen`, `device_status` and the rest) and `stop`, and MCP's tools that stay on a simulator (`verify_start` without a phone, the phone tools on a simulator, `run_tests`) | they work |
+
+`verify` and `test` reach a real iPhone only through `--device`. Without it they stay on a simulator and need no plan, and so does `test --sim` or a `--device` that names a simulator. With `--device`, the agent looks the name up in `mobster devices` before the run starts. It asks for the plan when the name is a real iPhone, when no device or two devices have that name, and when `--testflight` is given or the lookup fails.
+
+It reads the plan from the app's data folder, whatever `--data-dir` names, so the app must be signed in on this Mac. Copying an `account.json` from elsewhere doesn't help: the plan is signed for one Mac and one account.
+
+Mobster's engine and research are [open source under MIT](https://github.com/RadishSoftware/mobster): you can read them, and run the engine from a source checkout as research, with no account. Mobster for Mac and the agent inside it are the paid product.
+
+When your iPhone is ready, the plan sheet opens over your app. It says "Your iPhone is ready" with your first job under it. If this account and this Mac haven't had a [free trial](#the-free-trial), it says "Start your 7 days free to run your first job. No card needed." and offers the trial. Otherwise it says "Choose a plan to run your first job." and offers Monthly, Yearly and Lifetime, with Yearly chosen. **See plans now**, at the foot of Setup, opens the sheet before the iPhone is ready.
+
+An account whose plan or trial ended, or a Mac that was set up before, gets the sheet right after sign-in: "Try Mobster free for 7 days" when the trial is on offer, otherwise "Choose a plan".
+
+| Plan | Price | On the sheet |
+|---|---|---|
+| Monthly | \$12 a month | "Cancel anytime" |
+| Yearly | \$99 a year | "\$8.25/mo, paid yearly" |
+| Lifetime | \$149 once | "Pay once". Under the button: "Full refund within 14 days" |
+
+Every phone is included in every plan. Prices are in US dollars, and Mobster shows the price Checkout charges at that moment. [Pricing and plans](/pricing) compares them with the CLI.
+
+<Steps>
+  <Step title="Choose a plan">
+    Pick **Monthly**, **Yearly** or **Lifetime** on the sheet. The button reads **Subscribe for \$12 a month**, **Subscribe for \$99 a year** or **Buy for \$149**. Checkout opens in your browser, and Stripe handles the payment.
+  </Step>
+  <Step title="Pay in your browser">
+    The sheet says "Mobster opens automatically when your payment goes through." If you closed the tab, **Open checkout again** opens it. **Choose another plan** goes back.
+  </Step>
+  <Step title="Back in Mobster">
+    The browser says "You're all set" and "Mobster on your Mac opens by itself. You can close this tab." The sheet goes, and Mobster is ready to use.
+  </Step>
+</Steps>
+
+Your plan activates after Mobster confirms the payment. Signed in with the wrong account? "Signed in as sam@example.com" at the foot of the sheet has **Use another account**, which signs you out. After 10 minutes without a confirmation, Mobster adds "Your payment can take a minute. If Mobster doesn't open, write to support@radish.software."
+
+When a plan or a trial ends, the same sheet comes back over your app, and says why. Your conversations and settings stay where they are.
+
+## The free trial
+
+You get 7 days free on your own iPhone, once per person: one trial per account, per Mac, per iPhone and per sign-in. It needs no card, and nothing is charged when it ends. Mobster for Mac starts it, and a new account sees it only once its iPhone is ready, so the 7 days don't run while Xcode downloads. Every phone is included in the trial, as in every plan.
+
+<Steps>
+  <Step title="Start the trial">
+    The sheet says "Try Mobster free for 7 days" and "Everything Mobster does, on your own iPhone. No card, and nothing to cancel." Under **Start 7 days free** it says "Nothing is charged. On Oct 21, choose \$12 a month, \$99 a year or \$149 once." The button starts the trial in Mobster, with no browser and no checkout. **Buy a plan now** shows the plans instead, and **Start 7 days free instead** goes back.
+  </Step>
+  <Step title="During the trial">
+    Your email at the foot of the sidebar opens a menu that says "Free trial, 5 days left". Its **Billing** opens Settings › Billing: "Free trial until Oct 21. Then choose Monthly \$12, Yearly \$99 or Lifetime \$149. Nothing is charged until you choose." Before checkout starts, the available plans appear below that line: "Your plan starts the day you pay. Your free trial ends then."
+  </Step>
+  <Step title="The day before it ends">
+    A note at the top of the window says "Your free trial ends tomorrow" and "Choose a plan to keep using Mobster after that. Nothing is charged until you choose.", with **Choose a plan**, which opens Settings › Billing.
+  </Step>
+</Steps>
+
+- **At the end.** Nothing is charged. The sheet says "Your trial has ended" and "Choose a plan to keep using Mobster. Your conversations and settings are still here.", with the available plans.
+- **A plan during the trial.** Pay for any plan from Settings › Billing, where the plans are under the trial's line, and it starts that day. The trial's remaining free days end then. Lifetime keeps its full refund within 14 days of buying.
+- **A second trial.** An account, a Mac, an iPhone or a sign-in that had a trial gets the plans without it, and the sheet says which, such as "This iPhone has had its free trial. Choose a plan to keep going." Plans are never affected.
+
+### What counts as one trial
+
+When you start the trial, Mobster for Mac sends Mobster's account service these, and uses them for nothing else:
+
+| What | Sent as |
+|---|---|
+| The Mac's hardware id (its IOPlatformUUID) and its serial number | A one-way hash of each, made on your Mac. The raw values never leave it |
+| The UDID of each iPhone on the cable or ready in Setup | A one-way hash of each, made on your Mac |
+| Whether macOS runs in a virtual machine, and the Mac's model, such as "Mac15,3" | As they are. The model names a kind of Mac, not your Mac |
+| A one-time DeviceCheck token from Apple | Apple's token, which only Apple can read. With it, the account service can ask Apple whether this Mac has had a trial, and tell Apple when one starts. Apple keeps that as one bit for this Mac, for Mobster only |
+
+The account service hashes each value again with a secret key of its own, and keeps only that. It also keeps a keyed hash of each of your sign-ins' id and email, at Apple, Google or GitHub, or the address you signed in with by email. The database holds no serial number, UDID or email for the trial; a hash without the key can't be turned back into one. The plan check every 10 minutes sends the same hashes, without the DeviceCheck token, so the sheet knows whether to offer the trial.
+
+| When | Mobster says |
+|---|---|
+| This Mac, by its hardware id, its serial number or Apple's DeviceCheck, had a trial on any account | "This Mac has had its free trial. Choose a plan to keep going." |
+| One of its iPhones had a trial on any Mac | "This iPhone has had its free trial. Choose a plan to keep going." |
+| Your sign-in had a trial on an account you deleted, or with another email (Hide My Email, a Gmail alias, or the same address by GitHub or by email) | "This sign-in has had its free trial on another Mobster account. Choose a plan to keep going." |
+| macOS runs in a virtual machine | "The free trial needs a real Mac, and this one is a virtual machine. Choose a plan to use Mobster here." |
+| No iPhone is ready yet | "The free trial starts when your iPhone is ready. Connect it with a cable and finish Setup, then start the trial." |
+| An older Mobster for Mac | "This version of Mobster can't start the free trial. Update Mobster, then start it again." |
+
+Plans don't use any of this: a plan you buy works on the Mac signed in to your account, with any iPhone. A used iPhone or Mac that had a trial with its last owner doesn't get another; write to support@radish.software if that's you.
+
+## One Mac at a time
+
+Mobster runs on one Mac at a time; move it to another Mac in one click. Your plan and your free trial belong to your account, not to a Mac, so they move with it, and a trial keeps its end date. Two Macs that run Mobster at the same time, such as two phone stations, need a plan each.
+
+**On another Mac.** Sign in the same way. Mobster says "Mobster is active on Studio" and "Mobster runs on one Mac at a time. Use it on this Mac instead?", with that Mac and when it was last used, such as "Last used today". **Use on this Mac** moves it, and this Mac opens with your plan. Signing in alone never moves it.
+
+**On the Mac it left.** Mobster stops there within 10 minutes while that Mac is awake and online, or at once when Mobster Remote is on there. A task already running finishes, and no new task or schedule starts. That Mac stays signed in and says "Mobster moved to Studio" and "Mobster runs on one Mac at a time. Move it back to use it on this Mac.", with **Move it back**. Moving turns off Mobster Remote on the Mac it leaves: apps connected through it connect again once you move back.
+
+**Moving again within 15 minutes.** Mobster moves at most once every 15 minutes, so two people can't pass one sign-in back and forth. Inside those 15 minutes, Mobster says "Mobster moved less than 15 minutes ago. You can move it at 3:45 PM." and the button waits until then. Going from your laptop to your desktop moves at once; only moving straight back waits.
+
+**Freeing this Mac without moving.** Sign out in Settings › Account, or remove the Mac at mobster.dev/account. A removed Mac says "This Mac was removed from your account. Sign in to use it again." You never have to write to us to move Mobster.
+
+### A team's Mac
+
+The Team plan isn't open yet ([Team plan](/team)). When it opens, a Mac can be one of your team's Macs instead of one person's. An Owner or Admin adds it at that Mac, in Settings › Team. From then on:
+
+- It runs on the team's plan, with or without anyone signed in, and it isn't anyone's one Mac. If it was yours, your plan is free to run on another of your Macs.
+- It checks the team's plan every 10 minutes, as your own Mac checks yours, and keeps working offline until 7 days after its last check, or until a trial ends.
+- Signing out of your account on it, or signing in with another, doesn't take it out of the team. Only an Admin can take it out.
+- Once the team removes it, it stops running on the team's plan at its next check. If you're signed in there, it goes back to your own plan, if you have one.
+- Without an active Team plan, a task on it starts nothing and says "Radish's Team plan isn't active on this Mac, so Mobster did nothing. An Owner can choose a plan in your account, then ask again."
+
+The team's plan covers the Mac app and what talks to it: tasks, conversations, workflows, schedules, Remote and the local API. `mobster-agent` run from a terminal, and its MCP tools that act, need a plan of your own.
+
+#### Adding a Mac to your team
+
+1. On the Mac, sign in as an Owner or Admin of the team, then open Settings › Team and choose **Make this Mac one of Radish's Macs**. If your team has used the Macs its people bring, Mobster shows the price of one more first, such as "One more Mac is \$12 a month", and adds the Mac only once you choose **Add this Mac**. A trial that has all its Macs can't add one: choose a plan first.
+2. Mobster shows the team's Owners and their key fingerprints, such as "Sam, sam@radish.software, Key 4F2A 9C10". Compare them with what an Owner sees in the console under Settings › Keys. If the Owner hasn't set up the console yet, Settings › Team says so, and Mobster asks for the list every minute until it can show it.
+3. Choose **They match: trust them** only when every key matches. This Mac then trusts only member lists that follow from this one. To trust another one, take the Mac out of the team and add it again. **Cancel** stops adding the Mac, after asking.
+4. Under **Console connection**, wait while Mobster checks Remote, then choose **Connect**: the console reaches this Mac through Remote, set up as one of the team's Macs. If Remote does not answer, **Connect** stays unavailable. If Remote on this Mac is set up as your own Mac, Mobster asks first, because the apps and keys you connected to it are removed.
+5. An Admin confirms the Mac in the console, which signs the next member list with this Mac in it. Until then, Settings › Team says "Waits for an Admin to confirm it in the console". Settings › Team also shows this Mac's key, such as "Rack 2 mini, key AE21 6C2E", for the Admin to compare.
+
+The Mac checks the team's member list with Mobster's servers every minute, directly, not through Remote. If more than 10 minutes have passed since the last successful check, Settings › Team says "Can't confirm Radish's member list", and the console can't act on this Mac until the next good check. A member removed from the team is removed on this Mac at its next check.
+
+Settings › Team shows the team's policy for this Mac, read only: whether the console may watch the phones, run tasks and answer drafts, how its tasks ask, and the daily spend cap. Admins change it in the console. An Owner or Admin can take the Mac out of the team with **Leave**, after Mobster asks.
+
+Settings › Team has three switches for this Mac: **The console can watch this Mac's phones**, **The console can run tasks on this Mac** and **The console can approve on this Mac**. Each one only turns something off: a switch that's on lets the team's policy decide, and it never allows what the policy doesn't.
+
+#### How the console reaches this Mac
+
+The console reaches a team's Mac through Remote, so Remote must be on for that Mac. Once the Mac trusts the team's member list, Remote tells the team's console which phones the Mac has: each phone's name, state, iOS version and alert codes, under an id that only works within your team. It never sends task words, drafts, results or screens in the clear.
+
+When a member opens the console, their browser and this Mac set up a sealed session that only the two of them can read. The member's passkey signs it, and this Mac checks it against the member list it trusts. This Mac refuses the session, and the console says why, when:
+
+- its last good check of the member list is more than 10 minutes old;
+- an Admin hasn't confirmed it yet;
+- the policy or this Mac's switches turn the console off;
+- the passkey isn't one the member list gives that member.
+
+A member gets at most 4 sessions on one Mac. A session ends within 5 seconds of any of these:
+
+- the member leaves the team or changes role;
+- the passkey that signed the session is revoked;
+- the console is switched off;
+- an Admin takes this Mac out of the member list.
+
+A session also ends when it expires, after at most 12 hours. While this Mac can't confirm the member list, or the team's plan isn't active, a session that's already open can only stop tasks and decline drafts, for up to an hour, and no new session starts.
+
+#### What the console can do on this Mac
+
+Inside a session, the console asks this Mac's local API for what the member's role allows, and this Mac checks every request itself:
+
+| Request | Who | While the member list can't be confirmed |
+|---|---|---|
+| List the phones, their health, the tasks and a task's steps | Viewer and up | Refused |
+| Start a task on one phone, or the same task on several | Operator and up | Refused |
+| Stop a task, or a group of them | Operator and up | Allowed |
+| Decline a draft | Operator and up, with the Approver permission for the phone's group | Allowed |
+| Approve a draft, or every draft of a review at once, with a passkey | Operator and up, with the Approver permission for the phone's group | Refused |
+
+Members other than Owners and Admins reach only the phones in their groups. A phone outside them doesn't appear, and a request for it answers as if it didn't exist. Anything else, such as settings, keys, models, connectors, Remote or taking control of a phone, answers "The console can't do that on this Mac."
+
+A task started from the console runs as the member who started it: the task records their member id. It always asks before it sends, buys, posts or deletes, and asks before every change when the team's policy says so. It runs on Mobster's agent, never a coding agent, and never as a long task. It never reads Notification Center or uses your connected services. It uses only the apps the policy allows the phone's groups, and only those the phone's own list allows. On a phone that's busy, it's refused rather than queued. When the policy sets a daily spend cap, the task stops at what's left of it once the console's running tasks are counted, and none starts once it's spent. While the policy lists models, the console starts no task on this Mac: a task can call models besides the agent's own, and this Mac can't yet hold them all to a list.
+
+An approval from the console is a passkey signature over exactly the drafts this Mac showed it, made with a fresh prompt for each approval. This Mac acts on it only when all of these hold, and otherwise leaves the task waiting and says why:
+
+- The signature verifies against the member list this Mac trusts, with the member's own passkey, for this Mac and this task.
+- The member may approve drafts for the phone's group, the team's policy and this Mac's switch let the console approve, and, with the policy's four-eyes rule on, the member didn't start the task.
+  Four-eyes counts the person signed in to Mobster on this Mac as the starter of a task from Mobster on this Mac, MCP, the CLI, a schedule or a trigger. A task a Mobster Remote app or a webhook started could have been started by whoever holds its key or URL, so with four-eyes on the console doesn't approve it. Nor does it with nobody signed in on this Mac. Answer those where the task started.
+- The approval reaches this Mac before its deadline, which is at most 10 minutes after it was signed.
+- The drafts are the ones still waiting, in the same order, with the same words: a draft that changed since the console showed it isn't sent.
+- The console showed the drafts as they are. A draft with a word the console sees masked, such as a code, or a phone's device id, which the console sees as the phone's team id, is approved in Mobster on this Mac.
+- The signature wasn't used before.
+
+The task's history says which member approved and which drafts they signed. The console approves sends, posts, buys, deletes and reviews of drafts. Questions Mobster's agent asks, plans and practice runs are answered in Mobster on this Mac. The console can't ask for changes: do that in Mobster on this Mac too. For example, an approval that arrives late says "Rack 2 mini didn't act on it: your approval reached it after its deadline. Approve it again."
+
+## Manage your plan
+
+Settings › Account shows your email and how you signed in, such as "Signed in with GitHub", **Product updates** (a switch for product updates and the changelog by email), and this Mac. Settings › **Billing** shows your **Plan**:
+
+| Plan | Settings says |
+|---|---|
+| Lifetime | "Active. It doesn't expire." |
+| Free trial | "Free trial until Oct 21. Then choose Monthly \$12, Yearly \$99 or Lifetime \$149. Nothing is charged until you choose." |
+| Monthly | "Renews on Nov 8, 2026." |
+| Monthly, canceled | "Canceled. Mobster works through Nov 8, 2026." |
+| Monthly, a payment failed | "Your last payment didn't go through. Update your card in Manage subscription to keep Mobster working after Nov 15, 2026." |
+
+A Yearly plan reads the same lines as Monthly, with the date a year out. A failed renewal gets 7 days of grace. When the plan expires, the app and the website show it as inactive until renewal is confirmed.
+
+**Manage subscription**, on a monthly or yearly plan, opens Stripe's billing page in your browser: cancel, change your card or download invoices. When you're done, the page says "Go back to Mobster" and "You can close this tab." After you cancel, you aren't charged again, and Mobster keeps working to the end of the month or year you paid for. Yearly renews each year until you cancel.
+
+**Invoices and receipts** › **View** opens the same billing page, for any plan you bought, to download them.
+
+To get your money back on a lifetime plan within 14 days, write to [support@radish.software](mailto:support@radish.software), or choose **Email support** beside **Refunds** in Settings › Billing.
+
+## Sign out
+
+Settings › Account › **Sign out** asks "Sign out of Mobster?": "Signing out clears your sign-in on this Mac. Mobster also tries to remove the Mac from your account. If that fails, apps connected through Mobster Remote may keep access. Your conversations and history stay on this Mac."
+
+Signing out removes this Mac's saved sign-in from the Keychain and tries to remove the Mac from your account. Offline, this Mac keeps Mobster until you remove it at mobster.dev/account, another Mac takes it with **Use on this Mac**, or you sign in here again.
+
+On mobster.dev, signing out clears the website session across tabs that share browser storage. A token refresh or sign-in response already in flight cannot restore the cleared session. Website sign-out does not remove a Mac from your account.
+
+## Working offline
+
+Mobster keeps a signed copy of your plan on each Mac and checks it without the internet, so it opens at once, online or not. When it's online, it checks your account with Mobster every 10 minutes while it runs.
+
+Offline, or with Mobster's account service blocked, every plan keeps working for 7 days after the last check, lifetime included (the owner, 16 Oct 2026; it was 90 days for lifetime). After 7 days without a check, Mobster starts no task until it checks in again. A task already running finishes. The app says "Mobster couldn't check your plan for 7 days" and "Connect to the internet, then try again." with **Try again**, and a task asked of the agent gets "Mobster couldn't check your plan for 7 days, so it did nothing. Connect to the internet, then try again."
+
+A plan that ends sooner still ends then: a monthly or yearly plan a week past the period you paid for, and the free trial at its end, with no week after it.
+
+## Delete your account
+
+Write to [support@radish.software](mailto:support@radish.software) from the email on your account, or tell us which account it is if you used Hide My Email. We delete the account, its Macs and its plan records within 30 days, and Mobster Remote's records for its Macs with them. Stripe keeps payment records as tax law requires. Cancel a monthly or yearly plan in **Manage subscription** first, or ask us to in the same email. Deleting an account doesn't refund it, and it can't be undone.
+
+What the account holds, and what it never holds, is in [Privacy and your data](/privacy#your-mobster-account).
+
+## Troubleshooting
+
+Mobster says these under the buttons or in the card, and in Settings › Account and Billing.
+
+| Mobster says | Why | What to do |
+|---|---|---|
+| Mobster can't reach the internet. Check your connection and try again. | This Mac is offline, or Mobster's account service can't be reached | Check the connection, then try again |
+| Too many tries. Wait a minute, then try again. | Many tries in a short time from your network | Wait a minute |
+| Mobster's account service had a problem. Try again in a minute. | A problem on Mobster's account service | Try again in a minute. If it keeps happening, write to support@radish.software |
+| Sign in again to keep using Mobster. | Your sign-in on this Mac ended, or Mobster's account service didn't accept it | Sign in again the same way |
+| Sign-in canceled. Choose how to sign in and try again. | Sign-in was canceled or access was denied in your browser | Choose the same button again, or sign in another way |
+| That code didn't work. Check the newest email from Mobster, or send a new code. | The code is wrong, was used, or is more than 10 minutes old, or a newer email replaced it | Type the code from the newest email, or choose **Send a new code** |
+| Mobster sent a code a moment ago. Wait a minute, then send a new one. | Mobster sends at most one email a minute to an address | Use the code already sent, or wait a minute |
+| Too many tries. Wait a few minutes, then try again. | Many codes tried from your network in a short time | Wait a few minutes |
+| Check the email address and try again. | The address has a typo, or isn't one Mobster can send to | Check the address |
+| Sign-in timed out. Try again. | 10 minutes passed before the browser came back | Try again, and finish in the browser within 10 minutes |
+| Sign-in didn't finish. Try again. | The browser came back, but Mobster couldn't complete the sign-in | Try again. If you closed the tab, **Open the page again** |
+| This Mac was removed from your account. Sign in to use it again. | This Mac was signed out, or removed at mobster.dev/account | Sign in again |
+| Mobster moved less than 15 minutes ago, so it stayed on Studio. Try again in 9 minutes. | Mobster moved between your Macs less than 15 minutes ago | Wait the minutes it says, then choose **Use on this Mac** again |
+| Mobster is now active on Studio, so it stayed there. | Another of your Macs took Mobster while you chose | Choose **Use on this Mac** again |
+| Your account already has a plan. | You chose a plan while your account has one | Nothing to buy. If the plan sheet stays, quit and reopen Mobster |
+| Mobster couldn't reach Mobster Remote to remove that Mac's access. Try again in a minute. | Mobster couldn't confirm that the other Mac's Remote access was removed, so it didn't move Mobster | Try again in a minute |
+| Mobster couldn't save your sign-in on this Mac. Quit and reopen Mobster, then try again. | The Keychain refused to save your sign-in | Quit and reopen Mobster, then sign in again |
+| Mobster couldn't identify this Mac. Write to support@radish.software. | Mobster couldn't read this Mac's hardware id | Write to support@radish.software |
+
+When a plan ends, the plan sheet comes back over your app and says why. Except when a purchase is on hold, the line beneath the title says "Choose a plan to keep using Mobster. Your conversations and settings are still here."
+
+| The sheet's title | What happened |
+|---|---|
+| Your trial has ended | The 7-day free trial reached its end before you chose a plan |
+| Your subscription has ended | A monthly or yearly plan was canceled, and its last paid month or year is over |
+| This purchase was refunded | The purchase was refunded |
+| This purchase is on hold | A charge is disputed with your bank. The line says "Your bank is reviewing a charge. Write to support@radish.software." |
+| Your plan has ended | The plan ended for another reason |

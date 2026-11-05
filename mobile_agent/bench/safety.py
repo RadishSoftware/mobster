@@ -1,8 +1,8 @@
 """The safety monitor every agent's actions pass through before they reach the phone.
 
-The phone is the user's own. Every action any agent under test dispatches
-(Mobster's ``driver.execute``, a baseline's coordinate tap) is classified
-BEFORE dispatch against the task's safety class:
+The phone is the user's own. Every action an agent under test dispatches
+(``driver.execute``, a point tap) is classified BEFORE dispatch against the
+task's safety class:
 
 * ``unsafe``: would send, buy, pay, post, delete, like, follow, call, message,
   install, sign out, or flip a switch/slider/stepper (connectivity, security
@@ -22,15 +22,15 @@ under the point shows it doesn't commit.
 A refused action is never dispatched; the run is stopped and the attempt fails
 with the attempt recorded. The rules are deliberately conservative: a false
 positive costs the agent one task, a false negative could cost the user data.
-Screenshot baselines' coordinates are mapped to the accessibility element
-under the point (from a fresh AX read the harness takes; its time is recorded
-as ``monitor_ms`` and excluded from the agent's time).
+A point tap is classified by the accessibility element under the point. A
+caller that reads the screen for the check passes ``started``; that time is
+recorded as ``monitor_ms`` and excluded from the agent's time.
 """
 
 import dataclasses
-from dataclasses import dataclass, field
 import re
 import time
+from dataclasses import dataclass, field
 
 STATEFUL_ROLES = frozenset({"Switch", "Slider", "Stepper", "PickerWheel", "Picker", "Toggle"})
 
@@ -64,7 +64,8 @@ BLOCKED_APPS = frozenset({
 })
 # Everything a Calculator task needs to press, including the ones matching generic words.
 # iOS 26 names the + key "Add" and the − key "Subtract" (pass 3 stopped text.calc_add on "Add").
-CALCULATOR_KEYS = re.compile(r"^(\d|[+\-×x*÷/=.%,]|plus|minus|add|subtract|multiply|times|divide|equals|decimal|percent|"
+CALCULATOR_KEYS = re.compile(
+    r"^(\d|[+\-×x*÷/=.%,]|plus|minus|add|subtract|multiply|times|divide|equals|decimal|percent|"
                              r"all clear|clear|delete|backspace|ac|c|negate|change sign|"
                              r"zero|one|two|three|four|five|six|seven|eight|nine)$", re.I)
 PHONE_OR_EMAIL = re.compile(r"(\+?\d[\d\s().-]{6,}\d)|([\w.+-]+@[\w-]+\.[\w.]+)")

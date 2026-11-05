@@ -1,0 +1,196 @@
+---
+title: "Keys, env files and settings"
+"og:title": "Configure Mobster: keys, env files and settings"
+sidebarTitle: "Configuration"
+description: "Where Mobster reads your keys and settings, and where it keeps its files."
+icon: "settings"
+keywords: ["environment variables", "env file", "MOBSTER_ENV_FILE", "configuration", "settings", "data folder"]
+---
+
+Mobster reads its settings from environment variables. Keep them in an env file and point Mobster at it, so keys stay out of your shell history, your repositories and your screenshots.
+
+## Env files
+
+An env file has one `KEY=VALUE` per line. Blank lines and `#` comments are skipped, an `export ` prefix and surrounding quotes are removed, and a variable already set in your environment wins over the file. A line Mobster can't read is skipped, and Mobster prints its line number, never its text, to stderr.
+
+```sh ~/.config/mobster/agent.env
+ANTHROPIC_API_KEY=sk-ant-…
+MOBSTER_ALERT_WEBHOOK_URL=https://ntfy.sh/your-topic
+```
+
+Mobster loads one file:
+
+- the one you pass with `--env-file PATH`, or
+- `$MOBSTER_ENV_FILE`, for every command except `serve`. Set it in `~/.zshrc` and you never need `--env-file`.
+
+Mobster never loads a file on its own. A file you name that doesn't exist is reported on stderr, and `mobster mcp` gives it as the reason Mobster's agent is off. The Mac app keeps its own file at `~/Library/Application Support/app.mobster.desktop/agent.env`; to share keys with the app, point `MOBSTER_ENV_FILE` at it. That file holds the app's settings, not its keys: on a Mac, the keys and the alert webhook's address it saves are in your login Keychain, and the file has the line `MOBSTER_SECRETS_IN_KEYCHAIN=1`. A key an older version left in the file moves to the Keychain the next time Mobster reads the file. Any other file you pass is never changed.
+
+<Warning>Make the file readable by you only: `chmod 600`. Never commit it, and never put a key in a config file that lives in a repository.</Warning>
+
+## Environment variables
+
+### Keys and models
+
+| Variable | Meaning |
+|---|---|
+| `ANTHROPIC_API_KEY` | Your Claude key, for Mobster's agent. While it is set, the agent runs on Claude Sonnet 5.5, also beside an OpenAI key |
+| `OPENAI_API_KEY` | Your OpenAI key, for Mobster's agent. With only this key, the agent runs on GPT-5.6 Sol |
+| `MOBSTER_SMART_PROVIDER` | `anthropic` or `openai`: whose key Mobster's agent uses when both are set. Unset, Claude's. Setup, Settings › Models and `mobster login --provider` save it |
+| `MOBSTER_SMART_MODEL` | Another model for Mobster's agent, by its id. Its provider's key must be set |
+| `MOBSTER_LISTEN` | `off`: Mobster's agent watches the screen only, and MCP's `listen` isn't listed. On by default: a step that watches or listens hears what a USB iPhone plays and gets its words as text and its other sounds as timed labels, recognized on your Mac. Settings › Safety › Let Mobster hear your iPhone sets it: [Watch and hear](/watch) |
+| `MOBSTER_INBOX_TRIAGE` | `on`: a long task that drafts replies has the model read a list's previews first and skips conversations that need no reply. Off by default: [Long tasks](/capabilities) |
+| `MOBSTER_CODEX_PATH`, `MOBSTER_CLAUDE_CODE_PATH`, `MOBSTER_GEMINI_PATH` | The path of the Codex, Claude Code or Gemini program Mobster runs for a task on your plan. Unset, Mobster looks on your `PATH`, then on your login shell's `PATH`. If the path is set but is not an executable, that agent counts as not installed, with no fallback to `PATH` |
+| `MOBSTER_CODEX_MODEL`, `MOBSTER_CLAUDE_CODE_MODEL`, `MOBSTER_GEMINI_MODEL` | The model that agent uses. Unset, the program's own default; Codex then reads `model` in `~/.codex/config.toml`. Clear it if a task fails with a model your plan doesn't offer |
+| `MOBSTER_CODEX_EFFORT` | How hard Codex reasons: `minimal`, `low`, `medium`, `high` or `xhigh`. Default `low` |
+| `MOBSTER_VAULT` | Development only. `file` keeps saved keys and plan sign-ins in a `0600` file instead of the Keychain. Default on a Mac: the Keychain |
+| `MOBSTER_GITHUB_CLIENT_ID` | Development only. The client id of Mobster's own GitHub app, which GitHub Copilot signs in through. GitHub Copilot isn't offered until it is set |
+
+[Models and keys](/models-and-keys) says which command needs which key.
+
+### The phone and the service
+
+| Variable | Meaning |
+|---|---|
+| `MOBSTER_WDA_URL` | WebDriverAgent's address for the terminal UI, `run`, `doctor` and `screen`. Default `http://127.0.0.1:8100` |
+| `MOBSTER_WDA_DEVICES` | More WebDriverAgent addresses to list as devices |
+| `MOBSTER_ENABLE_LIVE` | `0` stops the terminal UI and `serve` from acting on the phone |
+| `MOBSTER_POLICY` | Unset by default. `on` reads a project's `.mobster/policy.yaml`, which can only add questions: [Project policy file](#project-policy-file) |
+| `MOBSTER_SETTLE` | Unset by default. Experimental `launch` mode accepts one accessibility read after an app launch only when the stream already proves an effect and a resting screen. Missing, moving or unchanged evidence keeps the normal agreeing reads. The next verification read still checks the accepted screen. |
+| `MOBSTER_EXPERIMENTAL_SETTLE` | `1` turns on predictive settle. Mobster learns how long each app's transitions take to settle (a number per app and kind of action, in `settle/durations.json` in the data folder, no screen text). For a step whose result is checked by the next read, it then waits that app's learned 90th percentile, takes one accessibility read and goes on, instead of reading until two reads agree. A read that still shows the old screen, or pixels that moved during it, falls back to the normal reads. Off by default until it has passed a paired A/B on simulators |
+| `MOBSTER_EXPERIMENTAL_MIRRORING` | `1` drives the iPhone this Mac mirrors through iPhone Mirroring instead of WebDriverAgent, in the terminal UI, `run` and `serve` (not `serve --manage-device`). Experimental: [Connection types](/devices#connection-types) |
+| `MOBSTER_MIRRORING_INPUT` | How the iPhone Mirroring connection sends input. `background` (default) addresses mouse and keyboard events to the Mirroring window, so your cursor, keyboard and front app stay yours. `foreground` brings the window forward and uses your cursor and keyboard for each gesture. Any other value stops the task before it sends anything: [iPhone Mirroring](/devices#iphone-mirroring-experimental) |
+| `MOBSTER_EXPERIMENTAL_CABLE_BT` | `1` drives a USB iPhone through its cable video and this Mac's Bluetooth keyboard and mouse instead of WebDriverAgent, in the terminal UI, `run` and `serve` (not `serve --manage-device`). Experimental: [Cable + Bluetooth](/devices#connection-types) |
+| `MOBSTER_EXPERIMENTAL_NO_XCODE` | `1` signs and installs Mobster's helper on this Mac without Xcode, for a paid Apple Developer team: [Without Xcode (paid team)](/device-setup#without-xcode-paid-team). Experimental, off by default |
+| `MOBSTER_EXPERIMENTAL_SYSTEM_SURFACES` | `1` lets a check drive and read widgets, Live Activities, Control Center, App Clips, Spotlight, the share sheet and App Intents on a simulator with `surfaces`. Experimental: [System surfaces](/checks#system-surfaces) |
+| `MOBSTER_CABLE_BT_UDID` | The iPhone the Cable + Bluetooth connection drives when several are plugged in |
+| `MOBSTER_EXPERIMENTAL_COMPILED_READ` | `1` turns on three experiments in reading the screen, off by default. `read_screen` reads a screen with code, with no model call, when it has the shape of one the model read before (a miss goes to the model, and the answer's `compiled` counts both). The agent's prompt sends what changed on the screen since a reference screen, not the whole screen, and the run's result reports `compiled_read`. A saved program is stored under the app's version and offered only for that version. Measured 26 Oct 2026 offline, on the scripted demo phone and two recorded simulator screens, with tokens estimated at four characters: a repeat read took 4 to 10 microseconds of code in place of one model call of 163 to 249 tokens in and 40 to 117 out; a diff sent 23% fewer screen tokens when the same screen came back four times and 55% fewer on a 60-row list with one row selected moving down, and 0% when each turn opened a new screen. Whether the model acts as well on a diff is not measured yet: it needs the paired A/B on simulators first |
+| `MOBSTER_EXPERIMENTAL_TRACES` | `1` records each task's trace as it runs, in a private file beside its screens: every screen Mobster read as text, every model reply and every action, with keys, codes and passwords masked as they are written. `mobster export ID --trace` packs one into a zip for a bug report. Experimental |
+| `MOBSTER_PHONE_VIEW` | The terminal UI's phone view: `auto` (default), `text` or `image` |
+| `MOBSTER_URL` | Where `mobster chat` finds the service. Default: the address the running Mac app or `mobster serve` wrote beside its token, else `http://127.0.0.1:8765` |
+| `MOBSTER_API_TOKEN`, `MOBSTER_API_TOKEN_FILE` | The service's token, or the file that holds it, for `mobster chat` |
+| `MOBSTER_WIFI_TRANSPORT` | `1` turns on and `0` turns off [Wi-Fi](/wifi) for iPhones. Unset is off |
+| `MOBSTER_QUEUE_PREFLIGHT` | `1` turns on the [content queue's iPhone checks](/content-queue#check-the-iphone-first): it waits while the iPhone is locked, refuses without Photos access, warns about Low Power Mode, picks media from the album Mobster and checks the composer against the post's files before a batch approval answers. It adds two routes to Mobster's helper, so each iPhone rebuilds it once. Experimental, off by default |
+| `MOBSTER_CAPTURE_GATE` | `on` or `off`: whether the WebDriverAgent runners Mobster starts keep screenshots and screen reads apart. Default: on for simulators, off for iPhones. It takes effect when a runner starts |
+
+### Settings the app saves
+
+The Mac app writes these when you change a setting, and the terminal UI changes the first two the same way. Each takes effect from the next task.
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `MOBSTER_ASK_BEFORE_ACTING` | `1` | Stop for your approval before an action that can send, buy, post, delete or submit. `0` is Full access. `shift+tab` or `/ask` in the terminal UI |
+| `MOBSTER_PERMISSION_MODE` | `ask_important` | When Mobster asks first: `ask_important` (Ask before acting), `ask_all` (Ask before every change) or `dont_ask` (Full access). [Approvals and safety](/safety#when-mobster-asks) |
+| `MOBSTER_APP_ACCESS` | `ask` | `all` counts every app as allowed, without the first-use question. For scripts and tests only: Settings › Safety never sets it, and says so when it's set |
+| `MOBSTER_APPS_ALLOWED` | | Bundle ids, comma-separated, that count as allowed without asking. For scripts and tests only; Settings › Safety lists them |
+| `MOBSTER_OUTSIDE_BLOCKED_APPS` | | Bundle ids, comma-separated, that agents outside Mobster (MCP, Mobster Remote) never open |
+| `MOBSTER_TASK_COST_LIMIT` | | Stop a task that reaches this many dollars |
+| `MOBSTER_QUEUE_MINUTES` | `30` | How long a request waits in a held phone's line before it ends without starting, 1 to 1440 ([Sharing a phone](/devices#sharing-a-phone)) |
+| `MOBSTER_MONTHLY_LIMIT` | | Start no new task once this month's spend reaches it |
+| `MOBSTER_VIDEO_FPS`, `MOBSTER_VIDEO_DETAIL` | | The live picture's smoothness and sharpness |
+
+### Schedules and alerts
+
+| Variable | Meaning |
+|---|---|
+| `MOBSTER_ALERT_WEBHOOK_URL` | An https webhook for scheduled tasks that fail, stop early or wait for you: [Schedules](/schedules#alerts) |
+| `MOBSTER_KEEP_AWAKE` | `0` stops Mobster from keeping the Mac awake while a task runs or a scheduled task is due |
+| `MOBSTER_MAC_BATTERY_WARN` | The Mac battery percent at which tasks that run on battery warn. Default `20`; `off` turns it off |
+| `MOBSTER_PHONE_BATTERY_PAUSE` | The iPhone battery percent, 1 to 50, at which a long or scheduled task pauses while the phone isn't charging. Default `10`; `off` turns it off. `POST /api/settings` with `phoneBatteryPause` saves it ([Battery, heat and the Mac](/devices#battery-heat-and-the-mac)) |
+| `MOBSTER_BLOCKED_APPS` | Bundle ids, comma-separated, that Mobster never opens |
+| `MOBSTER_PROGRAMS` | A task with the same words as one that finished done, with other names or text in it, repeats that whole task's learned steps, with code checking each step and the model only where code can't. On by default for Mobster for Mac, `mobster serve`, `phone_task` from your coding agent through `mobster mcp`, and Mobster Remote; `off` turns it off, `learn` only keeps them, and `on` also turns it on for the terminal UI and `mobster run`. A repeated step that sends, posts, deletes or buys asks for approval as it does in any other run. Set to `on` explicitly, a task with other words also runs parts of other tasks' learned steps: [Learned steps from any task](/schedules#learned-steps-from-any-task) |
+| `MOBSTER_FRONT_DOOR` | A request that is exactly an app pack's question or a Settings page is answered by code with no model call. `off` sends every request to the model: [Questions answered with no model](/app-packs#questions-answered-with-no-model) |
+| `MOBSTER_IMAGE_POLICY` | `always` (the default) sends the model a screenshot on every turn. `tree` sends it only when the screen's rows can't carry it: the first turn, a new app, the turn after a miss, a control with no label, a web view, a map, a large picture, a control whose state the rows don't show, a request about how something looks, and at least every fourth turn. Other turns say "No screenshot this turn". Coordinate actions wait for a turn with a screenshot. A turn's `frontier_prompt` event carries `image_why`. Off by default until it passes a paired test on a real iPhone |
+
+### Files and folders
+
+| Variable | Meaning |
+|---|---|
+| `MOBSTER_ENV_FILE` | The env file every command but `serve` loads |
+| `MOBSTER_DATA_DIR` | Where the simulator registry, the WebDriverAgent build and the logs go |
+| `MOBSTER_RUNS_DIR` | Where `mobster mcp` writes runs, when `--out` names none |
+| `MOBSTER_MEMORY_DIR` | Where what Mobster remembers is kept. For tests |
+| `MOBSTER_SIM_PORT_BASE` | The first WebDriverAgent port for simulators. Default 8310 |
+| `MOBSTER_MAX_SIMS` | How many simulators Mobster keeps per device type and runtime. Default 4; free memory can lower it |
+| `MOBSTER_MAX_LOAD` | The 1-minute load average at which Mobster waits before it boots a simulator. Default: one per core |
+
+Other `MOBSTER_*` switches exist for A/B tests and debugging, such as `MOBSTER_GLIDE`, `MOBSTER_HEDGE` and the `MOBSTER_CTX_*` context marks under measurement. Everyday use needs none of them.
+
+## Project policy file
+
+`.mobster/policy.yaml` sits in a project's folder beside its checks and workflows, and Mobster reads it when a task starts. It says where Mobster asks first in that project. It can only add questions: [Approvals and safety](/safety#project-policy) says how it meets your permission mode. It is read only while `MOBSTER_POLICY=on`.
+
+```yaml .mobster/policy.yaml
+version: 1
+default: allow
+rules:
+  - name: Work hours
+    profile: getmobster
+    app: com.burbn.instagram
+    kind: [post, comment]
+    action: allow
+    window: mon-fri 09:00-18:00
+    timezone: America/New_York
+    max_per_day: 5
+  - kind: buy
+```
+
+| Key | Meaning |
+|---|---|
+| `version` | `1`, the default |
+| `default` | `allow` (the default) or `ask`. With `ask`, an act that no rule matches asks |
+| `rules` | At most 200 rules |
+| `name` | Optional, up to 60 characters. The approval shows it |
+| `profile` | Optional. A profile's handle (`getmobster` or `@getmobster`) or id. Left out, the rule covers every task. A rule with a profile doesn't match a task that has none |
+| `app` | Optional. A bundle id such as `com.burbn.instagram`, or `*`. Left out, every app |
+| `kind` | One kind or a list. Left out, `any` |
+| `action` | `ask` (the default) or `allow` |
+| `window` | Optional, `allow` rules only: days and hours, such as `mon-fri 09:00-18:00`, `sat,sun 10:00-14:00` or `22:00-02:00`. The policy asks outside it. A window past midnight belongs to the day it starts |
+| `timezone` | Optional. A time zone such as `America/New_York`, for the window and for where the day starts. Default: this Mac's |
+| `max_per_day` | Optional, `allow` rules only: 1 to 10000. After this many acts that went ahead unasked in a day, the policy asks |
+
+The kinds:
+
+| Kind | Acts |
+|---|---|
+| `message` | Sending or replying to a message, unsending |
+| `comment` | Posting a comment |
+| `post` | Posting, publishing, sharing |
+| `react` | Liking, reacting |
+| `follow` | Following, unfollowing, subscribing |
+| `call` | A call or a FaceTime call |
+| `buy` | Paying, buying, ordering, checking out, subscribing, a transfer, a donation, a tip, redeeming, getting an app |
+| `book` | A booking or a reservation |
+| `delete` | Deleting, erasing, removing, resetting, clearing, trashing, unmatching, unsending |
+| `setting` | Switching a setting |
+| `change` | A change that stays on your iPhone: saving, submitting, archiving |
+| `other` | Any other act that asks |
+| `any` | All of them |
+
+An act that fits two kinds, such as subscribing, is in both, so a rule on either reaches it. Mobster refuses a key it doesn't know, a window with a bad time, and a window or `max_per_day` on a rule that asks, and says which rule has the mistake. Until you fix the file, every act in the project asks. A file that is a link, or over 64 KB, is refused the same way. The day's counts are in `policy-counts.json` beside the task journal.
+
+## Spend caps
+
+A cap stops a task before its next model call once the task's priced spend reaches it, and the task ends with status `spend_cap`.
+
+| Where | How |
+|---|---|
+| Mobster for Mac | Settings › Models |
+| Terminal UI | `/cap 0.50` for \$0.50 a task, `/cap off` to remove it |
+| `mobster run`, `mobster serve` | `--spend-cap-usd 0.50` |
+
+When a provider doesn't report a price for a call, it's counted as unpriced and shown beside the total (`+1 unpriced`), never as free.
+
+A model with no listed price, such as one billed at your provider's own rates, counts at the highest listed price while a cap is set. The cap then stops the task early rather than never, and the task's reason says so (`Mobster has no price for <model>, so it counted the highest listed price`). The task's cost still shows as unpriced.
+
+## Where Mobster keeps files
+
+| What | Installed | Source checkout |
+|---|---|---|
+| Terminal UI and `mobster run` history | `~/Library/Application Support/app.mobster.desktop/state/terminal.sqlite3` | `mobile_agent/.state/terminal.sqlite3` |
+| `serve`'s journal and API token | `<data dir>/state/` | `mobile_agent/.state/` |
+| Memory, settings, profiles, connectors, destinations, learned steps, the queue, WebDriverAgent build, logs, device choice | `~/Library/Application Support/app.mobster.desktop` | `mobile_agent/.state/data/` |
+| Compiled helpers (`build-ocr`) | `<data dir>/build/` | `mobile_agent/.build/` |
+
+A source checkout and a dev window never read or write the installed app's folder. Their Keychain items have their own service names too (`app.mobster.desktop.connectors.dev2`, say), so a checkout can't read or replace the app's tokens. Only the phone locks (`device-leases/`), the compiled helpers and `mobster sim`'s simulators stay shared, because one phone has one driver.
+
+Journals hold your task text and what Mobster read on the screen. They're private to your user account. Don't commit or share them.

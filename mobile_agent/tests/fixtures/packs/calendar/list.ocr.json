@@ -1,0 +1,280 @@
+{
+"note": "Recorded on the test device (iPhone 15 Pro, iOS 26.0.1), 11 and 12 Oct 2026: the rows the agent saw, scrubbed (personal events renamed). The same screen read by Vision OCR (iPhone Mirroring's reading).",
+"rows": [
+{
+"text": "10:03L",
+"confidence": 1,
+"rect": [
+0.0949,
+0.025,
+0.1763,
+0.0188
+]
+},
+{
+"text": "< October",
+"confidence": 1,
+"rect": [
+0.0607,
+0.0822,
+0.238,
+0.0265
+]
+},
+{
+"text": "Thursday - Oct 15",
+"confidence": 1,
+"rect": [
+0.0407,
+0.144,
+0.3729,
+0.0219
+]
+},
+{
+"text": "MobsterBench Review",
+"confidence": 1,
+"rect": [
+0.0746,
+0.1706,
+0.4847,
+0.0219
+]
+},
+{
+"text": "* Room 42",
+"confidence": 1,
+"rect": [
+0.0743,
+0.1979,
+0.2074,
+0.0189
+]
+},
+{
+"text": "Saturday - Oct 17",
+"confidence": 1,
+"rect": [
+0.0373,
+0.2707,
+0.3661,
+0.0203
+]
+},
+{
+"text": "Music Festival",
+"confidence": 1,
+"rect": [
+0.1186,
+0.3146,
+0.5288,
+0.025
+]
+},
+{
+"text": "Sunday - Oct 18",
+"confidence": 1,
+"rect": [
+0.0373,
+0.3912,
+0.339,
+0.0219
+]
+},
+{
+"text": "Music Festival",
+"confidence": 1,
+"rect": [
+0.1182,
+0.432,
+0.5331,
+0.0286
+]
+},
+{
+"text": "Tuesday - Oct 20",
+"confidence": 1,
+"rect": [
+0.0407,
+0.5117,
+0.3593,
+0.0235
+]
+},
+{
+"text": "Book Club",
+"confidence": 1,
+"rect": [
+0.122,
+0.5587,
+0.322,
+0.0235
+]
+},
+{
+"text": "Sunday - Oct 25",
+"confidence": 1,
+"rect": [
+0.0373,
+0.6338,
+0.3424,
+0.0235
+]
+},
+{
+"text": "Team Dinner",
+"confidence": 1,
+"rect": [
+0.1186,
+0.6808,
+0.5254,
+0.0235
+]
+},
+{
+"text": "Saturday - Oct 31",
+"confidence": 1,
+"rect": [
+0.0373,
+0.7574,
+0.3695,
+0.0203
+]
+},
+{
+"text": "Halloween",
+"confidence": 1,
+"rect": [
+0.1186,
+0.8042,
+0.2272,
+0.0191
+]
+},
+{
+"text": "Halloween",
+"confidence": 1,
+"rect": [
+0.122,
+0.8574,
+0.2239,
+0.0177
+]
+},
+{
+"text": "Today",
+"confidence": 1,
+"rect": [
+0.1017,
+0.9296,
+0.1288,
+0.0219
+]
+},
+{
+"text": "814",
+"confidence": 1,
+"rect": [
+0.8508,
+0.0282,
+0.0746,
+0.0156
+]
+},
+{
+"text": "+",
+"confidence": 1,
+"rect": [
+0.8475,
+0.0704,
+0.1119,
+0.0501
+]
+},
+{
+"text": "2:00PM",
+"confidence": 1,
+"rect": [
+0.8131,
+0.1745,
+0.1398,
+0.0187
+]
+},
+{
+"text": "3:00PM",
+"confidence": 1,
+"rect": [
+0.8134,
+0.1985,
+0.1392,
+0.0161
+]
+},
+{
+"text": "all-day",
+"confidence": 1,
+"rect": [
+0.8236,
+0.3191,
+0.1324,
+0.019
+]
+},
+{
+"text": "all-day",
+"confidence": 1,
+"rect": [
+0.8237,
+0.4397,
+0.1322,
+0.0203
+]
+},
+{
+"text": "all-day",
+"confidence": 1,
+"rect": [
+0.8237,
+0.5618,
+0.1322,
+0.0203
+]
+},
+{
+"text": "all-day",
+"confidence": 1,
+"rect": [
+0.8237,
+0.6823,
+0.1322,
+0.0219
+]
+},
+{
+"text": "all-day",
+"confidence": 1,
+"rect": [
+0.8203,
+0.8044,
+0.1356,
+0.0219
+]
+},
+{
+"text": "all-day",
+"confidence": 1,
+"rect": [
+0.8203,
+0.8576,
+0.1356,
+0.0203
+]
+}
+],
+"hash": "list",
+"window": {
+"w": 589,
+"h": 1278
+}
+}

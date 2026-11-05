@@ -1,0 +1,31 @@
+usage: mobster doctor [-h] [--wda-url URL] [--device NAME] [--env-file PATH] [--fix] [--json]
+                      [--simulator]
+
+Check everything a task needs and print how to fix what is missing. Without --fix it
+changes nothing. Keys are shown masked: their first characters and last four.
+
+--fix does the fix each finding carries, then checks again and prints what it did and what
+it could not do. It starts Mobster's helper, or refreshes one that expired, on its own, and
+leaves it to Mobster for Mac when that is running. It names a program that holds a port, or a
+service that doesn't answer, and asks before it stops it. It hands over to `mobster login`
+and `mobster setup` for what needs your answers. It never enters a passcode, runs sudo or
+downloads a runtime. Without a terminal, or with --json, it skips every question and says
+which.
+
+options:
+  -h, --help       show this help and exit
+  --wda-url URL    the phone's address, for a phone you set up by hand (default:
+                   http://127.0.0.1:8100) [env: MOBSTER_WDA_URL]
+  --device NAME    the iPhone or simulator to use: an id, UDID or name from `mobster devices`
+                   (default: your iPhone)
+  --env-file PATH  load KEY=VALUE lines (ANTHROPIC_API_KEY, OPENAI_API_KEY, ...); variables already
+                   set win [env: MOBSTER_ENV_FILE]
+  --fix            do the fix each finding carries, then check again
+  --json           print the checks as JSON
+  --simulator      skip the USB iPhone and Xcode checks (a simulator's phone)
+
+exit codes: 0 ready for tasks (warnings allowed), 1 at least one problem
+
+examples:
+  mobster doctor
+  mobster doctor --fix

@@ -1,0 +1,6 @@
+2026-10-14 21:59:31.870901-0700 WebDriverAgentRunner-Runner[46090:3703286] [Default] Running tests...
+2026-10-14 22:00:32.069065-0700 WebDriverAgentRunner-Runner[46090:3703286] [Default] Failed to initialize for UI testing: Error Domain=com.apple.dt.XCTest.XCTFuture Code=1000 "Timed out while enabling automation mode." UserInfo={NSLocalizedDescription=Timed out while enabling automation mode.}
+2026-10-14 22:00:32.487 xcodebuild[51360:55522873] [MT] IDETestOperationsObserverDebug: 66.677 elapsed -- Testing started completed.
+Testing failed:
+	WebDriverAgentRunner-Runner (46090) encountered an error (The test runner failed to initialize for UI testing. (Underlying Error: Timed out while enabling automation mode.))
+** TEST EXECUTE FAILED **

@@ -1,0 +1,145 @@
+---
+title: "Expo and React Native"
+sidebarTitle: "Expo and React Native"
+keywords: ["expo", "react native", "expo go", "dev client", "expo-dev-client", "metro", "eas build --local", "npx expo run:ios", "preview on iphone", "reload"]
+description: "Open your Expo app on a simulator or your iPhone from Metro, check a screen, reload after a change, and build it for checks and CI."
+icon: "/images/marks-ink/expo.svg"
+---
+
+`mobster expo` puts your Expo or React Native app on a simulator or your iPhone and checks it. One command opens the JavaScript you're editing on the phone and says whether a screen shows what it should. The same app builds for `mobster test` and CI, with the JavaScript inside, so a check needs no Metro.
+
+Everything runs on your Mac: Metro, `npx expo prebuild`, `xcodebuild`, `npx expo run:ios` and `eas build --local`. Mobster never builds on Expo's servers.
+
+## Check it on your iPhone
+
+From your app's folder:
+
+```sh
+mobster expo preview --device "Test iPhone" --expect "Welcome back"
+```
+
+```text
+Starting Metro on port 8081: npx expo start (log: .mobster/expo/metro.log)
+Opened Habits on Test iPhone from Metro on port 8081 (your dev client).
+✓ text "Welcome back": found in text "Welcome back"
+Screenshot  .mobster/expo/preview.png
+Metro keeps running in the background: `mobster expo reload` after a change, `mobster expo stop` when you're done.
+```
+
+1. Mobster reads `package.json` and the Expo config (`app.json`, or `app.config.js` through `npx expo config`).
+2. When nothing answers on port 8081, it starts `npx expo start --lan` in the background.
+3. It opens the app on the device: your dev client when the app has `expo-dev-client` (`exp+<slug>://expo-development-client/?url=…`), else Expo Go (`exp://…`). A phone reaches Metro at this Mac's address on your Wi-Fi, so both need the same network. A simulator uses `127.0.0.1`.
+4. With `--expect`, it reads the screen's accessibility tree until every text is there, up to `--wait` seconds (45 by default, for the first bundle), and saves a screenshot. It exits 1 when one isn't there.
+
+`--path settings/profile` opens a screen by the app's own deep link (its `scheme`) once the app is up. Without `--device`, Mobster uses your iPhone, else the only device it sees.
+
+The dev client has to be on the device first. Build and install it once:
+
+```sh
+mobster expo build --device "Test iPhone"
+```
+
+That runs `npx expo run:ios --device <UDID> --configuration Debug --no-bundler`, which signs it with the team in your Xcode project and installs it. Expo Go comes from the App Store.
+
+## After a change
+
+```sh
+mobster expo reload
+```
+
+Every app connected to Metro reloads its JavaScript, as pressing `r` in `npx expo start` does. Then check again with `mobster expo preview --expect …`, or let your coding agent do the loop through `mobster mcp`: `expo_preview` opens the app on a device and `expo_reload` reloads it, and each returns the screen. A simulator needs no plan; a real iPhone uses the same plan check as the other phone tools. See [the MCP server](/mcp-server).
+
+`mobster expo stop` stops the Metro that `preview` or `dev` started.
+
+## The dev loop
+
+```sh
+mobster expo dev --device "Test iPhone"
+```
+
+```text
+Metro on port 8081 (started; log: .mobster/expo/metro.log).
+Opened Habits on Test iPhone.
+Watching for saves: ctrl+c stops.
+Reloaded.
+mobster expo dev: Metro can't bundle the app: Unable to resolve module ./Missing from App.tsx (App.tsx:3) Fix it and save: the next save tries again.
+Reloaded.
+```
+
+1. It starts this project's Metro, or reuses the one it started before. A Metro on port 8081 that serves another project is left alone and the next free port is used.
+2. When the device has no dev client, it builds one (`npx expo run:ios` for an iPhone, a Debug build for a simulator) and installs it. `--no-install` stops there with the command to run instead.
+3. It opens the app, then polls your source files (`.js`, `.jsx`, `.ts`, `.tsx`, `.json`, outside `node_modules`, `ios` and `android`) and reloads the app on each save.
+4. `--check .mobster/checks` runs `mobster test --device NAME` on those checks once the app is up. `--once` stops after that.
+5. ctrl+c stops the Metro this command started. A Metro that was already running stays running.
+
+Metro's error is a state, not a timeout. When Metro can't bundle the app, `mobster expo dev` exits 1 with Metro's own text, the file and the line (cut to 600 characters). After a save, it prints the same text and keeps watching, so the next save tries again. `mobster expo preview --expect` ends its wait the same way, and also when the dev client shows its red error screen. `--json` prints one JSON line per event (`metro`, `opened`, `reloaded`, `failed`, `checks`).
+
+Mobster doesn't replace Metro's fast refresh: it reloads the whole app on a save, which also picks up changes fast refresh skips.
+
+## Over the API
+
+The Mac app starts and watches the dev server through the local API:
+
+| Route | Does |
+|---|---|
+| `GET /api/tests/expo?project=/abs/path` | the app and its server: `state` is `stopped`, `starting`, `running` or `failed`, with `error.message`, `error.file` and `error.line` when it failed. `&bundle=1` asks Metro to bundle the app first |
+| `POST /api/tests/expo/dev` | `{project, port?}` starts or reuses the server and says whether it started it |
+| `POST /api/tests/expo/reload` | `{project}` reloads every app connected to it; 409 `not_running` when nothing is running |
+| `POST /api/tests/expo/stop` | `{project}` stops the Metro Mobster started |
+
+A Metro that a route started is stopped when Mobster quits.
+
+## Builds for checks and CI
+
+A Debug React Native build loads its JavaScript from Metro, and a check doesn't start Metro. So Mobster builds Release for the simulator, with the bundle inside the app:
+
+```sh
+mobster expo build
+```
+
+```text
+Making the ios folder: npx expo prebuild --platform ios
+Building Habits for the simulator
+Built Habits: .mobster/build/Build/Products/Release-iphonesimulator/Habits.app
+Release, with the JavaScript inside: it runs with no Metro. Point a check's app.path at it.
+```
+
+- When the app has no `ios` folder, `npx expo prebuild --platform ios` makes it first. CocoaPods has to be installed.
+- `--install --device "iPhone 17 Pro"` installs it on a Mobster simulator.
+- `--debug` builds Debug instead, for a simulator dev client that loads from Metro.
+- `--eas development` builds that EAS profile on this Mac with `eas build --local`. A simulator profile's `.app` is unpacked into `.mobster/expo/eas/`, and `--install` installs it.
+
+[`mobster test pr`](/testing#test-a-pull-request) and [`mobster ci`](/ci) do the same on their own: in an Expo or React Native project they build Release, after `npx expo prebuild` when there's no `ios` folder. A check names the build the usual way:
+
+```yaml .mobster/checks/home.yaml
+version: 1
+name: Home greets a returning user
+app:
+  bundle: com.example.habits
+  path: .mobster/build/Build/Products/Release-iphonesimulator/Habits.app
+launch:
+  url: habits://home
+expect:
+  - text: Welcome back
+```
+
+## What Mobster found
+
+```sh
+mobster expo doctor
+```
+
+```text
+Habits: Expo app (~54.0.0)
+  Bundle ID   com.example.habits
+  Schemes     habits
+  Opens in    your dev client (expo-dev-client)
+  ios folder  no: `mobster expo build` runs npx expo prebuild first
+  Metro       running on port 8081
+
+Checks and CI build Release for the simulator, with the JavaScript inside: mobster expo build
+```
+
+It reads only. A React Native app without Expo builds and runs in checks from its `ios` folder. `preview` is for Expo apps.
+
+Mobster reuses Metro only when its status names this project. Before stopping it, Mobster checks the process group, command and project folder; it leaves an unverified or replaced process alone. `--check` runs after the first open and after every successful reload.

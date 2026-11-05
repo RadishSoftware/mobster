@@ -1,0 +1,532 @@
+{
+  "about": "Mobster's icons: one set for the Mac app, mobster.dev, Remote and the docs. Each icon is drawn once, on a 24 unit grid, in svg/<name>.svg; scripts/gen_icons.py writes every surface's copy. See README.md.",
+  "grid": 24,
+  "stroke": {
+    "about": "The line in CSS px at a rendered size s is 0.5 + s / 16: 1.25 at 12, 1.375 at 14, 1.5 at 16, 1.75 at 20, 2 at 24. The 16 px line is Mobster Sans's 500 stem at 14 px (1.52 px), the label beside it; larger icons get relatively lighter, as optical sizes do.",
+    "base": 0.5,
+    "perPx": 0.0625
+  },
+  "sizes": [
+    12,
+    14,
+    16,
+    20,
+    24
+  ],
+  "motions": {
+    "nudge-right": "hold",
+    "nudge-left": "hold",
+    "nudge-up": "hold",
+    "nudge-down": "hold",
+    "nudge-out": "hold",
+    "lid": "hold",
+    "shackle": "hold",
+    "spread": "hold",
+    "stack": "hold",
+    "lift": "hold",
+    "ring": "once",
+    "turn-half": "once",
+    "turn-back": "once",
+    "turn-forward": "once",
+    "tick": "once",
+    "draw": "once",
+    "buzz": "once",
+    "blink": "once",
+    "bounce": "once",
+    "wiggle": "once",
+    "shake": "once",
+    "bars": "once",
+    "waves": "once",
+    "fly": "once",
+    "clap": "once",
+    "twinkle": "once",
+    "focus": "once",
+    "grid": "once",
+    "beat": "once",
+    "star": "once",
+    "snap": "once",
+    "spin-meridian": "once",
+    "bob": "once",
+    "look": "once",
+    "cursor": "once",
+    "sweep": "once",
+    "spin": "loop"
+  },
+  "icons": {
+    "activity": {
+      "motion": "draw"
+    },
+    "app-window": {},
+    "arrow-down": {
+      "motion": "nudge-down"
+    },
+    "arrow-down-to-line": {
+      "motion": "nudge-down"
+    },
+    "arrow-left": {
+      "motion": "nudge-left"
+    },
+    "arrow-right": {
+      "motion": "nudge-right"
+    },
+    "arrow-up": {
+      "motion": "nudge-up"
+    },
+    "arrow-up-right": {
+      "motion": "nudge-out"
+    },
+    "at-sign": {},
+    "audio-lines": {
+      "motion": "bars"
+    },
+    "badge-check": {
+      "motion": "draw"
+    },
+    "battery": {},
+    "battery-charging": {},
+    "battery-low": {},
+    "bell": {
+      "motion": "ring"
+    },
+    "bell-ring": {
+      "motion": "ring"
+    },
+    "book-open": {},
+    "bookmark": {
+      "motion": "bob"
+    },
+    "bookmark-check": {
+      "motion": "draw"
+    },
+    "bookmark-plus": {},
+    "bot": {},
+    "braces": {},
+    "brain": {},
+    "cable": {},
+    "calendar": {},
+    "calendar-clock": {},
+    "calendar-days": {},
+    "chart-area": {},
+    "chart-column": {
+      "motion": "bars"
+    },
+    "chart-line": {
+      "motion": "draw"
+    },
+    "chart-pie": {},
+    "chart-scatter": {},
+    "chart-spline": {
+      "motion": "draw"
+    },
+    "check": {
+      "motion": "draw"
+    },
+    "chevron-down": {},
+    "chevron-left": {
+      "motion": "nudge-left"
+    },
+    "chevron-right": {
+      "motion": "nudge-right"
+    },
+    "chevron-up": {},
+    "circle-alert": {
+      "motion": "shake"
+    },
+    "circle-check": {
+      "motion": "draw"
+    },
+    "circle-dashed": {},
+    "circle-dot": {},
+    "circle-minus": {},
+    "circle-pause": {},
+    "circle-question-mark": {
+      "motion": "wiggle"
+    },
+    "circle-stop": {},
+    "circle-user": {},
+    "circle-x": {},
+    "clapperboard": {
+      "motion": "clap"
+    },
+    "clipboard": {},
+    "clipboard-list": {},
+    "clock": {
+      "motion": "tick"
+    },
+    "clock-3": {
+      "motion": "tick"
+    },
+    "cloud-off": {},
+    "code": {},
+    "columns-3": {},
+    "compass": {
+      "motion": "wiggle"
+    },
+    "copy": {
+      "motion": "stack"
+    },
+    "corner-down-left": {
+      "motion": "nudge-left"
+    },
+    "corner-down-right": {
+      "motion": "nudge-right"
+    },
+    "cpu": {},
+    "credit-card": {},
+    "crosshair": {
+      "motion": "focus"
+    },
+    "dot": {},
+    "download": {
+      "motion": "nudge-down"
+    },
+    "ellipsis": {
+      "motion": "bounce"
+    },
+    "eraser": {
+      "motion": "wiggle"
+    },
+    "external-link": {
+      "motion": "nudge-out"
+    },
+    "eye": {
+      "motion": "blink"
+    },
+    "eye-off": {},
+    "file-braces-corner": {},
+    "file-check": {
+      "motion": "draw"
+    },
+    "file-code-corner": {},
+    "file-down": {
+      "motion": "nudge-down"
+    },
+    "file-question-mark": {},
+    "file-spreadsheet": {},
+    "file-text": {},
+    "file-up": {
+      "motion": "nudge-up"
+    },
+    "file-x": {},
+    "film": {},
+    "flask-conical": {},
+    "folder": {},
+    "folder-open": {},
+    "footprints": {},
+    "gallery-horizontal-end": {},
+    "gauge": {
+      "motion": "sweep"
+    },
+    "git-branch": {
+      "motion": "draw"
+    },
+    "globe": {
+      "motion": "spin-meridian"
+    },
+    "graduation-cap": {},
+    "grip-vertical": {},
+    "hand": {
+      "motion": "wiggle"
+    },
+    "heart": {
+      "motion": "beat"
+    },
+    "history": {
+      "motion": "tick"
+    },
+    "hourglass": {
+      "motion": "turn-half"
+    },
+    "house": {},
+    "image": {},
+    "image-plus": {},
+    "images": {},
+    "inbox": {
+      "motion": "nudge-down"
+    },
+    "info": {},
+    "ipad": {},
+    "iphone": {
+      "motion": "buzz"
+    },
+    "key-round": {
+      "motion": "wiggle"
+    },
+    "keyboard": {},
+    "layers": {
+      "motion": "lift"
+    },
+    "layout-grid": {
+      "motion": "grid"
+    },
+    "life-buoy": {},
+    "link": {
+      "motion": "snap"
+    },
+    "link-2": {
+      "motion": "snap"
+    },
+    "list": {},
+    "list-checks": {
+      "motion": "draw"
+    },
+    "list-video": {
+      "motion": "nudge-right"
+    },
+    "list-x": {},
+    "lock": {
+      "motion": "shackle"
+    },
+    "log-in": {
+      "motion": "nudge-right"
+    },
+    "log-out": {
+      "motion": "nudge-right"
+    },
+    "mac": {},
+    "mail": {},
+    "map": {},
+    "maximize": {
+      "motion": "focus"
+    },
+    "maximize-2": {
+      "motion": "spread"
+    },
+    "menu": {},
+    "message-circle-question-mark": {
+      "motion": "wiggle"
+    },
+    "message-circle-reply": {
+      "motion": "bob"
+    },
+    "message-square": {
+      "motion": "bob"
+    },
+    "message-square-text": {
+      "motion": "bob"
+    },
+    "message-square-warning": {
+      "motion": "shake"
+    },
+    "message-square-x": {
+      "motion": "bob"
+    },
+    "messages-square": {
+      "motion": "bob"
+    },
+    "mic": {
+      "motion": "bob"
+    },
+    "minus": {},
+    "mouse-pointer-2": {
+      "motion": "bob"
+    },
+    "mouse-pointer-click": {
+      "motion": "twinkle"
+    },
+    "move-vertical": {},
+    "newspaper": {},
+    "notebook-pen": {
+      "motion": "wiggle"
+    },
+    "panel-left": {
+      "motion": "nudge-left"
+    },
+    "paperclip": {
+      "motion": "wiggle"
+    },
+    "pause": {},
+    "pause-fill": {},
+    "pen-line": {
+      "motion": "wiggle"
+    },
+    "pencil": {
+      "motion": "wiggle"
+    },
+    "pencil-line": {
+      "motion": "wiggle"
+    },
+    "pin": {
+      "motion": "bob"
+    },
+    "play": {
+      "motion": "nudge-right"
+    },
+    "play-fill": {},
+    "plug": {
+      "motion": "bob"
+    },
+    "plus": {},
+    "pointer": {
+      "motion": "bob"
+    },
+    "puzzle": {
+      "motion": "wiggle"
+    },
+    "radio": {},
+    "receipt": {},
+    "redo-2": {
+      "motion": "nudge-right"
+    },
+    "refresh-cw": {
+      "motion": "turn-half"
+    },
+    "repeat": {
+      "motion": "turn-half"
+    },
+    "repeat-2": {},
+    "rotate-ccw": {
+      "motion": "turn-back"
+    },
+    "rotate-cw": {
+      "motion": "turn-forward"
+    },
+    "route": {
+      "motion": "draw"
+    },
+    "scale": {},
+    "scan-eye": {
+      "motion": "focus"
+    },
+    "scan-search": {
+      "motion": "focus"
+    },
+    "scan-text": {
+      "motion": "focus"
+    },
+    "search": {
+      "motion": "look"
+    },
+    "send": {
+      "motion": "fly"
+    },
+    "send-horizontal": {
+      "motion": "nudge-right"
+    },
+    "server": {},
+    "settings": {},
+    "settings-2": {},
+    "sheet": {},
+    "shield-alert": {
+      "motion": "shake"
+    },
+    "shield-check": {
+      "motion": "draw"
+    },
+    "shopping-bag": {},
+    "skip-forward": {
+      "motion": "nudge-right"
+    },
+    "sliders-horizontal": {},
+    "sparkles": {
+      "motion": "twinkle"
+    },
+    "spinner": {
+      "motion": "spin"
+    },
+    "sprout": {},
+    "square": {},
+    "square-check-big": {
+      "motion": "draw"
+    },
+    "square-pen": {
+      "motion": "wiggle"
+    },
+    "square-play": {},
+    "square-terminal": {
+      "motion": "cursor"
+    },
+    "star": {
+      "motion": "star"
+    },
+    "stop-fill": {},
+    "table-2": {},
+    "tag": {
+      "motion": "wiggle"
+    },
+    "telescope": {},
+    "terminal": {
+      "motion": "cursor"
+    },
+    "text-align-start": {},
+    "timer": {
+      "motion": "tick"
+    },
+    "trash-2": {
+      "motion": "lid"
+    },
+    "triangle-alert": {
+      "motion": "shake"
+    },
+    "undo-2": {
+      "motion": "nudge-left"
+    },
+    "unplug": {
+      "motion": "snap"
+    },
+    "upload": {
+      "motion": "nudge-up"
+    },
+    "user": {},
+    "user-round": {},
+    "users": {},
+    "webhook": {},
+    "wifi": {
+      "motion": "waves"
+    },
+    "wifi-off": {},
+    "workflow": {
+      "motion": "draw"
+    },
+    "wrench": {
+      "motion": "wiggle"
+    },
+    "x": {},
+    "zap": {
+      "motion": "bob"
+    }
+  },
+  "surfaces": {
+    "site": [
+      "app-window",
+      "arrow-right",
+      "arrow-up",
+      "book-open",
+      "check",
+      "chevron-down",
+      "chevron-right",
+      "clock",
+      "cloud-off",
+      "copy",
+      "corner-down-right",
+      "credit-card",
+      "folder",
+      "iphone",
+      "key-round",
+      "keyboard",
+      "layout-grid",
+      "list-checks",
+      "list-video",
+      "lock",
+      "mac",
+      "mail",
+      "play-fill",
+      "plug",
+      "plus",
+      "receipt",
+      "rotate-ccw",
+      "search",
+      "spinner",
+      "workflow",
+      "wrench"
+    ],
+    "remote": [
+      "check",
+      "iphone",
+      "list-checks",
+      "mac",
+      "play",
+      "shield-check"
+    ]
+  }
+}

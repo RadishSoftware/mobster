@@ -1,8 +1,5 @@
-"""The operator's gcloud login for Google's models on Vertex AI, and whether a helper model is set up.
-
-Tokens are captured in memory, sent only to Google's fixed endpoint, never logged.
-No API enablement, billing changes, credential-file edits, or automatic retries.
-"""
+"""The operator's gcloud login for Vertex AI (its token kept in memory, never logged),
+and whether a helper model is set up."""
 import os
 import re
 import subprocess
@@ -14,8 +11,8 @@ from .transport import Deadline, TransportError
 
 def gcloud_path():
     """gcloud, also when the desktop app was opened from Finder with a minimal PATH."""
-    from pathlib import Path
     import shutil
+    from pathlib import Path
     for candidate in ('/opt/homebrew/bin/gcloud', '/usr/local/bin/gcloud',
                       str(Path.home() / 'google-cloud-sdk' / 'bin' / 'gcloud'),
                       '/opt/homebrew/share/google-cloud-sdk/bin/gcloud'):
@@ -28,8 +25,7 @@ class GCloudToken:
     _lock = threading.Lock()
     _token = ""
     _until = 0
-    # gcloud may return an already-cached token, so its default one-hour lifetime is
-    # not one fresh hour from this call. Keep our extra cache short and invalidate on401.
+    # gcloud may return an already-cached token, so keep our extra cache short and invalidate on 401.
     CACHE_SECONDS = 300
 
     @classmethod

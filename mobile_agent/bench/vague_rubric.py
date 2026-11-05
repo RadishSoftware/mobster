@@ -88,7 +88,8 @@ def judge(model, goal, items, report_md):
     notes = "\n".join(f"- {(i.get('extract') or {}).get('summary') or ''}" for i in items.values()
                       if i.get("skip") is None and (i.get("extract") or {}).get("summary"))[:12000]
     schema = {"type": "object", "additionalProperties": False, "required": ["coverage", "insight", "why"],
-              "properties": {"coverage": {"type": "integer"}, "insight": {"type": "integer"}, "why": {"type": "string"}}}
+              "properties": {"coverage": {"type": "integer"}, "insight": {"type": "integer"},
+                             "why": {"type": "string"}}}
     out, _ = chat_client(model, reasoning="low").complete(
         [{"role": "system", "content": JUDGE},
          {"role": "user", "content": f"Request: {goal}\n\nNotes:\n{notes}\n\nReport:\n{report_md[:12000]}"}],

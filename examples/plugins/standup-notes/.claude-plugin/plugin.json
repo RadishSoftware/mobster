@@ -1,0 +1,6 @@
+{
+  "name": "standup-notes",
+  "version": "1.0.0",
+  "description": "Write your daily standup from what came in overnight, and keep notes between days.",
+  "author": {"name": "Mobster examples"}
+}

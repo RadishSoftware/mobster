@@ -1,11 +1,4 @@
-"""Offline backend tests. No devices, provider calls or real keys.
-
-Every test module imports this package first, so ``guard()`` runs before any test does. A test never sees a key from
-this Mac: not one in the shell's environment, not the Mac app's agent.env, not the key vault's files, not the
-Keychain, also when a test clears its environment. A failure message shows a key-shaped value only by its last four
-characters. Nor does a test run this Mac's Codex, Claude Code or Gemini CLI, or a login shell, or reach a Mobster
-service running on this Mac (the Mac app, `mobster serve`): the service address is pinned to a closed port.
-"""
+"""Offline backend tests: guard() runs first, so no test sees this Mac's keys, CLIs or running service."""
 
 import atexit
 import errno
@@ -92,6 +85,16 @@ def _test_user_data_dir():
 
 
 _paths.user_data_dir = _test_user_data_dir
+
+
+def _test_history_db():
+    """The terminal's journal, which a checkout keeps beside the source (paths.default_history_db), in the test's data
+    folder too: a test's `mobster run` never writes the task history of a terminal UI open in this checkout, nor meets
+    its lease."""
+    return _paths.user_data_dir() / "state" / "terminal.sqlite3"
+
+
+_paths.default_history_db = _test_history_db
 
 _expanduser = posixpath.expanduser
 
@@ -223,7 +226,8 @@ if _connectors_vault is not None:
     _connectors_vault.backend = _connectors_backend_in_a_file
 
 # Nor does a test reach the Keychain through the Security framework (keychain_acl.py): a store a test made without a
-# fake bridge (tests/fake_keychain.py) is refused before it reads or writes anything. Turning prompts off touches no item.
+# fake bridge (tests/fake_keychain.py) is refused before it reads or writes anything.
+# Turning prompts off touches no item.
 from mobile_agent import keychain_acl as _keychain_acl  # noqa: E402
 
 

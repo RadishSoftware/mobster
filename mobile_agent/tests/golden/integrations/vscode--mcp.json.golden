@@ -1,0 +1,9 @@
+{
+  "servers": {
+    "mobster": {
+      "type": "stdio",
+      "command": "/opt/mobster/bin/mobster",
+      "args": ["mcp"]
+    }
+  }
+}

@@ -1,0 +1,52 @@
+{
+ "ok": true,
+ "window": {
+  "x": 47,
+  "y": 143,
+  "w": 318,
+  "h": 701,
+  "id": 4242
+ },
+ "hash": "dddd000000000004",
+ "dark": 0.05,
+ "pixels": [
+  636,
+  1402
+ ],
+ "ms": {
+  "capture": 21,
+  "total": 280
+ },
+ "rows": [
+  {
+   "text": "Notes",
+   "confidence": 1.0,
+   "rect": [
+    0.07,
+    0.2,
+    0.15,
+    0.02
+   ]
+  },
+  {
+   "text": "Settings",
+   "confidence": 1.0,
+   "rect": [
+    0.3,
+    0.2,
+    0.15,
+    0.02
+   ]
+  },
+  {
+   "text": "Instagram",
+   "confidence": 1.0,
+   "rect": [
+    0.53,
+    0.2,
+    0.18,
+    0.02
+   ]
+  }
+ ]
+}

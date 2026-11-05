@@ -1,0 +1,16 @@
+appId: com.example.shop
+name: Checkout with a promo code
+env:
+  PROMO: SPRING10
+---
+- launchApp
+- tapOn: Cart
+- tapOn:
+    id: promo_field
+- inputText: ${PROMO}
+- runScript: scripts/promo.js
+- takeScreenshot: cart
+- back
+- scroll
+- assertVisible: "Total: .*"
+- assertNotVisible: Cart is empty

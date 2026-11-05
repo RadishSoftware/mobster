@@ -7,8 +7,15 @@ from pathlib import Path
 
 from mobile_agent.bench.fixtures import IMAGE_SETS, Fixtures
 from mobile_agent.bench.tests.fakes import element, snapshot
-from mobile_agent.bench.truth import (Navigator, TruthStore, capture_from_reset, read, row_value, switch_value,
-                                      wifi_state)
+from mobile_agent.bench.truth import (
+    Navigator,
+    TruthStore,
+    capture_from_reset,
+    read,
+    row_value,
+    switch_value,
+    wifi_state,
+)
 from mobile_agent.evals.oracles import ProbeUnavailable
 
 

@@ -1,0 +1,398 @@
+---
+title: "Send results to other tools"
+sidebarTitle: "Send results to other tools"
+description: "When a task starts, needs you or finishes, Mobster for Mac tells Slack, Discord or a signed webhook for Zapier, Make, n8n or your server, and puts results in Google Sheets, Notion, a folder or your email. Slack, Discord, Notion and Google Sheets connect with one sign-in."
+icon: "webhook"
+keywords: ["webhook", "webhooks", "events", "needs you", "run.started", "delivery log", "zapier", "make", "integromat", "n8n", "slack", "discord", "send results", "send the result to", "integrations", "hmac", "signature", "google sheets", "sheets", "sign in", "connect", "notion", "email", "mail", "folder", "csv", "jsonl", "export", "destinations", "airtable", "incoming webhook", "start a workflow", "trigger"]
+---
+
+When a task finishes, Mobster for Mac can send its result somewhere you choose. You save each place once, as a destination, in **Settings › Connectors**. Then a task, a message in a conversation or a workflow names the destination, and its result goes there when it ends. A destination can also take every task's result, and Slack, Discord and webhooks can hear when a task starts or needs you ([Events](#events)). The other way round, another tool can start one of your workflows with a webhook URL ([Start a workflow from another tool](#start-a-workflow-from-another-tool)).
+
+| Destination | What arrives | What you need |
+|---|---|---|
+| [Slack](#slack) | A message in a channel, posted as you | Sign in with Slack, then pick a channel |
+| [Zapier, Make, n8n](#zapier-make-and-n8n) | A signed JSON `POST` that starts a Zap, a scenario or a workflow | The trigger's webhook address |
+| [Google Sheets](#google-sheets) | A row in **Mobster results**, a sheet Mobster makes in your Drive | Sign in with Google |
+| [Notion](#notion) | A page in a database | Sign in with Notion, then pick a database |
+| [Folder](#a-folder-on-your-mac) | A CSV row or a JSON line, added to a file on your Mac | Nothing |
+| [Email](#email) | An email to your own address, sent from Mail | An account in Mail |
+| [Discord](#discord) | A message in a channel | Sign in with Discord, and pick a channel there |
+| [Webhook](#webhooks) | A signed JSON `POST`: Zapier, Make, n8n, a Slack incoming webhook or your own server | The tool's webhook address |
+
+Every destination gets the same result: the answer, the structured data when the task asked for some, how the task ended, and the workflow and its blanks when it ran from one ([What Mobster sends](#what-mobster-sends)). Passwords, one-time codes and card numbers in it are masked as `••••••`, as they are everywhere in Mobster. A destination never gets the task's own words, its steps or its cost.
+
+## Save a destination
+
+1. Open **Settings › Connectors** (⌘,). Under **Add a connector**, choose **Connect** beside Slack, Zapier, Make, n8n, Webhook, Google Sheets, Notion, Folder, Email or Discord (for a Notion you already connected, **Details › Send results** on its row).
+2. The service's page opens with the form at its top. Slack, Discord, Notion and Google Sheets: choose **Connect** in the form and sign in ([Connect with one sign-in](#connect-with-one-sign-in)). The others: fill in the form, as the sections below describe. **Where do I find this?** under a webhook's address says where the tool shows it.
+3. Choose when it sends and for which tasks: **Tasks that choose it** (the default) or **Every task**. Slack, Discord and webhooks also take **A task starts** and **A task needs you** ([Events](#events)).
+4. Choose **Add**, then **Send a test** on its service's row. The row shows how it went, such as `Test sent. The address answered 200.` or `Connected to Leads. Fills Answer, Status.` When Mobster gives no answer, it says it can't tell whether the test arrived. Look for the test there before you send another.
+
+**Details** on a destination's row shows what it takes, how the last test went and its delivery log ([The delivery log](#the-delivery-log)).
+
+Addresses, sign-in tokens, secrets and your email address are kept in your Mac's login Keychain, under `app.mobster.desktop.outlets`. Mobster never writes them in its logs, in a task's history or in an answer from its API, and the `mobster` command never reads them. Adding, changing and removing a destination happens in the Mac app only.
+
+## Connect with one sign-in
+
+Slack, Discord, Notion and Google Sheets connect the way a connector does: you sign in at the service, and nothing is pasted.
+
+1. Choose **Connect Discord** (or Slack, Notion, Google Sheets). The service's consent page opens in your browser, and the form says `Waiting for Discord`.
+2. Allow Mobster there. Each service asks something of its own: Discord, which server and channel; Notion, which pages Mobster may see; Google, to let Mobster make and fill its own sheets.
+3. Your browser says `Connected to Discord` and brings Mobster back. The form says what it reached, such as `Connected to Radish`, your Slack workspace.
+4. For Slack and Notion, pick the channel or the database. Its name fills **Name** until you type one.
+5. Choose **Add**.
+
+Mobster signs in with its own app at each service. The app's secret stays on Mobster's license API, which trades the sign-in for tokens and keeps neither ([Connectors](/connectors#mobsters-own-slack-google-and-github-apps)). The tokens go to your Keychain only when you choose **Add**. Choose **Cancel** before that, and Mobster forgets them. To pick another channel or database later, choose **Edit › Connect again** on the destination.
+
+If you don't allow Mobster at the service, the form says `You didn't allow Mobster to connect.` and offers **Connect again**. If Mobster's own app at that service isn't ready yet, Connect says so, such as `Mobster's own Discord app isn't set up yet. Try again later.`
+
+## Google Sheets
+
+Each result becomes a row in **Mobster results**, a sheet Mobster makes in your Google Drive.
+
+1. Under **Add a connector**, choose **Connect** beside **Google Sheets**, then **Connect Google Sheets**, and sign in with Google ([Connect with one sign-in](#connect-with-one-sign-in)).
+2. Google asks to let Mobster see, edit, create and delete only the Google Drive files it uses with Mobster (`drive.file`). Mobster never sees your other files.
+3. Mobster finds the **Mobster results** sheet it made before, or makes one. Choose **Add**.
+
+The first result writes a header row: `Finished`, `Status`, `Answer`, `Reason`, `Workflow`, `Data`, `Run`, then each blank of the workflow and each field of the answer's data. A later result with a field the header lacks adds that column at the end. Rows fill the columns by their header, so you can reorder them, rename the ones you don't need, or add a column named after a field of the data. Mobster writes on the first tab. Text arrives as written, so text from your phone's screen never runs as a formula.
+
+**Send a test** reads the header, without adding a row: `Connected to Mobster results. Each result adds a row.` Mobster never adds a row twice: when Google doesn't answer, or answers `5xx`, the row may be there, so the delivery fails and says to check **Mobster results**. A `429` (Google asking to slow down) and a request that never left are tried again. Google's sign-in lasts an hour at a time, and Mobster renews it through its license API. If you take Mobster's access back in your Google account, a delivery says `Google Sheets signed Mobster out. Connect Google Sheets again in Settings › Connectors.`
+
+A Google Sheets destination saved before 15 Oct 2026 added rows through a script you pasted into the sheet. It stops and says `Mobster now adds rows itself, with no script. Connect Google Sheets again in Settings › Connectors.` You can delete the script from your sheet.
+
+## Notion
+
+Each result becomes a page in one database.
+
+1. Under **Add a connector**, choose **Connect** beside **Notion**, then **Connect Notion**, and sign in with Notion ([Connect with one sign-in](#connect-with-one-sign-in)).
+2. In Notion's list, choose the pages and databases Mobster may use. Choosing a page includes the databases inside it.
+3. Back in Mobster, pick the database under **Database**, then choose **Add**. If you shared none, the form says `Notion shared no database with Mobster. Connect again, and pick one in Notion's list.`
+
+A new page's title is the workflow's name and the answer, such as `Lead check: Sam replied: yes, 3 seats.` Each other column whose name matches a field of the result fills from it, case ignored: `Answer`, `Status`, `Finished`, `Reason`, `Workflow`, `Run`, the workflow's blanks and the fields of the answer's data. A column fills when its type can hold the value: text, number, select, multi-select, date, checkbox, URL, email or phone. The whole answer, why the task stopped and the data are always in the page itself, so nothing is lost when no column matches.
+
+**Send a test** reads the database and says which columns match, without adding a page: `Connected to Leads. Fills Answer, Status.` Mobster never adds a page twice: when Notion doesn't answer, or answers `5xx`, the page may exist, so the delivery fails and says to check the database. A `429` (Notion asking to slow down) is tried again. When Notion refuses the sign-in, Mobster renews it once through its license API. If you remove Mobster from the database in Notion, a delivery says `Notion no longer shares that database with Mobster. Connect Notion again, and pick it in Notion's page list.` A Notion destination saved before 15 Oct 2026 with an internal integration's secret keeps sending.
+
+## A folder on your Mac
+
+Each result is added to the end of a file in a folder you choose. No network and no account.
+
+1. Under **Add a connector**, choose **Connect** beside **Folder**, then **Choose…** and pick a folder in your home folder, such as `~/Documents`.
+2. Name the file. `Results.csv` adds a CSV row per result, with the same columns as [Google Sheets](#google-sheets). `Results.jsonl` adds one line per result: the JSON object a webhook gets, without the screenshot.
+
+Mobster only appends. It never replaces, renames or truncates the file, so you can keep it open in Numbers or Excel, sort it or add columns. It refuses a folder outside your home folder (another disk, `/tmp`, or a link that leads out), and a file that is a link. macOS may ask once whether Mobster may use a folder such as Documents. If you don't allow it, the delivery says `macOS didn't let Mobster write in ~/Documents. Allow it in System Settings › Privacy & Security › Files and Folders, then resend.`
+
+**Send a test** checks that Mobster can write the file, without adding a row.
+
+## Email
+
+Each result is an email to your own address, sent by the Mail app on your Mac from its default account.
+
+1. Under **Add a connector**, choose **Connect** beside **Email** and type your email address.
+2. Choose **Send a test**. The first time, macOS asks whether Mobster may control Mail. Choose **Allow**.
+
+The subject is `Mobster:` and the workflow's name and answer; the body holds the whole answer, the workflow's blanks, the data and how the task ended. The address is fixed when you save the destination. A task, a workflow or an agent connected to Mobster can't choose or change it. Mail opens in the background to send if it isn't open.
+
+Mobster never sends an email twice on its own: a send that fails isn't tried again, and says why, such as `Mail has no account to send from. Add one in Mail, then resend.` If you didn't allow Mobster to control Mail, turn it on in **System Settings › Privacy & Security › Automation › Mobster**, then choose **Resend**.
+
+## Slack
+
+Each result is a message in a channel you pick, posted as you.
+
+Slack is listed under **Send results** once Mobster offers its Slack connector, or when a Slack connector of yours is signed in already. Until then it isn't listed, because a listed service has to work.
+
+1. Under **Add a connector**, choose **Connect** beside **Slack**, then **Send results**, then **Connect Slack**.
+2. Sign in with Slack ([Connect with one sign-in](#connect-with-one-sign-in)). Slack has one sign-in in Mobster: a Slack destination posts with the Slack connector's. When Slack isn't connected yet, **Connect Slack** connects it under **Use in tasks** too, where each Slack tool asks you before it runs. When it is, there's no sign-in to do.
+3. Pick a channel from the ones you're in, then choose **Add**. **Find a channel** filters a long list.
+
+The message is the one-line `text` of [What Mobster sends](#what-mobster-sends) as a Block Kit section, at most 3,000 characters, with a quiet line under it such as `Done in Mobster, from Lead check`. Mobster escapes `&`, `<` and `>`, so text from a screen can't mention `@channel` or a person, or make a link. Links don't unfurl. Mobster tries again only when Slack asks it to wait (`429`) or the connection never opened. When Slack's sign-in ran out, Mobster renews it and posts once more. A refusal says why, such as `Slack refused: the channel was archived. Pick another channel: Connect Slack again in Settings › Connectors.` Signing out of Slack under **Use in tasks**, or removing it, stops the destination too: `Slack signed Mobster out. Sign in to Slack again under Use in tasks in Settings › Connectors.`
+
+When Mobster's own Slack app can't sign you in, such as when Mobster can't reach its sign-in service, **Connect Slack** says why and offers **Use your own Slack app**, which connects Slack under **Use in tasks** with an app you create ([Connectors](/connectors)). Its app needs the `chat:write`, `channels:read` and `groups:read` user scopes. Then add the destination again: it posts with that sign-in.
+
+A Slack destination saved before 15 Oct 2026 posted through an incoming webhook. It stops and says `Mobster now posts as you, in a channel you pick. Connect Slack again in Settings › Connectors.` To keep posting through the webhook instead, add it as a [Webhook](#webhooks).
+
+## Discord
+
+Each result is a message in a channel.
+
+1. Under **Add a connector**, choose **Connect** beside **Discord**, then **Connect Discord**, and sign in with Discord ([Connect with one sign-in](#connect-with-one-sign-in)).
+2. Discord asks which server and channel Mobster may post in. It makes a webhook there, named Mobster. Choose **Add**.
+
+Mobster keeps the webhook's address in your Keychain, and nothing else from Discord. **Edit › Open** opens the channel in Discord. The message is the one-line `text` of [What Mobster sends](#what-mobster-sends), at most 2,000 characters, from `Mobster`. Mentions are off, so text from a screen can't ping `@everyone`. Mobster tries again only when Discord asks it to wait (`429`) or the connection never opened. After a `5xx` or no answer, the message may already be in the channel, so the delivery fails and says to check. If someone deletes the webhook in Discord, a delivery says `Discord answered 404: the webhook was deleted. Connect Discord again in Settings › Connectors.` A Discord destination saved before 15 Oct 2026 with a pasted webhook URL keeps sending.
+
+## Zapier, Make and n8n
+
+Each one is a webhook with its own card under **Add a connector**: **Connect** beside **Zapier**, **Make** or **n8n** opens the webhook form in that tool's words, with **Where do I find this?** for its address. Mobster checks the address is where that tool's webhooks live:
+
+| Tool | Its address | Mobster refuses |
+|---|---|---|
+| Zapier | `https://hooks.zapier.com/hooks/catch/…`, from **Webhooks by Zapier › Catch Hook** | Any other host |
+| Make | `https://hook.<region>.make.com/…`, from **Webhooks › Custom webhook** | Any other host |
+| n8n | Your Webhook node's **Production URL**, on n8n Cloud or your own server | Nothing: n8n runs anywhere |
+
+Everything else is the same as a webhook: the secret, the signature, the body and the retries. See [Use it in Zapier, Make and n8n](#use-it-in-zapier-make-and-n8n) for mapping the fields.
+
+## Webhooks
+
+A webhook gets a signed JSON `POST`: a Zapier or Make trigger, an n8n workflow, a Slack incoming webhook or your own server. From there the answer goes wherever that tool sends it.
+
+1. Under **Add a connector**, choose **Connect** beside **Webhook**, give it a name, such as `My server`, and paste the webhook's address:
+
+   | Tool | Where its address is |
+   |---|---|
+   | Zapier | A Zap that starts with **Webhooks by Zapier › Catch Hook**. Copy its webhook URL. Webhooks by Zapier needs a paid Zapier plan, not Free |
+   | Make | A scenario that starts with **Webhooks › Custom webhook**. Choose **Add**, then **Copy address to clipboard** |
+   | n8n | A **Webhook** node with **HTTP Method** set to `POST`. Copy its **Production URL** |
+   | Slack | An [incoming webhook](https://api.slack.com/messaging/webhooks) for the channel. Slack shows the `text` line, takes about one message a second, and posts only to that channel |
+   | Your own server | Any address that takes a JSON `POST` |
+
+2. Under **Secret**, choose **Generate**, or paste the secret your server expects. With a secret, every post carries a signature your server can check ([Check the signature](#check-the-signature)). Leave it empty for a tool that doesn't check signatures.
+3. Choose **Add**, then **Send a test** on its row. Mobster posts a test body and shows what the address answered. Send a test before you map fields in Zapier or Make, so they learn the body's fields.
+
+An address starts with `https://`. `http://` works for this Mac and your own network: `localhost`, a private address such as `192.168.1.20`, or a `.local` name. A web address with a name and password in it (`https://user:pass@…`) is refused: put the secret in **Secret**. Mobster shows only the start of the address, such as `https://hooks.zapier.com/hooks/…`.
+
+## Choose where a result goes
+
+| From | How |
+|---|---|
+| A task | **Send to** in the task box, then the destination. It shows once you've saved one |
+| A message in a conversation | The same **Send to**. It applies to the task that message starts |
+| A workflow | **Edit workflow › More › Send the result to**. Every run sends there: from Workflows, ⌘K, Siri, the terminal or its schedule |
+| A shortcut | **Send to** on the **Ask Mobster** action in the Shortcuts app ([Get the answer back in a shortcut](/launchers#get-the-answer-back-in-a-shortcut)) |
+| The HTTP API | `"sendTo": "Zapier"`, a destination's name or id, in `POST /api/runs`, `POST /api/threads/{id}/messages` or `POST /api/workflows` ([Scripts and the API](/scripting)) |
+
+A destination set to **Every task** gets every task's result, whether or not the task names it. A task that names a destination always sends its result there.
+
+`GET /api/outlets` lists your destinations by name, id, `kind` (`webhook`, `slack`, `sheets`, `notion`, `folder`, `email` or `discord`), `hint`, `events` and `scope` (`named` or `all`). Its `kinds` are the kinds you can add on this Mac now: `slack` only once Mobster offers its Slack connector or one of yours is signed in. Adding, changing and removing a destination happens in the Mac app.
+
+## Events
+
+Slack, Discord and webhooks can take three events. Choose them under **Send when** in the destination's form. The others take results only.
+
+| Event | When | `Mobster-Event` |
+|---|---|---|
+| **A task starts** | A task begins on the phone | `run.started` |
+| **A task needs you** | A task waits for you in Mobster: an approval card, a question or a plan to start | `needs_you` |
+| **A task ends, with its result** | A task ends, however it ended | `run.finished` |
+
+A start and a question never hold up the task: Mobster writes the delivery and sends it on its own thread, as it sends a result. You still answer in Mobster, on the Mac or through [Mobster Remote](/remote).
+
+A start:
+
+```json
+{
+  "type": "run.started",
+  "runId": "a1b2c3d4e5f6",
+  "startedAt": "2026-10-14T15:02:11Z",
+  "workflow": { "id": "3f9c2a1b7d0e", "name": "Inbox check", "blanks": { "folder": "Inbox" } },
+  "text": "Mobster › Inbox check: a task started."
+}
+```
+
+A task that needs you:
+
+```json
+{
+  "type": "needs_you",
+  "runId": "a1b2c3d4e5f6",
+  "kind": "approval",
+  "question": "Send this message to Sam Lee?",
+  "askedAt": "2026-10-14T15:02:40Z",
+  "workflow": null,
+  "text": "Mobster needs you: Send this message to Sam Lee?"
+}
+```
+
+`kind` is `approval` (a send, a post or a purchase waiting for OK), `question` (the agent asks which one you meant) or `plan` (a plan waiting for **Start**). `question` is what the card asks, as Mobster shows it, masked like everything else. Neither event holds the task's own words, the message a send would send, an answer you type or a screen.
+
+## The delivery log
+
+**Details** on a destination's row lists its newest deliveries: the event, **Sent**, **Sending** or **Failed**, when, how many tries, the HTTP status and why it failed. A failed one has **Resend**. While a try waits to go again, the log says when, such as `Trying again in 40 s`. The last **Send a test** shows above the list.
+
+The same list comes from the API, newest first:
+
+```sh
+curl -s -H "Authorization: Bearer $(cat "$D/api-token")" \
+  "$(cat "$D/api-url")/api/outlets/destinations/7c41e09ab2d3/deliveries?limit=20"
+```
+
+Each delivery has `id`, `runId`, `event`, `status`, `attempts`, `httpStatus`, `error`, `nextAt`, `createdAt` and `updatedAt`. `D` is `~/Library/Application Support/app.mobster.desktop/state` ([Scripts and the API](/scripting)).
+
+## Send a finished result from the API
+
+`POST /api/runs/RUN/send` with `{"destination": "#qa"}` (a saved destination's name or id) sends that finished task's result there, as a delivery you can read in the log above. It answers 201 with `delivery`. It sends nothing and answers 404 `destination_not_found` when no destination has that name, and 409 `no_destination` when none is saved. A task still running answers 409 `run_active`. The Mac app's session is needed when the app is running.
+
+`POST /api/runs/RUN/issue` files the result as an issue in a connected tracker (GitHub, Linear or Jira, from Settings › Connectors). The body is `{"tracker": "GitHub", "target": {"owner": "RadishSoftware", "repo": "mobster"}}`: `tracker` names the connector and may be left out when one tracker is connected, and `target` holds the destination details (`owner` and `repo` for GitHub, `team` for Linear, `cloudId` and `projectKey` for Jira). The issue holds the task's masked result, its status, why it did not finish and the device. It does not hold screenshots. The answer is 201 with `issue`: `status` (`filed`, `failed` or `unknown`), `tracker`, `tool`, `url` and `error`. Mobster saves the attempt on the task before it calls the tracker, and never sends it again if the tracker did not answer: that issue is `unknown`, and a second request answers 409 `outcome_unknown` until you have checked the tracker. A result already filed there answers 409 `already_filed` unless the body has `"again": true`. With no tracker connected it answers 409 `no_tracker`; `tracker_ambiguous`, `tool_missing` and `tool_blocked` say what to change.
+
+## What Mobster sends
+
+A webhook gets one `POST` per task, with `Content-Type: application/json`, when the task ends, however it ended. The other destinations get the same fields, laid out as they need: a row, a page, a line in a file, an email or a message.
+
+```json
+{
+  "type": "run.finished",
+  "runId": "a1b2c3d4e5f6",
+  "status": "completed",
+  "answer": "You have 3 unread emails: from Kate Bell, Sam Lee and Chase.",
+  "data": { "unread": 3, "from": ["Kate Bell", "Sam Lee", "Chase"] },
+  "reason": null,
+  "startedAt": "2026-10-10T15:02:11Z",
+  "finishedAt": "2026-10-10T15:02:53Z",
+  "workflow": { "id": "3f9c2a1b7d0e", "name": "Inbox check", "blanks": { "folder": "Inbox" } },
+  "text": "Mobster › Inbox check: You have 3 unread emails: from Kate Bell, Sam Lee and Chase."
+}
+```
+
+| Field | What it holds |
+|---|---|
+| `type` | `run.finished`, or `test` for **Send a test**. The other events have their own bodies ([Events](#events)) |
+| `runId` | The task's id. `null` in a test |
+| `status` | `completed`, or how the task ended: `completion_not_confirmed`, `blocked`, `max_steps`, `timeout`, `spend_cap`, `approval_denied`, `approval_timeout`, `stopped`, `interrupted` or `error` |
+| `answer` | The whole answer as text. `null` when the task had none |
+| `data` | The structured answer, when the task asked for one (an answer schema, or JSON, CSV or YAML) and Mobster checked that it fits. `null` for a text answer |
+| `reason` | Why the task didn't finish. `null` when it did |
+| `startedAt`, `finishedAt` | When the task started and ended, in UTC (ISO 8601) |
+| `workflow` | The workflow the task ran from: its `id`, `name` and the value of each blank. `null` for a task you started yourself |
+| `text` | One line for chat tools: `Mobster: …`, or `Mobster › <workflow>: …` |
+| `screenshot` | Only when the destination has **Send the last screen** on: `{"contentType": "image/jpeg", "base64": "…"}`, the task's last screen at up to 1,280 pixels on its long side |
+
+That's all a post holds. It never has the task's own words, its steps, its cost, or a screen unless you turned that on (webhooks only). Passwords, one-time codes and card numbers in `answer`, `data`, `reason` and `text` are masked as `••••••`, as they are everywhere in Mobster.
+
+Each post has these headers:
+
+| Header | Value |
+|---|---|
+| `Mobster-Event` | `run.finished`, `run.started`, `needs_you` or `test` |
+| `Mobster-Delivery` | The delivery's id, such as `7c41e09ab2d3`. The same on every try of one post, so your server can skip one it already has |
+| `Mobster-Timestamp` | When this try was sent, in Unix seconds |
+| `Mobster-Signature` | With a secret only: `t=<timestamp>,v1=<signature>` |
+| `User-Agent` | `Mobster-Webhooks/1` |
+
+## Check the signature
+
+`v1` is HMAC-SHA256 with your secret, over the timestamp, a period and the body exactly as it arrived, written in lowercase hex. To check a post:
+
+1. Read `t` and `v1` from `Mobster-Signature`.
+2. Compute HMAC-SHA256 with your secret over `t`, `.` and the raw body bytes. Don't parse and re-encode the JSON first.
+3. Compare it with `v1` in constant time.
+4. Refuse a post whose `t` is more than 5 minutes from your clock, so an old post can't be replayed.
+
+In Python:
+
+```python
+import hashlib, hmac, time
+
+def from_mobster(secret: str, signature: str, body: bytes, tolerance: int = 300) -> bool:
+    parts = dict(item.split("=", 1) for item in signature.split(","))
+    expected = hmac.new(secret.encode(), parts["t"].encode() + b"." + body, hashlib.sha256).hexdigest()
+    fresh = abs(time.time() - int(parts["t"])) <= tolerance
+    return fresh and hmac.compare_digest(expected, parts["v1"])
+```
+
+In Node.js:
+
+```js
+import { createHmac, timingSafeEqual } from "node:crypto";
+
+export function fromMobster(secret, signature, body /* a Buffer */, tolerance = 300) {
+  const parts = Object.fromEntries(signature.split(",").map((item) => item.split("=")));
+  const expected = createHmac("sha256", secret).update(`${parts.t}.`).update(body).digest("hex");
+  const fresh = Math.abs(Date.now() / 1000 - Number(parts.t)) <= tolerance;
+  return fresh && expected.length === parts.v1.length && timingSafeEqual(Buffer.from(expected), Buffer.from(parts.v1));
+}
+```
+
+## When a send fails
+
+- A webhook or Google Sheets is tried again after a network error, no answer within 10 seconds, or a `408`, `425`, `429` or `5xx`: about 10 seconds later, then after about 1 minute, 5 minutes and 15 minutes. Each pause is 20% longer or shorter at random, so a server that came back a moment ago isn't hit by every retry at once. That's 5 tries in all. A retry can't arrive twice: a webhook's `Mobster-Delivery` stays the same, and the Sheets script skips a delivery it already has.
+- Notion, Slack and Discord are tried again only when the result surely didn't arrive: a `429`, or a connection that never opened. A folder and an email are never tried again on their own.
+- A webhook's `3xx` or another `4xx` isn't tried again. Mobster doesn't follow redirects: save the address the redirect points to.
+- Under the task's result, Mobster shows how it went: **Sent to Zapier**, **Sending to Zapier**, or **Couldn't send to Zapier** with the reason and **Resend**. Resend posts the same result again, with a new `Mobster-Delivery`.
+- A post that fails never changes the task. The task had already ended when Mobster sent it.
+- If you quit Mobster while it's still trying, it tries again the next time you open it. A Notion page, a Discord message, a row in a folder or an email that was on its way at that moment may have arrived, so it isn't sent again: the line says `Mobster quit while sending this, so it may have arrived. Check Me, then resend if it's missing.`
+- Removing a destination stops every workflow that sends there. Their next runs send nothing.
+
+## Use it in Zapier, Make and n8n
+
+- **Zapier:** after **Send a test**, choose **Test trigger** in the Catch Hook step. Zapier lists `answer`, `status` and each key of `data` (such as `Data Unread`) to map into the next step, such as **Google Sheets › Create Spreadsheet Row**.
+- **Make:** choose **Redetermine data structure** on the Custom webhook, then **Send a test** in Mobster. The fields are then there to map.
+- **n8n:** the Webhook node's output has the body under `body`, such as `{{ $json.body.answer }}`. To check the signature, turn on **Raw Body** in the node's options and use the steps above in a Code node.
+
+## Start a workflow from Slack or Discord
+
+A linked person types `/mobster run Running late person=Sam` in Slack or Discord. Mobster starts the workflow on your Mac and posts how it ended in the same place. Commands reach your Mac through Mobster Remote, so Remote must be on ([Mobster Remote](/remote)). This is off until you set `MOBSTER_EXPERIMENTAL_INBOUND=1` for Mobster for Mac, and the relay answers only after Mobster turns on its Slack and Discord commands.
+
+1. Make a link code: `POST /api/outlets/inbound/codes {"channel": "slack"}` answers `{"code": "K7M2-9QXD", "expiresAt": …}`. The code works once, for 10 minutes.
+2. In Slack or Discord, send `/mobster link K7M2-9QXD`. The platform signs who you are, and Mobster keeps that account as allowed. Anyone else gets "Mobster doesn't know this account" and nothing starts.
+3. Turn a published workflow on for the channel: `POST /api/outlets/inbound/workflows {"channel": "slack", "workflowId": "…"}`. Only turned-on workflows run from chat.
+
+| Command | What it does |
+|---|---|
+| `/mobster list` | Names the workflows turned on for this channel, with their blanks |
+| `/mobster run <workflow> name=value …` | Starts the workflow. Each `name=value` fills a blank. A workflow with one blank takes the rest of the line as its value |
+| `/mobster link <code>` | Links this account |
+
+What the text can do: it names a workflow and fills its blanks, and nothing else. A value is short text with passwords, codes and card numbers masked. A word that matches no blank on a workflow with several blanks is refused, not guessed. The run asks you before it sends, buys, posts or deletes, whatever **Ask before acting** says, and the card waits in Mobster on your Mac. Chat never approves anything.
+
+Mobster answers privately to the person who typed the command, and posts the result there once the run ends, within 15 minutes for Discord and 30 for Slack. A run that takes longer finishes in Mobster only. Set `public` on a linked account (`POST /api/outlets/inbound/senders/{channel}/{sender} {"public": true}`) to post results for the whole channel. `DELETE` on the same path removes the account.
+
+A command that repeats a command id Mobster already took starts nothing. The relay refuses a request whose Slack or Discord signature is wrong or more than 5 minutes old, and it keeps no command text.
+
+## Start a workflow from another tool
+
+A saved workflow can have webhook URLs. A signed `POST` to one starts the workflow on your Mac, from Zapier, Make, n8n, a script or any server, and the body's fields fill its blanks. The URL is Mobster Remote's address for your Mac, so Remote must be on ([Mobster Remote](/remote)). Zapier also has Mobster's own app, which signs in once and lists these workflows instead of using the URL ([Zapier](/zapier)). A workflow needs a webhook URL for that app to see it.
+
+1. Open the workflow from its row in **Workflows**.
+2. Select the workflow's **Webhook** trigger on its canvas. To add one, double-click the canvas to open the step menu. Choose **Webhook**. Join it to the first step. Choose **Make a URL** under **By webhook** in its inspector.
+3. Copy the URL and the signing secret. Mobster shows the secret once. If you lose it, revoke the URL and make another.
+
+A URL looks like `https://remote.mobster.dev/hooks/<your Mac's route>/<32 hex characters>`. A workflow can have several, one per tool, and **Revoke** stops one at once. Removing the workflow revokes its URLs.
+
+### Call it
+
+Send JSON with `Mobster-Signature`, signed the same way as the posts Mobster sends ([Check the signature](#check-the-signature)): `t` is the time in Unix seconds and `v1` is HMAC-SHA256 with your secret over `t`, `.` and the body.
+
+```bash
+SECRET=whsec_…   # shown when you made the URL
+URL=https://remote.mobster.dev/hooks/…/…
+BODY='{"person": "Sam", "minutes": "15"}'
+T=$(date +%s)
+SIG=$(printf '%s.%s' "$T" "$BODY" | openssl dgst -sha256 -hmac "$SECRET" -hex | sed 's/^.* //')
+curl -s "$URL" -H 'Content-Type: application/json' -H "Mobster-Signature: t=$T,v1=$SIG" -d "$BODY"
+```
+
+It prints:
+
+```json
+{"ok": true, "message": "Started Running late.", "filled": ["person", "minutes"], "ignored": []}
+```
+
+- Each field names a blank of the workflow, in any case and spacing: `{"person": "Sam"}` fills `{person}`. `{"blanks": {"person": "Sam"}}` works too. A blank the body leaves out takes its default.
+- A value is text of at most 300 characters. Passwords, codes and card numbers in it are masked. Fields that name no blank are listed under `ignored`.
+- Nothing in the body changes the workflow's steps, its app, the iPhone or where its result goes.
+- The run asks you before it sends, buys, posts or deletes, whatever **Ask before acting** says, and uses only the apps you let outside agents use. The card waits for you in Mobster.
+
+For a producer that has its own event ID, send a versioned body instead of the plain blank fields:
+
+```json
+{"_mobsterEvent":{"version":1,"id":"order-481","occurredAt":1792886400000},"values":{"person":"Sam"}}
+```
+
+Set `occurredAt` to the event's Unix time in milliseconds, within five minutes of your Mac's clock when the workflow starts. `values` names the workflow's declared inputs or blanks and keeps their JSON types. Sign the entire body as above. Mobster saves the ID under this URL before starting the workflow. The same ID cannot start again with a new signature, and changing its body with that ID is refused. A busy or expired event consumes its ID without queuing it. A call whose start is uncertain also keeps its ID; inspect task history before deliberately making a new event. The ID remains reserved until you revoke the URL. At 100,000 saved event IDs across your Mac's URLs, new events are refused until you revoke an unused URL. Plain JSON bodies keep the earlier signature-based behavior. A webhook URL can still start a workflow whose schedule is paused; revoking the URL ends that authority. This gives at-most-once dispatch from this Mac, not proof of exactly-once effects in an app.
+
+### When a call starts nothing
+
+| Status | `error` | Why |
+|---|---|---|
+| `401` | `unsigned`, `stale`, `bad_signature` | No `Mobster-Signature`, a `t` more than 5 minutes from your Mac's clock, or a signature that doesn't match |
+| `404` | `not_found` | No URL has that address: it was revoked, or the address is wrong |
+| `409` | `replayed`, `event_changed`, `workflow_overlap` | A signature or event ID came before, the same event ID has different content, or an event arrived while the workflow was running. A fresh signature starts a plain body again, but cannot restart a versioned event |
+| `410` | `workflow_gone`, `event_expired` | The workflow was removed, or the versioned event occurred more than five minutes ago |
+| `413` | `too_large` | The body is over 64 KB |
+| `422` | `not_json`, `blanks`, `invalid_event` | The body isn't a JSON object, a blank's value doesn't fit, or the versioned event has an invalid ID, time or input |
+| `429` | `rate_limited` | More than 10 calls a minute to one URL |
+| `503` | `offline`, `remote_off`, `no_plan`, `event_limit` | Your Mac is asleep or offline, Remote is off, the account has no active plan, or the saved event ID limit is full |
+| `504` | `no_answer` | Your Mac didn't answer within 15 seconds. The workflow may still start |
+
+The URL's row in **Edit workflow** says how many times it started the workflow and how its last call went. The relay passes each call to your Mac and keeps neither the body nor the secret.
+
+To get answers back in Apple's Shortcuts app instead, see [Get the answer back in a shortcut](/launchers#get-the-answer-back-in-a-shortcut).

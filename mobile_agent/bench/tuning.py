@@ -3,16 +3,6 @@
 Every engine change is a hypothesis drawn from measured failures, checked offline, then paired against
 main on simulators. This module is the loop's harness; ``bench/iosworld.py`` runs one task.
 
-    python -m mobile_agent.bench.tuning run --batch DIR --arm A=WORKTREE --arm B=WORKTREE \\
-        --splits splits.json --split dev_core --runs 2 --sims UDID:WDA:MJPEG,... --repo ../iOSWorld \\
-        --env-file bench.env --model claude-sonnet-5-5 --xctestrun WDA.xctestrun --boot --shutdown \\
-        --ledger ledger.jsonl
-    python -m mobile_agent.bench.tuning judge --batch DIR --repo ../iOSWorld --env-file bench.env --ledger ...
-    python -m mobile_agent.bench.tuning trace --batch DIR          per-step trace.jsonl in every task folder
-    python -m mobile_agent.bench.tuning scoreboard --batch DIR [--labels labels.jsonl] [--ledger ...]
-    python -m mobile_agent.bench.tuning label --batch DIR --model claude-sonnet-5-5 --env-file bench.env
-    python -m mobile_agent.bench.tuning counterfactual --runs DIR... --variant pkg.mod:fn --model ... --n 40
-
 **Runs.** Each task gets 2 runs per arm, interleaved by task as A B B A, and the four runs of a task are
 dealt to the simulators with a rotation, so every simulator runs every arm equally often. A batch folder
 holds one run folder per arm and run (``A1``, ``B1``, ``B2``, ``A2``), each as ``bench/iosworld.py`` writes
@@ -49,8 +39,6 @@ REAP_POLL = 1.0
 KILL_GRACE = 5.0
 
 
-# -- splits and ledger -------------------------------------------------------------------------
-
 def canonical(obj):
     return json.dumps(obj, sort_keys=True, separators=(",", ":")).encode()
 
@@ -81,8 +69,6 @@ def append_ledger(path, record, lock=threading.Lock()):
             handle.write(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n")
 
 
-# -- the ABBA schedule ---------------------------------------------------------------------------
-
 def abba(arms, runs):
     """The order of one task's attempts: A B B A for two arms and two runs, generally the arms forward
     on odd runs and backward on even ones. Returns [(arm, run)]."""
@@ -105,8 +91,6 @@ def schedule(tasks, arms, runs, n_sims, seed=None):
     return queues
 
 
-# -- children that die with the run ---------------------------------------------------------------
-
 def kill_group(pid, grace=KILL_GRACE):
     """SIGTERM a child's process group, then SIGKILL what is left after ``grace`` seconds."""
     for number, wait in ((signal.SIGTERM, grace), (signal.SIGKILL, 0)):
@@ -124,8 +108,7 @@ def kill_group(pid, grace=KILL_GRACE):
 
 
 def run_child(command, *, cwd, env, log_path, timeout, active, on_change=None, clock=time.monotonic):
-    """Run ``command`` in its own session; kill its group past ``timeout``. Returns (exit code, timed out).
-    ``active`` is the set of live child pids the reaper reads; ``on_change`` is called when it changes."""
+    """Run ``command`` in its own session; kill its group past ``timeout``."""
     with open(log_path, "ab") as log:
         proc = subprocess.Popen(command, cwd=cwd, env=env, stdout=log, stderr=subprocess.STDOUT,
                                 stdin=subprocess.DEVNULL, start_new_session=True)
@@ -183,7 +166,7 @@ def alive(pid):
 
 def stop_runners(udids):
     try:
-        from ..sim.wda import runner_pids, _signal
+        from ..sim.wda import _signal, runner_pids
     except ImportError:  # the open-source tree starts no simulator runners, so it has none to stop
         return
     for udid in udids:
@@ -221,8 +204,6 @@ def cmd_reap(args):
     return 0
 
 
-# -- simulators ---------------------------------------------------------------------------------------
-
 def parse_sims(spec):
     sims = []
     for item in spec.split(","):
@@ -250,8 +231,6 @@ def boot(sims, xctestrun, log_dir):
     if missing:
         raise SystemExit(f"WDA did not come up on {missing}")
 
-
-# -- the batch -----------------------------------------------------------------------------------------
 
 def task_folder(out, task, names):
     from .iosworld import TASK_DIR_WIDTH
@@ -410,13 +389,7 @@ def cmd_run(args):
     return 0
 
 
-# -- judging ---------------------------------------------------------------------------------------
-
 JUDGE_COST = re.compile(r"cost=\$([0-9.]+)")
-
-
-def run_folders(batch):
-    return sorted(p for p in pathlib.Path(batch).iterdir() if p.is_dir() and any(p.glob("*/task.json")))
 
 
 def cmd_judge(args):
@@ -426,7 +399,7 @@ def cmd_judge(args):
     meta = json.loads((batch / "batch.json").read_text())
     doc = load_splits(args.splits) if args.splits else None
     total = 0.0
-    for folder in run_folders(batch):
+    for folder in sorted(p for p in batch.iterdir() if p.is_dir() and any(p.glob("*/task.json"))):
         log = batch / f"{folder.name}.judge.log"
         command = [sys.executable, "-m", "mobile_agent.bench.iosworld", "judge", "--repo", args.repo, "--run",
                    str(folder)]
@@ -450,8 +423,6 @@ def cmd_judge(args):
     (batch / "judge_cost.json").write_text(json.dumps({"usd": round(total, 4)}))
     return 0
 
-
-# -- CLI ---------------------------------------------------------------------------------------------
 
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="python -m mobile_agent.bench.tuning", description=__doc__.splitlines()[0])

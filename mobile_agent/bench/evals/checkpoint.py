@@ -36,7 +36,8 @@ DEVICES = pathlib.Path("~/Library/Developer/CoreSimulator/Devices").expanduser()
 
 
 def device_name(udid):
-    out = subprocess.run(["xcrun", "simctl", "list", "devices", "-j"], capture_output=True, text=True, check=True).stdout
+    out = (subprocess.run(["xcrun", "simctl", "list", "devices", "-j"], capture_output=True, text=True,
+                          check=True).stdout)
     for devices in json.loads(out)["devices"].values():
         for d in devices:
             if d["udid"] == udid:
@@ -185,10 +186,12 @@ def _digest(roots):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(prog="python -m mobile_agent.bench.evals.checkpoint", description=__doc__.split("\n\n")[0])
+    parser = argparse.ArgumentParser(prog="python -m mobile_agent.bench.evals.checkpoint",
+                                     description=__doc__.split("\n\n")[0])
     parser.add_argument("action", choices=("save", "restore", "digest"))
     parser.add_argument("--udid", required=True)
-    parser.add_argument("--repo", required=True, help="the iOSWorld checkout (or a folder holding its bootstrap manifest)")
+    parser.add_argument("--repo", required=True, help="the iOSWorld checkout (or a folder "
+                        "holding its bootstrap manifest)")
     parser.add_argument("--name")
     parser.add_argument("--root", default="~/mobster-work/evals/checkpoints")
     parser.add_argument("--allow", nargs="*", default=["Eval Lab"])

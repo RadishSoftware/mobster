@@ -195,8 +195,6 @@ class Run:
         return any(t.timed for t in self.turns)
 
 
-# -- prompts ---------------------------------------------------------------------------------------
-
 def screen_rows(text):
     """[(id, role, label)] of the prompt's element list ("Screen elements:" to the end of the text)."""
     at = (text or "").find("Screen elements:")
@@ -333,8 +331,6 @@ def guard_refusals(turn):
     return [r for r in turn.refused if r not in NON_GUARD_REFUSALS]
 
 
-# -- iOSWorld task folders -----------------------------------------------------------------------------
-
 def _batch_arm(folder):
     """(batch, arm, repeat) from a task folder's place: <batch>/<A1>/<NNN-task> or <batch-a1>/<NNN-task>."""
     run_dir = folder.parent
@@ -382,8 +378,6 @@ def load_iosworld(folder, clean_since=CLEAN_SINCE):
                turns=turns)
 
 
-# -- phone and simulator benchmark runs ------------------------------------------------------------------
-
 def _artifact_name(record):
     return re.sub(r"[:+]", "_", f"{record.get('repeat', 0)}:{record.get('task')}:{record.get('agent')}")
 
@@ -424,8 +418,6 @@ def load_bench(batch_dir):
     return runs
 
 
-# -- discovery ---------------------------------------------------------------------------------------------
-
 def discover(roots, clean_since=CLEAN_SINCE, suites=("iosworld", "mobsterbench")):
     """Every run under ``roots`` (batch folders or folders of them), each loaded once."""
     runs, seen = [], set()
@@ -444,7 +436,8 @@ def discover(roots, clean_since=CLEAN_SINCE, suites=("iosworld", "mobsterbench")
                 except (OSError, ValueError, KeyError, TypeError):
                     continue
         if "mobsterbench" in suites:
-            for records in sorted(set(glob.glob(str(root / "records.jsonl")) + glob.glob(str(root / "*" / "records.jsonl")))):
+            for records in sorted(set(glob.glob(str(root / "records.jsonl"))
+                                      + glob.glob(str(root / "*" / "records.jsonl")))):
                 batch_dir = pathlib.Path(records).parent.resolve()
                 if batch_dir in seen:
                     continue

@@ -1,0 +1,8 @@
+{
+  "name": "Morning standup",
+  "goal": "Write my standup for {team: the team} from my unread messages and notifications. Only read: send nothing.",
+  "appId": null,
+  "engine": "smart",
+  "cron": "30 8 * * 1-5",
+  "enabled": false
+}

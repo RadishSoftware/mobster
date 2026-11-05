@@ -1,0 +1,53 @@
+usage: mobster run [-h] [--wda-url URL | --device NAME] [--env-file PATH] [--execute] [--demo]
+                   [--dry-run] [--json] [--spend-cap-usd USD] [--state-db PATH] [--long]
+                   [--budget VALUE] [--yes]
+                   TASK
+
+Run one task on your iPhone and print each step. On a terminal each step prints as
+a line; piped, or with --json, every event prints as one JSON object per line, and
+the last is the result.
+
+Mobster's agent runs it on your Claude or OpenAI key. By default, it asks before it
+sends, buys, posts or deletes: on a terminal you answer y or n; with --json or a pipe
+the answer is no, and the run ends as declined.
+
+Long tasks ("scroll basketball Reels for 10 minutes and tell me what you learned",
+"go through my unread emails"): Mobster prints a plan with its estimate and asks
+Start? [Y/n] on a terminal (--yes starts at once). It covers the budget in as little
+phone time as it can, hands the phone back, then prints the report as Markdown.
+
+ctrl+c stops at the next safe point (twice to force).
+
+positional arguments:
+  TASK                 what to do, in plain words
+
+options:
+  -h, --help           show this help and exit
+  --wda-url URL        the phone's address, for a phone you set up by hand (default:
+                       http://127.0.0.1:8100) [env: MOBSTER_WDA_URL]
+  --device NAME        the iPhone or simulator to use: an id, UDID or name from `mobster devices`
+                       (default: your iPhone)
+  --env-file PATH      load KEY=VALUE lines (ANTHROPIC_API_KEY, OPENAI_API_KEY, ...); variables
+                       already set win [env: MOBSTER_ENV_FILE]
+  --execute            act on the phone (a task needs it)
+  --demo               a scripted phone and policy: no iPhone, no keys, no model calls
+  --dry-run            print the apps it would open, the acts it would ask about and the cost, and
+                       send nothing to the phone
+  --json               print raw JSON events, even on a terminal
+  --spend-cap-usd USD  stop before further model calls once this task has cost USD
+  --state-db PATH      the private task journal this task is saved in (default: the terminal UI's,
+                       which `mobster history` lists)
+  --long               run it as a long task, with a plan first and a report at the end (most long
+                       tasks are found on their own)
+  --budget VALUE       a long task's budget: a time (10m, 90s, 1h), a number of items (30) or all
+  --yes                start a long task without asking (its plan still prints)
+
+exit codes: 0 done, 1 the task didn't finish, 2 usage error,
+            3 couldn't run (no phone answered, no key), 130 stopped with ctrl+c
+
+examples:
+  mobster run "Turn on Dark Mode" --execute
+  mobster run "What's my battery level?" --execute --json
+  mobster run "Turn on Dark Mode" --demo          a scripted phone: no iPhone, no keys
+  mobster run "Scroll basketball Reels for 10 minutes and tell me what you learned" --execute
+  mobster run "Go through my unread emails" --execute --long --budget all

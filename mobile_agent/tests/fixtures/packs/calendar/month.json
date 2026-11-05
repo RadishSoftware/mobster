@@ -1,0 +1,437 @@
+{
+"note": "Recorded on the test device (iPhone 15 Pro, iOS 26.0.1), 11 and 12 Oct 2026: the rows the agent saw, scrubbed (personal events renamed).",
+"rows": [
+{
+"role": "NavigationBar",
+"label": "MonthViewContainerView",
+"rect": [
+0.0,
+0.07,
+1.0,
+0.15
+]
+},
+{
+"role": "Button",
+"label": "2026",
+"rect": [
+0.04,
+0.07,
+0.21,
+0.05
+]
+},
+{
+"role": "Button",
+"label": "List",
+"rect": [
+0.56,
+0.08,
+0.11,
+0.04
+]
+},
+{
+"role": "Button",
+"label": "Search",
+"rect": [
+0.71,
+0.08,
+0.1,
+0.04
+]
+},
+{
+"role": "Button",
+"label": "Add",
+"rect": [
+0.85,
+0.08,
+0.09,
+0.04
+]
+},
+{
+"role": "StaticText",
+"label": "October",
+"rect": [
+0.05,
+0.14,
+0.35,
+0.05
+]
+},
+{
+"role": "Button",
+"label": "Thursday, October 1",
+"rect": [
+0.6,
+0.21,
+0.08,
+0.05
+],
+"value": "No events",
+"selected": true
+},
+{
+"role": "Button",
+"label": "Friday, October 2",
+"rect": [
+0.74,
+0.21,
+0.08,
+0.05
+],
+"value": "No events"
+},
+{
+"role": "Button",
+"label": "Saturday, October 3",
+"rect": [
+0.89,
+0.21,
+0.08,
+0.05
+],
+"value": "No events"
+},
+{
+"role": "Button",
+"label": "Sunday, October 4",
+"rect": [
+0.03,
+0.27,
+0.08,
+0.05
+],
+"value": "1 event"
+},
+{
+"role": "Button",
+"label": "Monday, October 5",
+"rect": [
+0.17,
+0.27,
+0.08,
+0.05
+],
+"value": "No events"
+},
+{
+"role": "Button",
+"label": "Tuesday, October 6",
+"rect": [
+0.32,
+0.27,
+0.08,
+0.05
+],
+"value": "No events"
+},
+{
+"role": "Button",
+"label": "Wednesday, October 7",
+"rect": [
+0.46,
+0.27,
+0.08,
+0.05
+],
+"value": "No events"
+},
+{
+"role": "Button",
+"label": "Thursday, October 8",
+"rect": [
+0.6,
+0.27,
+0.08,
+0.05
+],
+"value": "No events"
+},
+{
+"role": "Button",
+"label": "Friday, October 9",
+"rect": [
+0.74,
+0.27,
+0.08,
+0.05
+],
+"value": "1 event"
+},
+{
+"role": "Button",
+"label": "Saturday, October 10",
+"rect": [
+0.88,
+0.27,
+0.1,
+0.05
+],
+"value": "1 event"
+},
+{
+"role": "Button",
+"label": "Sunday, October 11",
+"rect": [
+0.02,
+0.33,
+0.1,
+0.05
+],
+"value": "1 event"
+},
+{
+"role": "Button",
+"label": "Today, Monday, October 12",
+"rect": [
+0.16,
+0.33,
+0.1,
+0.05
+],
+"value": "3 events"
+},
+{
+"role": "Button",
+"label": "Tuesday, October 13",
+"rect": [
+0.31,
+0.33,
+0.1,
+0.05
+],
+"value": "No events"
+},
+{
+"role": "Button",
+"label": "Wednesday, October 14",
+"rect": [
+0.45,
+0.33,
+0.1,
+0.05
+],
+"value": "No events"
+},
+{
+"role": "Button",
+"label": "Thursday, October 15",
+"rect": [
+0.59,
+0.33,
+0.1,
+0.05
+],
+"value": "1 event"
+},
+{
+"role": "Button",
+"label": "Friday, October 16",
+"rect": [
+0.73,
+0.33,
+0.1,
+0.05
+],
+"value": "No events"
+},
+{
+"role": "Button",
+"label": "Saturday, October 17",
+"rect": [
+0.88,
+0.33,
+0.1,
+0.05
+],
+"value": "1 event"
+},
+{
+"role": "Button",
+"label": "Sunday, October 18",
+"rect": [
+0.02,
+0.39,
+0.1,
+0.05
+],
+"value": "1 event"
+},
+{
+"role": "Button",
+"label": "Monday, October 19",
+"rect": [
+0.16,
+0.39,
+0.1,
+0.05
+],
+"value": "No events"
+},
+{
+"role": "Button",
+"label": "Tuesday, October 20",
+"rect": [
+0.31,
+0.39,
+0.1,
+0.05
+],
+"value": "1 event"
+},
+{
+"role": "Button",
+"label": "Wednesday, October 21",
+"rect": [
+0.45,
+0.39,
+0.1,
+0.05
+],
+"value": "No events"
+},
+{
+"role": "Button",
+"label": "Thursday, October 22",
+"rect": [
+0.59,
+0.39,
+0.1,
+0.05
+],
+"value": "No events"
+},
+{
+"role": "Button",
+"label": "Friday, October 23",
+"rect": [
+0.73,
+0.39,
+0.1,
+0.05
+],
+"value": "No events"
+},
+{
+"role": "Button",
+"label": "Saturday, October 24",
+"rect": [
+0.88,
+0.39,
+0.1,
+0.05
+],
+"value": "No events"
+},
+{
+"role": "Button",
+"label": "Sunday, October 25",
+"rect": [
+0.02,
+0.45,
+0.1,
+0.05
+],
+"value": "1 event"
+},
+{
+"role": "Button",
+"label": "Monday, October 26",
+"rect": [
+0.16,
+0.45,
+0.1,
+0.05
+],
+"value": "No events"
+},
+{
+"role": "Button",
+"label": "Tuesday, October 27",
+"rect": [
+0.31,
+0.45,
+0.1,
+0.05
+],
+"value": "No events"
+},
+{
+"role": "Button",
+"label": "Wednesday, October 28",
+"rect": [
+0.45,
+0.45,
+0.11,
+0.05
+],
+"value": "No events"
+},
+{
+"role": "Button",
+"label": "Thursday, October 29",
+"rect": [
+0.59,
+0.45,
+0.1,
+0.05
+],
+"value": "No events"
+},
+{
+"role": "Button",
+"label": "Friday, October 30",
+"rect": [
+0.73,
+0.45,
+0.11,
+0.05
+],
+"value": "No events"
+},
+{
+"role": "Button",
+"label": "Saturday, October 31",
+"rect": [
+0.88,
+0.45,
+0.1,
+0.05
+],
+"value": "2 events"
+},
+{
+"role": "Button",
+"label": "Today",
+"rect": [
+0.08,
+0.92,
+0.16,
+0.05
+]
+},
+{
+"role": "Button",
+"label": "Calendars",
+"rect": [
+0.61,
+0.92,
+0.15,
+0.05
+]
+},
+{
+"role": "Button",
+"label": "Inbox",
+"rect": [
+0.79,
+0.92,
+0.12,
+0.05
+]
+}
+]
+}

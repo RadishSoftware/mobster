@@ -1,0 +1,709 @@
+{
+"name": "spotlight",
+"bundle": "com.apple.Spotlight",
+"keyboard": "visible",
+"w": 402.0,
+"h": 874.0,
+"elements": [
+{
+"role": "StaticText",
+"label": "Siri Suggestions",
+"value": "Siri Suggestions",
+"rect": [
+0.0398,
+0.0824,
+0.2886,
+0.0229
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Button",
+"label": "Show More",
+"value": "",
+"rect": [
+0.7562,
+0.0824,
+0.199,
+0.0229
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Cell",
+"label": "Reminders, News, Calendar, Shortcuts",
+"value": "",
+"rect": [
+0.0398,
+0.1098,
+0.9154,
+0.1327
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Cell",
+"label": "Reminders",
+"value": "",
+"rect": [
+0.0597,
+0.1281,
+0.199,
+0.1053
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "Reminders",
+"value": "",
+"rect": [
+0.0597,
+0.1281,
+0.199,
+0.1053
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Image",
+"label": "label-view",
+"value": "",
+"rect": [
+0.0597,
+0.2059,
+0.199,
+0.0229
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Cell",
+"label": "News",
+"value": "",
+"rect": [
+0.2985,
+0.1281,
+0.1791,
+0.1053
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "News",
+"value": "",
+"rect": [
+0.2985,
+0.1281,
+0.1791,
+0.1053
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Image",
+"label": "label-view",
+"value": "",
+"rect": [
+0.3284,
+0.2059,
+0.1194,
+0.0229
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Cell",
+"label": "Calendar",
+"value": "",
+"rect": [
+0.5174,
+0.1281,
+0.1891,
+0.1053
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "Calendar",
+"value": "Wednesday, October 14",
+"rect": [
+0.5174,
+0.1281,
+0.1891,
+0.1053
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Image",
+"label": "label-view",
+"value": "",
+"rect": [
+0.5274,
+0.2059,
+0.1692,
+0.0229
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Cell",
+"label": "Shortcuts",
+"value": "",
+"rect": [
+0.7463,
+0.1281,
+0.1891,
+0.1053
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Icon",
+"label": "Shortcuts",
+"value": "",
+"rect": [
+0.7463,
+0.1281,
+0.1891,
+0.1053
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Image",
+"label": "label-view",
+"value": "",
+"rect": [
+0.7463,
+0.2059,
+0.1891,
+0.0229
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "StaticText",
+"label": "Suggestions before and as you type are personalized. You can adjust this in settings.",
+"value": "Suggestions before and as you type are personalized. You can adjust this in settings.",
+"rect": [
+0.0398,
+0.27,
+0.9154,
+0.0412
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Button",
+"label": "Learn More\u2026",
+"value": "",
+"rect": [
+0.3881,
+0.3158,
+0.2289,
+0.0412
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "TextField",
+"label": "SpotlightSearchField",
+"value": "Search",
+"rect": [
+0.0199,
+0.5904,
+0.9552,
+0.0549
+],
+"editable": true,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Image",
+"label": "Search",
+"value": "",
+"rect": [
+0.0498,
+0.6041,
+0.0498,
+0.0229
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Button",
+"label": "Dictate",
+"value": "",
+"rect": [
+0.8856,
+0.6041,
+0.0498,
+0.0275
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "q",
+"value": "",
+"rect": [
+0.01,
+0.6773,
+0.0995,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "w",
+"value": "",
+"rect": [
+0.1095,
+0.6773,
+0.0995,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "e",
+"value": "",
+"rect": [
+0.209,
+0.6773,
+0.0995,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "r",
+"value": "",
+"rect": [
+0.2985,
+0.6773,
+0.1095,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "t",
+"value": "",
+"rect": [
+0.398,
+0.6773,
+0.0995,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "y",
+"value": "",
+"rect": [
+0.4975,
+0.6773,
+0.0995,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "u",
+"value": "",
+"rect": [
+0.597,
+0.6773,
+0.0995,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "i",
+"value": "",
+"rect": [
+0.6965,
+0.6773,
+0.0995,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "o",
+"value": "",
+"rect": [
+0.796,
+0.6773,
+0.0995,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "p",
+"value": "",
+"rect": [
+0.8955,
+0.6773,
+0.0995,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "a",
+"value": "",
+"rect": [
+0.0597,
+0.7368,
+0.0995,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "s",
+"value": "",
+"rect": [
+0.1592,
+0.7368,
+0.0995,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "d",
+"value": "",
+"rect": [
+0.2587,
+0.7368,
+0.0995,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "f",
+"value": "",
+"rect": [
+0.3582,
+0.7368,
+0.0995,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "g",
+"value": "",
+"rect": [
+0.4577,
+0.7368,
+0.0995,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "h",
+"value": "",
+"rect": [
+0.5473,
+0.7368,
+0.1095,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "j",
+"value": "",
+"rect": [
+0.6468,
+0.7368,
+0.0995,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "k",
+"value": "",
+"rect": [
+0.7463,
+0.7368,
+0.0995,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "l",
+"value": "",
+"rect": [
+0.8458,
+0.7368,
+0.0995,
+0.0595
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Button",
+"label": "shift",
+"value": "",
+"rect": [
+0.01,
+0.7963,
+0.1294,
+0.0641
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "z",
+"value": "",
+"rect": [
+0.1592,
+0.7963,
+0.0995,
+0.0641
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "x",
+"value": "",
+"rect": [
+0.2587,
+0.7963,
+0.0995,
+0.0641
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "c",
+"value": "",
+"rect": [
+0.3582,
+0.7963,
+0.0995,
+0.0641
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "v",
+"value": "",
+"rect": [
+0.4577,
+0.7963,
+0.0995,
+0.0641
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "b",
+"value": "",
+"rect": [
+0.5473,
+0.7963,
+0.1095,
+0.0641
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "n",
+"value": "",
+"rect": [
+0.6468,
+0.7963,
+0.0995,
+0.0641
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "m",
+"value": "",
+"rect": [
+0.7463,
+0.7963,
+0.0995,
+0.0641
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "delete",
+"value": "",
+"rect": [
+0.8657,
+0.7963,
+0.1294,
+0.0641
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": "numbers",
+"value": "",
+"rect": [
+0.01,
+0.8604,
+0.2488,
+0.0641
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+},
+{
+"role": "Key",
+"label": " ",
+"value": "",
+"rect": [
+0.2587,
+0.8604,
+0.4876,
+0.0641
+],
+"editable": false,
+"placeholder": "",
+"selected": false
+}
+]
+}

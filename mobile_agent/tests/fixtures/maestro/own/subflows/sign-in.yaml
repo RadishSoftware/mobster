@@ -1,0 +1,11 @@
+appId: com.example.shop
+---
+- tapOn: Sign in
+- tapOn:
+    id: email_field
+- inputText: ${EMAIL}
+- tapOn:
+    id: password_field
+- inputText: ${PASSWORD}
+- hideKeyboard
+- tapOn: "Continue.*"

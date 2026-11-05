@@ -1,0 +1,150 @@
+---
+title: "Enterprise"
+sidebarTitle: "Enterprise"
+description: "Mobster for your company: single sign-on, a signed DPA and MSA, invoices against your purchase order, an uptime SLA and a named contact. What's in it, how to buy it, and the security review."
+icon: "building-2"
+keywords: ["enterprise", "sso", "saml", "oidc", "scim", "siem", "audit log", "dpa", "data processing agreement", "msa", "invoice", "purchase order", "po", "net 30", "w-9", "sla", "security review", "questionnaire", "procurement", "subprocessors"]
+---
+
+Enterprise is Mobster for a company that buys through a security review and a purchase order. It's the same Mobster for Mac, on the iPhones and Macs your team already owns, with the contract, billing and controls your security and procurement teams ask for.
+
+## What's in it
+
+| Item | Where it stands |
+|---|---|
+| Single sign-on with SAML 2.0 | Built, and off until the Team plan release. It turns on for your team then, and we set it up with you ([how it works](#single-sign-on)) |
+| Single sign-on with OIDC | After SAML |
+| SCIM provisioning | Built with single sign-on, off until the Team plan release ([how it works](#scim-provisioning)) |
+| Audit-log export with a signed head, checked offline with `mobster audit verify` | Built, off until the Team plan release ([how it works](#audit-log-export)) |
+| Audit-log feed into your SIEM | After the export |
+| A signed DPA | Ready: the standard DPA is at [mobster.dev/dpa](https://mobster.dev/dpa), signed on request |
+| A signed MSA | Signed with your order |
+| Invoices against your purchase order | Ready: a yearly invoice in advance through Stripe, net 30, by bank transfer or card |
+| A 99.9% uptime SLA on Mobster Remote's relay and the account service, with service credits | In the contract |
+| A named support contact | In the contract |
+| The security review package | Ready: [mobster.dev/security](https://mobster.dev/security), the DPA and its subprocessors, and answers to your questionnaire |
+
+Every phone is included, as on every plan. There are no usage charges: no fee per device, per minute, per run or per check. Mobster's agent runs on your own model key, billed by your provider ([Models and keys](/models-and-keys)).
+
+## Single sign-on
+
+Single sign-on uses SAML 2.0 through Mobster's sign-in provider, Supabase Auth. It works with any identity provider that speaks SAML: Okta, Microsoft Entra ID, Google Workspace, OneLogin and the rest. It signs people in to the Mobster app and the team console.
+
+How you set it up:
+
+1. **Claim your domain.** An Owner enters your company's domain, like `radish.software`, in the team's single sign-on page. Mobster gives you a TXT record named `_mobster-challenge.radish.software`. Add it to your DNS and press **Check**. Mobster registers a domain only after it sees the record, and only one team can hold a domain.
+2. **Send your identity provider's metadata.** Send the metadata URL or file to support@radish.software. We register your provider and give you Mobster's service-provider metadata for your side. Set the NameID format to the email address, and send a `groups` attribute if you want groups to set roles.
+3. **Map groups to roles.** An Owner maps your identity provider's groups to Admin, Operator or Viewer. A person in several mapped groups gets the highest role. A person in none gets the default role, Viewer unless you choose Operator.
+4. **Sign in once, then require it.** An Owner signs in through your identity provider. **Require single sign-on** turns on only after that, and only while an Owner who signs in through it exists, so your team can't lock itself out.
+
+What it does once it is on:
+
+- Anyone with an email on your claimed domain who signs in through your identity provider joins the team with the role their groups give. Mobster doesn't ask an Admin to invite them.
+- When **Require single sign-on** is on, a password, GitHub, Apple, Google or email-code session can't use the team, on every request. A sign-in through your identity provider must be newer than the session window you set, 24 hours by default, up to 7 days.
+- A person who used another sign-in before moves to their single sign-on account with the same role. Owners and Admins don't move on their own: add the new account as an Owner, then remove the old one.
+
+What it doesn't do:
+
+- It doesn't give anyone a Mac. A person joins the team's list, and an Admin still signs the roster with a passkey before any Mac accepts them.
+- It doesn't add to your bill. A role that needs a seat you haven't paid for joins as Viewer until an Admin confirms the new total.
+- It doesn't sign people out when you remove them at your identity provider. Mobster's sign-in provider supports no single logout, so a removed person's session ends at the session window, or at once when an Admin removes them in the console. SCIM, below, closes this.
+- It doesn't cover your people's personal Mobster accounts. Single sign-on governs the team.
+
+## SCIM provisioning
+
+SCIM lets your identity provider create, change and remove people on the team, so a person you remove at Okta or Entra ID is removed from the team, and their Macs' access ends, without an Admin step. Mobster's sign-in provider has no SCIM, so Mobster runs the SCIM 2.0 server itself, for users and groups, at `https://api.mobster.dev/scim/v2`.
+
+How you set it up:
+
+1. **Make a token.** An Owner makes a SCIM token on the team's single sign-on page. It is shown once; Mobster keeps only a hash of it. Two can be live at once, so you can rotate without a gap.
+2. **Point your identity provider at it.** Enter the base URL and the token as a bearer token. Mobster supports `GET`, `POST`, `PUT`, `PATCH` and `DELETE` on `/Users` and `/Groups`, filters of the form `userName eq "x"`, and no bulk operations.
+3. **Choose how it joins single sign-on.** **Allow** still lets people join on their first single sign-on sign-in when SCIM hasn't mentioned them. **Require** lets only people your identity provider has provisioned and left active join. **Require** turns on only after your identity provider has synced in the last day and an Owner who signs in through single sign-on exists.
+4. **Push groups if you want roles from them.** A SCIM group's name is matched against the group-to-role map you already set for single sign-on, so one map serves both. A person in several mapped groups gets the highest role. Once your identity provider pushes groups, a person who leaves a mapped group goes back to the default role at once.
+
+What happens when you remove someone:
+
+- Mobster removes them from the team when it receives the removal. It writes a revocation for the person and one for each of their passkeys, in the same step, and tells Mobster Remote to close their console sessions. Your team's Macs read revocations about every minute, so a removal takes effect on a Mac within 15 minutes of Mobster receiving it, and usually within two.
+- When the removal arrives is your identity provider's schedule. Okta sends it as you make it; Microsoft Entra ID syncs on its own cycle, about every 40 minutes.
+- An Admin still signs the member list with a passkey to finish removing the person from the signed list ("Finish removing"). Until then the revocations keep every Mac from accepting them.
+- A person your identity provider turns on again joins at their next single sign-on sign-in. A person an Admin removed by hand stays removed.
+
+What it doesn't do:
+
+- It doesn't remove an Owner. SCIM answers 409 `mutability`, and an Owner removes another Owner in Mobster, because an Owner's keys are the team's root of trust.
+- It doesn't give anyone a Mac, and it doesn't change your bill. A role that needs a seat you haven't paid for leaves the person a Viewer until an Admin confirms the new total.
+- It doesn't take an email outside a domain your team verified.
+
+Every SCIM and single sign-on change is a line in the team's audit log, with ids and counts and no names or emails.
+
+## Audit log export
+
+Your team's audit log is a hash chain: each entry carries the hash of the one before it, so an entry that is removed, reordered or edited breaks every link after it. An Owner or Admin exports it as JSON Lines, and anyone can check the file on their own Mac, offline, with the `mobster` command.
+
+Export it from the API with your session:
+
+```sh
+curl -H "Authorization: Bearer $TOKEN" -o audit.jsonl \
+  "https://api.mobster.dev/api/orgs/$TEAM/audit?from=2026-10-01&to=2026-10-31&action=sso.,scim."
+```
+
+Query | What it does
+---|---
+`from`, `to` | A date like `2026-10-01`, a time like `2026-10-01T09:00:00Z`, or milliseconds. A bare `to` date runs to the end of that day, UTC.
+`action` | Up to 10 comma-separated prefixes, like `sso.,scim.,run.`.
+`actor` | A user id.
+`source` | `mac` for entries a Mac signed, `relay` for entries Mobster Remote and the account service wrote.
+`mac` | A Mac id.
+
+Each Mac in your team signs the entries it writes with its own key, so Mobster Remote can drop one but can't write or change one. A Mac writes ids and codes, never the words of a task, a draft or a reply:
+
+Action | When
+---|---
+`session.opened`, `session.refused`, `session.ended` | A member's console session starts on the Mac, is refused, or ends, with why. A refusal is written at most once a minute for each reason.
+`run.started`, `run.stopped`, `group.stopped`, `approval.declined` | A member asks for it from the console. A request the Mac refused is written too, with the refusal's code.
+`approval.signed` | The Mac acted on a member's passkey-signed approval. `digest` is the signed approval's SHA-256.
+`signature_refused` | The Mac refused a signed approval, with the reason, such as `four_eyes` or `deadline`.
+`approval.asked`, `approval.answered` | A task on the Mac, started from anywhere, asks for an approval, and how that ends: `approved`, `denied`, `expired`, `stopped` and the like.
+`audit.dropped` | The Mac couldn't reach Mobster Remote for so long that it dropped its oldest unsent entries. `count` says how many.
+
+A Mac keeps each entry until Mobster Remote says your team's log holds it, and sends again what it hasn't heard back about. While it can't reach Mobster Remote, it keeps up to 2,000 entries and sends them in order once it can.
+
+The file's first line is a head signed with Mobster's license key. It names the first entry's link, the last entry's hash, the number of entries, the range and filters, and where the whole log's head was at that moment. Every other line is an entry, in order. An entry a filter leaves out stays in the file as its place in the chain, without its content, so a filtered file still verifies from end to end and shows how many entries it hides. One export holds at most 20,000 entries; export a shorter range for more. Exports are limited to a few a minute, and each one is a line in the audit log.
+
+Check it:
+
+```text
+$ mobster audit verify audit.jsonl
+All 5 entries check out, from 9 Oct to 10 Oct. The head is signed by Mobster's license key 6c7d9863dcc5dae4. The Macs' signatures weren't checked. To check them, run this again with --keys <file>, a JSON file of {"<mac id>": "<base64url Ed25519 key>"}.
+```
+
+`mobster audit verify` exits 0 when every entry checks out, 1 when something doesn't, and 2 when it can't read a file. It stops at the first problem and says which entry and what happened:
+
+- **A deleted entry** is a gap: "Entry 2 is missing: the export jumps from entry 1 to entry 3."
+- **A reordered or repeated entry** is out of order.
+- **An edited entry** fails its hash: "Entry 3 was changed after it was written."
+- **A cut-off start or end, or added entries,** fail the signed head's first link, last hash and count.
+- **An edited head, or a head signed by another key,** fails the signature. Pass the license public key with `--key license.pem` if you hold a copy.
+
+Add `--keys keys.json`, a file of `{"<mac id>": "<base64url Ed25519 public key>"}` from the Macs themselves, to check each Mac entry's own signature. Get those keys from the Macs, not from the export. With them, a Mac entry also fails when its words name another Mac than the key that signed it, another team than the Mac entries before it, or repeat an earlier entry word for word: a real entry moved, copied in from another team's log, or repeated. The command also reads the JSON export from the console.
+
+What it doesn't prove: the signed head shows Mobster read the chain as it stands at the export, and the chain shows nothing was changed inside it. An auditor who keeps each export can compare a later one with the earlier head to see that the log was only added to. The content of entries a filter left out is not in the file.
+
+## Talk to us
+
+On [mobster.dev's pricing](https://mobster.dev/pricing#enterprise), choose **Talk to us** under Enterprise. The form asks for your name, work email, company, team size and, if you like, what you test. You get one confirmation email from `hello@mail.mobster.dev`. You can also write to [support@radish.software](mailto:support@radish.software) directly.
+
+## How billing works
+
+- **An invoice a year, in advance.** We send it through Stripe to the billing email on your purchase order. It shows your PO number, the paid members, any extra Macs, and the year it covers.
+- **Net 30.** Pay by bank transfer or card from the invoice's page. A W-9 for Radish Retail, LLC comes on request.
+- **Renewals.** Next year's invoice arrives 30 days before the year ends.
+
+## Your security review
+
+- **How Mobster is built and handles data:** [mobster.dev/security](https://mobster.dev/security): what stays on your Macs, Mobster Remote's relay, approvals, keys, telemetry, where data lives and for how long, and the subprocessors.
+- **The DPA:** [mobster.dev/dpa](https://mobster.dev/dpa), our standard data processing agreement with the EU Standard Contractual Clauses. We sign it on request.
+- **Connections, pins and what Mobster keeps on your Mac:** [Security](/security).
+- **What leaves your Mac, and where it goes:** [Privacy and your data](/privacy).
+- **A vulnerability:** write to support@radish.software ([Security](/security#for-a-security-review)).
+
+Mobster has no SOC 2 report yet. We fill in your security questionnaire.

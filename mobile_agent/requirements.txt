@@ -1,9 +1,32 @@
-# The lock: exact, tested pins for `make venv`. pyproject.toml declares the compatible ranges.
+# The lock: exact, tested pins for CI, `make venv` and the desktop sidecar build. pyproject.toml
+# declares the compatible ranges a pip install resolves against; keep the two in step.
 jsonschema==4.26.0
+croniter==6.2.4
+# FrameClock (frame_clock.py): JPEG draft decode and tile diffs of the MJPEG stream.
+Pillow==13.0.0
+# Check files for `mobster verify --check` (verify/checks.py).
+PyYAML==6.0.3
 attrs==26.1.0
 jsonschema-specifications==2025.9.1
+python-dateutil==3.0.0
 referencing==0.37.0
 rpds-py==2026.9.1
+six==1.17.0
+tzdata==2026.6
 typing_extensions==4.16.0
-# FrameClock (frame_clock.py): JPEG draft decode and tile diffs of the MJPEG stream.
-Pillow==12.3.0
+# The Team plan's features (teams/): passkey signatures, the signed roster and policy, the sealed console channel.
+# The Mac app's sidecar only: the public tree leaves teams/ and this pin out. The Mac app is Apple silicon only, and
+# 50.x ships an arm64 wheel (macosx_11_0) and no Intel one.
+cryptography==50.0.2
+cffi==2.1.1
+pycparser==3.12
+# The terminal UI (tui/): Textual and what it pulls in.
+textual==8.2.8
+rich==15.0.0
+markdown-it-py==4.2.0
+mdit-py-plugins==0.6.1
+mdurl==0.1.2
+platformdirs==4.14.0
+Pygments==2.21.0
+# The phone's screenshot inside the UI, in terminals with the kitty graphics protocol or sixel.
+textual-image==0.14.2

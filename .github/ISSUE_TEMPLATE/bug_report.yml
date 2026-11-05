@@ -1,0 +1,55 @@
+name: Bug report
+description: Something in Mobster CLI does not work as documented.
+labels: [bug, needs-triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Leave out keys, journals and screenshots of private screens.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you ran or typed, what you expected, and what happened instead.
+      placeholder: |
+        I ran `mobster run "Turn on Dark Mode" --execute` and it ended with `blocked` after the first scroll.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. `mobster --demo`
+        2. Type `/cap 0.1` and press enter
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Output of `mobster --version` and `mobster doctor --json`
+      description: The doctor's report holds no keys. Remove UDIDs and team IDs before you paste it.
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: mac
+    attributes:
+      label: Mac model, macOS and Xcode versions
+      placeholder: MacBook Pro M3, macOS 26.1, Xcode 26.0
+    validations:
+      required: true
+  - type: textarea
+    id: events
+    attributes:
+      label: Events or error output (optional)
+      description: For a task, `mobster run ... --json` prints its events. Read them before pasting, because they include text from your screen.
+      render: text
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Where
+      options: [terminal UI, mobster run, mobster serve / the HTTP API, mobster doctor, install, docs, other]
+    validations:
+      required: true

@@ -1,0 +1,175 @@
+---
+title: "Workflows, schedules and alerts"
+sidebarTitle: "Workflows and schedules"
+description: "Save a conversation as a workflow: text steps with blanks you run again from Workflows, ⌘K, Siri, the terminal or MCP."
+icon: "calendar-clock"
+keywords: ["workflow", "saved conversation", "steps", "loop", "blanks", "run in this conversation", "schedule", "every morning", "recurring", "alerts", "webhook", "slack", "keep awake"]
+---
+
+A workflow is a saved way to start a conversation. Its steps are plain text with blanks, like `Scroll {topic} Reels for {10} minutes and tell me what you learned`. Run it, fill in the blanks, and Mobster's agent takes it from there: you write what you'd type, and the agent works out the taps. To run several steps, branch, loop them, or send the answer somewhere, add steps on the workflow's canvas ([Build a workflow on its canvas](/workflows)).
+
+## Save a workflow
+
+- Under any of Mobster's answers in a conversation that went well, choose **Save as workflow**. A new workflow's page opens with the task's own words while Mobster reads the conversation and drafts the name and the steps, with the parts you'd change marked as blanks; the draft takes their place unless you've changed them first. Nothing is saved until you choose **Save workflow**. With several phones it runs on the one the task ran on, and **Always continue in the same conversation** adds every run to that conversation.
+- On the **Workflows** page, choose **Make it** with nothing typed (or **New workflow** in ⌘K) and write the steps yourself, on the workflow's own page ([The page](/workflows#the-page)).
+- On an empty **Workflows** page, choose one of the ideas under **Start from one of these**. Each shows the icon of the app it works in (Calendar, Mail, Instagram, Amazon, Settings), and an idea that spans no single app shows a plain glyph. It opens a new workflow's page filled in, schedule included, and saves nothing until you do.
+
+The draft is written by Claude Haiku 5.5, Anthropic's cheapest model, on your Anthropic key, for well under a cent. Without an Anthropic key, Mobster drafts it by rule: your messages, one per line, with amounts and times as blanks.
+
+## Blanks
+
+| You write | It means |
+|---|---|
+| `{topic}` | A blank called topic. A run asks for it |
+| `{topic: basketball}` | A blank with a default. A run can change it, and a schedule uses it |
+| `{10}` | A number alone is a blank with that default, named by the word after it (`minutes` in `{10} minutes`) |
+| `{{` and `}}` | A plain `{` and `}` |
+
+Two blanks with the same name are one blank. A workflow has at most 12.
+
+## Run a workflow
+
+- **Workflows page:** **Run**, the play button at a row's end. A workflow with blanks asks for them in its row first.
+- **⌘K:** type its name, then choose **Run “…”**.
+- **In a conversation:** choose **Run workflow here…** in the conversation's ⋯ menu in the sidebar, or in ⌘K. The steps become that conversation's next message, so the agent sees everything before them.
+- **Siri and Shortcuts:** `mobster-task.sh --workflow "Reels digest" topic=basketball` ([Siri, Raycast and Alfred](/launchers#run-a-saved-workflow)).
+- **Terminal:** `mobster chat --workflow "Reels digest" --set topic=basketball` ([`mobster chat`](/reference/cli#mobster-chat)).
+- **Your coding agent, over MCP:** `list_workflows` and `run_workflow` ([MCP server](/mcp-server#run-a-saved-workflow)).
+- **The HTTP API:** `POST /api/workflows/{id}/run` with an `Idempotency-Key` header and `{"values": {"topic": "basketball"}, "threadId": "…"}`. Both fields are optional. The answer has the `run` and its `threadId`.
+
+Each run starts a new conversation named after the workflow, unless you run it in one. To keep every run in one conversation, select nothing on the workflow's canvas. Open **More** in the workflow's inspector. Turn on **Always continue in the same conversation**.
+
+### What starts it
+
+Use a **Schedule**, **Webhook**, **Shortcut** or **Notification** trigger to start a workflow without pressing **Run**. Double-click the canvas to open the step menu. Add your trigger. Join it to the first step. Only the published version's triggers run ([Save, publish and versions](/workflows#save-publish-and-versions)).
+
+- **Schedule:** pick the days and the time in its inspector ([Schedules](#schedules)).
+- **Webhook:** once the workflow is saved, **Make a URL** in its inspector gives another tool a signed address that starts the workflow ([Start a workflow from another tool](/webhooks#start-a-workflow-from-another-tool)).
+- **Shortcut:** **Copy the command**, in its inspector or in the inspector of **When you run it**, copies the line for Siri, Shortcuts, Raycast or Alfred, with the workflow's name and a `NAME=` for each blank without a default ([Run a saved workflow](/launchers#run-a-saved-workflow)).
+- **Notification:** starts the workflow when Mobster reads a notification from your phone whose app and words match what you specify ([Triggers](/workflows#triggers)).
+
+## What a workflow's row shows
+
+Each row on the **Workflows** page says what the workflow does, how it last went, and what it needs from you:
+
+- **What it does:** its name, and its steps' first line under it until it has run.
+- **How it starts**, at the row's end: its schedule, such as **Weekdays at 8 AM**; **On a notification** or **On something new in an app** for one that waits for those; **Paused** when it's off; or **On demand** when something asks for it: you, a webhook or a shortcut. Point at a row, or move to it with the keyboard, to read when it runs next.
+- **Worked:** when its last verified run finished, and the first line of what that run found, such as **Worked 8:02 AM** beside "Standup at 9:30, lunch with Priya at 12". A run is verified when the screen proved it done or you marked it **Looks right**. Failures among its last runs show beside it, such as **2 of last 5 failed**. Choose **Worked** to open that task, and point at it or move to it with the keyboard to read how its last runs went.
+- **What needs you**, in place of **Worked**, from its newest attempt that ended:
+
+| The row says | What happened | What to do |
+|---|---|---|
+| **Last run couldn't finish**, with the reason | The run ended without doing the task | Open the task, then edit the workflow or run it again |
+| **Skipped: your iPhone was busy with another task**, **Skipped: your iPhone wasn't connected**, or **Last run stopped: your iPhone wasn't available** | The iPhone was running another task, unplugged, or locked | Keep it plugged into this Mac and unlocked |
+| **It needs a value for** a blank, or **Its rows are missing** | A schedule can't fill a blank, or has no rows to repeat over | Edit the workflow and give the blank a default, or save its rows |
+| **Skipped:** a limit | This month's spending limit, the daily limit for scheduled runs, or the gap between scheduled runs held it back | Raise the limit in **Settings**, or wait |
+| **Last run is no longer kept**, in grey | The run finished, but its task was deleted or left the history before Mobster read how it ended | You can run it again. This run doesn't count as a failure. If an earlier failure still needs your attention, it stays in **Needs you** |
+
+A later verified run clears what an earlier failure said, so the row only ever shows what needs you now. When something needs you, **Last worked** moves to the row's end. A time missed while your Mac was asleep or Mobster was closed is no failure: the row keeps saying what it said before. A run that finished without proof, which you haven't checked, shows **Last run** and **Take a look** instead.
+
+A workflow you saved without publishing says **Not published** and names the schedule it will use. Choose **Publish** on its row to make that saved version available to its schedule, webhook and shortcuts.
+
+The page shows a search field from eight workflows; on a shorter list, `⌘F` or `/` brings it up.
+
+**Delete** on a row, or `backspace` on the row you're on, asks in the row itself: **Delete “Morning brief”?**, with **Cancel** and **Delete workflow**. `esc` cancels. Searching away from the row cancels an unconfirmed question. The schedule stops, and the tasks it ran stay in the sidebar.
+
+`GET /api/workflows` sends this as each workflow's `health`: `{"lastSuccess": {"at", "runId", "line"} | null, "attention": {"kind": "failed" | "phone" | "input" | "limit", "words", "detail", "runId", "at"} | null, "recent": [{"outcome", "at", "runId"}]}`. `recent` is its last 10 runs, newest first, each `done`, `check` (it finished and wants a look), `failed`, `stopped`, `skipped` or `running`; a missed time is left out. Times are UTC epoch milliseconds.
+
+## Learned steps
+
+After a workflow's first good run, Mobster keeps the steps it took. The next runs repeat those steps the same way, and check each screen before each step. Point at **Run** on its row on the Workflows page to read how it runs and what its runs took: "Worked before. Mobster repeats it the same way, checking each screen. Last run about 5s, \$0.00. First run took 48s, \$0.06." A repeat calls no model, so it costs nothing on your key and takes seconds.
+
+A run that repeated learned steps says **Learned** under its result, with its time and cost once, and the mark's tooltip says what the first run took: "First run took 48s, \$0.06". The first run's numbers come from that run's own record, kept with the learned steps, so they stay after the run leaves your history. Learned again after a screen changed, a workflow keeps its first run's numbers. A first run whose cost wasn't reported shows its time only. The run's `replay.first` (and `program.first` for a program) holds them: `runId`, `seconds` and `costUsd`.
+
+- A send, post, delete or purchase still asks you first, as in any task. Each replayed step goes through the same rules as a live step: in Ask before every change a Save or Create asks, a like, follow or repost asks, and typing a one-time code asks in every mode. In Full access, Mobster hands that step to the model, which goes ahead as Full access says. A replay never opens or acts in an app you haven't allowed: it hands that step to the model, which asks before it opens the app.
+- Typed text comes from the workflow's own words: a workflow that says "Text {name}: {message}" types the message you fill in. A search query replays as it was typed, because it finds things rather than writing them. Text the model wrote, such as a caption, is written by the model each run.
+- When a screen doesn't match (the app changed, a sheet popped up), the model takes over from that step with what was done so far, and the run that finishes is learned again. After a replayed send, post or delete, or when a learned action's outcome is unknown (the phone didn't answer, or the screen couldn't be read after it), the model never takes over: the task ends with **Check the result**, so nothing is done twice. Look at your iPhone before you run it again.
+- A replay says done only on evidence. Either the screen shows what the learned run quoted at the end, such as the sent message, or the replay ends on the learned run's last screen in the same app with the words it typed on it, such as the new note's text. When neither holds, one look-only call to your model checks the screen; it can't tap or type, and its words count only if they're on the screen. Otherwise the run ends with **Check the result**. The run's `replay.confirmed` says which: `proof`, `screen` or `look`.
+- A loop over rows (**Loop › Each row**) whose first round is learned replays the next rounds with no model, each with its own row's words, and goes on to the next round when each one ends done.
+- A workflow that reads something (an answer schema, or only taps and scrolls) replays its steps, and the model reads the answer at the end.
+
+Mobster learns from runs of saved workflows: **Run**, ⌘K, a shortcut or a schedule. `MOBSTER_REPLAY=off` in the env file turns learning and replay off.
+
+### Learned steps from any task
+
+Mobster keeps a task that finished done, whole, and repeats it for a task with the same words, or the same words and other values. It's on by default in Mobster for Mac, `mobster serve`, `phone_task` from your coding agent through `mobster mcp`, and Mobster Remote. Set `MOBSTER_PROGRAMS=off` in the env file to turn it off. With `MOBSTER_PROGRAMS=on`, the terminal UI and `mobster run` use it too.
+
+Measured on an iPhone 15 Pro with iOS 26.0.1 (11 Oct 2026), 4 runs each way, every run passed and every approval was asked as before:
+
+| Task, repeated with the same words | Without | With learned steps | Model calls per run |
+|---|---|---|---|
+| Open Settings › General › About | 7.87 s | 3.91 s | 3 → 0.25 |
+| Open the Stopwatch tab in the Clock app | 4.37 s | 1.10 s | 2.5 → 0.25 |
+
+The first repeat still makes one model call, to check the screen; later repeats make none. When a task's learned steps and a repeat task's steps both fit, the learned steps run. On iOS Simulators running code-graded tasks with other values (11 Oct 2026), repeats took 2.33 model calls instead of 5.06, with the same pass rate.
+
+- **What's kept:** when a task finishes with every part shown on screen, Mobster keeps its steps, its checklist and your request, with the values you typed or named as blanks. "Create a note titled 'Errands 5' that says 'post office'" also serves "Create a note titled 'Garden 6' that says 'water the basil'". A row Mobster scrolled to because your request named it counts as a value too: "Open Settings › Accessibility › Subtitles & Captioning" also serves "Open Settings › Accessibility › Keyboards & Typing". Each screen is kept as hashes of its controls' roles and names, never as text. Answers, notes and anything Mobster wrote itself aren't kept.
+- **When it's used:** a later task in the same app, on the same iPhone, whose words are the kept request, with the same values or other ones. Code fills in the values from your words. The model is asked only when your words could fill the request two ways. A task that says more than the kept request, such as a second request after "then" or after a closing quote, runs with the model instead: a value never runs across a quote mark, a semicolon, the end of a sentence, or a "then" outside quotes.
+- **What's repeated:** each step runs only on a screen like the one it ran on, and types only your words. An app that reopens on another page is first brought back to where the steps started: its Back button, then closing and reopening it once, never while a field on screen holds typed text. Sends, payments and deletes ask you first, as in any task; in Full access they go ahead as Full access says. When a screen doesn't match, the model takes over with the remaining steps as a plan.
+- **How it finishes:** the first repeat of learned steps ends the usual way, with the model checking the screen. After one repeat that shows every part done, later repeats of a task with nothing to report end as soon as the screen shows it done, with no model.
+- **What you taught:** a task you taught on the live view ([Teach Mobster a task](/capabilities#teach-mobster-a-task)) is kept as learned steps too. It opens its own app first, so it runs whichever app a task starts in, and it also runs for a workflow's runs and its schedule. It's kept until you forget it: a run that fails leaves it to be checked by the model again. **Save as a workflow** makes a workflow whose words run it, with your blanks as the workflow's.
+- **Forgetting:** learned steps whose first repeat fails are forgotten at once. After that, ones that fail twice in a row are forgotten. Mobster keeps up to 100 tasks' steps, in the data folder's `replays/programs/`.
+- **Parts of learned steps:** with `MOBSTER_PROGRAMS=on` set in the env file, a new task with other words can also use parts of other tasks' learned steps. A calories question's steps have a "look up a food in CalTrack" part; a create-a-note task's steps have a "create a note with this title and text" part. "Create a note titled 'Groceries 12' that says 'rice and beans', then tell me the calories in one serving of Quinoa in CalTrack" then runs both parts with no model:
+  - code takes each value from your words, where the kept request had its value, and checks it against the task's checklist;
+  - a part runs only for a part of the checklist still open in its app, and a part that wrote something never runs for a task that only reads;
+  - each step runs only on a screen like the one it ran on, and the part's last screen must show your values;
+  - a value your words don't give is left to the model, with the remaining steps as a plan.
+
+  On iOS Simulators (12 Oct 2026), 6 code-graded tasks that combine parts of other tasks' learned steps took 22 model calls instead of 39 and \$0.111 instead of \$0.198; 6 of 6 passed both ways.
+
+On iOS Simulators running code-graded tasks (11 Oct 2026), repeats took 2.33 model calls instead of 5.06, with the same pass rate.
+
+## The Morning brief
+
+The Morning brief is a job Mobster sets up for you: every morning, the DMs that need you with a draft reply for each, what's trending in your niche, and ideas from your saved posts, on Instagram, as one result. Choose **Set up** on its card on Home. The form opens under the cards: say your niche and the time (8:00 unless you change it), and choose **Save brief**. When it's ready, a Mac notification says "Your brief is ready", and the result opens from Home or the notification, with **Download › PDF**.
+
+It is a workflow like any other, in Workflows, where you can change its words, time and steps:
+
+- Three task cards, each read-only: "Don't send anything", "Don't like, comment or follow", "Don't like, comment or save anything". A reply goes only when you approve its draft, and that send asks as any send does.
+- A **Brief** step that puts their results together ([Build a workflow on its canvas](/workflows)).
+- Every day at the time you chose, with a \$2.00 spending limit a run and a 60-minute time limit.
+
+It needs Instagram on your iPhone. Mobster's agent runs its tasks; app packs for Instagram and TikTok take them over as they ship. `POST /api/workflows/templates/morning-brief` with `{"niche": "home cooking", "time": "07:30"}` (and an optional `timezone`) saves it and answers `{workflow}`.
+
+## Schedules
+
+Add a **Schedule** trigger to run a workflow by itself, such as weekdays at 8:00 AM. Set Repeat, Time and Days under **When it runs** in its inspector. Open **Advanced** to enter a Cron schedule and Time zone. A schedule fills each blank with its default. Give every blank a default before scheduling the workflow. Publish the workflow to activate its schedule. Choose **Pause** on the workflow's row to turn off its schedule. Its times stay saved ([Pause a workflow](#pause-a-workflow)).
+
+### Pause a workflow
+
+**Pause** is on the row of a published workflow whose published version has a schedule, a notification trigger or an app trigger. Unpublished changes don't hide it, since the published version is the one that runs. Point at the row and choose **Pause**, or move to the row with `↑` and `↓` and press `tab` to reach **Pause**. The row says **Paused**.
+
+Pause turns off the workflow's schedule and its notification and app triggers. **Run**, webhooks, shortcuts, MCP clients, Mobster Remote, `POST /v1/workflows/<slug>`, another workflow's **Run a workflow** step and the rules in **Settings › Triggers** can still start it. A run already in progress continues. Some work already queued can run after Resume.
+
+Choose **Resume** to turn them back on. The schedule resumes at its next time; times missed while paused aren't replayed. Notifications skipped by the workflow's own trigger while paused aren't replayed either. A notification first delivered after Resume can still start it, even if it arrived earlier. An app trigger checks up to the 20 newest items the app returns. Its first read marks them as seen without running them. Later reads queue unseen items oldest first. Items added while paused may run after Resume if the app still returns them.
+
+### When a schedule runs
+
+<Warning>Workflows run while your Mac is awake and your iPhone is plugged in and unlocked. A time that's missed is skipped, not run late.</Warning>
+
+- A step that needs your approval waits for you, as in any task. If nobody answers within 10 minutes, the task ends without that step.
+- A workflow saved with a profile (`account` in the API) runs on that profile's phone, as that profile, with its values in the task's placeholders ([Profiles](/profiles)).
+- A workflow runs on the phone saved with it. With none, it runs on the only phone, or the first iPhone, never on whichever phone you used last.
+- **Open at login**, in Settings › General, starts Mobster when you log in, so schedules run even if you haven't opened it. Where it's off, a workflow's panel offers it under its next run, its Schedule step in a line under **When it runs**, and saving a scheduled workflow offers it in the confirmation. Closing the window keeps Mobster running; ⌘Q quits it.
+- **Task notifications**, in the same place, tell you when a task finishes or needs your OK while Mobster is in the background.
+
+### Staying awake
+
+From 10 minutes before a scheduled task is due until its run ends, and while any task runs, Mobster keeps your Mac from going to sleep on its own. A closed laptop on battery still sleeps, and so does a Mac whose battery runs out: Mobster warns while tasks run on a Mac at 20% or less. A scheduled task on Mobster's agent pauses while the iPhone's battery is at 10% or less and not charging ([Battery, heat and the Mac](/devices#battery-heat-and-the-mac)). `MOBSTER_KEEP_AWAKE=0` in the env file turns keeping awake off.
+
+This keeps the Mac awake, never the iPhone. With `MOBSTER_QUEUE_PREFLIGHT=1`, a scheduled task whose iPhone is in Low Power Mode, which locks it after 30 seconds, gets a `phone_low_power` event when it starts ([Battery, heat and the Mac](/devices#while-tasks-run)). A locked iPhone still stops a schedule with "No action was taken."; the [content queue](/content-queue#check-the-iphone-first) waits for the unlock instead.
+
+## Alerts
+
+Mobster can post to a webhook when a scheduled task fails, stops before it finishes, or waits a minute for your approval. Put an https address in the env file:
+
+```sh agent.env
+MOBSTER_ALERT_WEBHOOK_URL=https://hooks.slack.com/services/…
+```
+
+- Slack, Discord and ntfy addresses get their own format. Any other address gets JSON: `workflow`, `status`, `reason`, `runId`, `at` and `text`.
+- A post says which task and why. It never holds the task's answer, a screenshot or anything it typed.
+- Tasks you start yourself never alert.
+- Addresses on this Mac or its local network are refused.
+
+`mobster alerts test` sends a test post and says whether it arrived.

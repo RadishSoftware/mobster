@@ -10,7 +10,8 @@ free. That makes a recorded run a regression test for the loop, its gates and it
 
 Format: ``tape.jsonl``, one JSON object a line.
 
-- ``{"kind": "header", "version", "request", "apps", "model", "frontier", "env", "capabilities", "t"}``
+- ``{"kind": "header", "version", "request", "apps", "model", "frontier", "env", "capabilities", "t", "hooks"?}``
+  (``hooks``: what the recorded run had that a replay doesn't: approvals, steering, tools)
 - ``{"kind": "call", "on", "name", "args", "t0", "t1", "result" | "error"}``: a driver method (``on`` is ``driver``, or
   ``driver.frame_clock`` and so on for an object the driver hands out)
 - ``{"kind": "value", "on", "name", "value"}``: a driver attribute the agent read
@@ -19,8 +20,9 @@ Format: ``tape.jsonl``, one JSON object a line.
 - ``{"kind": "end", "status", "answer", "steps", "actions"}``
 
 What it holds: the request and the screens as data (labels, values, frames), the model's replies. A picture is kept
-as its size only: a replayed model doesn't look. Benchmarks on simulators write it (bench/iosworld.py). The Mac app
-doesn't.
+as its size only: a replayed model doesn't look. Benchmarks on simulators write it (bench/iosworld.py). A run in the
+app or the terminal writes it too, when traces are on (traces.py): masked by the secret filter as it is written, in
+a private file beside the run's frames.
 """
 
 import dataclasses
@@ -31,15 +33,19 @@ import inspect
 import json
 import os
 import shutil
+import sys
 import threading
 import time
+import zipfile
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from pathlib import Path
 from unittest import mock
 
 from .. import state as state_module
 from ..drivers import Driver
-from ..driver_guards import DriverRejection
+from ..transport import TransportError, error_name
+from ..wda.guards import DriverRejection
 
 VERSION = 1
 NAME = "tape.jsonl"           # gzipped to tape.jsonl.gz when the run ends
@@ -55,6 +61,7 @@ def pixel():
     """A small grey JPEG: what a replay hands over for any picture the recording took."""
     if not _PIXEL:
         import io
+
         from PIL import Image
         out = io.BytesIO()
         Image.new("RGB", (8, 8), (128, 128, 128)).save(out, "JPEG")
@@ -75,8 +82,6 @@ class Divergence(BaseException):
         self.why, self.expected, self.got, self.index = why, expected, got, index
         super().__init__(why)
 
-
-# -- encoding -----------------------------------------------------------------------------------------------------
 
 def encode(value, depth=0):
     """``value`` as JSON: dataclasses by name, bytes by size, an exception by type and message."""
@@ -131,6 +136,8 @@ def encode_error(error):
     out = {"type": type(error).__name__, "module": type(error).__module__, "message": str(error)[:500]}
     if isinstance(error, DriverRejection):
         out["code"] = error.code
+    elif isinstance(error, TransportError) and (error.status is not None or error.wda_error is not None):
+        out.update(status=error.status, wda_error=error.wda_error)
     return out
 
 
@@ -143,7 +150,14 @@ def decode_error(data):
         try:
             cls = getattr(importlib.import_module(module), name)
             if isinstance(cls, type) and issubclass(cls, Exception):
-                return cls(message)
+                error = cls(message)
+                if isinstance(error, TransportError):
+                    # Set after building, since a subclass's own __init__ (MirroringError, CableBtError) takes
+                    # neither. A legacy record has neither, and reads as unproven.
+                    status = data.get("status")
+                    error.status = status if type(status) is int else None
+                    error.wda_error = error_name({"error": data.get("wda_error")})
+                return error
         except Exception:
             pass
     return RuntimeError(f"{name}: {message}")
@@ -190,17 +204,26 @@ def switches(env=None):
             if k.startswith("MOBSTER_") and not any(word in k for word in SECRET_WORDS)}
 
 
-# -- recording ----------------------------------------------------------------------------------------------------
-
 class Tape:
     """The writer: one JSONL file, appended under a lock (the verify read and the contract compile run on their own
-    threads). A write that fails stops the tape, never the run."""
+    threads). A write that fails stops the tape, never the run. The file is private (0600) and stops growing at
+    MAX_BYTES.
 
-    def __init__(self, path):
+    ``scrub(entry)`` rewrites each entry before it is written (traces.py passes the secret filter, which costs tens of
+    milliseconds on a screen). With one, the entries go to a single worker thread in order, so the agent never waits
+    for it, and ``close`` waits for the queue; without one, each write is made before the call returns, as a
+    benchmark's tape needs to survive a crash."""
+
+    MAX_BYTES = 32_000_000
+
+    def __init__(self, path, scrub=None):
         self.path = Path(path)
+        self.scrub = scrub
+        self._worker = ThreadPoolExecutor(max_workers=1, thread_name_prefix="mobster-tape") if scrub else None
         self._lock = threading.Lock()
         self._file = None
         self._screens = set()
+        self._size = 0
         self.broken = None
 
     def _shared(self, result):
@@ -216,26 +239,43 @@ class Tape:
         return {"__t": "ref", "h": digest, **times} if seen else {**result, "__h": digest}
 
     def write(self, entry):
+        if self._worker is None:
+            self._write(entry)
+            return
+        try:
+            self._worker.submit(self._write, entry)
+        except RuntimeError:
+            pass  # a late call (a hedged one that lost) after the tape ended
+
+    def _write(self, entry):
         if self.broken:
             return
         try:
+            if self.scrub is not None:
+                entry = self.scrub(entry)
             if entry.get("kind") == "call" and "result" in entry:
                 entry = {**entry, "result": self._shared(entry["result"])}
             line = json.dumps(entry, ensure_ascii=False, separators=(",", ":"))
             with self._lock:
+                self._size += len(line) + 1
+                if self._size > self.MAX_BYTES:
+                    self.broken = "the tape passed its size limit"
+                    return
                 if self._file is None:
                     self.path.parent.mkdir(parents=True, exist_ok=True)
-                    self._file = open(self.path, "a", encoding="utf-8", buffering=1)  # a line a write: a crash keeps the tape
+                    # a line a write: a crash keeps the tape
+                    descriptor = os.open(self.path, os.O_WRONLY | os.O_CREAT | os.O_APPEND | os.O_NOFOLLOW, 0o600)
+                    self._file = os.fdopen(descriptor, "a", encoding="utf-8", buffering=1)
                 self._file.write(line + "\n")
         except Exception as error:  # noqa: BLE001
             self.broken = f"{type(error).__name__}: {error}"
 
-    def header(self, *, request, apps, model, frontier, driver, env=None):
+    def header(self, *, request, apps, model, frontier, driver, env=None, hooks=()):
         kinds = capabilities(driver)
         values = {name: encode(getattr(driver, name, None)) for name, kind in kinds.items() if kind == "value"}
         self.write({"kind": "header", "version": VERSION, "request": request, "apps": dict(apps or {}),
                     "model": model, "frontier": encode(frontier), "env": switches(env), "capabilities": kinds,
-                    "values": values, "t": time.monotonic()})
+                    "values": values, "t": time.monotonic(), **({"hooks": sorted(hooks)} if hooks else {})})
 
     def end(self, outcome):
         """The run's end, then the tape gzipped (tape.jsonl.gz): a tape that never ends stays plain."""
@@ -246,13 +286,17 @@ class Tape:
         if self.broken or not self.path.exists():
             return
         try:
-            with open(self.path, "rb") as plain, gzip.open(str(self.path) + ".gz", "wb", compresslevel=6) as packed:
+            descriptor = os.open(str(self.path) + ".gz", os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW, 0o600)
+            with open(self.path, "rb") as plain, os.fdopen(descriptor, "wb") as raw, \
+                    gzip.GzipFile(fileobj=raw, mode="wb", compresslevel=6) as packed:
                 shutil.copyfileobj(plain, packed)
             self.path.unlink()
         except OSError as error:
             self.broken = f"{type(error).__name__}: {error}"
 
     def close(self):
+        if self._worker is not None:
+            self._worker.shutdown(wait=True)
         with self._lock:
             if self._file is not None:
                 self._file.close()
@@ -274,8 +318,7 @@ def capabilities(driver):
 
 
 class _Recorded:
-    """A proxy that writes each call and attribute read of ``inner`` to the tape. Objects the agent gets from it
-    (the frame clock, its video) are proxied too, under a dotted ``on``."""
+    """A proxy that writes each call and attribute read of ``inner`` to the tape."""
 
     _OBJECTS = frozenset({"frame_clock", "video"})
 
@@ -322,6 +365,8 @@ class TapeDriver(_Recorded):
 
     def __init__(self, driver, tape):
         super().__init__(driver, tape, "driver")
+        # Declared on the proxy: reading it must not write a tape entry (the header holds the set).
+        object.__setattr__(self, "capabilities", driver.capabilities)
 
     # The abstract three, spelled out so the proxy is a complete driver even to code that looks them up on the class.
     def observe(self, timeout=10):
@@ -364,15 +409,34 @@ class TapeClient:
         return reply, usage
 
 
-# -- replay -------------------------------------------------------------------------------------------------------
+BUNDLE_TAPE_LIMIT = 200_000_000  # unpacked bytes: a bundle is a person's own, but a zip can lie about its size
+
+
+def read(path):
+    """The tape's text from a tape.jsonl, a tape.jsonl.gz, a folder holding one, or a trace bundle (traces.py: a zip
+    with tape.jsonl.gz in it). ValueError when a bundle holds no tape."""
+    path = Path(path)
+    if path.is_dir():
+        path = path / NAME if (path / NAME).exists() else path / (NAME + ".gz")
+    if path.suffix == ".zip":
+        try:
+            with zipfile.ZipFile(path) as archive:
+                info = archive.getinfo(NAME + ".gz")
+                if info.file_size > BUNDLE_TAPE_LIMIT:
+                    raise ValueError(f"{path}: the bundle's tape is too large")
+                packed = archive.read(info)
+        except (KeyError, zipfile.BadZipFile):
+            raise ValueError(f"{path} holds no tape (the task ran without MOBSTER_EXPERIMENTAL_TRACES=1)") from None
+        return gzip.decompress(packed).decode("utf-8")
+    if path.suffix == ".gz":
+        return gzip.decompress(path.read_bytes()).decode("utf-8")
+    return path.read_text(encoding="utf-8")
+
 
 def load(path):
     """The tape's entries; ValueError when it has no header."""
     path = Path(path)
-    if path.is_dir():
-        path = path / NAME if (path / NAME).exists() else path / (NAME + ".gz")
-    text = (gzip.decompress(path.read_bytes()).decode("utf-8") if path.suffix == ".gz"
-            else path.read_text(encoding="utf-8"))
+    text = read(path)
     entries = [json.loads(line) for line in text.splitlines() if line.strip()]
     if not entries or entries[0].get("kind") != "header":
         raise ValueError(f"{path} is not a tape (no header)")
@@ -434,6 +498,7 @@ class Player:
         self.header = entries[0]
         self.clock = Clock(self.header.get("t") or 0.0)
         self.acts, self.reads, self.values, self.models = [], {}, {}, {}
+        self.decisions = []
         self.end = next((e for e in entries if e.get("kind") == "end"), None)
         self.recorded_kinds = {}
         for entry in entries[1:]:
@@ -451,6 +516,8 @@ class Player:
                 self.values.setdefault(key, []).append(entry)
             elif kind == "model":
                 self.models.setdefault(entry.get("purpose") or "", []).append(entry)
+                if "actions" in (entry.get("purpose") or "").split(","):
+                    self.decisions.append(entry.get("t1") or 0)  # when each decision came back, for ``steps_of``
         self.acts_done = 0
         self.prompts_same = self.prompts_seen = 0
         self._served_values = {}
@@ -543,10 +610,12 @@ class ReplayDriver(_Served):
 
     def __init__(self, player):
         super().__init__(player, "driver")
-        object.__setattr__(self, "_capabilities", dict(player.header.get("capabilities") or {}))
+        kinds = dict(player.header.get("capabilities") or {})
+        object.__setattr__(self, "_kinds", kinds)
+        object.__setattr__(self, "capabilities", frozenset(kinds).intersection(Driver.OPTIONAL))
 
     def __getattr__(self, name):
-        kind = self._capabilities.get(name)
+        kind = self._kinds.get(name)
         if kind is None and not name.startswith("__"):
             raise AttributeError(name)
         if kind == "call":
@@ -606,6 +675,8 @@ class Report:
     prompts_seen: int = 0
     seconds: float = 0.0
     error: str = None
+    steps: list = dataclasses.field(default_factory=list)   # [{"index", "turn", "act", "now"}], see ``steps_of``
+    hooks: list = dataclasses.field(default_factory=list)   # what the live run had that a replay doesn't
 
     @property
     def identical(self):
@@ -617,18 +688,28 @@ class Report:
 
 
 # Modules whose ``time`` a replay swaps for the virtual one: the loop and the code it calls between two driver calls.
-TIMED = ("frontier", "contract", "effect_ledger", "system_dialogs")
+# A package stands for every module in it, so a new frontier module is on the clock without being listed.
+# wda.guards holds the stream-still check (``unchanged_since``) the refresh before an action compares with a
+# read's start: on the host's clock it reads now as hours after the recording and makes reads the recording didn't.
+TIMED = ("frontier", "contract", "effect_ledger", "wda.system_dialogs", "wda.guards")
+
+
+def _timed_modules():
+    for name in TIMED:
+        try:
+            importlib.import_module(f"mobile_agent.{name}")
+        except Exception:  # noqa: BLE001
+            continue
+    names = tuple(f"mobile_agent.{name}" for name in TIMED)
+    return [module for key, module in sorted(sys.modules.items())
+            if module is not None and (key in names or key.startswith(tuple(n + "." for n in names)))]
 
 
 @contextmanager
 def _virtual_time(clock):
     shim = _VirtualTime(clock)
     patches = []
-    for name in TIMED:
-        try:
-            module = importlib.import_module(f"mobile_agent.{name}")
-        except Exception:  # noqa: BLE001
-            continue
+    for module in _timed_modules():
         if getattr(module, "time", None) is time:
             patches.append(mock.patch.object(module, "time", shim))
     for patch in patches:
@@ -638,6 +719,43 @@ def _virtual_time(clock):
     finally:
         for patch in reversed(patches):
             patch.stop()
+
+
+def act_words(args):
+    """A recorded action's key in words: the method, then its target's label and its text."""
+    parts = [str(args[0])] if args else []
+    for item in args[1:]:
+        if isinstance(item, dict) and "label" in item:
+            parts.append(repr(item["label"]))
+        elif isinstance(item, (str, int, float)) and not isinstance(item, bool):
+            parts.append(str(item)[:60])
+    return " ".join(parts)
+
+
+def steps_of(player, divergence):
+    """The recorded actions one by one against the replay: ``now`` is "same" for each the replay sent as recorded,
+    "differs: ..." at the one it didn't (the replay stops there; a read or a model call the recording never made says
+    so), "never asked" for an action the replay ended before, and "not reached" for the rest. An action the recording
+    never sent comes last, as a row of its own. ``turn`` counts the decisions the recording took before the action."""
+    differs = None
+    if divergence is not None:
+        asked = divergence["got"] and divergence["why"] in ("a different action", "an action the recording never sent")
+        differs = "differs: " + (act_words(divergence["got"]) if asked else divergence["why"])
+    out = []
+    for index, act in enumerate(player.acts):
+        if index < player.acts_done:
+            now = "same"
+        elif divergence is not None and index == divergence["index"]:
+            now = differs
+        else:
+            now = "not reached" if divergence is not None else "never asked"
+        turn = sum(1 for t1 in player.decisions if t1 <= (act.get("t0") or 0)) or None
+        out.append({"index": index, "turn": turn, "act": act_words(act.get("args") or ()), "now": now})
+    if divergence is not None and divergence["index"] >= len(player.acts):
+        step = divergence.get("step")
+        out.append({"index": len(player.acts), "turn": None if step is None else step + 1,
+                    "act": "(the recording sent none)", "now": differs})
+    return out
 
 
 def build_agent(driver, client, header, emit):
@@ -673,6 +791,8 @@ def replay(path, *, build=build_agent):
         except Exception as error:  # noqa: BLE001
             report.error = f"{type(error).__name__}: {error}"[:300]
     report.replayed_acts = player.acts_done
+    report.steps = steps_of(player, report.divergence)
+    report.hooks = list(header.get("hooks") or ())
     report.prompts_same, report.prompts_seen = player.prompts_same, player.prompts_seen
     report.seconds = round(time.monotonic() - started, 3)
     return report

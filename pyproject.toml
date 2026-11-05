@@ -1,35 +1,59 @@
 [project]
-# "mobster" on PyPI is an unrelated SBOM tool. The import package is mobile_agent. It installs no command: this is
-# the engine's reference loop and its research. The product is Mobster for Mac (https://mobster.dev).
-name = "mobster-engine"
+# "mobster" on PyPI is an unrelated SBOM tool. The import package is mobile_agent; the command is `mobster`.
+name = "mobster-cli"
 dynamic = ["version"]
-description = "Mobster's engine and research: the reference agent loop behind Mobster for Mac, with its benchmarks"
+# The positioning's one line for package indexes.
+description = "The open-source harness that lets AI agents use a real iPhone over USB"
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 authors = [{ name = "Radish Retail, LLC" }]
 requires-python = ">=3.12"
-# Compatible ranges. The tested pins are in mobile_agent/requirements.txt.
+# Compatible ranges for installing beside other libraries. The tested pins (CI, `make venv`, the desktop
+# sidecar) are in mobile_agent/requirements.txt.
 dependencies = [
     "jsonschema>=4.23,<5",
-    "referencing>=0.35",  # imported directly (extraction.py); also a jsonschema dependency
-    "Pillow>=11,<13",     # FrameClock: JPEG decode of the MJPEG stream
+    "referencing>=0.35",  # imported directly (extraction.py, loops.py); also a jsonschema dependency
+    "croniter>=6,<7",
+    "Pillow>=11,<14",
+    "PyYAML>=6.0.2,<7",  # check files (`mobster verify --check`, verify/checks.py)
+    "textual>=8,<9",  # the terminal UI (`mobster`); imported only when it opens
+    "rich>=13.3.3",  # imported directly (tui/, doctor.py); also a Textual dependency
+    "textual-image>=0.14,<0.15",  # the phone's real screenshot in terminals that draw images
+    "cryptography>=46,<51",  # team features (mobile_agent/teams): passkey signatures, the signed roster and policy
 ]
-keywords = ["ios", "iphone", "agent", "accessibility", "webdriveragent", "benchmark", "iosworld"]
+keywords = ["ios", "iphone", "agent", "accessibility", "webdriveragent", "automation", "mcp", "mcp-server",
+            "model-context-protocol", "ios-simulator", "ios-testing", "e2e-testing", "ui-testing", "claude-code"]
 classifiers = [
     "Development Status :: 3 - Alpha",
-    "Intended Audience :: Science/Research",
+    "Environment :: Console",
+    "Environment :: Console :: Curses",
     "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
     "Operating System :: MacOS",
+    "Operating System :: MacOS :: MacOS X",
+    "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Testing",
+    "Topic :: Software Development :: Testing :: Acceptance",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
 
 [project.urls]
 Homepage = "https://mobster.dev"
 Repository = "https://github.com/RadishSoftware/mobster"
+Documentation = "https://docs.mobster.dev"
+Changelog = "https://docs.mobster.dev/changelog"
 Issues = "https://github.com/RadishSoftware/mobster/issues"
+
+[project.scripts]
+mobster = "mobile_agent.__main__:main"
+# The package's own name works too, so `uvx mobster-cli mcp` runs the MCP server.
+mobster-cli = "mobile_agent.__main__:main"
 
 [build-system]
 requires = ["setuptools>=77"]
@@ -40,9 +64,34 @@ version = { attr = "mobile_agent.__version__" }
 
 [tool.setuptools.packages.find]
 include = ["mobile_agent*"]
-exclude = ["mobile_agent.tests*", "mobile_agent.bench.tests*"]
+# Private device extensions, Mac-only Remote and the Mac-only team features never ship in the public CLI wheel.
+exclude = ["mobile_agent.tests*", "mobile_agent.bench.tests*", "mobile_agent.private*", "mobile_agent.remote*",
+           "mobile_agent.teams*"]
 
+# Non-Python files the documented commands read: the Swift helper sources (`mobster build-ocr` and the native helpers
+# native_helpers.py compiles), the frozen benchmark manifest and ground truth
+# (`python -m mobile_agent.bench`), and the labelled VisionJudge set (CC0 / public-domain images;
+# see evals/vision/manifest.json).
 [tool.setuptools.package-data]
-mobile_agent = ["*.swift"]
+mobile_agent = ["swift/*.swift"]
+"mobile_agent.verify" = ["netshim.m"]
 "mobile_agent.bench" = ["README.md", "manifest.json", "*-manifest.json", "truth/*.json"]
 "mobile_agent.evals.vision" = ["manifest.json", "images/*.jpg"]
+
+# `make lint` and the lint step of CI (`ruff check mobile_agent scripts desktop/scripts`): pyflakes, isort's import
+# order and lines of at most 120 columns; formatting isn't checked. Generated files and the frozen bench graders are
+# exempt from the last two.
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["F", "E501", "I"]
+
+[tool.ruff.lint.per-file-ignores]
+"mobile_agent/brand.py" = ["E501", "I"]
+"mobile_agent/brand_fonts.py" = ["E501", "I"]
+"mobile_agent/connectors/marks.py" = ["E501", "I"]
+"mobile_agent/integrations/skill_files.py" = ["E501", "I"]
+"mobile_agent/bench/real/policy.py" = ["E501", "I"]
+"mobile_agent/bench/real/checks.py" = ["E501", "I"]
+"mobile_agent/bench/real/reads.py" = ["E501", "I"]

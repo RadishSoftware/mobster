@@ -1,0 +1,75 @@
+---
+title: "Soak test for many phones"
+description: "Run read-only checks on 5 to 10 iPhones for minutes or hours and read each step's latency and failure rate."
+icon: "gauge"
+keywords: ["soak", "fleet", "latency", "p99", "many phones", "hub", "reliability"]
+---
+
+`scripts/soak_fleet.py` asks each phone's helper the same read-only questions in a loop and tells you how long each answer took and how often it failed. Run it before you rely on a row of phones, after you add a hub or a phone, and after an iOS update.
+
+It sends `GET` requests only. It sends no tap, swipe or key, creates no session and never unlocks a phone. It stops reading a phone the moment its owner starts using it ([While you use your iPhone](/safety#while-you-use-your-iphone)).
+
+## Run it
+
+Try it without a phone first. The built-in fake fleet needs no cable and no `mobster serve`:
+
+```sh
+mobile_agent/.venv/bin/python scripts/soak_fleet.py --dry-run --phones 8 --duration 300
+```
+
+On real phones, name each phone's helper address, or let it list the phones of a running `mobster serve`:
+
+```sh
+mobile_agent/.venv/bin/python scripts/soak_fleet.py --phone alex=http://127.0.0.1:8100 --duration 300 \
+  --json soak.json --markdown soak.md
+mobile_agent/.venv/bin/python scripts/soak_fleet.py --serve http://127.0.0.1:8765 --duration 1800
+```
+
+It prints a table:
+
+```text
+| Phone | Step | n | p50 ms | p90 ms | p99 ms | Failure rate | Watchdog restarts |
+|---|---|---:|---:|---:|---:|---:|---:|
+| fake-1 | locked | 60 | 6.3 | 8.5 | 41.2 | 0.0% | 0 |
+```
+
+| Step | Request | What it shows |
+|---|---|---|
+| `wda_status` | `GET /status` | The helper answers |
+| `locked` | `GET /wda/locked` | The helper reaches the phone |
+| `active_app` | `GET /wda/activeAppInfo` | The foreground app |
+| `screenshot` | `GET /screenshot` | A screen read |
+| `source` | `GET /session/<id>/source` | The accessibility tree. Skipped when the helper has no session |
+
+| Flag | What it does |
+|---|---|
+| `--phone NAME=URL` | One phone's helper, on this Mac's loopback. Repeat for more |
+| `--serve URL` | List the USB phones of a running `mobster serve`, and read each phone's `watchdog.restarts` before and after |
+| `--duration`, `--interval` | Seconds to run, default 300, and seconds between passes, default 5 |
+| `--lock-dir` | The phone lock, default `~/mobster-work/locks/phone` when `~/mobster-work/locks` exists. An empty value turns it off |
+| `--json`, `--markdown` | Write the report to a file |
+| `--dry-run`, `--phones N` | The fake fleet, `N` phones (1 to 64) |
+
+`--serve` can't see a phone's address: the first phone is on 8100, and the others on 8101, 8102 and up in the order the server lists them. If you forgot a phone, pass `--phone` for each one.
+
+The lock is a directory made with `mkdir` before the first read. A held lock stops the run, and the script removes the directory only if it made it.
+
+## Run it on more phones
+
+1. Connect each phone with its own cable. A powered USB hub works; plug the hub into the Mac directly, not through a keyboard or a display. Each phone has to be set up in Mobster once: [Add a device](/phones#add-a-device).
+2. Every phone gets WebDriverAgent on port 8100 plus its slot and live view on 9100 plus its slot ([Ports](/devices#ports)). `mobster devices` lists them.
+3. Unlock every phone and set **Auto-Lock** to **Never** for the run, so a locked screen isn't counted as a failure. Put them down: an owner who picks one up ends that phone's run, which the report shows as `stopped: owner_active`.
+4. Start with 5 phones for 5 minutes. Then add phones until the p99 of `screenshot` or `source` rises or a failure rate leaves 0%: that is this Mac's limit with this hub. Each phone's reads run on their own thread, so the load on the Mac and the hub is what you are measuring.
+5. Record: what you ran (flags, duration, interval), the Mac and hub, the phones' models and iOS versions, the date, and the table. Keep the JSON with it.
+
+To publish a result, put the table in a docs page or a pull request with those five facts, dated. Say what a number was measured on; don't round a p99 down.
+
+## What the numbers mean
+
+- A failure is a timeout or an error from the helper, with the bound in `mobile_agent/wda/timeouts.py`: 3 s for the first three steps, 10 s for the others. The error names are in the JSON under `errors`.
+- A rising `screenshot` p99 with a flat `locked` p99 means the USB link or the phone is busy, not the helper.
+- `Watchdog restarts` is how many times Mobster restarted a helper during the run ([When the helper stops answering](/devices#when-the-helper-stops-answering)). Any restart during a soak run is worth reading the helper's log for.
+
+## Measured
+
+Nothing here has been measured on more than one phone yet. The fake fleet's numbers are a model of the script, not of a phone.

@@ -1,0 +1,26 @@
+---
+title: "The encrypted link isn't up yet"
+sidebarTitle: "The encrypted link isn't up yet"
+description: "Your iPhone is on the network, but the encrypted Wi-Fi link to it isn't up. Unlock it and keep it on the same Wi-Fi as this Mac."
+icon: "triangle-alert"
+keywords: ["tunnel", "encrypted link", "wifi", "pairing", "Connect via network"]
+"article:modified_time": "2026-10-26"
+---
+
+You see this: `mobster doctor` prints `! Wi-Fi link  … is on the network, but the encrypted link isn't up yet` for a phone with Wi-Fi on. Mobster for Mac and `mobster wifi probe` say it as `The encrypted link to` your iPhone's name `isn't up yet.`
+
+## Why it happens
+
+Wi-Fi goes through Apple's encrypted link between this Mac and the phone, the one Xcode uses for **Connect via network**. A locked or sleeping phone leaves it down.
+
+## Fix
+
+1. Unlock the iPhone and keep it on the same Wi-Fi as this Mac.
+2. Wait. Mobster brings the link up when it needs it and tries again by itself.
+3. If it stays down, plug the phone in to use it now, then run `mobster wifi probe`.
+
+## Check it worked
+
+`mobster doctor` prints `✓ Wi-Fi link  … is reachable over the encrypted Wi-Fi link`. The rest of the Wi-Fi messages are in [Wi-Fi](/wifi#when-it-doesnt-work).
+
+Checked 26 Oct 2026 against Mobster 0.4.0. Back to [Troubleshooting](/troubleshooting#iphone).

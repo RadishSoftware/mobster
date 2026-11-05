@@ -1,0 +1,162 @@
+---
+title: "Set up an iPhone or simulator"
+"og:title": "Set up an iPhone or simulator for Mobster (WebDriverAgent)"
+sidebarTitle: "Device setup"
+description: "Put Mobster's helper on your iPhone or a simulator with Mobster's guided setup."
+icon: "cable"
+keywords: ["developer mode", "webdriveragent", "trust this computer", "signing", "apple account", "iproxy", "7 days", "without xcode", "app store connect key", "provisioning profile", "pymobiledevice3"]
+---
+
+Mobster drives an iPhone through [WebDriverAgent](https://github.com/appium/WebDriverAgent) (WDA), an XCTest runner that Xcode builds and installs on the phone. WDA serves the phone's accessibility tree and accepts taps and typing over HTTP. On a USB iPhone, `iproxy` relays that HTTP port to `127.0.0.1:8100` on your Mac, and Mobster talks to that address.
+
+<Info>Mobster for Mac does all of this on its first run ([Quickstart: Mobster for Mac](/quickstart/mac)), and for each device after that on **Add a device** ([Devices and health](/phones#add-a-device)). The steps below are for the `mobster` command on its own.</Info>
+
+There are two ways to get WDA answering:
+
+| path | when to use it |
+| --- | --- |
+| [Guided setup](#guided-setup) with `mobster serve --manage-device` | A USB iPhone, and you want Mobster to build, sign, start and restart WDA for you. The Mac app uses this path. |
+| [A simulator](#simulators) | Development and benchmarks. Nothing leaves the Mac. |
+
+## Before you start
+
+- **Xcode**, the full app from the App Store, opened once, and signed in to your Apple Account (Xcode › Settings › Accounts). A free Apple Account works. Its signature lasts 7 days, and from day 5 Mobster rebuilds the runner by itself ([When the helper stops answering](/devices#when-the-helper-stops-answering)). `mobster doctor` says how many days are left.
+- **libimobiledevice**: `brew install libimobiledevice ideviceinstaller`.
+- **The iPhone**: Developer Mode on (Settings › Privacy & Security › Developer Mode, then restart the phone), connected with a cable, unlocked, and "Trust This Computer" accepted.
+
+Run `mobster doctor` after each step. It checks Xcode, the tools, whether the phone is connected and trusted, whether a managed runner is built and still signed, whether WDA answers, and whether the phone is locked.
+
+## Fix what doctor finds
+
+`mobster doctor` names each problem in the words Mobster for Mac and `mobster mcp`'s `status` use, with the next step under it. `mobster doctor --fix` does the fix each one carries, checks again, and prints what it did and what it couldn't:
+
+```text
+What --fix did
+
+  ✓ Started Mobster's helper on Sam's iPhone. It answers.
+  – Port 8100 is held by /opt/homebrew/bin/iproxy -s 127.0.0.1 -u <UDID> 8100:8100 9100:9100 (pid
+    4321). It may be another Mobster's connection to a phone. Stop it? Run mobster doctor --fix in a
+    terminal to answer.
+```
+
+| It does | What |
+| --- | --- |
+| On its own | Starts Mobster's helper on the iPhone and waits up to 90 seconds for it to answer. Refreshes a helper whose 7-day signature ran out, with the Apple Account it was built with. |
+| After it names what it stops and you say yes | Frees the helper's port: it prints the program and its command line, and sends it a stop request, not a kill. It asks again before it forces a program that ignored the request. Stops Mobster's service when it accepts connections and never answers. |
+| By handing over | `mobster login` for a missing AI account, `mobster setup` for an iPhone that isn't set up. Both ask you questions. |
+| Never | Enters a passcode, taps on the iPhone, runs `sudo`, downloads a runtime, or stops a program by its name. |
+
+The taps on the iPhone are yours: unlock it, plug it in, turn on Developer Mode, trust this Mac or the developer app, turn on UI Automation. `--fix` leaves them under the finding that names them, and checks again.
+
+When Mobster for Mac or `mobster serve` is running, it manages the iPhone's helper itself, so `--fix` leaves the helper to it and says so. A phone that another Mobster is running a task on is left alone too. Without a terminal, or with `--json`, `--fix` skips every question and says which in `fixes`; each entry has the finding's `cause`, the `kind` of its fix and what happened (`fixed`, `failed`, `refused`, `declined`, `needs_terminal` or `yours`). [The FAQ](/faq#when-something-stops) lists every state.
+
+## Guided setup
+
+`mobster serve --manage-device` owns the USB iPhone. It finds Xcode and your Apple development teams, builds WDA for the connected phone into Mobster's data folder (`~/Library/Application Support/app.mobster.desktop`), then runs and supervises the runner and the USB relay. The runner and relay start again the next time you run `serve`. The Mac app runs this same server and shows its setup API as a setup screen. If the Mac app is set up and running, you can skip this section, since WDA is already answering at `127.0.0.1:8100`.
+
+Without the Mac app, drive the setup API from a terminal. Start the server, then read the API token from the file named on its first line:
+
+```sh
+mobster serve --manage-device --env-file "$MOBSTER_ENV_FILE" > /tmp/mobster-serve.log 2>&1 &
+sleep 2
+TOKEN_FILE=$(head -1 /tmp/mobster-serve.log | python3 -c 'import json, sys; print(json.load(sys.stdin)["tokenFile"])')
+setup() { curl -s -H "Authorization: Bearer $(cat "$TOKEN_FILE")" -H 'Content-Type: application/json' \
+            "http://127.0.0.1:8765/api/setup$1" ${2:+-d "$2"}; }
+```
+
+Walk the steps in order:
+
+```sh
+setup | jq '.steps[] | {id, state, detail}'      # what is done and what is next
+setup | jq '.teams'                               # your Apple development teams
+setup /build '{"team": "ABCDE12345"}'             # builds WDA for the phone: minutes the first time
+setup | jq '.build.state'                         # repeat until "succeeded"
+setup /start '{}'                                 # starts the runner and the USB relay
+setup /live '{"enabled": true}'                   # lets tasks act on the phone
+setup /photos '{}'                                # with MOBSTER_QUEUE_PREFLIGHT=1: iOS asks on the iPhone; you answer there
+```
+
+The Photos step exists only with `MOBSTER_QUEUE_PREFLIGHT=1` ([the content queue's iPhone checks](/content-queue#check-the-iphone-first)). `setup | jq '.steps[] | select(.id == "photos")'` says `done` once the iPhone allows Photos (Limit Access counts), `todo` with the action `allow_photos` while iOS hasn't been asked, and `todo` with where to switch it on in Settings when you said no. The Mac app's session sends `/photos`; a program with the token alone is refused. Mobster never presses iOS's button for you, and the step never holds back `complete`.
+
+With several phones connected, choose one first with `setup /phone '{"udid": "<UDID>"}'` (the UDIDs are in `setup | jq .devices`). A build belongs to the phone it was made for.
+
+Leave `serve` running while you use Mobster. It keeps the runner alive and restarts it if it stops. Then, in another terminal:
+
+```sh
+mobster doctor
+mobster
+```
+
+### The capture gate
+
+The guided setup's build carries the capture gate that [simulators](/simulators#webdriveragent) run with. An iPhone runner starts with the gate off. On an iPhone 15 Pro (iOS 26.0.1, 11 Oct 2026), the gate made each screen read 81.5 ms slower at p50 (160 to 241.5 ms). It prevented no stall: no read stalled in 40 swipe-and-read runs either way. Set `MOBSTER_CAPTURE_GATE=on` in Mobster's environment to start iPhone runners with it.
+
+## Without Xcode (paid team)
+
+This is experimental and off by default. Set `MOBSTER_EXPERIMENTAL_NO_XCODE=1` in your shell or your settings file to turn it on. It is for a Mac that has no Xcode, such as one of ten phone-station Macs, and for a team that pays for the Apple Developer Program. A free Apple Account keeps the Xcode path above, with its 7-day signature.
+
+Mobster signs its helper on your Mac with `codesign`, using a development certificate and a provisioning profile that your own team makes through Apple's App Store Connect API. It then installs and starts the helper with `pymobiledevice3` (or `go-ios`). `xcodebuild` and `xcrun` never run. Nothing here changes how the iPhone looks to an app.
+
+**What you need**
+
+- An [App Store Connect API key](/dev/app-store-connect) with the Admin or Developer role, in your Keychain: `mobster asc key add --key-id KEY_ID --issuer-id ISSUER_ID --p8 AuthKey_KEY_ID.p8`.
+- `pymobiledevice3` (GPL-3.0-or-later), which you install yourself: `pipx install pymobiledevice3`. Mobster runs it as a separate program and never imports or bundles it. Mobster looks for it on your `PATH`, in pipx's folder (`PIPX_BIN_DIR`, else `~/.local/bin`), `/opt/homebrew/bin` and `/usr/local/bin`. A copy inside a Python venv whose folder isn't on your `PATH` isn't found. `go-ios` (MIT) works as the fallback.
+- A prebuilt helper that matches this Mobster's patches. Mobster for Mac carries one; from a checkout, `MOBSTER_PREBUILT_RUNNER` names a folder with `WebDriverAgentRunner-Runner.app` and a `patches.txt`.
+- An App ID for the helper on your team. Xcode makes one the first time it builds for the team, and keeps a wildcard App ID that covers it. Mobster doesn't register App IDs; if your team has neither, the card says so and where to add one.
+
+**What Mobster sends to Apple**
+
+Setup shows a card before anything is sent. `mobster signing card` prints the same card. It lists only the requests still needed, each one exactly as it will be sent:
+
+1. Register your iPhone: its name and UDID, once per phone and team.
+2. Create a development certificate from a request made on this Mac. The private key stays in a keychain of Mobster's own on this Mac and never leaves it.
+3. Create a development profile for the helper's App ID, listing the certificate and every phone. Adding a phone makes a new profile that lists them all.
+
+Nothing else is written to Apple. You approve the card by its digest:
+
+```sh
+mobster signing card
+mobster signing apply --approve 3f9c2a1b7d0e…
+```
+
+Each request is recorded on your Mac before it is sent. If Mobster sends one and never sees Apple's answer, it doesn't send it again. `mobster signing status` lists it, and after you look at developer.apple.com, `mobster signing resolve DIGEST --made` or `--not-made` says what you found. The [privacy page](/privacy#what-mobster-writes-to-apple) lists the writes and what each carries.
+
+**What happens next**
+
+1. Mobster keeps the certificate beside its key and signs a copy of the prebuilt helper, inside out, with the profile. It checks the signature, the team, the bundle id and the profile before it goes on.
+2. If the iPhone has no developer disk image mounted, `pymobiledevice3` mounts one. That downloads the image from GitHub and asks Apple's signing service to personalize it for your iPhone, as Xcode does the first time it prepares a phone. A phone that Xcode on any Mac already prepared skips this.
+3. Mobster installs the signed helper and starts it. Setup's readiness checks are the same as with Xcode.
+
+**Developer Mode** is still yours. Mobster reads whether it is on over the cable. If Settings › Privacy & Security has no Developer Mode switch, Setup's **Show the switch** makes it appear. You turn it on, tap Restart, then Turn On.
+
+**Sign once, run on every Mac.** A Mac with the key can export the signed helper and its profile, and a Mac with neither the key nor Xcode can install it:
+
+```sh
+mobster signing export helper.tgz
+mobster signing import helper.tgz --team ABCDE12345
+```
+
+The import opens the file only if you name the team it is from, its files are intact, its signature verifies, it was built with this Mobster's patches, its profile lists this iPhone and has more than a day left. The team is your check, since any team's signature verifies. The helper runs only on the iPhones its profile lists, until the profile ends.
+
+**What is verified, 19 October 2026.** The three requests, the card, the ledger, the signing, the checks and the export and import run in Mobster's tests on recorded answers, and `codesign` signed a copy of a runner Xcode built, ad hoc and with no Xcode in its environment, in 1.2 s. The first install without Xcode on a real iPhone, its time, and the three writes on a paid team haven't run yet. This page says so until they have.
+
+## Simulators
+
+`mobster sim prepare` creates a simulator Mobster manages, boots it headless, builds WebDriverAgent once and starts it on its own port. Then name it from `mobster devices`:
+
+```sh
+mobster sim prepare
+mobster devices                                  # its name and id
+mobster --device "Mobster · iPhone 17 Pro · iOS 26.4"
+mobster doctor --simulator --device "Mobster · iPhone 17 Pro · iOS 26.4"
+```
+
+`--simulator` skips the USB, Xcode and runner checks. A simulator you run WebDriverAgent on yourself works too: pass its address with `--wda-url`. [Simulators](/simulators) has the details. [Benchmarks](/benchmarks#iosworld) describes the simulator pool the iOSWorld harness uses.
+
+## Rules that hold on every path
+
+- Keep the phone unlocked. Mobster can't read the accessibility tree while the phone is locked, and never enters a passcode.
+- Turn on a Focus mode before long runs. A notification can take the foreground in the middle of a task.
+- One Mobster process controls a phone at a time. While the first holds the phone, Mobster refuses a second one, whether that is the Mac app, `mobster serve`, `mobster run --execute` or the terminal UI, and however its address is written (`localhost` or `127.0.0.1`). `mobster doctor` shows this as "Device lock". In the Mac app and `mobster serve`, a second task for a phone in use waits in line instead ([Sharing a phone](/devices#sharing-a-phone)).
+
+<Warning>WDA has no authentication. Mobster binds it to `127.0.0.1` on the Mac. Keep it that way.</Warning>

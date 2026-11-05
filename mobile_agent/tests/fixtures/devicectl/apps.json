@@ -1,0 +1,73 @@
+{
+  "info": {
+    "arguments": [
+      "devicectl",
+      "device",
+      "info",
+      "apps",
+      "--device",
+      "<UDID>"
+    ],
+    "commandType": "devicectl.device.info.apps",
+    "jsonVersion": 2,
+    "outcome": "success",
+    "version": "518.27"
+  },
+  "result": {
+    "appCount": 4,
+    "apps": [
+      {
+        "appClip": false,
+        "builtByDeveloper": false,
+        "bundleIdentifier": "org.mozilla.ios.Firefox",
+        "bundleVersion": "1",
+        "defaultApp": false,
+        "hidden": false,
+        "internalApp": false,
+        "name": "Firefox",
+        "removable": true,
+        "url": "file:///private/var/containers/Bundle/Application/<ID>/Firefox.app/",
+        "version": "2.4.1"
+      },
+      {
+        "appClip": false,
+        "builtByDeveloper": false,
+        "bundleIdentifier": "com.apple.mobilesafari",
+        "bundleVersion": "1",
+        "defaultApp": true,
+        "hidden": false,
+        "internalApp": false,
+        "name": "Safari",
+        "removable": false,
+        "url": "file:///private/var/containers/Bundle/Application/<ID>/Safari.app/",
+        "version": "26.0"
+      },
+      {
+        "appClip": false,
+        "builtByDeveloper": false,
+        "bundleIdentifier": "com.example.ledger",
+        "bundleVersion": "1",
+        "defaultApp": false,
+        "hidden": false,
+        "internalApp": false,
+        "name": "Ledger",
+        "removable": true,
+        "url": "file:///private/var/containers/Bundle/Application/<ID>/Ledger.app/",
+        "version": "1.0"
+      },
+      {
+        "appClip": false,
+        "builtByDeveloper": false,
+        "bundleIdentifier": "org.mozilla.ios.Firefox",
+        "bundleVersion": "1",
+        "defaultApp": false,
+        "hidden": false,
+        "internalApp": false,
+        "name": "Firefox",
+        "removable": true,
+        "url": "file:///private/var/containers/Bundle/Application/<ID>/Firefox.app/",
+        "version": "2.4.1"
+      }
+    ]
+  }
+}

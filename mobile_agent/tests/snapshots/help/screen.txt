@@ -1,0 +1,13 @@
+usage: mobster screen [-h] [--wda-url URL] [--device NAME] [--out FILE] [--width COLUMNS]
+
+Print your iPhone's current screen. kitty, Ghostty, iTerm2 and WezTerm show the
+real image; other terminals get a half-block drawing. Nothing is tapped.
+
+options:
+  -h, --help       show this help and exit
+  --wda-url URL    the phone's address, for a phone you set up by hand (default:
+                   http://127.0.0.1:8100) [env: MOBSTER_WDA_URL]
+  --device NAME    the iPhone or simulator to use: an id, UDID or name from `mobster devices`
+                   (default: your iPhone)
+  --out FILE       save the PNG to FILE instead of printing it
+  --width COLUMNS  draw it this many columns wide

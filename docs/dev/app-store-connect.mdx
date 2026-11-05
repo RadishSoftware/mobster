@@ -1,0 +1,114 @@
+---
+title: "App Store Connect and TestFlight"
+sidebarTitle: "App Store Connect"
+keywords: ["app store connect", "testflight", "asc api key", "testflight feedback", "crash reports", "install testflight build", "mobster asc", "mobster testflight", "p8"]
+description: "Use your own App Store Connect API key to list builds, read TestFlight feedback and crashes, and install a TestFlight build on your iPhone. Read-only."
+icon: "store"
+---
+
+`mobster asc` reads App Store Connect with your own API key: your builds and their TestFlight state, and the screenshots, comments and crash logs your testers send from TestFlight. `mobster testflight` lists those builds and installs one on your iPhone by driving the TestFlight app, so `mobster test --device` can check the build your testers have, and its report names the build.
+
+`mobster asc` only reads. It sends App Store Connect GET requests and nothing else, and submits nothing to Apple: no build, metadata, screenshot, review or tester change. The one exception is Mobster's own setup for a paid team without Xcode, off by default, which makes three named writes behind an approval card ([What Mobster writes to Apple](/privacy#what-mobster-writes-to-apple)). [App Store screenshots](/dev/screenshots) makes your store screenshots on your Mac, and uploading them stays your call.
+
+## Add your key
+
+In App Store Connect, open Users and Access › Integrations › App Store Connect API, and make a key with the Developer role (App Manager also works). Download its `.p8` file once, then:
+
+```sh
+mobster asc key add --key-id 2X9R4HXF34 --issuer-id <your issuer id> --p8 ~/Downloads/AuthKey_2X9R4HXF34.p8
+```
+
+```text
+Saved the team key 2X9R4HXF34 in your Keychain. Mobster only reads from App Store Connect with it. You can delete AuthKey_2X9R4HXF34.p8 now, or keep it somewhere safe.
+```
+
+- The key goes to your login Keychain, readable only by Mobster's own programs. `mobster asc key show` says which key is there, and `mobster asc key remove` deletes it.
+- An individual key has no Issuer ID: leave `--issuer-id` out.
+- Each request carries a token Mobster signs on your Mac (ES256) and that lasts 20 minutes. The key itself never leaves the Mac, and Mobster never prints it.
+- A CI job without a Keychain sets `MOBSTER_ASC_KEY_ID`, `MOBSTER_ASC_ISSUER_ID` and `MOBSTER_ASC_KEY_PATH` (or `MOBSTER_ASC_KEY`, the file's text) instead.
+
+## Your builds
+
+```sh
+mobster asc builds --app com.example.yourapp
+```
+
+```text
+Habits (com.example.yourapp), newest first:
+  1.2 (45)  2026-10-13 09:30  in beta testing
+  1.2 (44)  2026-10-11 17:02  in beta testing
+  1.1 (41)  2026-09-30 12:15  expired
+```
+
+`--limit N` shows more, and `--json` prints every field: version, build, upload time, processing state, and the internal and external TestFlight states.
+
+## Feedback and crashes from TestFlight
+
+```sh
+mobster asc feedback --app com.example.yourapp --save feedback/
+```
+
+```text
+Habits: 3 TestFlight reports, newest first
+  Crash    2026-10-13 10:00  build 45  iPhone16,2 iOS 26.3
+  Feedback 2026-10-12 10:00  build 44  iPhone17,1 iOS 26.4
+           “The paywall cuts off the annual plan”
+  Feedback 2026-10-12 08:41  build 44  iPhone15,3 iOS 26.4
+           “Can't find dark mode”
+Saved 3 files in feedback/
+```
+
+`--crashes` or `--screenshots` shows one kind. `--save DIR` downloads each crash log (`<id>.crash`) and each screenshot a tester sent.
+
+## A key for each project
+
+`mobster asc key add` keeps one key for every project. To give a project its own key, run this inside the project:
+
+```sh
+mobster testflight key add --key-id 2X9R4HXF34 --issuer-id 57246542-96fe-1a63-e053-0824d011072a --p8 AuthKey_2X9R4HXF34.p8
+```
+
+The key goes to your login Keychain under that project's folder. Every `mobster testflight` command looks for the project's key first, then the shared one, and then `MOBSTER_ASC_*`. `--shared` keeps the key for every project instead. `mobster testflight key show` says which key a folder uses and never prints it, and `mobster testflight key remove` deletes it.
+
+## A TestFlight build on your iPhone
+
+```sh
+mobster testflight list --app com.example.yourapp
+```
+
+```text
+Habits (com.example.yourapp), newest first:
+  1.2 (46)  2026-10-14 08:10  can't install: Apple is still processing it
+  1.2 (45)  2026-10-13 09:30  can install
+  1.2 (44)  2026-10-11 17:02  can install
+  1.1 (41)  2026-09-30 12:15  can't install: it expired (TestFlight builds last 90 days)
+```
+
+```sh
+mobster testflight install --app com.example.yourapp --device "Test iPhone"
+```
+
+```text
+Tapping Update in TestFlight
+Installed com.example.yourapp 1.2 (45) from TestFlight on Test iPhone. Test it with: mobster test --device "Test iPhone" --testflight com.example.yourapp
+```
+
+1. Mobster looks the app up in App Store Connect and picks the newest build a tester can install. `--build 45` (and `--version 1.2`) picks one. It refuses a build that expired, is still processing, or sits in no tester group, and says why.
+2. It opens the app's page in the TestFlight app on the iPhone (`itms-beta://`), taps **Install** or **Update**, and waits until TestFlight shows **Open**.
+3. When TestFlight asks you to accept its terms for the app, Mobster stops and says so: you tap **Accept** once yourself.
+
+Apple's API lists builds but has no call that installs one, so the install goes through the TestFlight app. TestFlight's page for an app offers its newest build. For an older one, Mobster stops before it touches the iPhone and prints the taps: open TestFlight, tap the app, tap **Previous Builds**, tap the build, tap **Install**.
+
+If Mobster taps and never sees **Open**, the outcome is unknown. It says so and does not tap again. Look at the iPhone. The next `mobster testflight install` only watches: it finishes when TestFlight shows **Open**, and it asks you to tap if TestFlight still shows **Install**.
+
+The iPhone's Apple ID has to be a tester of the app. TestFlight runs only on an iPhone, not a simulator.
+
+### The build on the report
+
+The install writes the version and build number in `.mobster/runs/testflight/`, which git ignores. When you then run [`mobster test --testflight`](/testing) on that app, the build goes in `results.json` (`testflight`), in the JUnit properties and in the HTML report's footer. An install whose outcome is unknown names no build. In CI, the runner's owner lists the app in `MOBSTER_RUNNER_TESTFLIGHT` ([CI](/ci#your-iphone-in-ci)).
+
+Mobster for Mac reads the same builds through the local API: `GET /api/tests/testflight/builds`, `POST /api/tests/testflight/install` (409 `outcome_unknown` when a tap's result is unknown) and `GET`, `POST` or `DELETE /api/tests/testflight/key`, which never returns the `.p8`.
+
+Mobster confirms the version and build shown on the TestFlight page before tapping or recording a build. If it cannot read them, it stops. A corrupt install record also stops the next install; an unknown earlier build must be reconciled before requesting a different one.
+
+The report names the last TestFlight build Mobster confirmed on the selected iPhone. A later manual install can make that record stale.

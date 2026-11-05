@@ -1,9 +1,4 @@
-"""Model clients: the price table and the provider transports Mobster calls models through.
-
-OpenAI (Responses API), Gemini on Vertex and Claude (Messages API), each with one kept-alive connection, retries with
-backoff, usage and cost. Nothing here knows the agent loop or a screen: ``chat_client`` picks the client for a model
-id, ``cost_usd`` prices its usage, and ``transient_model_error`` says whether a failed call may be sent again.
-"""
+"""Model clients: the price table and the provider transports Mobster calls models through."""
 
 import http.client
 import json
@@ -16,45 +11,35 @@ import time
 from . import harness_api
 from .transport import Deadline, TransportError
 
-# List prices, USD per 1M tokens (input, output, cached input or None = input rate, cache write
-# or None = input rate). gpt-5.6 tiers: developers.openai.com/api/docs/pricing and the model pages,
-# read 2026-09-25 (standard tier, short context): cached input is 0.1x input, cache writes 1.25x.
-# gpt-5.6-sol's $4/$20 is a promotional rate, "at least through November 21, 2026" (the pricing page,
-# 2026-09-28); the $2/$10 once read for it is gpt-6-sol's. gpt-5.5: OpenRouter's GPT-5.5 page,
-# 2026-09-24. Estimates, not invoices.
+# List prices, USD per 1M tokens (input, output, cached input, cache write; None = input rate), read 2026-09-25 to
+# 2026-10-09; estimates, not invoices.
 PRICES = {"gpt-5.5": (5.0, 30.0, 0.5, None), "gpt-5.6-sol": (4.0, 20.0, 0.4, 5.0),
           "gpt-5.6-terra": (2.0, 12.0, 0.2, 2.5), "gpt-5.6-luna": (0.2, 1.2, 0.02, 0.25),
           "gpt-5-mini": (0.25, 2.0, 0.025, None)}
-# GPT-6: the same page, read 2026-09-28 (standard tier, short context), with GPT-5.6's shape. The client
-# needs no change (Responses API, the forced function call and cache breakpoints all answer, 26 Sep).
+# GPT-6: the same page, read 2026-09-28, with GPT-5.6's shape.
 PRICES.update({"gpt-6-astra": (10.0, 50.0, 1.0, 12.5), "gpt-6-sol": (2.0, 10.0, 0.2, 2.5),
                "gpt-6-luna": (0.1, 0.5, 0.01, 0.125)})
-# GPT-6.1 Sol (29 Sep): the same page, read 2026-10-09 (standard tier, short context).
 PRICES["gpt-6.1-sol"] = (2.0, 10.0, 0.1, 2.5)
-# Gemini on Vertex: bench/vertex.py's standard rates (read 2026-09-23; 3.6-3.8 Flash are half
-# price until 2026-12-31, and reported here at the standard rate so numbers stay comparable).
+# Gemini on Vertex: Vertex AI's standard global rates, read 2026-09-23 (3.6-3.8 Flash are half price until
+# 2026-12-31, listed at standard).
 PRICES.update({model: (rate[0], rate[1], None, None) for model, rate in {
     "gemini-3.8-flash": (1.50, 7.50), "gemini-3.7-flash": (1.50, 7.50), "gemini-3.6-flash": (1.50, 7.50),
     "gemini-3.5-flash": (1.50, 9.00), "gemini-3.1-pro-preview": (2.00, 12.00)}.items()})
-# Claude on the Claude API: platform.claude.com/docs/en/about-claude/pricing, read 2026-09-28 (input, output, cache
-# hits, 5-minute cache writes; AnthropicChat writes only 5-minute entries). Opus 5.5's cache hits are 0.05x input,
-# Fable 5.1's 0.025x, the others' 0.1x; 5-minute writes are 1.25x everywhere.
+# Claude: platform.claude.com/docs/en/about-claude/pricing, read 2026-09-28; 5-minute cache writes are 1.25x, hits 0.1x
+# (Opus 5.5 0.05x, Fable 5.1 0.025x).
 PRICES.update({
     "claude-sonnet-5-5": (2.0, 10.0, 0.1, 2.5), "claude-sonnet-5": (2.0, 10.0, 0.2, 2.5),
     "claude-opus-5-5": (4.0, 20.0, 0.2, 5.0), "claude-opus-5": (5.0, 25.0, 0.5, 6.25),
     "claude-fable-5-1": (10.0, 50.0, 0.25, 12.5), "claude-haiku-4-5": (1.0, 5.0, 0.1, 1.25)})
-# Claude Haiku 5.5 (7 Oct 2026), prompts up to 100k tokens: the same page, read 2026-10-09 ($0.10 input, $0.125 5-minute
-# writes, $0.01 hits, $0.50 output). Sonnet 5.5's hits are 0.05x input there ($0.10), not 0.1x.
+# Claude Haiku 5.5 (7 Oct 2026), prompts up to 100k tokens, read 2026-10-09; Sonnet 5.5's hits are 0.05x input there.
 PRICES["claude-haiku-5-5"] = (0.10, 0.50, 0.01, 0.125)
 
 
 def cost_usd(model, usage):
-    """Estimated list-price cost of ``usage`` (OpenAIChat.usage), or None for an unpriced model. A model on a plan
-    costs nothing per call: 0.0, so spend caps never stop it. ("chatgpt:" is the benchmarks' Codex-plan client,
-    bench/agents/plan_clients.py; Mobster itself reaches a ChatGPT plan only through the person's own Codex.)"""
+    """Estimated list-price cost of ``usage`` (OpenAIChat.usage), or None for an unpriced model."""
     if str(model or "").startswith("chatgpt:"):
         return 0.0 if usage else None
-    providers = harness_api.model_routes()
+    providers = harness_api.hooks().model_routes()
     routed, _ = providers.split(model)
     if routed:
         # A plan costs nothing per call; a provider's key is billed at its own rates, which Mobster doesn't list.
@@ -70,9 +55,7 @@ def cost_usd(model, usage):
 
 
 def ceiling_cost_usd(usage):
-    """``usage`` at the highest listed rates (every prompt token at the dearest input or cache-write rate, every
-    completion token at the dearest output rate): what a spend cap counts for a model with no listed price, so the cap
-    stops a run early rather than never."""
+    """``usage`` at the highest listed rates, so a spend cap stops a run with no listed price early."""
     prompt = max(max(p[0], p[3] or 0.0) for p in PRICES.values())
     output = max(p[1] for p in PRICES.values())
     usage = usage or {}
@@ -80,15 +63,13 @@ def ceiling_cost_usd(usage):
 
 
 RATE_LIMIT_RETRIES = 5
-# A model call that got a server error (500, 502, 503, 504) is sent again this many times, 1 s and then 2 s later:
-# the call is a pure read of the model, and one 503 used to end the whole task.
+# A model call is a pure read, so one that got a server error is sent again twice, 1 s then 2 s later.
 SERVER_ERROR_RETRIES = 2
 SERVER_ERRORS = frozenset({500, 502, 503, 504})
 
 
-# The answer's function (OpenAIChat). Described as "Your next actions on the phone." it shortened
-# chains to 1.4-1.5 actions a call from 1.9 as a json_schema answer; with this wording, 1.6 (the
-# same 36 replayed turns, 25 Sep).
+# The wording matters: as "Your next actions on the phone." chains shortened from 1.9 to 1.4-1.5 actions a call (36
+# replayed turns, 25 Sep).
 TOOL_DESCRIPTION = ("Your answer: the next 1 to 6 actions. Chain every action whose screen you can predict (fill "
                     "several fields then Save, search then open the result...); stop only where you must see the "
                     "result first.")
@@ -99,8 +80,7 @@ class CallCancelled(RuntimeError):
 
 
 def pause(seconds, cancelled=None):
-    """Wait ``seconds`` (a retry's backoff). With ``cancelled``, in slices of at most 0.2 s, raising CallCancelled as
-    soon as it is true: Stop ends a task within a moment even while it waits out a rate limit."""
+    """Wait ``seconds`` (a retry's backoff)."""
     seconds = max(0.0, float(seconds))
     if not callable(cancelled):
         time.sleep(seconds)
@@ -115,9 +95,7 @@ def pause(seconds, cancelled=None):
 
 
 def error_text(label, status, raw, limit=300):
-    """"<label> HTTP <status>: <detail>" for a failed call. From a JSON error body the provider's code and type
-    come first, then its message, so a long message never pushes the code past the cut (OpenAI's pretty-printed
-    insufficient_quota body put it at character 265 of 300); any other body is cut to ``limit`` characters."""
+    """"<label> HTTP <status>: <detail>" for a failed call."""
     body = raw.decode(errors="replace") if isinstance(raw, (bytes, bytearray)) else str(raw or "")
     try:
         data = json.loads(body)
@@ -134,18 +112,12 @@ def error_text(label, status, raw, limit=300):
 
 
 class _KeptAliveJSON:
-    """One kept-alive HTTPS connection for JSON POSTs, shared by the OpenAI and Vertex clients.
-
-    A dropped connection is reopened once; a 429 is retried with backoff (up to
-    RATE_LIMIT_RETRIES) unless ``final_429`` says it will not clear, and a 5xx up to
-    SERVER_ERROR_RETRIES times; error bodies surface (``error_text``). ``cancelled`` (set by the loop
-    for its run): a wait before a retry ends with CallCancelled once it is true.
-    """
+    """One kept-alive HTTPS connection for JSON POSTs, shared by the OpenAI and Vertex clients."""
 
     cancelled = None
 
-    # complete(..., reasoning=) sets one call's reasoning without touching ``reasoning``: the task contract is
-    # compiled while the first decision is in flight (FrontierAgent's early decision).
+    # The task contract is compiled while the first decision is in flight,
+    # so one call's reasoning is set without touching ``reasoning``.
     per_call_reasoning = True
 
     def __init__(self, host):
@@ -157,8 +129,7 @@ class _KeptAliveJSON:
         self._count_lock = threading.Lock()
 
     def _post(self, path, payload, headers, timeout, *, label, final_429=lambda raw: False):
-        """``json.loads`` of the reply; ``headers()`` is called per attempt (a Vertex token may refresh). A call
-        made while another holds the kept-alive connection goes on a fresh one, closed after it."""
+        """``json.loads`` of the reply; ``headers()`` is called per attempt (a Vertex token may refresh)."""
         deadline = Deadline(timeout)
         claim = getattr(self, "_claim", None)
         own = claim is None or claim.acquire(blocking=False)
@@ -222,16 +193,7 @@ def explicit_caching(model):
 
 
 class OpenAIChat(_KeptAliveJSON):
-    """The Responses API over one kept-alive HTTPS connection; error bodies surface (truncated).
-
-    Messages are Chat-style (system text; user text and data-URL image parts). A text part with
-    ``"cache": True`` ends the prompt prefix OpenAI caches: GPT-5.6's implicit caching only hits
-    on a whole repeated prompt (a changed tail read 0 cached tokens, 25 Sep), and with an explicit
-    breakpoint the prefix is written once (1.25x) and read at 0.1x after. Not Chat Completions:
-    there a prompt with an image cached nothing, breakpoint or not. The answer is one forced
-    function call: as a json_schema text format the answer came back repeated (and billed) in 15
-    of 36 replies, 1.7x the output tokens.
-    """
+    """The Responses API over one kept-alive HTTPS connection; error bodies surface (truncated)."""
 
     provider = "openai"
     per_call_strict = True
@@ -244,8 +206,7 @@ class OpenAIChat(_KeptAliveJSON):
         super().__init__(host)
 
     def body(self, messages, schema, reasoning=None, *, strict=True):
-        """The /v1/responses request for Chat-style ``messages``; ``reasoning`` overrides the client's for it, and
-        ``strict`` False sends a schema that is not strict-compatible (a user's: every property required)."""
+        """The /v1/responses request for Chat-style ``messages``; ``reasoning`` overrides the client's for it."""
         explicit = explicit_caching(self.model)
         items = []
         for message in messages:
@@ -262,9 +223,12 @@ class OpenAIChat(_KeptAliveJSON):
                 if part.get("cache") and explicit:
                     parts[-1]["prompt_cache_breakpoint"] = {"mode": "explicit"}
             items.append({"role": "developer" if message["role"] == "system" else message["role"], "content": parts})
+        # A forced function call: as a json_schema text format the answer came back repeated, and billed,
+        # in 15 of 36 replies.
         body = {"model": self.model, "input": items, "store": False, "parallel_tool_calls": False,
                 "tools": [{"type": "function", "name": "step", "parameters": schema, "strict": strict,
-                           "description": TOOL_DESCRIPTION if "actions" in schema.get("properties", {}) else "Your answer."}],
+                           "description": TOOL_DESCRIPTION if "actions" in schema.get("properties", {})
+                           else "Your answer."}],
                 "tool_choice": {"type": "function", "name": "step"}}
         if explicit:
             body["prompt_cache_options"] = {"mode": "explicit"}
@@ -276,7 +240,7 @@ class OpenAIChat(_KeptAliveJSON):
     def complete(self, messages, schema, *, timeout=60, reasoning=None, strict=True):
         headers = {"Content-Type": "application/json", "Authorization": "Bearer " + self.key}
         body = self.body(messages, schema, reasoning=reasoning, strict=strict)
-        # insufficient_quota (or credit_balance_exhausted) is an empty account, not a busy one: retrying cannot clear it.
+        # insufficient_quota is an empty account, not a busy one: retrying cannot clear it.
         data = self._post("/v1/responses", json.dumps(body).encode(), lambda: headers,
                           timeout, label="OpenAI", final_429=lambda raw: b"insufficient_quota" in raw
                           or b"credit_balance_exhausted" in raw)
@@ -297,15 +261,9 @@ class OpenAIChat(_KeptAliveJSON):
 
 
 class GeminiChat(_KeptAliveJSON):
-    """Vertex AI generateContent over one kept-alive connection, with OpenAIChat's interface.
+    """Vertex AI generateContent over one kept-alive connection, with OpenAIChat's interface."""
 
-    OpenAI-style messages (system text; user text and data-URL images) become Gemini's
-    systemInstruction and parts. ``reasoning`` maps to a thinking level. "none" (the
-    task contract, the structuring calls) is LOW, the least every Gemini 3 model takes: without a
-    level Vertex thinks at its default, and gemini-3.8-flash answers MINIMAL with a 400. Measured
-    5 Oct 2026 on one short prompt: no level 3.7 s and 301 output tokens, LOW 1.4 s and 33.
-    """
-
+    # "none" is LOW, the least every Gemini 3 model takes: gemini-3.8-flash answers MINIMAL with a 400.
     LEVELS = {"none": "LOW", "minimal": "MINIMAL", "low": "LOW", "medium": "MEDIUM", "high": "HIGH"}
     provider = "google"
 
@@ -327,8 +285,7 @@ class GeminiChat(_KeptAliveJSON):
             if part.get("type") == "text":
                 parts.append({"text": part["text"]})
             elif part.get("type") == "image_url":
-                # The part's "detail": "low" is not forwarded: Gemini sees the 640px shot at its
-                # default media resolution (more image tokens than OpenAI's low detail; unmeasured).
+                # "detail": "low" is not forwarded: Gemini uses its default media resolution (unmeasured).
                 header, data = part["image_url"]["url"].split(",", 1)
                 parts.append({"inlineData": {"mimeType": header[5:].split(";")[0], "data": data}})
         return parts
@@ -347,7 +304,8 @@ class GeminiChat(_KeptAliveJSON):
                 f"{self.model}:generateContent")
         # Every 429 is retried: shared capacity, not an empty account, so it is waited out.
         data = self._post(path, json.dumps(body).encode(),
-                          lambda: {"Content-Type": "application/json", "Authorization": "Bearer " + GCloudToken.get(20)},
+                          lambda: {"Content-Type": "application/json",
+                                   "Authorization": "Bearer " + GCloudToken.get(20)},
                           timeout, label="Vertex")
         meta = data.get("usageMetadata") or {}
         usage = {"prompt_tokens": meta.get("promptTokenCount", 0),
@@ -361,15 +319,12 @@ class GeminiChat(_KeptAliveJSON):
 
 ANTHROPIC_HOST = "api.anthropic.com"
 ANTHROPIC_VERSION = "2023-06-01"
-# A reply is ~160 tokens plus any thinking; the cap only stops a runaway reply (non-streaming stays well under the
-# API's request timeout at this size).
+# Replies are ~160 tokens plus thinking; the cap only stops a runaway reply.
 ANTHROPIC_MAX_TOKENS = 16000
-# One decision attempt's own deadline: p90 is 3.8-6.7 s by model (9 Oct, 60 recorded turns); one Claude call hung 90 s.
+# One decision attempt's own deadline: p90 is 3.8-6.7 s by model (9 Oct); one Claude call hung 90 s.
 ATTEMPT_CAP_SECONDS = 30.0
-# What Claude's structured outputs cannot express (platform.claude.com/docs/en/build-with-claude/structured-outputs,
-# "JSON Schema limitations", read 2026-09-28): a schema with any of these is refused with a 400. Left out of the
-# grammar, they are checked where they matter: the loop takes at most MAX_CHUNK actions, looks ids up among the
-# screen's, and ``engines.structure`` validates the user's full schema afterwards.
+# Claude's structured outputs refuse a schema with any of these (400),
+# so the loop and ``engines.structure`` check them instead.
 UNSUPPORTED_SCHEMA_KEYS = frozenset({
     "maxItems", "minLength", "maxLength", "minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum", "multipleOf",
     "pattern", "minProperties", "maxProperties", "uniqueItems", "patternProperties", "propertyNames", "contains",
@@ -377,18 +332,15 @@ UNSUPPORTED_SCHEMA_KEYS = frozenset({
     "unevaluatedProperties", "unevaluatedItems", "prefixItems"})
 SCHEMA_FORMATS = frozenset({"date-time", "time", "date", "duration", "email", "hostname", "uri", "ipv4", "ipv6",
                             "uuid"})
-# Models whose thinking cannot be turned off (effort is their only control): "none" runs them at effort low.
+# Models whose thinking cannot be turned off: "none" runs them at effort low.
 ALWAYS_THINKING = ("claude-opus-5-5", "claude-fable-", "claude-mythos-")
-# Sonnet 5.5 refuses thinking {"type": "disabled"}; its lowest setting, "between_tools", turns off up-front
-# thinking (a request without tools then answers in text only).
+# Sonnet 5.5 refuses thinking disabled; "between_tools" turns off up-front thinking.
 BETWEEN_TOOLS = ("claude-sonnet-5-5",)
 EFFORTS = ("low", "medium", "high", "xhigh", "max")
 
 
 def anthropic_schema(schema):
-    """``schema`` as Claude's structured outputs take it: every object closed (``additionalProperties: false``,
-    which the API requires), ``oneOf`` as ``anyOf``, ``minItems`` at most 1, and the UNSUPPORTED_SCHEMA_KEYS and
-    unknown string formats left out. Property names are data and are kept as they are."""
+    """``schema`` as Claude's structured outputs take it."""
     if isinstance(schema, list):
         return [anthropic_schema(item) for item in schema]
     if not isinstance(schema, dict):
@@ -411,13 +363,12 @@ def anthropic_schema(schema):
 
 
 def anthropic_thinking(model, reasoning):
-    """(thinking, effort) for an OpenAI-style reasoning level. low ... max: adaptive thinking at that effort.
-    "none" (the task contract, a structuring call): the least thinking the model takes."""
+    """(thinking, effort) for an OpenAI-style reasoning level. low ... max: adaptive thinking at that effort."""
     level = {"minimal": "low"}.get(reasoning, reasoning)
     if model.startswith("claude-haiku-4"):
         return None, None  # no adaptive thinking and no effort parameter
-    # Haiku 5.5 thinks by default (30 thinking tokens on a one-word answer, 9 Oct) and takes adaptive thinking and
-    # effort like Sonnet: the same mapping keeps a Smart turn at effort low.
+    # Haiku 5.5 thinks by default (9 Oct) and takes adaptive thinking and effort like Sonnet, which keeps a Smart turn
+    # at effort low.
     if level in EFFORTS:
         return {"type": "adaptive"}, level
     if model.startswith(ALWAYS_THINKING):
@@ -428,28 +379,11 @@ def anthropic_thinking(model, reasoning):
 
 
 class AnthropicError(TransportError):
-    """A failed Messages API request. The message starts ``HTTP <status>;`` (or ``HTTP <exception>;``) as
-    transport.HTTP's do, so hedge.transient resends a 429, a 5xx or a dropped connection; after it, "Anthropic
-    HTTP <status>: <body>" is what engines.plain_error reads."""
+    """A failed Messages API request."""
 
 
 class AnthropicChat:
-    """Claude on the Messages API, with OpenAIChat's interface: ``complete(messages, schema, timeout=)`` returns
-    (parsed JSON, usage) and ``usage`` keeps the running total.
-
-    - The answer is Claude's structured output (``output_config.format``, JSON in the reply's text), not a
-      forced tool call: Sonnet 5.5 and Opus 5.5 refuse ``tool_choice`` any/tool with a 400.
-    - Chat-style messages (system text; user text and data-URL image parts) become ``system`` and content
-      blocks; images go as base64. The system prompt and each text part marked ``"cache": True`` end a cache
-      breakpoint (5-minute entries): the system prompt is shared by every task, the request by every turn.
-    - ``reasoning`` maps to adaptive thinking at that effort (``anthropic_thinking``).
-    - Each call goes through hedge.HEDGERS["anthropic"]: a call still running past its delay gets an identical
-      twin on a fresh connection, and one that failed in transit (429, 5xx, a dropped connection) is sent once
-      more at once. The primary uses this client's kept-alive connection. Within an attempt, a 429 that names a
-      wait (retry-after) and a 529 (overloaded) are waited out with backoff, up to RATE_LIMIT_RETRIES; a 429
-      without retry-after is a spend cap and fails at once. A twin that loses still bills: its tokens are added
-      to ``usage`` when it finishes (and counted in ``usage["hedges"]``), not to the call's own usage.
-    """
+    """Claude on the Messages API, with OpenAIChat's interface."""
 
     provider = "anthropic"
     per_call_reasoning = True
@@ -466,7 +400,6 @@ class AnthropicChat:
                       "calls": 0, "hedges": 0}
         self._claim = threading.Lock()  # held while the kept-alive connection carries a request
         self._count_lock = threading.Lock()
-        # Called with a losing twin's usage when it finishes (engines.meter records it as a call of its own).
         self.on_hedge_usage = None
 
     @staticmethod
@@ -478,7 +411,7 @@ class AnthropicChat:
         for part in content:
             if part.get("type") == "image_url":
                 header, data = part["image_url"]["url"].split(",", 1)
-                # OpenAI's "detail" has no counterpart: Claude sees the whole 640 px shot (~1,150 visual tokens).
+                # Claude sees the whole 640 px shot (~1,150 visual tokens), so OpenAI's "detail" has no counterpart.
                 blocks.append({"type": "image", "source": {"type": "base64", "media_type": header[5:].split(";")[0],
                                                            "data": data}})
                 continue
@@ -494,6 +427,7 @@ class AnthropicChat:
             system[-1]["cache_control"] = {"type": "ephemeral"}
         turns = [{"role": "assistant" if m["role"] == "assistant" else "user", "content": self._blocks(m["content"])}
                  for m in messages if m["role"] != "system"]
+        # Structured output, not a forced tool call: Sonnet 5.5 and Opus 5.5 refuse tool_choice any/tool with a 400.
         body = {"model": self.model, "max_tokens": ANTHROPIC_MAX_TOKENS, "messages": turns,
                 "output_config": {"format": {"type": "json_schema", "schema": anthropic_schema(schema)}}}
         if system:
@@ -508,13 +442,12 @@ class AnthropicChat:
     def complete(self, messages, schema, *, timeout=60, reasoning=None):
         payload = json.dumps(self.body(messages, schema) if reasoning is None
                              else self.body(messages, schema, reasoning=reasoning)).encode()
-        hedge = _hedge()
+        hedge = harness_api.hooks().hedge()
         purpose = "decision" if "actions" in (schema.get("properties") or {}) else "other"
         replies = {}
 
         def attempt(index, budget):
-            # A decision attempt that has not answered in ATTEMPT_CAP_SECONDS is stalled: it fails in transit (outcome
-            # unknown, a pure read) so the hedger can resend it, instead of holding the turn for the whole timeout.
+            # A decision attempt past ATTEMPT_CAP_SECONDS fails in transit (a pure read) so the hedger can resend it.
             cap = min(budget, ATTEMPT_CAP_SECONDS) if purpose == "decision" else budget
             replies[index] = self._attempt(payload, index, cap)
             return replies[index]
@@ -534,12 +467,12 @@ class AnthropicChat:
 
     @staticmethod
     def usage_of(data):
-        """A reply's usage in OpenAIChat's terms: prompt_tokens is every input token (fresh, cache hits and
-        writes), completion_tokens includes thinking."""
+        """A reply's usage in OpenAIChat's terms."""
         raw = data.get("usage") or {}
         read, written = raw.get("cache_read_input_tokens") or 0, raw.get("cache_creation_input_tokens") or 0
         return {"prompt_tokens": (raw.get("input_tokens") or 0) + read + written,
-                "completion_tokens": raw.get("output_tokens") or 0, "cached_tokens": read, "cache_write_tokens": written}
+                "completion_tokens": raw.get("output_tokens") or 0, "cached_tokens": read,
+                "cache_write_tokens": written}
 
     def _count(self, usage, *, hedge=False):
         with self._count_lock:
@@ -570,7 +503,6 @@ class AnthropicChat:
 
     def _headers(self):
         headers = {"Content-Type": "application/json", "x-api-key": self.key, "anthropic-version": ANTHROPIC_VERSION}
-        # A key that is not scoped to one workspace names it on every request (ANTHROPIC_WORKSPACE_ID).
         workspace = os.environ.get("ANTHROPIC_WORKSPACE_ID", "").strip()
         if workspace:
             headers["anthropic-workspace-id"] = workspace
@@ -581,7 +513,7 @@ class AnthropicChat:
 
     def _attempt(self, payload, index, budget):
         """One attempt of a call: the primary (index 0) on the kept-alive connection unless a losing attempt of an
-        earlier call still holds it, a twin or a resend on a fresh one. Returns the reply's JSON."""
+        earlier call still holds it, a twin or a resend on a fresh one."""
         started = time.monotonic()
         own = index == 0 and self._claim.acquire(blocking=False)
         connection, reopened = None, False
@@ -608,9 +540,11 @@ class AnthropicChat:
                     if own:
                         self.connection = None
                     if isinstance(error, TimeoutError) or reopened:
-                        raise AnthropicError(f"HTTP {type(error).__name__}; Anthropic request outcome unknown") from None
+                        raise AnthropicError(
+                            f"HTTP {type(error).__name__}; Anthropic request outcome unknown") from None
                     reopened = True  # a kept-alive connection the server had closed: reopen once
                     continue
+                # A 429 without retry-after is a spend cap, which waiting can't clear.
                 if status in (429, 529) and tries < RATE_LIMIT_RETRIES and (status == 529 or wait is not None):
                     try:
                         delay = max(0.0, float(wait)) if wait is not None else min(2 ** tries, 16)
@@ -631,10 +565,9 @@ class AnthropicChat:
 
 
 def chat_client(model, reasoning="low", *, key=None):
-    """The model's client: a provider from Settings › Models for "<provider>:<model>", Gemini on Vertex for gemini-*,
-    Claude on the Claude API for claude-*, OpenAI otherwise. ``key``: the provider's key (else its environment
-    variable)."""
-    providers = harness_api.model_routes()
+    """The model's client: a Settings › Models provider for "<provider>:<model>", else Gemini,
+    Claude or OpenAI by id."""
+    providers = harness_api.hooks().model_routes()
     if providers.split(model)[0]:
         return providers.client(model, reasoning)
     if model.startswith("gemini-"):
@@ -645,9 +578,8 @@ def chat_client(model, reasoning="low", *, key=None):
 
 
 def transient_model_error(error):
-    """Whether a model call failed in transit (429, 5xx, 529, a dropped connection, a timeout), so sending it again
-    may succeed. An empty account, a refused key or a rejected request fails the same way twice."""
-    hedge = _hedge()
+    """Whether a model call failed in transit, so sending it again may succeed."""
+    hedge = harness_api.hooks().hedge()
     text = str(error)
     if any(code in text for code in ("insufficient_quota", "credit_balance_exhausted", "credit balance is too low",
                                      "billing_error")):
@@ -672,9 +604,3 @@ def http_detail(error):
     if isinstance(error, TimeoutError) or "timeout" in message.casefold():
         return "timed out"
     return type(error).__name__
-
-
-def _hedge():
-    """The hedge module (harness_api's "hedge" hook), or None in the open-source engine: each call is sent once."""
-    load = harness_api.hook("hedge")
-    return load() if load is not None else None

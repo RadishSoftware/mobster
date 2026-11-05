@@ -1,0 +1,27 @@
+---
+title: "Signing for \"WebDriverAgentRunner\" requires a development team."
+sidebarTitle: "Signing requires a development team"
+description: "Xcode has no Apple team to sign Mobster's helper with. Choose your Apple Account in Mobster's setup and build again."
+icon: "triangle-alert"
+keywords: ["development team", "signing", "WebDriverAgentRunner", "Apple Account"]
+"article:modified_time": "2026-10-26"
+---
+
+You see this: `xcodebuild` prints `error: Signing for "WebDriverAgentRunner" requires a development team. Select a development team in the Signing & Capabilities editor.` Mobster shows `Choose your Apple Account`.
+
+## Why it happens
+
+The helper runs on your iPhone, and iOS only runs apps signed by a team. No team was chosen, or Xcode has no signing certificate for it.
+
+## Fix
+
+1. Sign in to Xcode with your Apple ID: **Xcode › Settings › Accounts**.
+2. In Mobster for Mac's setup, choose your Apple Account (your team).
+3. If Xcode has no certificate yet, in Accounts choose **Manage Certificates › Apple Development**.
+4. Build again.
+
+## Check it worked
+
+The build finishes and `mobster doctor` prints no `✗` line for the runner.
+
+Checked 26 Oct 2026 against Mobster 0.4.0. Back to [Troubleshooting](/troubleshooting#iphone).

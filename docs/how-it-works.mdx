@@ -1,0 +1,71 @@
+---
+title: "How Mobster works"
+sidebarTitle: "How it works"
+description: "How Mobster reads your iPhone's screen and acts on it, one step at a time."
+icon: "workflow"
+keywords: ["how it works", "accessibility tree", "webdriveragent", "architecture", "glossary", "verdict", "check"]
+---
+
+Mobster reads each screen of an iPhone as a list of labelled controls, the ones VoiceOver reads aloud, and acts on them by name: it taps "Send", reads "\$39.99 / year" as text, and knows a switch is on. It does this through a small test runner on the phone, over a USB cable from your Mac.
+
+## How Mobster connects
+
+Mobster for Mac, the terminal and your coding agent reach the phone through Mobster on your Mac. With [Mobster Remote](/remote) on, tasks and answers from allowed assistants pass through Mobster's relay without being stored there. Answers can include screen text. Shared results send their text; screens are included only if **Include screens** is on. Feedback can include a screenshot and optional diagnostics with the last task's steps. **Ask by link** uploads step content and any available screen encrypted on your Mac. See [Privacy and your data](/privacy).
+
+```mermaid
+%%{init: {"flowchart": {"curve": "linear", "nodeSpacing": 28, "rankSpacing": 40, "padding": 12}, "themeVariables": {"fontSize": "14px"}}}%%
+flowchart TB
+  app["Mobster for Mac"] --> mob
+  term["Terminal<br/>mobster, mobster chat, mobster run"] --> mob
+  coder["Your coding agent"] -- "mobster mcp" --> mob
+  mob["Mobster<br/>on your Mac"] -- "USB cable" --> wda["WebDriverAgent<br/>on your iPhone"]
+  mob -- "or" --> sim["An iOS simulator<br/>Mobster manages"]
+  mob -. "screen text and a small screenshot,<br/>on your key or your plan" .-> model["Your model provider"]
+  class mob focus
+```
+
+- **WebDriverAgent** is an open-source test runner, built on Apple's XCTest, that Xcode signs with your Apple Account and installs on the phone. The Mac app calls it **Mobster's helper**. It listens on the phone's own loopback, and Mobster reaches it over USB.
+- **Your coding agent** drives the phone with its own model through `mobster mcp`, or hands a whole task to Mobster's agent with `phone_task`.
+- **The model** sees only what Mobster's agent sends it, on your own key or a plan you already pay for. A check's verdict never comes from a model.
+
+## One task, step by step
+
+```mermaid
+%%{init: {"flowchart": {"curve": "linear", "nodeSpacing": 28, "rankSpacing": 40, "padding": 12}, "themeVariables": {"fontSize": "14px"}}}%%
+flowchart TD
+  read["Read the screen's accessibility tree"] --> decide["Decide one action"]
+  decide --> check["Check the action against your request"]
+  check --> gate{"Does it send, buy,<br/>post or delete?"}
+  gate -- "no" --> act["Act, and write it to the journal first"]
+  gate -- "yes" --> ask["Ask you, with the exact text"]
+  ask -- "you approve" --> act
+  ask -- "you decline, or 10 minutes pass" --> stop["End without it"]
+  act --> read
+  decide -- "the goal is met" --> done["Confirm on a fresh read, and report"]
+```
+
+1. **Read.** Mobster reads the screen's tree: labels, values, roles and state. A step starts only once the screen has stopped changing.
+2. **Decide.** Mobster's agent picks an action on a control in the tree, or a visible spot in its screenshot. Taps on unlabelled spots pass [additional approval checks](/safety#when-mobster-asks).
+3. **Check.** Before anything reaches the phone, the action is compared with your request, a ledger refuses to repeat a side effect, and a fresh read refuses a decision made on a screen that has since changed.
+4. **Approve.** A tap or submit that can send, buy, post, delete or submit waits for you. [Approvals and safety](/safety) has the rules.
+5. **Act.** The action is written to the journal before it's sent, and an action whose outcome is unknown is never retried before a fresh read of the screen shows it didn't happen. A consequential one asks you again.
+6. **Finish.** When the agent says the goal is met, Mobster reads the screen again and checks the task's required receipts before reporting what it observed. Mobster checks a check file's assertions. No model grades its outcome. Before the agent leaves a screen or finishes, a value it read from a row that a bottom bar or the screen's foot covers is scrolled into view with one swipe, so the run's screenshots show what its answer cites.
+
+[Architecture](/architecture) maps each step to the code.
+
+## Words these docs use
+
+| Word | What it means |
+|---|---|
+| Task | One request to Mobster's agent, such as "Turn on Dark Mode" |
+| Conversation | Tasks that follow on from each other. A follow-up knows what earlier tasks found |
+| Approval | The stop before an action that sends, buys, posts or deletes, until you answer |
+| Mobster's agent | The agent built into Mobster. In Mobster for Mac it runs on your key or your plan ([Models and keys](/models-and-keys)); in the CLI, on your Claude or OpenAI key. Flags and statuses call it `Smart` |
+| Connector | An MCP server, such as Linear's, whose tools Mobster's agent calls during a task. Each tool is Allow, Ask or Block ([Connectors](/connectors)) |
+| Plugin | A folder that adds connectors, skills and workflows to Mobster for Mac in one go ([Plugins](/plugins)) |
+| Workflow, schedule | A saved task, or a graph of steps that can branch, loop and run side by side ([Build a workflow on its canvas](/workflows)), and a workflow that runs on a timer |
+| Check | One file that says what must be true of your app after a flow, run by `mobster verify` or `mobster test` |
+| Verdict | A check's result: `passed`, `failed`, `needs_review` or `couldnt_run`. No model grades the outcome |
+| Run | One execution of a check or a task, with its own folder of frames and results |
+| Accessibility tree | The labelled controls of a screen, as VoiceOver reads them |
+| WebDriverAgent, Mobster's helper | The test runner on the iPhone that reads the tree and taps |

@@ -1,41 +1,22 @@
-"""Checkpoints and picking up (SPEC §3.1 F6).
-
-At the end of every Smart turn the frontier hands its state (seam S7.3) to ``keep``: the plan, the notes, the last
-60 history lines, the turn count, the spend, the app in front. It is masked there (agent_hooks.MASK); ``save``
-passes it through secret_filter and keeps the latest one per run in the journal (table ``run_checkpoints``, at most
-64 KB), both on the ``Writer``'s thread, never the agent's. It never holds an approval's text or a code: approval requests aren't part
-of it, and a code a skill typed is masked before it gets here.
-
-A task that ended interrupted (the sidecar restarted), with an error, stopped, unanswered, or blocked because the phone
-was unplugged or locked, can be picked up: ``pick_up`` starts a **new** run with the same goal, app, device and thread,
-and ``extras.resumeFrom`` naming the old one. Its pre-run hook (``pre_run``, order 0) hands the frontier the saved
-state, with the feedback "You're picking up a task after it was interrupted. The last action may or may not have
-happened: look at the screen before repeating anything." The frontier reads the screen before its first decision, so
-no action runs again without a new decision, and every send, buy, post or delete still asks. An act the earlier run may
-already have done (one the person approved, or one whose answer was lost: ``held_acts``) asks again in the new run with
-"it may have gone through", in every mode, and is refused where nobody can answer. Never automatic.
-
-The checkpoint of a run that can't be picked up (done, declined, a spending limit) is deleted when its loop ends
-(``ended``); the rest go with their run (ON DELETE CASCADE) when history drops it.
-"""
+"""Checkpoints and picking up (SPEC §3.1 F6): a checkpoint holds no approval text or code,
+and pickup is never automatic."""
 
 import json
 import logging
 import threading
 import time
 
-from .. import harness_api
+from .. import harness_api, permissions
 from ..api_errors import APIError
+from ..run_executor import RunExecutor
 from ..secret_filter import redact
 
 log = logging.getLogger("mobster.harness")
 
 SCHEMA, VERSION = "harness", 1
 MAX_BYTES = 64_000
-# A task can be picked up after it ended one of these ways (plus blocked by an unplugged or locked phone).
 PICKUP_STATUSES = frozenset({"interrupted", "error", "stopped", "approval_timeout"})
 PICKUP_CODES = frozenset({"unplugged", "phone_locked"})
-# The turns a picked-up task gets on top of the ones it used (engines.SMART_CONFIG.max_steps).
 MORE_TURNS = 50
 MAX_TURNS = 200
 PICKUP_FEEDBACK = ("You're picking up a task after it was interrupted. The last action may or may not have happened: "
@@ -53,8 +34,6 @@ def migrate(connection, from_version):
         connection.execute("CREATE TABLE IF NOT EXISTS harness_settings(key TEXT PRIMARY KEY, value TEXT NOT NULL)")
 
 
-# -- the store ------------------------------------------------------------------------------------------------------
-
 def _clean(value):
     """Every string through the secret filter (idempotent: a state the seam's hook saw is redacted already)."""
     if isinstance(value, str):
@@ -67,8 +46,7 @@ def _clean(value):
 
 
 def fit(state):
-    """``state`` cleaned and cut to MAX_BYTES of JSON: the oldest history lines go first, then the oldest notes.
-    None when even the bare state is too large."""
+    """``state`` cleaned and cut to MAX_BYTES of JSON: the oldest history lines go first, then the oldest notes."""
     state = _clean(dict(state or {}))
     state["history"] = [str(line)[:400] for line in state.get("history") or ()]
     state["notes"] = [str(note)[:400] for note in state.get("notes") or ()]
@@ -125,11 +103,38 @@ def delete(journal, run_id):
         connection.execute("DELETE FROM run_checkpoints WHERE run_id=?", (run_id,))
 
 
-# -- which tasks can be picked up -----------------------------------------------------------------------------------
-
 def stop_code(summary):
     summary = summary if isinstance(summary, dict) else {}
     return summary.get("code") or summary.get("stop_code")
+
+
+def unresolved_effect(run):
+    """A durable action intent without its matching acknowledgment cannot be picked up."""
+    pending = None
+    for event in getattr(run, "events", ()) or ():
+        if not isinstance(event, dict):
+            return True
+        kind = event.get("event")
+        if kind in ("action_started", "app_launch_started"):
+            identity = event.get("operation") if kind == "action_started" else event.get("app")
+            if pending is not None or not isinstance(identity, str) or not identity:
+                return True
+            pending = (kind, identity)
+        elif kind in ("action_acknowledged", "action_not_dispatched", "app_launch_acknowledged"):
+            started = "app_launch_started" if kind == "app_launch_acknowledged" else "action_started"
+            identity = event.get("app") if started == "app_launch_started" else event.get("operation")
+            if pending != (started, identity):
+                return True
+            pending = None
+    return pending is not None
+
+
+def uncertain_result(run):
+    summary = getattr(run, "summary", None)
+    if not isinstance(summary, dict):
+        return True
+    return (bool(summary.get("persistence_failed")) or summary.get("code") in ("unknown_outcome", "journal")
+            or summary.get("stop_code") in ("unknown_outcome", "journal"))
 
 
 def resumable(run):
@@ -143,23 +148,20 @@ def resumable(run):
 
 
 class Writer:
-    """Keeps checkpoints off the agent's thread: one daemon thread, started on the first checkpoint, writing the latest
-    state per run (a newer one replaces one not yet written). The frontier hands it each turn's state directly
-    (``keep``), not through a run listener: a listener would start the listeners' thread for every task, a coding
-    agent's included, and only Smart turns have checkpoints."""
+    """Keeps checkpoints off the agent's thread."""
 
     def __init__(self):
         self._condition = threading.Condition()
         self._pending = {}        # run id -> ("save", journal, state) | ("delete", journal, None)
         self._busy = False
-        self._thread = None
+        self._workers = RunExecutor(max_workers=1)
+        self._writing = None  # the loop's Future while it runs; it ends after 30 s with nothing to write
 
     def submit(self, run_id, kind, journal, state=None):
         with self._condition:
             self._pending[run_id] = (kind, journal, state)
-            if self._thread is None or not self._thread.is_alive():
-                self._thread = threading.Thread(target=self._loop, name="mobster-checkpoints", daemon=True)
-                self._thread.start()
+            if self._writing is None or self._writing.done():
+                self._writing = self._workers.submit("mobster-checkpoints", self._loop)
             self._condition.notify_all()
 
     def _loop(self):
@@ -167,7 +169,7 @@ class Writer:
             with self._condition:
                 while not self._pending:
                     if not self._condition.wait(30):
-                        self._thread = None
+                        self._writing = None
                         return
                 run_id, (kind, journal, state) = next(iter(self._pending.items()))
                 del self._pending[run_id]
@@ -226,8 +228,6 @@ def close(runtime=None):
     writer.flush(1.5)
 
 
-# -- picking up -----------------------------------------------------------------------------------------------------
-
 def _runs(runtime):
     with runtime.lock:
         return dict(runtime.runs)
@@ -241,16 +241,56 @@ def picked_up_by(runtime, run_id):
     return None
 
 
+def _workflow_context_missing(original, runs):
+    """An unbound pickup cannot recover a workflow scope from its public ancestry."""
+    if getattr(original, "workflow_id", None) is not None:
+        return False
+    seen = set()
+    run = original
+    while run is not None:
+        if run.id in seen:
+            return True
+        seen.add(run.id)
+        key = getattr(run, "idempotency_key", "") or ""
+        if getattr(run, "workflow_id", None) is not None or str(key).startswith("workflow:"):
+            return True
+        parent = (getattr(run, "extras", None) or {}).get("resumeFrom")
+        if not parent:
+            return False
+        run = runs.get(parent)
+        if run is None:
+            return True
+    return False
+
+
 def check(runtime, run_id):
-    """The run ``run_id`` if it can be picked up now. APIError otherwise: 404 not_found, 409 run_active,
-    not_resumable or no_checkpoint."""
-    original = _runs(runtime).get(run_id)
+    """The run ``run_id`` if it can be picked up now."""
+    runs = _runs(runtime)
+    original = runs.get(run_id)
     if original is None:
         raise APIError("Task not found", 404, "not_found")
     if original.finished_at is None:
         raise APIError("This task is still running.", 409, "run_active")
     if not resumable(original):
         raise APIError("Mobster can pick up a task only after it was interrupted or stopped.", 409, "not_resumable")
+    if uncertain_result(original) or unresolved_effect(original):
+        raise APIError("The last action may have happened without a confirmed result. Check the phone and start a "
+                       "new task; Mobster cannot pick this one up safely.", 409, "pickup_outcome_unknown")
+    if _workflow_context_missing(original, runs):
+        raise APIError("This task's saved workflow scope cannot be verified after restart. Inspect its result "
+                       "and start a new authorized task; this task was not picked up.", 409,
+                       "workflow_context_missing")
+    fields = getattr(original, "extras", None) or {}
+    scoped = any(fields.get(name) is not None for name in (
+        "permissionMode", "projectEnv", "remoteGrant", "consoleMember", "consoleSession"))
+    if (original.origin in permissions.policy.OUTSIDE_ORIGINS or scoped
+            or getattr(original, "allowed_bundles", None) is not None or getattr(original, "pinned_apps", None)
+            or (getattr(original, "cap_usd", None) is not None and not getattr(original, "cap_from_month", False))):
+        raise APIError("This task's original access limits cannot be carried into a pickup. Review its result "
+                       "and start a new task within the right limits.", 409, "pickup_scope")
+    if isinstance((original.extras or {}).get("account"), dict) and getattr(original, "account_context", None) is None:
+        raise APIError("This task has no saved profile context to pick up safely. Start a new task after checking "
+                       "the profile on your phone.", 409, "profile_context_missing")
     writer.flush(1.0)   # the last turn's checkpoint may still be on its way
     if load(runtime.journal, run_id) is None:
         raise APIError("There's nothing to pick up yet: Mobster hadn't finished a step. Run the task again instead.",
@@ -272,13 +312,14 @@ def validate_resume_from(value, runtime):
 
 
 def pick_up(runtime, run_id, *, idempotency_key=None, origin="api"):
-    """Start a new run that picks ``run_id`` up. Returns (run, replayed). APIError: 404, 409 run_active,
-    not_resumable, no_checkpoint, or picked_up (another run already picks it up; its id in ``runId``)."""
+    """Start a new run that picks ``run_id`` up."""
     original = check(runtime, run_id)
     already = picked_up_by(runtime, run_id)
     if already is not None and (idempotency_key is None or already.idempotency_key != idempotency_key):
         raise APIError("This task was already picked up.", 409, "picked_up", runId=already.id)
     extras = {"resumeFrom": run_id}
+    if isinstance((original.extras or {}).get("account"), dict):
+        extras["account"] = original.extras["account"]
     fields = harness_api.run_fields()
     for name in ("threadId",):  # the conversation it belongs to (track conversations), when that field exists
         value = (original.extras or {}).get(name)
@@ -286,17 +327,12 @@ def pick_up(runtime, run_id, *, idempotency_key=None, origin="api"):
             extras[name] = value
     if isinstance((original.extras or {}).get("askUser"), bool):
         extras["askUser"] = original.extras["askUser"]   # its surface could (or couldn't) show a question
-    kwargs = {"engine": "smart", "extras": extras}
+    kwargs = {"engine": "smart", "extras": extras, "_resume_run": original}
     if origin in harness_api.ORIGINS and origin != "api":
         kwargs["origin"] = origin
     device = getattr(original, "device_id", None)
-    try:
-        created = runtime.create(original.app["id"], original.goal, "live", idempotency_key,
-                                 **({"device": device} if device else {}), **kwargs)
-    except ValueError as error:
-        if not device or "leave device out" not in str(error):
-            raise
-        created = runtime.create(original.app["id"], original.goal, "live", idempotency_key, **kwargs)
+    created = runtime.create(original.app["id"], original.goal, "live", idempotency_key,
+                             **({"device": device} if device else {}), **kwargs)
     return created if idempotency_key else (created, False)
 
 
@@ -310,8 +346,7 @@ def user_messages(run):
 
 
 def done_with_ok(run):
-    """The commits the person approved in ``run``, oldest first: [(step, act, label)], from its journaled events.
-    The label is the control's (from the action after the OK; "" when the run ended before that was recorded)."""
+    """The commits the person approved in ``run``, oldest first: [(step, act, label)], from its journaled events."""
     done = []
     for event in getattr(run, "events", None) or ():
         kind = event.get("event")
@@ -322,7 +357,8 @@ def done_with_ok(run):
     return [tuple(item) for item in done]
 
 
-ACT_WORDS = {"send_message": "sending a message", "reply": "sending a reply", "post": "posting", "comment": "commenting",
+ACT_WORDS = {"send_message": "sending a message", "reply": "sending a reply", "post": "posting",
+             "comment": "commenting",
              "react": "reacting", "pay": "paying", "request_money": "requesting money", "transfer": "making a transfer",
              "order": "placing an order", "book": "making a booking", "follow": "following",
              "unfollow": "unfollowing", "share": "sharing", "call": "placing a call", "delete": "deleting",
@@ -330,9 +366,8 @@ ACT_WORDS = {"send_message": "sending a message", "reply": "sending a reply", "p
 
 
 def held_acts(run):
-    """The acts (send_message, post, pay...) ``run`` may already have done, oldest first and once each: the ones the
-    person approved, and the ones whose send's answer was lost (frontier_failed, outcome unknown). Its in-memory
-    effect ledger is gone with it, so a picked-up run holds these instead."""
+    """The acts ``run`` may already have done (approved, or sent with the answer lost), oldest first and once each: a
+    pickup asks for each again in every mode, and refuses it where nobody can answer."""
     acts = []
     for event in getattr(run, "events", None) or ():
         kind = event.get("event")
@@ -380,21 +415,49 @@ def handoff(state, original):
 _resumed = {}   # run id -> turns already used, for frontier_options (read once)
 
 
+def _pickup_unavailable(ctx, error):
+    try:
+        ctx.emit({"event": "context_error", "key": "pickup", "error": error})
+    except Exception:  # a failed journal write must not turn a pickup into a fresh task
+        pass
+    uncertain = error == "pickup_outcome_unknown"
+    return harness_api.PreRun(result={
+        "event": "result", "engine": "smart", "status": "blocked", "outcome": "check",
+        "stop_code": "pickup_outcome_unknown" if uncertain else "pickup_checkpoint_missing",
+        "answer": None, "proof": [],
+        "independently_verified": False, "actions_may_have_run": False,
+        "reason": ("The earlier task has an unconfirmed action. This pickup did nothing. Check the phone before "
+                   "starting a new task." if uncertain else
+                   "The earlier task's checkpoint is unavailable. This pickup did nothing. Review the earlier "
+                   "task and start a new one only after checking the phone.")})
+
+
 def pre_run(ctx, driver, approve):
     """Pre-run hook (order 0): a run with ``resumeFrom`` goes on from that run's checkpoint."""
     source = (ctx.extras or {}).get("resumeFrom")
-    if not source or harness_api.disabled("harness"):
+    if not source:
         return None
+    if harness_api.disabled("harness"):
+        return _pickup_unavailable(ctx, "disabled")
     runtime = ctx.runtime
-    state = load(getattr(runtime, "journal", None), source)
-    if state is None:
-        ctx.emit({"event": "context_error", "key": "pickup", "error": "no_checkpoint"})
-        return None
-    original = (getattr(runtime, "runs", None) or {}).get(source)
-    initial = handoff(state, original)
-    _resumed[ctx.run_id] = initial.steps_used
-    ctx.emit({"event": "picked_up", "from": source, "step": initial.steps_used})
+    try:
+        original = check(runtime, source)
+        state = load(getattr(runtime, "journal", None), source)
+        if state is None:
+            return _pickup_unavailable(ctx, "no_checkpoint")
+        initial = handoff(state, original)
+        _resumed[ctx.run_id] = initial.steps_used
+        ctx.emit({"event": "picked_up", "from": source, "step": initial.steps_used})
+    except APIError as error:
+        _resumed.pop(ctx.run_id, None)
+        return _pickup_unavailable(ctx, error.code)
+    except Exception:  # no malformed/missing resume state may fall through to the fresh goal
+        _resumed.pop(ctx.run_id, None)
+        return _pickup_unavailable(ctx, "unavailable")
     return harness_api.PreRun(handoff=initial)
+
+
+pre_run.before_phone = True
 
 
 def frontier_options(ctx):

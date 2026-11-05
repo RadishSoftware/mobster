@@ -1,5 +1,3 @@
-"""The bench's WDA probe and its navigation reads, with a fake WDA. No device."""
-
 import unittest
 
 from mobile_agent.errors import MobsterError
@@ -59,7 +57,6 @@ class WDAProbeTests(unittest.TestCase):
             self.probe("com.apple.Preferences", "com.apple.springboard").observe("com.apple.Preferences")
 
     def test_on_a_simulator_springboard_from_active_app_info_defers_to_the_session_tree(self):
-        # iOS 26.4 simulators name SpringBoard in activeAppInfo whatever is in front (10 Oct).
         from mobile_agent.evals.oracles import WDAProbe
         tree = WDA_ABOUT.replace('<XCUIElementTypeApplication ',
                                  '<XCUIElementTypeApplication bundleId="com.apple.Preferences" ', 1)
@@ -80,8 +77,6 @@ class WDAProbeTests(unittest.TestCase):
             self.assertEqual(got, "com.apple.Preferences" if simulator else "com.apple.springboard", simulator)
 
     def test_on_a_phone_springboard_from_active_app_info_is_checked_with_the_session(self):
-        # The bench phone, iOS 26.4, 11 Oct: after activating a deleted app, the sessionless read named SpringBoard with
-        # Settings in front; the session's own activeAppInfo named Settings.
         from mobile_agent.evals.oracles import WDAProbe
         url = "http://127.0.0.1:8293"
         self.addCleanup(WDAProbe._overlay_apps.pop, url, None)

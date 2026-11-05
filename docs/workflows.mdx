@@ -1,0 +1,374 @@
+---
+title: "Build a workflow on its canvas"
+sidebarTitle: "Workflow builder"
+description: "Lay out a workflow as a graph: triggers, steps joined by lines, branches, loops and steps side by side, then test it, publish it and watch it run."
+icon: "workflow"
+keywords: ["workflow builder", "canvas", "graph", "nodes", "branch", "loop", "test run", "pin", "publish", "versions", "run a workflow"]
+---
+
+Each workflow has a page of its own: **Make it** on the Workflows page opens `/workflows/new` with the steps Mobster drafts from what you said it does, or blank when you said nothing (**New workflow** in ⌘K opens it blank too), **Save as workflow** under an answer opens it with Mobster's draft of that conversation's steps, **Make this repeat** under a task on Home that says when it repeats ("every Monday at 9am", "daily") opens it drafted from that task's words, schedule included, and a workflow's row opens `/workflows/<id>`. The page draws the workflow as a graph: how it starts (its triggers), its steps, and the lines that join them. A line carries what one step gave to the next. A step can have several lines in and out, so a workflow can branch, run steps side by side and join them again ([The graph](#the-graph)).
+
+A workflow saved before 16 Oct 2026 opens as the graph its steps make, top to bottom, with nothing lost.
+
+On the Workflows page, **Learned steps**, folded under your workflows until you open it, shows each saved request once, with slots for its blanks. A name you give it appears above the request. A slot shows its taught value, or stays empty when no value was kept.
+
+## The page
+
+The page shows:
+
+- **The bar:** **‹ Workflows**, the name, what state it is in (**Unsaved changes**, **Not published** before its first publish, **Changes not published** or **Proven, not published** for saved changes to a published workflow, **Live** when it runs by itself, **Paused** when it's off and a schedule, a notification or an app would start it, **Published** when you run it by hand, or how the last run went), **Undo**, **Redo**, the run's estimate ("\$0.03–0.05 a run"), **Run**, and **Save changes** or **Publish**. The **More** menu (**…**) holds **Tidy up**, **Versions** and **Delete workflow**. When no run is active, **Pause** sits beside the status if the published version has a schedule, notification or app trigger. It turns off those triggers without changing your saved or unsaved edits. The bar can still show a draft or run status. **Run**, webhooks, shortcuts, MCP clients, Mobster Remote, `POST /v1/workflows/<slug>`, another workflow's **Run a workflow** step and the rules in **Settings › Triggers** can still start it. **Resume** turns them back on ([Pause a workflow](/schedules#pause-a-workflow)). **‹ Workflows** with unsaved changes asks **Leave without saving?** in the bar, and **Delete workflow** asks there too. Neither opens a dialog. Leaving another way, by the sidebar, `cmd+1` to `cmd+3` or `cmd+k`, keeps your 20 most recent unsaved workflow edits on this Mac, through a quit too: a notice says so with **Open**, and the workflow's row in Workflows reads **Unsaved changes** until you save them or leave without saving.
+- **The canvas:** one node for each trigger and each step. A node shows the icon of the app it starts in, or its kind's mark, its kind, and its words. Below 50% zoom a node shows only its words; below 30%, only its icon.
+- **The inspector,** on the right, 360 points wide: the selected node's fields, the selected line's, or the workflow's own when nothing is selected. Below 760 points of page width it sits under the canvas.
+- **Recent runs,** on the workflow's own panel, lists up to three runs, newest first, with each result (**Worked**, **Couldn't finish**, **Take a look**, **Stopped**, **Skipped**, **Running**, **No longer kept**) and time. When a run's record is gone before Mobster reads its result, you see **No longer kept** and its time but can't open it. Select a one-task workflow's run to open it while Mobster still has it on this Mac; a run of several steps opens from the list button on the workflow's row in Workflows. When the schedule is on, its next run time is known and there are no unsaved changes, the panel shows that time under its title.
+
+## Add and join steps
+
+- **Add a step:** double-click the canvas, or start typing with nothing selected. The step menu opens there with a search field; pick a step and it lands where you clicked, clear of the others, and selected.
+- **Join two steps:** drag from a step's output dot (at its foot) to another step's input dot (at its head), or anywhere on that step. The line snaps to an input within 24 points. Steps it can't join to fade, and a line under the pointer says why, such as a trigger, which takes no input, or a step that would run in a circle. Let go on the empty canvas and the step menu opens there, and Mobster joins the step you pick.
+- **Branch outputs:** a **Branch** has one output for each of its cases and one for **Otherwise**. A step that can fail has **If it fails**: join it to the steps that handle the failure.
+- **Select a line:** click it, or the value it carried in the last run. **Delete** removes it, and dragging the dot at its end moves that end to another step's input; `esc` leaves it where it was.
+- **Move steps:** drag them. They snap to a 16-point grid, and line up with another step's edge or middle when they come within 8 points of it, with a violet guide; hold `cmd` to place them freely. Drag the empty canvas to select every step inside the box.
+- **Loops:** select steps and choose **Repeat these** to put them in a loop. Drag a step onto a loop to put it in; drag it out to take it out. The arrow on a loop's title row folds it to that row, with how many steps it holds, and opens it again; folding changes only your view.
+- **Tidy up** (`shift+option+t`) lays the whole graph out in rows, 88 points apart, as one undo.
+
+## Keys
+
+| Keys | What they do |
+|---|---|
+| Typing, double-click | Opens the step menu with what you typed. |
+| `delete` | Removes the selected steps and lines. |
+| `esc` | Clears the selection, or puts back a line you are drawing. |
+| `cmd+a` | Selects every step. |
+| `cmd+c`, `cmd+v` | Copy the selected steps and the lines between them, and paste them at the middle of the view. |
+| `shift+cmd+v` | Pastes them joined to the steps they were joined to. |
+| `cmd+d` | Duplicates the selected steps, 32 points down and to the right. |
+| `↑` `↓` `←` `→` | Nudge the selected steps 16 points; with `shift`, 64. |
+| `shift+option+t` | Tidies the graph up. |
+| `shift+option+m` | Keeps the map of a large graph in its corner. It shows while the view moves, otherwise. |
+| `cmd+z`, `shift+cmd+z` | Undo and redo any change on the page, words included. A run of typing undoes as one change. |
+| `cmd+s` | Saves. |
+| Scroll, or `space` and drag | Pans the canvas. |
+| `cmd`+scroll, or pinch | Zooms around the pointer, from 20% to 200%. |
+| `cmd+=`, `cmd+-`, and the buttons in the corner | Zoom to the next stop: 20, 25, 50, 75, 100, 125, 150 or 200%. |
+| `cmd+0`, `shift+1` | Fit the whole workflow, up to 112.5% for a short one. A workflow opens fitted the same way. |
+| `shift+2` | Zooms to the selection. |
+| `shift+0` | Goes to 100%. |
+
+Fitting and zooming glide for a quarter of a second, and a scroll or a press stops the glide; with **Reduce Motion** on, the view jumps. Nothing on the canvas moves while nothing changes.
+
+## The inspector
+
+**A step's fields** come from Mobster's catalog of steps, so a kind Mobster adds shows its fields without an update. What most steps never need, such as a task's answer shape or the account it uses, is under **More**, open when one of them is set.
+
+- **From earlier steps:** under a step's fields, a chip for each value a step before it gave: each field of its result in the last run, or of its test data. Drag a chip onto a field, or click it to put it where you were typing. The field gets an expression, `{= $node.read.rows }`, drawn as a chip where it sits, and under the field, what it works out to in the last run. A field that holds an expression (a step's input, a Result's value, a way's condition, a field you set) is one line that scrolls sideways, so a chip is never split.
+- **Name on the canvas**, under **More:** the words its node shows instead of its own.
+- **Test data:** what a test run gives at this step instead of running it ([Test it](#test-it)).
+
+**A trigger's fields:** a schedule's days and time (and the cron and zone under **Advanced**), a webhook's URLs, and the shortcut's command to copy.
+
+**A line's fields:** where it runs from and to, what it carried in the last run, and **Reshape it**: an expression on what the line carries, `$input`, such as `$input.rows`. Under it, what the expression gives on the last run's values.
+
+**The workflow's own fields,** with nothing selected:
+
+- **Say what it does** (a new workflow) or **Change it in words:** Mobster drafts the steps on the canvas from your words, or changes them and selects what it changed ([Make a workflow from words](#make-a-workflow-from-words)). Mobster saves nothing until you save, and one undo puts back what was there.
+- **Always continue in the same conversation.**
+- **Send the result to,** where your Mobster has connectors that send results.
+- **Stop a run after:** its own spending limit (**\$5.00** by default, from \$0.05 to \$100) and time limit (**240 minutes** by default, up to 24 hours). Each task also stops at your per-task and monthly limits.
+
+## Save, publish and versions
+
+- **Save changes** keeps the draft. **Run** tests the draft; nothing else runs it.
+- **Publish** makes the saved draft what its schedule, webhook, shortcut, MCP and Remote run.
+- **Run from other apps**, on the workflow's own panel, adds a named MCP tool for the published workflow and lists it in Shortcuts' **Run Mobster Workflow** action. Turning it off removes both; the general `run_workflow` MCP tool remains available. Tool names start with `workflow_`, such as `workflow_morning_round_up`. Each tool takes the workflow's typed inputs and blanks, plus `wait_seconds`. The panel previews its name and inputs. On a saved workflow, the switch takes effect immediately without publishing draft changes. It starts off.
+- **Versions** lists every save, newest first, with what changed, which one runs now and which is the draft. Pick an older one to see the draft with what was added (green), changed (amber) and removed (a dashed step, a coral line) since it. The canvas is read only while you look. **Bring it back** saves that version as the newest draft, so going back is itself a version.
+
+## Test it
+
+**Run** in the bar runs a test of the saved draft, on the page, and the page stays. With unsaved changes it waits until you save. A step with **Test data** doesn't run in a test: it gives its test data at once. Every other step runs for real, and asks you first as any task does.
+
+- **Prove it on your phone,** on a draft's own panel, runs the saved draft once as a test. A live workflow with no draft has **Run** alone. It asks you first at every send, post, buy and delete. When the run completes, each step's real output becomes its test data, and the panel and the bar say **Proven** until you save a change.
+- **What it costs:** before a run, each step that calls a model shows what it should cost in a pill on its top edge (`$0.02–0.07`, or **Replays** for a step that replays its learned steps at \$0.00). The bar shows a run's total before **Run**, in amber when its high end passes the run's spending limit. Point at either to see where the number comes from. Once a step has run, its pill says what it spent in that run, and the bar's line says what the run spent and how many model calls it made: `Done, $0.00, no model calls` after a replay.
+- **Use as test data,** in a step's part of the last run, keeps what it gave as its test data.
+- **Run from here** runs the step and everything after it again, and the steps before it give what they gave in that run.
+- **Run only this** runs the step alone, on what it got in that run.
+- **Resume,** in the bar after a run that stopped, says first what it runs again, what it reuses, and what it leaves for you because it may have acted, then picks the run up there. A step that may have acted never runs twice.
+
+A test run or a re-run starts only from the Mac app's page: MCP, Remote and webhooks run the published workflow.
+
+## Watch it run
+
+The page opens on the workflow's newest run, and lights each step as the run reaches it:
+
+- **Running:** a violet ring, and a phone step's phone beside it, live;
+- **Waiting:** a plain ring, with what it waits for: its phone, a time, or you. An **Ask me first** step shows its words, the phone's screen before it (the last screen the step before it kept) and what it passes on. When the step lets you, you can change what it passes on first, and your edit is what goes on. Its part of the run has **Approve**, **Approve every round** (in a loop) and **Decline**;
+- **Done:** a green check, and each line it fired turns green with what it carried at its middle;
+- **Not taken:** faded, with its lines;
+- **Failed:** a coral ring, and why, in place of its small line;
+- **Not run,** behind a failure, or **Stopped:** half faded, with why;
+- **May have acted:** an amber ring, never coral, so it never reads as failed. Mobster can't tell whether it acted, and never runs it again.
+
+Select a step to see what it got and gave in that run; **Show all** reads the whole of it. The bar says **Running, 3 of 7 steps done** with **Stop**, and **Open conversation** for the run's conversation. The page follows the run's own events, only while a run goes.
+
+Mobster keeps the newest 20 runs of each workflow. The list button on a workflow's row opens them, with **Export CSV**.
+
+## Safety
+
+- Every phone step is an ordinary task. Sends, posts, deletes and purchases ask you first, in every round, as in any task. Full access goes ahead as Full access says.
+- Mobster writes a step to the run's log before it starts. If Mobster quits during a run, the run ends as **Interrupted** at the next launch, and Mobster never runs it again, so no step runs twice.
+- A workflow has one run at a time. Mobster skips a schedule that comes round while a run still goes, or queues it once when you set it to ([How a graph runs](#how-a-graph-runs)).
+- Mobster writes a **Use a connector** step to the run's log before it sends the call. A call that gets no answer stops the run, and Mobster never sends it again.
+
+## The graph
+
+Mobster saves every workflow as a graph: nodes joined by edges. A workflow saved as steps in a line before 16 Oct 2026 is the same graph in one column, and Mobster reads both the same way.
+
+```json
+{
+  "name": "Answer DMs",
+  "graph": {
+    "version": 2,
+    "inputs": [{"name": "who", "type": "string", "default": "Sam"}],
+    "nodes": [
+      {"id": "start", "type": "trigger.manual", "position": {"x": 0, "y": 0}},
+      {"id": "read", "type": "phone.task", "position": {"x": 0, "y": 152},
+       "config": {"text": "Open Instagram and read the newest DM from {who}"}},
+      {"id": "check", "type": "branch", "position": {"x": 0, "y": 304},
+       "config": {"cases": [{"id": "asked", "label": "A question", "when": "contains($input.answer, '?')"}]}},
+      {"id": "tell", "type": "send", "position": {"x": 0, "y": 456}, "config": {"to": "notification"}}
+    ],
+    "edges": [
+      {"id": "e1", "source": "start", "sourcePort": "out", "target": "read", "targetPort": "in"},
+      {"id": "e2", "source": "read", "sourcePort": "out", "target": "check", "targetPort": "in"},
+      {"id": "e3", "source": "check", "sourcePort": "asked", "target": "tell", "targetPort": "in"}
+    ],
+    "limits": {"maxSpendUsd": 2, "maxMinutes": 60}
+  }
+}
+```
+
+### Nodes
+
+`GET /api/workflows/node-types` lists every type with its fields and its ports, each output port with a JSON schema. These are the types:
+
+| Group | Types |
+|---|---|
+| Triggers | `trigger.manual` (Run, the terminal, MCP, Remote), `trigger.schedule` (`cron`, `timezone`, `missed`, `overlap`), `trigger.webhook`, `trigger.notification`, `trigger.shortcut`, `trigger.app` (a new row in an app) |
+| On a phone | `phone.task` (your words; `device`: the workflow's phone, `"any"`, `"loop"` or a phone's id; `mode`: `auto`, `replay` or `agent`; `expect`: what the screen shows when it worked), `phone.taught`, `phone.check` (true or false, looking only), `phone.open_url` (open a web address or an app's deep link, no model; a link that writes to someone asks, and a scheme Mobster never opens is refused when you save; out: `url`, `landedApp`, `screen`), `phone.notification` (wait up to `timeoutMinutes`, 10 by default, for a notification from `app` that holds `match`, then open it when `tap` is on; out: `title`, `body`, `app`, `at`; the `timeout` port runs when none comes; notification text is data and codes are masked), `app.read` (an app pack's rows, no model) |
+| Off the phone | `connector.call`, `send`, `brief`, `transform` (works out new fields), `ai.ask`, `output` (the run's result) |
+| Flow | `branch`, `loop` (over `times`, `rows`, `items`, `until` or `phones`), `merge` (`all` or `first`), `wait`, `approval` (waits for you), `workflow.call` (runs another workflow) |
+
+Every node but a trigger has an `error` port: an edge from it runs when the node fails. A node may carry `retry` (`{"tries": 1 to 5, "backoffSeconds": 1 to 3600}`) on the types that only look, read or wait; Mobster never retries a step that may have sent, posted or bought something.
+
+This version of Mobster saves, checks and runs every type. Mobster refuses `app.action` at save until an app pack lists an action it can take.
+
+- **`ai.ask`** asks Claude (Haiku by default, or Sonnet) about what arrived, in your words: "Count who asked about a refund". What earlier steps produced reaches it fenced as data, never as instructions, and with an `outputSchema` it answers in that shape on `data`. Each call is a task of its own with no phone, so it shows in History and counts toward your monthly limit like any task. It needs your Anthropic key.
+
+- **`app.read`** reads an app with its app pack, by code with no model: Instagram's or TikTok's DMs, reels, feed and the rest (`GET /api/packs`). It is a task on the phone like any other, and its rows come out typed by the pack's columns, on `out` and on `rows`. Wire `rows` straight into a loop's `items`.
+- **A phone step's `mode`:**
+  - `auto` (the default): replays its learned steps with no model when they fit, and the model takes over when a screen differs.
+  - `replay`: only its learned steps, never the model. A step with no learned steps, or whose screen differs partway, stops and says so ("set to replay only").
+  - `agent`: the model every time, never a replay. A published graph with one of those is refused before anything starts (`409 graph_unsupported`), and says which.
+
+### How a graph runs
+
+- **Order.** A node runs when everything wired into it has finished. Mobster skips one that waits on a path that wasn't taken (a branch's other case, a trigger that didn't start this run). Nodes ready at the same moment start in one fixed order, so the same graph runs the same way each time.
+- **Phones.** Steps on different phones run side by side. Steps on the same phone run one at a time, in that order: a step waits (`queued`, `queuedReason: "phone"`) while its phone is busy with another step of the run. A step on `"any"` takes the first ready phone nothing holds and waits when there is none. When a task from outside the workflow holds the phone, the step waits 20 seconds, then fails as busy. Other steps run side by side too, 8 at most.
+- **Loops.** A loop runs its steps once per item, row, round or phone, `concurrency` rounds at once (1 by default). Each round's steps are `<step>@<round>`. A round in which a step fails ends the loop: no new round starts.
+- **Each phone step is an ordinary task** in the workflow's conversation: its approvals, your phone's rules, the per-task and monthly limits all apply. While two of a workflow's tasks run at once, Mobster refuses a message typed in its conversation (`409 steps_running`). Send it when they finish.
+- **A profile's pace.** A step that acts as a profile keeps that profile's pace ([Content queue › Pacing](/content-queue#pacing)). The step's task waits out a gap of up to 15 minutes. A longer gap, or a profile whose day is full, stops the task before it acts. The step then gives its phone back, waits (`queued`, `queuedReason: "pace"`, `until`), and runs again as a new task, while other steps use the phone. A wait that would pass the workflow's time limit fails the step (`time_limit`). A paused profile fails it as `blocked`, because it waits for you, not a clock. Mobster never runs a step again once its task acted.
+- **Spending.** Each phone step reserves its share of what is left of the workflow's limit before it starts, so steps running side by side can't spend past it together.
+- **What earlier steps found** reaches a phone step only as its `input`, shown to Mobster's agent as data from earlier steps, never as instructions.
+- **`expect`.** After a phone step with `expect`, Mobster looks at its screen. If the screen doesn't show it, the step fails ("The step finished, but the screen doesn't show: ...") and nothing after it runs.
+
+### What a workflow costs
+
+Mobster estimates a step that a trusted taught program fits, on its phone, at **\$0**, with `basis` `replay` (`decides: taught`). The program's steps take no model. A lesson that only opens and looks makes its contract by code when you save it, is trusted on save, and ends in code when the screen shows what you opened. The model checks a lesson that answers a question, types or changes something once, on its first replay. Mobster prices a step the model chooses each run as a model step. Those two keep the model's estimate. A learned path that needs no model to answer gets the same estimate. A lesson that sends, posts or buys gets its contract by code too when your words name the act (`send`, `post`). It skips the compile call, but still asks before the commit, and the model checks it once. When a lesson ends on a Settings page and asks a question, Mobster answers it by reading the row, with no model turn, if exactly one row's name is in your words. The composer's estimate (`POST /api/usage/estimate`) shows \$0 with `basis` `taught`, `replays` or `front_door` for a request that costs no model call, and keeps the model's price as `fallbackUsd`.
+
+`GET /api/workflows/{id}/estimate` says what the published graph should cost before it runs. Add `?draft=1` for the draft you're editing.
+
+```json
+{"estimate": {"nodes": {
+   "read": {"lowUsd": 0.03, "highUsd": 0.05, "modelCalls": 2, "basis": "history", "runs": 5, "decides": "model"},
+   "each": {"lowUsd": 0.06, "highUsd": 0.24, "modelCalls": null, "basis": "estimate", "rounds": 3}},
+ "total": {"lowUsd": 0.09, "highUsd": 0.29, "modelCalls": null, "partial": false, "overLimit": false}}}
+```
+
+Each node's `basis` says where its numbers come from:
+
+- **`history`:** the node's own last 5 runs in this workflow. `runs` says how many there were.
+- **`estimate`:** a step that hasn't run yet, from Mobster's agent's estimate for its words. Its `modelCalls` is `null` until it has run.
+- **`replay`:** a phone step with `mode: "replay"`. It runs with no model and costs nothing.
+- **`child`:** a workflow it runs, from that workflow's own estimate.
+- **`none`:** a node that calls no model.
+
+A phone step also says who decides what it does: `model`, `replays` (its last run replayed learned steps with no model call) or `taught`. A loop multiplies its steps by its rounds when the rounds are known before the run (`times`, `rows`, `phones`). For `items` and `until` the loop's estimate is for one round, marked `partial: true`. `total` adds the nodes up, and `overLimit` says whether its high end passes the workflow's spending limit. A number Mobster can't estimate is `null`, never `0`.
+
+After a run, each step's record has `costUsd`, `modelCalls` (one per model call, as the usage ledger counts them) and `replayed`. The run's record has `spentUsd` and `modelCalls`.
+
+### Ask me first, and workflows inside workflows
+
+- **`approval`** waits for you before the workflow goes on. Its message can show values from earlier steps, and it appears in a Mac notification and in `GET /api/workflows/approvals`. Answer it in the Mobster app; MCP, Remote and webhooks can't (`403 app_only`).
+  - **Approve:** the `approved` path runs with what arrived. With `editable`, you can change that value first, and your edit is what goes on.
+  - **Approve all:** inside a loop, this approves this step in every later round of the run.
+  - **Decline:** the `declined` path runs with `{reason, by}`.
+  - **No answer** within `timeoutMinutes` (24 hours by default) counts as a decline. Mobster never approves anything for you.
+  - With `showScreen` (on by default), the request names the phone the workflow uses (`deviceId`), so the app can show it live, and carries `screen`: the last screen the newest phone step before it kept, `{runId, frameId, at, instance}`. `GET /api/runs/{runId}/frames/{frameId}` returns that screen. `screen` is `null` when no step before the approval kept one.
+- **`workflow.call`** runs another workflow as a step and goes on with its Result, or `{status}` when it has none. Without `revision`, it runs the child's current published graph. A pinned `revision` must be a previously published saved version. An editor test run can preview a never-published child draft. A missing required input or row list refuses the child before its first step.
+  - `values` fill its inputs (your own values only), and what arrives on `in` reaches its trigger as `input`, data for its steps.
+  - It runs in this workflow's conversation, within what is left of this run's spending and time, and on the same phones one step at a time.
+  - Stop stops it too. If it doesn't complete, the step fails with its status.
+  - Workflows run inside each other at most 3 deep, never in a circle.
+
+A Result step with a saved Shape checks its actual JSON value before the step finishes. If the value does not match or the run takes a path without that Result, the run fails and a parent workflow cannot receive a result. An error path cannot turn a missing valid Result into completion. Shape matching checks the workflow's output; it does not verify a change in an app.
+
+### Ask by link
+
+Approval links require the app's team extension. In the standalone CLI, you approve or decline the waiting step locally.
+
+While an **Ask me first** step waits and you are signed in to Mobster, its entry says `linkable: true`. In the app, the step's panel on the workflow's page offers **Ask by link**: name who it's for, and Mobster copies the link for you to send. If the clipboard refuses it, a selectable **Approval link** field appears. The panel says whose answer it waits for, with **Copy link** and **Stop the link**, and Approve and Decline stay beside it. Links work on any Mobster plan and during the free trial. `POST /api/workflows/{id}/runs/{batch}/approvals/{instance}/link {"label": "Kate at Acme"}` (from the app only) makes a link, `https://console.mobster.dev/a/<id>#k=<key>`, and answers `{url, expiresAt, label, state}`; asking again answers the same link. `DELETE` on the same path stops it. The step's words, what it passes on and any available screen are encrypted on your Mac before upload. The key is in the link after the `#`, and the app keeps that link on your Mac. The upload contains no key.
+
+A link lasts until the step's own time is up or for 24 hours, whichever comes first. The step can wait longer on your Mac, and you can make a new link. A client opens the link in any browser with no sign-in and sends **Approve** or **Ask for changes** with a note. Your Mac checks every 10 seconds, and applies an answer only if it opens under the key, is for this link, arrives before the link ends, and the step still waits. Approve goes on. Ask for changes declines with the note. The first answer wins, from the Mac or the link, and the link ends with it. The journal, the step's events (`approval_link {state, by, decision}`) and the finished step's entry (`answeredBy`) say `Kate (by link)`, and the step's panel says "Approved by Kate (by link)". Mobster ignores anything else (a wrong key, a second answer, a late one) and journals it as `approval_link_refused`. A link is a secret: anyone who has it can answer once, so send it to one person.
+
+### Triggers
+
+- **`trigger.manual`** is how Run, the terminal, MCP and Remote start a workflow. A webhook or other start that has no trigger of its own enters there too.
+- **`trigger.webhook`** is how a call to the workflow's webhook URL enters. Its `values` fill your blanks, and `body` is the call's JSON, masked and kept to 16 KB: data for later steps, like `{= $node.hook.body.order }`, never their instructions.
+- **`trigger.schedule`** is how its schedule enters, with the rules below.
+- **`trigger.shortcut`** is how a Shortcut enters, with what it sent as `input` ([From MCP and the terminal](#from-mcp-and-the-terminal)).
+- **`trigger.notification`** starts the workflow when Mobster reads a notification from your phone that its `app` (a bundle id, or any app) and `contains` (words in its title or body, case ignored) take. Its output is `{app, title, body, receivedAt}`, masked, each text cut to 2,000 characters: data for later steps, never their instructions. Each notification starts it once, and at most 6 an hour. One that arrives while the workflow runs waits, and starts when that run ends. Only one run waits behind a running one, a notification's or a schedule's (`overlap: queue_one`), so Mobster skips a later one (`skipped_busy`) and no backlog builds. A waiting one counts toward the 6.
+- **`trigger.app`** reads an app on your phone every `every` minutes (5 to 1,440) with its app pack's `reader`, by code with no model, 20 rows at a time. Its first read only remembers the rows that are there. After that, each row whose `key` field it hasn't seen starts one run, oldest first and one at a time, with `{row, rows}`: the new row, and the new rows that read found. Mobster masks rows, cuts them to 16 KB, and treats them as data. A row starts a run once, even after Mobster quits, and Mobster keeps the newest 5,000 keys the app still lists. A read that fails starts nothing, and Mobster tries a busy phone again a minute later. Each read is a task in your history.
+- **Turning it on:** `enabled` turns on a workflow's schedule, its notification trigger and its app trigger. You can turn on a workflow with a notification or app trigger without a schedule. Only the published graph's triggers run.
+
+### Schedules that slept, and runs that overlap
+
+A `trigger.schedule` says what happens to a slot the Mac missed and to one that comes round while the last run still goes:
+
+- **`missed`:** `skip` (the default) skips a slot more than a minute late. `run_once` runs it once when the Mac wakes, however many slots it slept through.
+- **`overlap`:** `skip` (the default) skips a slot while the workflow still runs (`skipped_busy`). `queue_one` keeps that one slot waiting (`queued`) and starts it when the run ends. Mobster skips a second slot while one waits.
+
+The daily limit and the five-minute interval still apply to every scheduled run.
+
+### When a step fails
+
+- **Without error edges,** everything that depends on the step stops ("Stopped because “Post it” didn't finish: ..."). Paths that don't depend on it carry on. The run ends with that step's own status, such as `approval_denied` or `spend_cap`.
+- **With an error edge,** the failure is caught: the error path runs with `{node, reason, status, runId}`, the step's other paths are skipped, and the run can still complete.
+- **An outcome Mobster can't know** (the phone or a connector stopped answering mid-act) leaves the step `unknown`. Mobster never retries it, its error edge doesn't run, and what depends on it stops.
+- **`retry`** tries again only after an attempt that didn't act: a phone task in which nothing asked for your approval or pressed a send, post or buy control, or a connector call that was never sent. Each try is a new task with its own key.
+- **Stop** stops every task of the run at its next safe point. Nothing new starts, and steps that hadn't started end `cancelled`.
+- **If Mobster quits** during a run, the run ends `interrupted` at the next launch. A step that was running takes its task's real outcome, or is `unknown`. Mobster runs nothing again.
+- **A workflow task that loses its saved binding after restart** refuses pickup (`workflow_context_missing`). This also applies to a task already picked up under a new request key, or one whose saved workflow ancestor is missing. Inspect the earlier result, then start a new authorized workflow run.
+
+### Debug a workflow
+
+These start from Mobster's editor (the app session). MCP, Remote and webhooks can't start them (`403 test_from_editor`).
+
+- **A test run** (`POST /api/workflows/{id}/run {"test": true}`) runs the draft you're editing, not the published workflow. **Run** on a workflow you have never published is a test run too: from the Mac app, the terminal or the CLI it runs the draft, marked as a test, and it never counts as the published version's history. A schedule, a webhook, MCP or Remote still get `409 not_published`: "This workflow is a draft. Publish it, then run it." A node with a `pin` doesn't run: it is done at once with its pinned output, marked `pinned`. Every other step runs for real, approvals included. Runs started any other way never read pins.
+- **Re-run from a step:** `{"from": {"batchId": "<run>", "node": "<step>"}}` runs that step and everything after it again. Every other step takes the result it had in that run, marked `reused`, and nothing about it runs again.
+  - Add `"input"` to give the step a different input.
+  - Add `"iteration": n` with a loop's id to run round n of the loop alone, with the item it had then.
+- **Only one step:** `{"only": {"node": "<step>", "batchId"?}}` runs that step on the input it had (in that run, or the newest) and skips everything after it.
+- **Resume:** `{"resume": "<run>"}` picks up a run that stopped. It reuses steps that finished. What failed, was blocked or was cancelled runs again, unless it may have acted: a step whose outcome is unknown, or one that failed after it asked for an approval or pressed a send control (`acted`). Those stay as they ended, so what depends on them stays stopped. Check them, then re-run from the step after. `GET /api/workflows/{id}/runs/{runId}/resume` lists what a resume would reuse, run and leave.
+- **Prove:** `POST /api/workflows/{id}/prove {"revision", "graph"?}` saves the draft when you send `graph`, then runs it as a test run on your phone. Approvals ask at every send, post, buy and delete as in any run. When the run completes, Mobster pins each phone, app, connector, model, brief, send and sub-workflow step's real output on the draft, and the workflow gets `proven: {revision, batchId, at, pinned}`. The draft is proven while `proven.revision` is its `revision`; any later save ends that. Mobster leaves a draft you save while the prove runs as you saved it, unpinned and unproven. It never pins approvals, branches or other flow steps.
+- **Resume several runs:** `POST /api/workflows/{id}/resume {"batchIds": [...]}` (1 to 20 runs) resumes each, oldest first, one after another, each as one Resume would. It answers `202` at once with each run's place: `queued`, or `refused` with why (it completed, isn't kept, or has nothing to run again). Each resume is a run of its own, and `resume_queue` events give every run's `state` (`queued`, `running`, `ended` with its `status`, `refused`) as the list goes. Mobster refuses a second list for the same workflow while one goes (`409 resume_busy`).
+- **The timeline:** `GET /api/workflows/{id}/runs/{runId}/timeline` lays a kept run out in time for scrubbing. `steps` gives each step's phone, `readyAt` (when everything it waits for had finished), `startedAt` and `finishedAt`, so you see where it waited and where it worked. `frames` lists every screen the steps' tasks kept, oldest first, each with its step; `GET /api/runs/{runId}/frames/{frameId}` returns one.
+- Mobster refuses a re-run (`409 rerun_unavailable`) when the run isn't kept, or when a step it needs didn't finish there or its result was too big to keep (256 KB). The answer names the step.
+- **Expression previews:** `POST /api/workflows/evaluate {"expression", "workflowId", "batchId", "node"}` works an expression out with the values that step had in that run.
+
+### From MCP and the terminal
+
+- **`run_workflow`** (MCP) follows a graph run to its end and answers with each step's state and the workflow's `result` ([MCP server](/mcp-server#run-a-saved-workflow)).
+- **`asTool: true`** on a published workflow makes it a tool of its own, typed from its inputs and blanks. It is off unless you turn it on, so your agent's tool list stays short. One definition serves every way in: `GET /api/workflows/tools` lists each tool's MCP `name` (`workflow_<slug>`), REST `path`, `inputSchema` and, when its Result step has a shape, `outputSchema`.
+  - **MCP:** the tool `workflow_<slug>`.
+  - **REST:** `POST /v1/workflows/<slug>` with the same input as the MCP tool and one `Idempotency-Key` header. It runs the published workflow and answers when the run ends, or after `wait_seconds` (30 by default, 45 at most) with `"status": "running"` and `202`. `GET /v1/workflows/<slug>` returns the tool's definition.
+  - **Shortcuts:** `POST /api/workflows/{id}/run` with `"trigger": "shortcut"` and `input` (text, at most 16,000 characters) starts the run at the graph's `trigger.shortcut`. `input` reaches later steps as data, never as their instructions. A graph with no Shortcut trigger enters at `trigger.manual`. A run on this Mac starts it this way: the Mac app's **Run Mobster Workflow** action ([Run a workflow from a shortcut](/launchers#run-a-workflow-from-a-shortcut)), or a script with Mobster's token. MCP, Remote and webhooks can't (`403 shortcut_only`).
+  - A slug is the workflow's name in lowercase words joined by `_`. A second workflow with the same name, or a name like a route (`draft`, `tools`), adds the first 4 characters of its id. An older workflow keeps its slug when you save a new one.
+
+```sh
+curl -X POST http://127.0.0.1:8765/v1/workflows/answer_dms \
+  -H "Idempotency-Key: dms-2026-10-16" -H "Content-Type: application/json" -d '{"who": "Sam"}'
+```
+
+```json
+{"workflowId": "aaaaaaaaaaaa", "status": "completed", "result": {"sent": 2}, "answer": null,
+ "runId": "000000000001", "batchId": "cccccccccccc", "steps": [{"instance": "read", "type": "app.read", "state": "done"}]}
+```
+- **`mobster workflow show NAME`** prints the published workflow's steps in the order they run, each with its type, its title and the steps it waits for. `--draft` shows the draft and `--json` prints the steps as JSON. It changes nothing.
+
+```text
+$ mobster workflow show "Answer DMs"
+“Answer DMs” (aaaaaaaaaaaa): published revision 2, 4 steps
+  start  Manual (trigger.manual)
+  read   Read an app (app.read), after start
+  ok     Ask me first (approval), after read: “Reply to them?”
+  reply  Phone task (phone.task), after ok (approved): “Reply to {who}”
+```
+
+- **`mobster chat --workflow NAME`** prints each step's state as it changes, then how the run ended. With `--json` it prints one object with every step. It exits 0 when the run completed, 1 when it didn't, and 4 when it still runs after `--wait` seconds.
+
+### Watch a run
+
+- `GET /api/workflows/{id}/runs` lists the newest 20 runs. Each graph run has `nodes`: every step's state (`pending`, `queued`, `running`, `waiting`, `done`, `skipped`, `failed`, `blocked`, `cancelled` or `unknown`), its reason, its task and phone, and a preview of its output. It also has the `log` and `rounds` the run view shows.
+- `GET /api/workflows/{id}/runs/{runId}/nodes/{step}` gives one step's full input, output and error, kept with the run.
+- `GET /api/workflows/{id}/runs/{runId}/nodes/{step}/frames` lists the screens that step's task kept, in order (`{at, frameId}`), to scrub through a past run. Each is `GET /api/runs/{taskId}/frames/{frameId}`.
+- The `workflows` event topic adds `batch_node` each time a step changes state, with the same fields. A running phone step carries `runId` and `deviceId`, so you can watch its screen.
+
+### Make a workflow from words
+
+`POST /api/workflows/draft {"words": "Every morning, read my Instagram DMs and thank everyone who wrote"}` answers `{draft: {name, graph}, drafter, errors}`. It saves nothing: the canvas shows the graph, and you edit it and save it.
+
+- **How the drafter plans:** Claude Haiku 5.5, on your Anthropic key, plans from the node types: app reads, loops, branches and approvals arrive as steps, not prose.
+- **How Mobster checks it:** it builds the graph by code and checks it as a save does. When the check finds problems, it gives the drafter the list, at most twice, and all of it within 45 seconds: when time runs out, the answer is the best plan so far. `errors` lists anything still wrong, each with the step it's about.
+- **Which apps a step can start in:** Apple's apps and each app Mobster reads by code (Instagram, TikTok, X, YouTube, Threads, LinkedIn, Reddit), before your iPhone lists them, and any app your iPhone lists. A saved task names one of these or none; another id is refused.
+- **Changing a workflow:** send `graph` with the words. The answer is the whole new graph and a `patch`: each step and edge added, removed or changed, for you to accept or reject one by one. Steps that stay keep their places.
+- **Without an Anthropic key,** the drafter is the plan Mobster's agent is set to, else your signed-in Claude Code or Codex (`drafter` is the agent's id), the way a task you type goes there. The answer's `drafted_by` is `model` or `rules`; with `rules`, `notes` says why, and a request cut to 12 steps says so.
+- **Without a key** (`drafter: "local"`): a leading or trailing schedule phrase (`every weekday at 9am`, `every day at 7:30pm`, `every Friday at 4pm`, `every hour`) becomes the Schedule trigger, with 9:00 when you give no time. Each sentence becomes a step, in order, and so does each action in a comma list when every part is at least three words (`open Settings, read the iOS version, and tell me if it changed`). A first step `Open <app>` starts in that app. A time it can't read (`at 25am`) stays in the step's words.
+- **From a conversation:** `POST /api/workflows/draft {"threadId"}`, Save as workflow, now also answers with the `graph` its steps make.
+
+### Expressions
+
+`{= ... }` works out a value from earlier steps: `{= count($node.read.rows) }`, `{= $input.answer ?? "nothing" }`. `{name}` stays a blank you fill in. A field that is only one `{= ... }` keeps the value's type, so `{= $node.read.rows }` is a list.
+
+- An expression reads `$input` (what arrived at the node), `$inputs` (the run's values), `$vars` (the graph's constants), `$node.<id>` (an earlier node's output), `$item` and `$index` (inside a loop) and `$run`.
+- It runs no code: JSON values, operators and a fixed list of functions (`len`, `contains`, `join`, `pluck`, `where`, `sort`, `round`, `date`, `if`, `default` and the rest; `/api/workflows/node-types` names them).
+- Anything that can't apply is an error, and the node stops: comparing text with a number, `and` on text, dividing by zero. A branch never guesses.
+- A phone step's words and an `ai.ask` instruction read only your own values (`$inputs`, `$vars`, `$run`, a saved row or a loop's phone). What a step read from a screen reaches a model only as its input, marked as data. Saving refuses anything else: "Screen text can't become a step's instructions."
+- `POST /api/workflows/evaluate {"expression", "scope"}` answers `{value, type}`, or `400 invalid_expression` with where it went wrong.
+
+### Drafts, publishing and versions
+
+- **A graph you save is a draft.** `POST /api/workflows/{id}` with `graph` saves it, and the run that starts from a schedule, a webhook, MCP, Remote or Run is still the published one. Send `"publish": true` with it, or `POST /api/workflows/{id}/publish {"revision": n}`, to make it the one that runs. A schedule changed in a draft starts when you publish it.
+- **The card builder publishes as it saves.**
+- **Mobster keeps every save,** the newest 100. `GET /api/workflows/{id}/versions` lists them with what changed and which one is live. `GET /api/workflows/{id}/versions/{n}` returns one. `GET /api/workflows/{id}/versions/{a}/diff/{b}` lists the nodes and edges that changed.
+- **`POST /api/workflows/{id}/rollback {"revision", "current"}`** saves an old version as the newest and publishes it. It deletes nothing.
+- The name, the phone, the profile, where results go and whether the schedule is on apply at once. They aren't part of a draft.
+- **In a project, the published version is a file** in `.mobster/workflows`: publishing writes it, and Mobster publishes an edited file as a new revision. Saving a draft never touches it ([Workflows as files](/projects#workflows-as-files)).
+
+### Checks when you save
+
+`POST /api/workflows/validate {"graph"}` checks a graph without saving it, as every save does. A graph that can't be saved answers `400 invalid_graph` with `errors`: each problem with the `node`, `edge`, `port` or `field` it is about. It refuses a cycle, a node no trigger reaches, a port a type doesn't have, an edge whose value the next port can't take, an expression that can only fail, a pin that doesn't fit its port, and anything past these limits: 100 nodes, 300 edges, 10 edges out of one port, loops 2 deep, 200 rounds, 512 KB.
+
+## The format
+
+Mobster saves a workflow's cards with it, in the `steps`, `repeat` and `limits` fields of `POST /api/workflows` and `POST /api/workflows/{id}`:
+
+```json
+{
+  "name": "Birthday texts",
+  "steps": [
+    {"id": "a", "kind": "task", "text": "Open Messages and text {name} happy birthday", "appId": null},
+    {"id": "b", "kind": "send", "to": "notification", "what": "last"}
+  ],
+  "repeat": {"kind": "each", "rows": [{"name": "Sam"}, {"name": "Kate"}]},
+  "limits": {"maxSpendUsd": 2, "maxMinutes": 60}
+}
+```
+
+- `kind` is `task`, `taught` (`workflowId`), `wait` (`seconds`), `send` (`to`: `notification`, `clipboard`, `file` or `destination` with `destination`; `what`: `last` or `all`), `connector` (`connector`: a connector's id, `tool`, `arguments`: one JSON object) in Mobster for Mac, or `brief` (optional `title`).
+- A brief's result is a finished task with `summary.brief`: `runs` (the tasks it holds, in order), `sources` (each card's task and card), `spentUsd` and `seconds` (the whole run of the workflow), and `title`. Its `batch_notification` has `runId`.
+- `repeat` is `null`, `{"kind": "times", "times": 3}`, `{"kind": "each", "rows": [...] | null}` or `{"kind": "until", "check": "…", "max": 10}`.
+- Mobster writes the workflow's `goal` from the cards: each task's words, one per line. A workflow saved before 13 Oct 2026 opens as one task card with its words and app.
+- Cards and a graph are two ways to send the same thing. Mobster saves a body with `steps` as the graph they make, and the answer has both: `graph`, and `steps`, `repeat` and `limits` while the graph is steps in a row (else `null`). A body can't send both.
+- `POST /api/workflows/{id}/run` takes `rows` for a loop over rows. Its answer adds `batch`: the run's `rounds`, its `log` and its `status`. `run` is the first task, or `null` while the run waits before it.
+- `GET /api/workflows/{id}/runs` lists the newest runs. `POST /api/workflows/{id}/stop` stops the one running, or answers `409 not_running`.
+- The event stream's `workflows` topic (`GET /api/events?topics=workflows`) has `batch_started`, `batch_step`, `batch_finished` and `batch_notification`.
+- `produces`: the [result blocks](/results) the workflow hands back, 1 to 3 of `review_queue`, `table`, `media_list`, `evidence`, `checklist`, `markdown` and `chart`, or `null`. The Apps page shows the workflow with a preview of the first. Saving a task as a workflow fills it in from the blocks the task handed back. Nothing in a run reads it.

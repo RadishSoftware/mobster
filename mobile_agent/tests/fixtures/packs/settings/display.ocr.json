@@ -1,0 +1,170 @@
+{
+"note": "Recorded on the test device (iPhone 15 Pro, iOS 26.0.1), 12 Oct 2026: the rows the agent saw, scrubbed (the account's name, the phone's name; serial and model numbers dropped). The same screen read by Vision OCR (iPhone Mirroring's reading).",
+"rows": [
+{
+"text": "9:54 C",
+"confidence": 1,
+"rect": [
+0.1051,
+0.025,
+0.1559,
+0.0203
+]
+},
+{
+"text": "80-",
+"confidence": 1,
+"rect": [
+0.8508,
+0.0266,
+0.0746,
+0.0172
+]
+},
+{
+"text": "Display & Brightness",
+"confidence": 1,
+"rect": [
+0.278,
+0.0829,
+0.4508,
+0.0266
+]
+},
+{
+"text": "Appearance",
+"confidence": 1,
+"rect": [
+0.0808,
+0.1702,
+0.2686,
+0.0222
+]
+},
+{
+"text": "9:41",
+"confidence": 1,
+"rect": [
+0.2847,
+0.2379,
+0.0746,
+0.0156
+]
+},
+{
+"text": "9:41",
+"confidence": 1,
+"rect": [
+0.6407,
+0.2363,
+0.078,
+0.0172
+]
+},
+{
+"text": "Light",
+"confidence": 1,
+"rect": [
+0.2706,
+0.3812,
+0.1096,
+0.0216
+]
+},
+{
+"text": "Dark",
+"confidence": 1,
+"rect": [
+0.6305,
+0.3818,
+0.1051,
+0.0188
+]
+},
+{
+"text": "Automatic",
+"confidence": 1,
+"rect": [
+0.0812,
+0.4769,
+0.2139,
+0.0195
+]
+},
+{
+"text": "Text Size",
+"confidence": 1,
+"rect": [
+0.0813,
+0.5805,
+0.1865,
+0.019
+]
+},
+{
+"text": "Bold Text",
+"confidence": 1,
+"rect": [
+0.081,
+0.6425,
+0.1939,
+0.0218
+]
+},
+{
+"text": "Brightness",
+"confidence": 1,
+"rect": [
+0.0812,
+0.7288,
+0.2377,
+0.0213
+]
+},
+{
+"text": "True Tone",
+"confidence": 1,
+"rect": [
+0.0813,
+0.8402,
+0.2036,
+0.0176
+]
+},
+{
+"text": "Automatically adapt iPhone display based on",
+"confidence": 1,
+"rect": [
+0.0814,
+0.8905,
+0.7254,
+0.0172
+]
+},
+{
+"text": "ambient lighting conditions to make colors appear",
+"confidence": 1,
+"rect": [
+0.0814,
+0.9092,
+0.8068,
+0.0156
+]
+},
+{
+"text": "consistent in different environments.",
+"confidence": 1,
+"rect": [
+0.0814,
+0.928,
+0.6,
+0.0141
+]
+}
+],
+"hash": "display",
+"window": {
+"w": 589,
+"h": 1278
+}
+}

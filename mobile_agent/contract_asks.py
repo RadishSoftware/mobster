@@ -3,9 +3,18 @@ and the check for TAP_XY (``point_ask``). Built on the screen readers of contrac
 
 import re
 
-from .contract_screen import (ACTS, COMMIT_WORDS, Item, SWITCH_ROLES, internal_name, label_verbs, plain, point_in,
-                              recipient, same_party)
-
+from .contract_screen import (
+    ACTS,
+    COMMIT_WORDS,
+    SWITCH_ROLES,
+    Item,
+    internal_name,
+    label_verbs,
+    plain,
+    point_in,
+    recipient,
+    same_party,
+)
 
 # ---------------------------------------------------------------- plan line and approvals (the Mac app)
 
@@ -106,7 +115,8 @@ def approval_title(item, amount=None, shown=None):
 # ---------------------------------------------------------------- taps at a point (TAP_XY)
 
 # Elements that hold others rather than being one control: a point inside one says nothing about what it hits.
-CONTAINER_ROLES = frozenset({"Other", "Window", "Application", "ScrollView", "Table", "CollectionView", "WebView", "Map",
+CONTAINER_ROLES = frozenset({"Other", "Window", "Application", "ScrollView", "Table", "CollectionView", "WebView",
+                             "Map",
                              "Group", "LayoutArea", "LayoutItem", "NavigationBar", "TabBar", "Toolbar", "Keyboard",
                              "Sheet", "Alert", "Popover"})
 # A row's trailing quarter is where its own controls sit (a heart, a Follow, a switch): a point there is not the row.

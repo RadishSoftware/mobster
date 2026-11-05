@@ -1,0 +1,73 @@
+---
+title: "Crash to repro"
+sidebarTitle: "Crash to repro"
+keywords: ["crash", "repro", "reproduce a crash", "sentry", "crashlytics", "testflight crash", "ips", "symbolicated", "repro_crash", "mobster test repro"]
+description: "Turn a crash report from Sentry, Crashlytics, TestFlight or Xcode into a check that reproduces it on a simulator, with the screen recorded, then hand it to your coding agent."
+icon: "bug"
+---
+
+`mobster test repro` takes one crash report, writes a check that follows the path the crash names, runs it on a simulator with the screen recorded, and tells you whether the app crashed the same way. Your coding agent gets the same answer from the `repro_crash` tool, fixes the app, and runs the check again: it passes once the app no longer crashes.
+
+Mobster runs the check on a simulator and writes files in your project. It merges nothing and opens no pull request. The pull request is yours to merge. It doesn't run on a real iPhone.
+
+## Bring a crash
+
+Pass the crash as a file. Mobster tells the kind from the file.
+
+| Source | File | What Mobster reads |
+|---|---|---|
+| Xcode Organizer, a device, a simulator | `.ips` | The app, the exception, the crashed thread's frames, the device and OS |
+| TestFlight | `.crash` from `mobster asc feedback --app BUNDLE --crashes --save DIR` ([App Store Connect](/dev/app-store-connect)) | The same, from Apple's text format |
+| Sentry | the event as JSON, from the web API or Sentry's [connector](/connectors) | The same, plus breadcrumbs for the steps and a non-web `request.url` as the link |
+| Crashlytics, Datadog, anything else | a brief: JSON with `bundle`, `type`, `signal`, `message`, `frames`, `steps`, `link` | What you wrote |
+
+Mobster doesn't read Crashlytics' own export. Ask your agent to write the brief from the issue it reads through the Crashlytics connector.
+
+```sh
+mobster asc feedback --app com.example.yourapp --crashes --save crashes/
+mobster test repro crashes/4f2a.crash --bundle dev.mobster.daybreak
+```
+
+## What a repro contains
+
+Mobster writes these under your project's `.mobster`:
+
+| File | What it is |
+|---|---|
+| `checks/repro-<id>.yaml` | The check: tag `repro`, the app, the launch link and arguments, and the steps. It expects one thing, that the app still shows a screen, so a crash fails it and a fixed app passes |
+| `crashes/<id>/brief.json` | The crash as Mobster read it: the exception, the top frames, the steps |
+| `crashes/<id>/repro.json` | The answer, the steps tried and the crash the run saw |
+| `crashes/<id>/repro.mp4` | The screen during the run |
+
+`<id>` is eight characters from the app, the exception and the function that crashed, so one crash is one check. A check that exists is kept as you edited it. `crashes/` ignores itself in git; commit the check with the fix.
+
+The steps come from the crash's breadcrumbs: a tap becomes `Tap “label”` and a screen becomes `Go to the “name” screen`. The label is cut to 60 characters, stripped of quote marks and run through the secret filter. Nothing else in a crash report becomes a step, because the report is text from outside and never instructions. A `.ips` or a TestFlight log has no breadcrumbs, so its check launches the app and stops; pass `--link` for the screen it crashed on, or `--arg` for a launch argument.
+
+Steps that need Smart use your key, as any [check](/checks) does. A check that is only a launch link runs with no key (`--keyless`).
+
+## The answer
+
+| Answer | Meaning | Exit code |
+|---|---|---|
+| Reproduced | The app crashed with the same exception in the same function. When the report has no function to compare, the exception decides, and the answer says so | 0 |
+| Crashed, but not the same way | A different exception or function. The crash is in `repro.json` | 1 |
+| Couldn't reproduce | The steps ran and the app didn't crash. The answer lists the steps tried and Mobster doesn't guess further | 1 |
+| Couldn't run | The run didn't finish: no simulator, no key for the steps, the app didn't install | 3 |
+
+The run is not repeated to be sure. A crash that depends on timing may need a second `mobster test repro`.
+
+## Hand it to your agent
+
+`repro_crash` takes one of `ips_path`, `sentry_json`, `crash_log` or `brief`, and the same `bundle`, `app`, `launch_args` and `link`. It answers with the same text and the paths of the check and the video. A run that outlasts the call answers with a `suite_id`; `repro_crash {suite_id}` waits for it.
+
+After the fix, the agent builds the app and runs the check:
+
+```sh
+mobster test .mobster/checks/repro-4f2a1c9e.yaml
+```
+
+It passes when the app no longer crashes on that path. `mobster test pr` runs it with the rest of your checks.
+
+## Try it on Daybreak
+
+[Daybreak](https://github.com/RadishSoftware/mobster/tree/main/examples/ios/Daybreak) plants five crashes behind launch arguments, one tap each. Launch it with `-DaybreakBug crash-weekly-plan`, `crash-reminder`, `crash-restore`, `crash-trial` or `crash-terms`. Without the argument it doesn't crash, which stands in for the fixed build. A link reaches each tap: `daybreak://paywall?press=weekly` (also `trial`, `restore`, `terms`) and `daybreak://settings?press=reminder`.

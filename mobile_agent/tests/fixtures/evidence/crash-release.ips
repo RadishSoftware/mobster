@@ -1,0 +1,122 @@
+{"app_name": "CrashFixture", "timestamp": "2026-10-16 16:30:55.00 -0700", "app_version": "1.0", "slice_uuid": "a57ecc64-3c86-361f-a9d0-103a21f6168c", "build_version": "1", "platform": 7, "bundleID": "software.radish.mobster.crashfixture", "bug_type": "309", "os_version": "macOS 26.5.1 (25F80)", "name": "CrashFixture"}
+{
+  "procName": "CrashFixture",
+  "procPath": "/Users/USER/Library/Developer/CoreSimulator/Devices/11111111-2222-3333-4444-555555555555/data/Containers/Bundle/Application/7144A22E-42BE-496A-BD45-9F1A26F89CC5/CrashFixture.app/CrashFixture",
+  "pid": 218,
+  "parentProc": "launchd_sim",
+  "parentPid": 24366,
+  "captureTime": "2026-10-16 16:26:56.5668 -0700",
+  "exception": {
+    "codes": "0x0000000000000001, 0x0000000104dc6b80",
+    "rawCodes": [
+      1,
+      4376521600
+    ],
+    "type": "EXC_BREAKPOINT",
+    "signal": "SIGTRAP"
+  },
+  "termination": {
+    "flags": 0,
+    "code": 5,
+    "namespace": "SIGNAL",
+    "indicator": "Trace/BPT trap: 5",
+    "byProc": "exc handler",
+    "byPid": 218
+  },
+  "bundleInfo": {
+    "CFBundleShortVersionString": "1.0",
+    "CFBundleVersion": "1",
+    "CFBundleIdentifier": "software.radish.mobster.crashfixture"
+  },
+  "coalitionName": "com.apple.CoreSimulator.SimDevice.11111111-2222-3333-4444-555555555555",
+  "bug_type": "309",
+  "cpuType": "ARM-64",
+  "procRole": "Foreground",
+  "faultingThread": 0,
+  "threads": [
+    {
+      "triggered": true,
+      "id": 1,
+      "queue": "com.apple.main-thread",
+      "frames": [
+        {
+          "imageOffset": 11136,
+          "imageIndex": 0
+        },
+        {
+          "imageOffset": 4476,
+          "imageIndex": 0
+        },
+        {
+          "imageOffset": 114328,
+          "symbol": "_dispatch_client_callout",
+          "symbolLocation": 12,
+          "imageIndex": 1
+        },
+        {
+          "imageOffset": 24680,
+          "symbol": "_dispatch_continuation_pop",
+          "symbolLocation": 776,
+          "imageIndex": 1
+        },
+        {
+          "imageOffset": 102212,
+          "symbol": "_dispatch_source_invoke",
+          "symbolLocation": 1800,
+          "imageIndex": 1
+        },
+        {
+          "imageOffset": 68388,
+          "symbol": "_dispatch_main_queue_drain",
+          "symbolLocation": 644,
+          "imageIndex": 1
+        },
+        {
+          "imageOffset": 67728,
+          "symbol": "_dispatch_main_queue_callback_4CF",
+          "symbolLocation": 40,
+          "imageIndex": 1
+        },
+        {
+          "imageOffset": 603328,
+          "symbol": "__CFRUNLOOP_IS_SERVICING_THE_MAIN_DISPATCH_QUEUE__",
+          "symbolLocation": 12,
+          "imageIndex": 2
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "frames": []
+    }
+  ],
+  "usedImages": [
+    {
+      "source": "P",
+      "arch": "arm64",
+      "base": 4376510464,
+      "size": 32768,
+      "uuid": "a57ecc64-3c86-361f-a9d0-103a21f6168c",
+      "path": "/Users/USER/Library/Developer/CoreSimulator/Devices/11111111-2222-3333-4444-555555555555/data/Containers/Bundle/Application/7144A22E-42BE-496A-BD45-9F1A26F89CC5/CrashFixture.app/CrashFixture",
+      "name": "CrashFixture"
+    },
+    {
+      "source": "P",
+      "arch": "arm64",
+      "base": 6444040192,
+      "size": 283584,
+      "uuid": "746b681e-29ce-3657-abc0-6fce3d59da62",
+      "path": "/Volumes/VOLUME/*/libdispatch.dylib",
+      "name": "libdispatch.dylib"
+    },
+    {
+      "source": "P",
+      "arch": "arm64",
+      "base": 6446174208,
+      "size": 4394656,
+      "uuid": "60b1c025-06f0-35b4-9149-fe4b24bd02d1",
+      "path": "/Volumes/VOLUME/*/CoreFoundation.framework/CoreFoundation",
+      "name": "CoreFoundation"
+    }
+  ]
+}

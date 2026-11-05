@@ -1,12 +1,10 @@
 """Private, crash-safe local run journal. Intent is durable before a device mutation."""
 
-from contextlib import contextmanager
 import fcntl
 import hashlib
 import json
 import logging
 import os
-from pathlib import Path
 import re
 import sqlite3
 import stat
@@ -15,6 +13,8 @@ import sys
 import tempfile
 import threading
 import time
+from contextlib import contextmanager
+from pathlib import Path
 
 from . import usage
 from .errors import MobsterError
@@ -25,8 +25,7 @@ class JournalError(MobsterError):
 
 
 class LeaseHeld(JournalError):
-    """Another process holds this lease: the phone or the journal is in use, nothing is damaged. ``owner`` names
-    which Mobster holds a phone's lease when its record could be read and still matches that live process."""
+    """Another process holds this lease: the phone or the journal is in use, nothing is damaged."""
 
     def __init__(self, message, owner=None):
         super().__init__(message)
@@ -56,8 +55,7 @@ def append_jsonl(path, event):
         raise JournalError("Run journal could not be saved; no further device action authorized") from None
 
 
-# A Smart turn journals at least four events (inference_started, inference_finished, frontier_decision, cost) plus
-# about two per action: 1,024 ended a 200-step run near step 150 (SPEC S5).
+# A Smart turn journals four events plus about two per action: 1,024 ended a 200-step run near step 150 (SPEC S5).
 EVENT_LIMIT = 4096
 RUN_BYTE_LIMIT = 16_000_000
 TERMINAL_BYTE_LIMIT = 1_000_000
@@ -68,11 +66,7 @@ REQUEST_LIMIT = 10000
 # How long Lease.device tries again while a lease is held (a device listing's probe holds it for an instant).
 DEVICE_LEASE_WAIT = 0.1
 DEVICE_LEASE_RETRY = 0.02
-# The folder Lease.device locks in, for the test suites only. None, as in every Mobster process, is the data folder
-# and, for the earlier builds' lock, the temporary folder. The test packages point it at a folder of each test
-# process's own (mobile_agent/tests/__init__.py): a test's lease never meets the lease of the Mac app, `mobster serve`
-# or a benchmark on the same phone or simulator. It is no setting and no environment variable on purpose: two real
-# processes that disagreed on it could drive one phone.
+# The test suites' lease folder. Never a setting or env var: two processes that disagreed on it could drive one phone.
 _LEASE_ROOT = None
 
 
@@ -98,18 +92,7 @@ class Lease:
 
     @classmethod
     def device(cls, identity, wait=DEVICE_LEASE_WAIT, udid=None):
-        """The one lease per phone, whoever asks: the Mac app, `mobster serve`, `run` or the terminal UI.
-
-        Its folder is fixed per user (the data folder), not the temporary folder: $TMPDIR differs between a
-        login shell, ssh, cron and launchd, and two processes that disagree on it could drive one phone.
-
-        A lease held is tried again for up to ``wait`` seconds: listing devices (devices.lease_free, wait=0)
-        takes each phone's lease for an instant to see whether it is free, and a task starting at that instant
-        must not be refused as if the phone were in use.
-
-        ``udid`` adds the phone's own lease, keyed by its UDID however it is reached (``phone``): two Mobsters that
-        reach one phone by different addresses (a leftover dev relay and the direct link) meet there.
-        """
+        """The one lease per phone, whoever asks, in the data folder: $TMPDIR differs in a shell, cron and launchd."""
         deadline = time.monotonic() + max(0.0, wait)
         while True:
             try:
@@ -132,10 +115,7 @@ class Lease:
 
     @classmethod
     def phone(cls, udid):
-        """The one lease per phone UDID on this Mac, whatever address reaches it. The holder writes its pid and exact
-        command line into the file, so a refused Mobster can say which one has the phone. The lock is the flock, which
-        the system drops when the holder dies: a dead holder's lease is simply free to take, and its record is
-        replaced. A record whose pid is gone or whose command line differs (a reused pid) is never named."""
+        """The one lease per phone UDID, whatever address reaches it; it records its holder for a refusal to name."""
         path = cls._lease_directory() / ("phone-" + hashlib.sha256(str(udid).encode()).hexdigest() + ".lock")
         try:
             lease = cls(path)
@@ -164,9 +144,7 @@ class Lease:
             raise
         if phone is not None:
             lease.legacy.append(phone)
-        # Builds up to 0.1.0 lock the address as spelled, in the temporary folder. The Mac app's bundled agent
-        # and the CLI update apart, so an older one may be driving this phone under that lock alone: hold it
-        # too, and treat it held as the phone in use.
+        # Builds up to 0.1.0 lock the address as spelled in the temporary folder; one may still drive this phone.
         try:
             for spelling in legacy_device_spellings(identity):
                 held = cls._legacy_device(spelling)
@@ -179,8 +157,7 @@ class Lease:
 
     @classmethod
     def _legacy_device(cls, spelling):
-        """The earlier builds' lock for this spelling, or None where it cannot be taken for another reason
-        than being held (its folder missing or not private): that lock then guards nothing."""
+        """The earlier builds' lock for this spelling, or None when its folder is missing or not private."""
         root = tempfile.gettempdir() if _LEASE_ROOT is None else _LEASE_ROOT
         directory = Path(root) / f"mobster-device-leases-{os.getuid()}"
         try:
@@ -231,8 +208,7 @@ def describe(command):
 
 
 def holder_of(path):
-    """Who holds the lease at ``path``, in words, or None when the record is unreadable, its pid is gone, or the pid's
-    command line is no longer the recorded one (the pid was reused): a record that no longer matches is not named."""
+    """Who holds the lease at ``path``, in words, or None unless its recorded pid still runs its recorded command."""
     try:
         record = json.loads(Path(path).read_text())
         pid, command = int(record["pid"]), str(record["command"])
@@ -244,8 +220,7 @@ def holder_of(path):
 
 
 def legacy_device_spellings(identity):
-    """The names builds up to 0.1.0 gave this phone's lock: the address as each caller spelled it (the Mac app
-    without a trailing slash, `mobster run` as typed), a socket path resolved."""
+    """The names builds up to 0.1.0 gave this phone's lock."""
     text = str(identity)
     if text.startswith("/"):
         return [str(Path(text).resolve())]
@@ -253,9 +228,7 @@ def legacy_device_spellings(identity):
 
 
 def device_identity(identity):
-    """One name per phone however its address is spelled: a socket path resolved; a WDA URL as host and port,
-    with the scheme's default port filled in, the path dropped, and every loopback spelling (localhost,
-    127.0.0.1, ::1, ::ffff:127.0.0.1) one host."""
+    """One name per phone however it is spelled: a socket path resolved, a URL as host and port, loopback as one."""
     import ipaddress
     from urllib.parse import urlsplit
     text = str(identity)
@@ -293,23 +266,13 @@ SCHEMA_NAME = re.compile(r"[a-z_]{3,32}")
 
 
 def disable_track(track, reason):
-    """Turn ``track`` off because its schema can't be used: tracks.disable when the harness is there (it records the
-    reason too, through the track_disabled hook), else harness_api.disable."""
+    """Turn ``track`` off because its schema can't be used."""
     from . import harness_api
-    disabled = harness_api.hook("track_disabled")
-    if disabled is not None:
-        disabled(track, reason)
-    else:
-        harness_api.disable(track)
+    harness_api.hooks().track_disabled(track, reason)
 
 
 def register_schema(name, version, migrate):
-    """A track's tables in the journal. ``migrate(conn, from_version)`` runs inside BEGIN IMMEDIATE and creates or
-    alters only its own tables (``from_version`` 0: none yet). When a journal opens, for each schema in name order:
-    a stored version newer than ``version`` turns the track off ("error: newer data": its routes answer 503); an
-    older one migrates in its own transaction, and a migration that raises rolls back and turns the track off
-    ("error: migration"). The run journal always opens; PRAGMA user_version stays 1, so older builds still open
-    the file and ignore the new tables."""
+    """A track's tables: ``migrate(conn, from_version)`` runs inside BEGIN IMMEDIATE and alters only its own tables."""
     if not isinstance(name, str) or not SCHEMA_NAME.fullmatch(name):
         raise ValueError("A schema's name is 3 to 32 lowercase letters or underscores")
     if not isinstance(version, int) or isinstance(version, bool) or version < 1:
@@ -375,8 +338,7 @@ class Journal:
             raise JournalError("Cannot open the run journal; existing data was not reset") from None
 
     def _migrate_schemas(self):
-        """Bring each registered track schema up to date, each in its own transaction (see register_schema).
-        Never raises: a schema only ever turns its own track off (``disable_track``)."""
+        """Bring each schema up to date in its own transaction. Never raises: a failing one turns off its own track."""
         for name in sorted(SCHEMAS):
             version, migrate = SCHEMAS[name]
             track = SCHEMA_OWNERS.get(name, name)
@@ -410,8 +372,7 @@ class Journal:
                 disable_track(track, "error: migration")
 
     def add_expiry_listener(self, fn):
-        """``fn(run_ids)`` after create()'s retention and delete() commit, with the removed run ids. Exceptions
-        are logged."""
+        """``fn(run_ids)`` after create()'s retention and delete() commit, with the removed run ids."""
         if not callable(fn):
             raise ValueError("An expiry listener is a function")
         self.expiry_listeners.append(fn)
@@ -450,9 +411,18 @@ class Journal:
             connection.execute("INSERT INTO runs(id,data) VALUES (?,?)", (metadata["id"], encode(metadata)))
             if key:
                 connection.execute("INSERT INTO requests VALUES (?,?,?)", (key, metadata["id"], fingerprint))
-            # Retention and insertion are one commit. A failed task must not erase history.
-            expired = [row[0] for row in connection.execute(
-                "SELECT id FROM runs ORDER BY rowid DESC LIMIT -1 OFFSET 100")]
+            # Keep every unfinished task's intent, plus the newest 100 finished tasks. A slow task can outlive
+            # many short tasks on other phones; deleting it would make its next action impossible to journal.
+            expired, finished = [], 0
+            for identifier, data in connection.execute("SELECT id,data FROM runs ORDER BY rowid DESC"):
+                try:
+                    finished_at = json.loads(data).get("finishedAt")
+                except (TypeError, ValueError, AttributeError):
+                    continue  # an old or malformed row has no trustworthy terminal marker
+                if type(finished_at) in (int, float) and finished_at > 0:
+                    finished += 1
+                    if finished > 100:
+                        expired.append(identifier)
             connection.executemany("DELETE FROM runs WHERE id=?", [(identifier,) for identifier in expired])
             # Request tombstones deliberately survive run retention, preventing replay.
         self._expired(expired)
@@ -460,9 +430,7 @@ class Journal:
 
     @staticmethod
     def _make_room(connection):
-        """Keep at most REQUEST_LIMIT request keys: once full, forget the oldest keys whose run already left
-        history (a retry that late comes thousands of tasks after it). A key whose run is kept is never
-        forgotten, so a replay of any task still in history returns that task."""
+        """Keep at most REQUEST_LIMIT request keys; a key whose run is still in history is never forgotten."""
         excess = connection.execute("SELECT count(*) FROM requests").fetchone()[0] - REQUEST_LIMIT + 1
         if excess > 0:
             connection.execute("""DELETE FROM requests WHERE rowid IN (SELECT rowid FROM requests
@@ -536,8 +504,7 @@ class Journal:
             return usage.plan_since(self.connection, since_ms)
 
     def delete(self, run_id):
-        """Remove a run and its events. Usage rows and request tombstones stay: spend already happened,
-        and a replayed request must not start the task again."""
+        """Remove a run and its events; usage rows and request tombstones stay, so a replay never starts it again."""
         with self.transaction() as connection:
             deleted = connection.execute("DELETE FROM runs WHERE id=?", (run_id,)).rowcount == 1
         if deleted:

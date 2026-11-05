@@ -1,0 +1,37 @@
+{
+ "ok": true,
+ "window": {
+  "x": 47,
+  "y": 143,
+  "w": 318,
+  "h": 701,
+  "id": 4242
+ },
+ "hash": "cccc000000000003",
+ "dark": 0.15,
+ "pixels": [
+  636,
+  1402
+ ],
+ "ms": {
+  "capture": 22,
+  "total": 40
+ },
+ "rows": [
+  {
+   "text": "iPhone Mirroring Is Locked",
+   "confidence": 1.0,
+   "rect": [
+    0.1,
+    0.4,
+    0.8,
+    0.025
+   ]
+  }
+ ],
+ "blocked": true,
+ "login": true,
+ "said": [
+  "iPhone Mirroring Is Locked"
+ ]
+}

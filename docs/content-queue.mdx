@@ -1,0 +1,191 @@
+---
+title: "Content queue"
+"og:title": "Content queue: line up posts for your profiles"
+sidebarTitle: "Content queue"
+keywords: ["content queue", "schedule posts", "instagram", "tiktok", "bulk post", "csv", "several phones", "batch approval", "posting report"]
+description: "Line up posts with their media, caption, hashtags and sound, give each a profile and a time, and Mobster posts them from the right iPhone after you approve."
+icon: "list-video"
+---
+
+The content queue posts for your profiles. Drop in photos and videos, write each post's caption, hashtags and sound, and give it a profile and a time. A profile names the app and the iPhone it's signed in on ([Profiles](/profiles)). When a post is due, Mobster sends its media to that iPhone, opens the app, writes the post, checks the signed-in profile on screen, and stops at **Post** for your approval. Posts on different iPhones go at the same time.
+
+Mobster never posts without your approval. You approve each post on its card, or you approve the whole batch at once. A post whose outcome Mobster can't confirm is never posted again by Mobster: it waits for you to look.
+
+## Line up posts
+
+Open a profile under **Profiles** in the sidebar to see its **Queue** tab. Each profile has its own queue. **Draft a post** comes first there: it opens the task box as the profile, such as `As @getmobster on Instagram, draft a post about `, for you to finish. When the task ends, its post lands in this queue as the profile's draft, and it goes out only once you add its photos. **Queue** in ⌘K and `/queue` open your only profile's queue, or Settings › **Profiles** to pick one when you have several. On a profile's tab, **Start @getmobster's posts** sends that profile's posts alone, from its own iPhone, and **Stop** stops them. Another profile's posts wait for their own **Start**, and their times stay theirs. The API's `POST /api/queue/<id>/start?profile=<id>` does the same, and without `profile` it starts every profile's posts in the queue.
+
+- **Drop photos and videos** onto the page. Each photo or video becomes a separate post. A dropped folder adds photos and videos from its subfolders too. Text files dropped with the media are not used as captions.
+- **Add posts** opens a menu. It sits under "No posts yet" while the queue is empty, then at the end of the row of controls beside **Start @getmobster's posts**. With no profile yet, **Add a profile** sits beside it and opens Settings › Profiles. **Choose photos and videos** and **Choose a folder** use the Mac's own picker, and their files stay where they are. With **Choose a folder**, Mobster adds photos and videos directly inside the folder, in name order. It skips subfolders. A matching `.txt` file beside a photo or video supplies its caption (`beach.jpg` and `beach.txt`). Dropped files are copied into Mobster's data folder, up to 4 GB each.
+- **Add posts › Import a CSV** adds one post a row ([CSV columns](#csv-columns)). It's in the Mac app only, because it reads the file where it is.
+
+On each post, write the caption, the hashtags (`#spring #sale`, or `spring, sale`) and a sound, choose its profile, and **Set a time**. A post with no time goes when the queue starts. A caption is at most 2,200 characters with its hashtags, and a post has at most 10 photos or videos (a carousel).
+
+## Drafts
+
+A draft is a caption and a profile with no photos or videos yet. It shows **Add photos** and never goes out as it is: starting the queue skips it, and it is not part of a batch approval or a client link. Add 1 to 10 photos or videos and it becomes a normal post that waits for its time and its approvals like any other. A new post is a draft when its body has `"draft": true` and no `media`; a caption you edit on a draft leaves it a draft.
+
+A task can leave its result as a draft. Start it with `extras.queueDraft = {queue, profile}` (the queue's id and a profile's id; both must exist, or the task is refused when it starts). When the task finishes with a text result, that text becomes one draft in that queue for that profile, cut to 2,200 characters. A task that fails, stops, or ends with no text adds nothing, and no other post in the queue changes.
+
+## Watch a folder
+
+**Watch a folder** turns a folder into a drop box: every new photo or video saved there joins the queue as a post for the profile you choose, with the text file beside it as its caption. Files already in the folder when you start watching stay out. A file still being written waits until it hasn't changed for 10 seconds. In a queue that approves the batch, new posts arrive unapproved: **Approve N** shows them. Mobster checks the folder while the queue runs.
+
+## Start it
+
+Choose how posts are approved, then **Start @getmobster's posts**:
+
+| Approval | What happens at Post |
+| --- | --- |
+| **Ask before each post** | each post shows its approval card in Mobster, "As @getmobster on Instagram", and waits for you |
+| **Approve the batch** | **Approve N** covers the posts as they are now. Mobster answers each of their Post cards for you, once, and only for that profile in that app. A post you change afterwards asks again. Any other card (a message, a follow, a purchase) still waits for you |
+
+Either way, Mobster checks the signed-in profile on screen before it posts (`CHECK_PROFILE`), and stops if another profile is signed in. A queued post's task asks at least before posting in every permission mode, and a "Don't ask again" you gave elsewhere doesn't apply to it.
+
+Phones that start in the same moment start apart: 90 seconds by default, or 30 seconds, 5 minutes, or together, from the menu beside the approval choice.
+
+For each due post, on its profile's iPhone:
+
+1. **Send the media.** Mobster sends the photos and videos into Photos, in the album Mobster, dated now so they're first in the app's picker. It uses the route that reaches the phone (the cable, Wi-Fi, AirDrop, iPhone Mirroring) and checks each file ([Transfers](/files#photos-and-videos)). If a file doesn't arrive, the post stops here and nothing is posted.
+2. **Write and post.** Mobster's agent opens the app, picks the media in order, adds the sound and the caption, and taps Post, which waits for your approval.
+3. **Copy the link.** After it posts, the agent taps Copy link, and the queue reads the link from the phone's clipboard.
+
+## Check the iPhone first
+
+<Info>Experimental. Set `MOBSTER_QUEUE_PREFLIGHT=1` in the env file to turn these checks on. Each iPhone then rebuilds Mobster's helper once, about 115 seconds (measured 17 Oct 2026, M5 Max and iPhone 15 Pro), because the checks need two small routes in it. Nothing below happens without the flag.</Info>
+
+With the flag on, Mobster looks at the iPhone before it sends anything, and never works around what it sees.
+
+| It sees | What happens |
+| --- | --- |
+| The iPhone is locked, or Mobster can't tell | The post stays **Ready** with "Waiting for the phone: it's locked." (or "…can't tell whether it's locked."). Nothing is sent and the post isn't marked failed. It goes at the next check, as soon as you unlock the iPhone. Mobster never unlocks it and never keeps it awake |
+| Photos access is off, restricted or not asked yet for Mobster's helper | **Start queue** refuses, and a post that falls due anyway ends **Didn't post** before any file is sent. It says what to do: "Photos access is off for Mobster on … Turn it on in Settings › Privacy & Security › Photos › WebDriverAgentRunner-Runner (Limit Access is enough), then try again.", or, before iOS has been asked, "Mobster hasn't asked … for Photos yet. In Setup, press Allow beside “Let Mobster add to Photos” and answer on the iPhone…". Without this, each file waited its own 60 seconds for an answer nobody gave |
+| Low Power Mode is on | **Start queue** starts and says "Low Power Mode is on for … so it locks itself after 30 seconds. Turn it off in Settings › Battery before the first post." A scheduled workflow gets the same line as a `phone_low_power` event when it starts |
+
+Allow Photos once in Setup: with the flag on, Setup has a row, **Let Mobster add to Photos**, after **Let Mobster tap and type**. **Allow** makes iOS ask on the iPhone, and you answer there. Mobster never presses that button, and the row never holds the rest of Setup back. **Limit Access** is enough to add to Photos.
+
+### The media in the post
+
+With the flag on, the task tells the agent to pick the post's media from the album **Mobster** when the app's picker lists albums, and to stop without posting if the picker says the app can see only some of your photos.
+
+- **Instagram and TikTok's limited-photos notice.** Their packs recognise the notice an app shows when you gave it access to only some of your photos. At the Post, the task stops as **Didn't post**: "Instagram can see only some of your photos, so Mobster can't be sure it picked this post's media. Nothing was posted." Widen that app's access in Settings yourself; Mobster never changes an app's access. The notice's words are inferred from iOS's own wording: no Instagram or TikTok composer has been recorded for it yet, so a notice worded otherwise isn't recognised.
+- **Approve the batch checks the picture.** Before it answers a Post card, Mobster compares the composer on screen with the post's files, on this Mac: a coarse match of colour layout, then a 16 by 16 difference hash, over windows with each file's proportions or a square, portrait or tall crop of it. The first frame of a video is the one compared. When a window matches, the batch approval answers the card as before. When none does, or the screenshot or a file can't be read, the card waits for you, as in **Ask before each post**. A carousel matches when the composer shows any of its files, so a wrong order isn't caught.
+
+### What was checked, and what wasn't
+
+On 19 Oct 2026, with the flag on, in one iOS 26.4 simulator (iPhone 17 Pro) running Mobster's helper built with it, and no real iPhone:
+
+- **Asking for Photos.** The helper said `not_determined`. Allow asked iOS, and iOS's question stayed on the screen for the 20 seconds Mobster waited with nobody answering; the status was still `not_determined`, and nothing was saved. After the question was answered with **Limit Access**, the status read `limited`.
+- **Adding under Limit Access.** A generated PNG was saved into the album Mobster and checked by SHA-256 (`verified`, no `albumError`). This found a fault: PhotoKit refused the chunked route's file with `PHPhotosErrorInvalidResource` (3302), because it had no extension, while the one-piece route saved. With the flag on, the helper now names the file with the extension the Mac sends, and the same save worked.
+- **Adding while locked.** The helper locked the simulator (`GET /wda/locked` read `true`, and the queue's check said "Waiting for the phone: it's locked."), and a save was taken by PhotoKit, in the album. A real iPhone keeps its Photos data protected while it is locked, so a save may fail there. This isn't established until it is run on one.
+- **The picture check.** In the simulator's Photos app, the grid held both saved pictures and a third that wasn't in the library: the check found the two (1.6 to 1.8 s of CPU) and not the third (3.3 s). With one saved picture open full screen, it found that picture and not the other saved one or the third. This is the Photos app, not Instagram's or TikTok's composer.
+- **Not checked.** Low Power Mode can't be turned on in a simulator, so only a phone that says `false` was read. The limited-photos notice's wording in Instagram and TikTok, and the composer's picture on a real iPhone, are unchecked: the iPhone for them isn't available yet. Whether albums behave under Limit Access on iOS 18.3.1 as they did in the simulator is also unchecked.
+
+## Ask your client first
+
+**Send for approval** on a post copies a link. Send it to your client however you like. They open it on any device, with no account, and see the post as the app will show it: Instagram's post screen or TikTok's For You, on an iPhone, with the profile it posts to, the caption and the time. They tap **Approve**, or **Request changes** with a note.
+
+Their answer shows on the post's row in the queue:
+
+| Row | What it means | What you can do |
+| --- | --- | --- |
+| Waiting for your client | the link works and they haven't answered this version | **Copy link**, **Revoke** |
+| Client asked for changes | their note is under it | change the post: the same link shows the new version |
+| Ready, Client approved | they approved the post as it is now | nothing; it goes out at its time |
+| Approval link expired, Approval link revoked | the link no longer opens | **Send for approval** makes a new link |
+
+A post sent for approval doesn't go out until your client approved it as it is now. Then it still goes through **Ask before each post** or **Approve the batch**, its profile's pace and its time, like any other post. Changing the media, the words, the sound, the format or the profile asks your client again, on the same link. Changing the time doesn't. If a post's time passes by more than 2 hours while it waits for your client, it's **Missed its time**: set a new time.
+
+The link works for 7 days. **Revoke** ends it at once, and the post waits for a new link's OK. The link is 32 random bytes, and the page asks search engines not to index it.
+
+The link goes through [Mobster Remote](/remote), so it needs Remote on. Mobster Remote's server keeps no copy of the post: each time your client opens the link, the post comes from this Mac. The page opens while this Mac is on and connected; otherwise it says the Mac is offline. A video shows its first frame.
+
+## Pacing
+
+Each profile keeps a pace, in every task as that profile, the queue's included. Choose **Pacing** on a profile in the queue to change it. The limits open under the profiles, with **Save**.
+
+| Kind | A day, at most | Minutes between |
+| --- | --- | --- |
+| Posts | 4 | 60 |
+| Messages | 20 | 4 |
+| Comments | 30 | 2 |
+| Follows | 30 | 2 |
+| Likes and reactions | 100 | 0.5 |
+
+By default, a profile sends at most 20 messages a day, at least 4 minutes apart. A day is counted in the profile's own time zone, which you set in **Pacing**, and so is its posting window (**Posts between** 09:00 and 21:00, say). The queue holds a post until its profile's pace and window allow it, and the post says when: "Waits for @getmobster's pace: next post at Thu 14:00". A CSV's times without an offset are read in the profile's time zone.
+
+In a task, a gap of up to 15 minutes is waited out before the action. A longer wait, or a day's limit, stops the task before the action, and the task says why. A workflow step stopped this way waits for the pace and runs again, within the workflow's time limit ([Workflows › How a graph runs](/workflows#how-a-graph-runs)).
+
+**Pause on a check.** When an app shows a profile a captcha, asks it to verify the account or who it is, or warns about automated or unusual activity, Mobster stops without acting, pauses the profile and sends your alert webhook a line if you set one ([Alerts](/schedules#alerts)). Nothing runs as a paused profile until you deal with it in the app and press **Resume**.
+
+## Tasks for your profiles
+
+The Queue's **Tasks for your profiles** put a ready task in Home's box for your profile. Each shows the icon of the app it runs in, Instagram or TikTok. You read it and send it. Each comment and message still asks first, and the profile's pace applies. With no profile on that app yet, the task names the app alone ("On Instagram, …") and runs as whoever is signed in on the iPhone.
+
+| Task | What it does |
+| --- | --- |
+| Comment on new posts | a short comment on each of the 5 newest posts in your Instagram feed, written from what each post shows |
+| Comment keyword to DM draft | on your newest TikTok, a drafted DM for each person who commented the keyword, in a review queue; nothing is sent |
+| Warm up a new profile | 10 minutes on TikTok's For You about a topic, at most 3 likes, no follows, comments or messages. Save it as a workflow to repeat it daily |
+| Read my insights | views, accounts reached, profile visits and follower change from your Instagram Professional dashboard, in a table; it taps nothing else |
+
+## How each post ends
+
+| State | Meaning | What you can do |
+| --- | --- | --- |
+| Posted | the Post was approved and the task saw it go out | **View post** |
+| Add photos | a draft: words and a profile, no media | add photos or videos |
+| Declined | the Post wasn't approved, or the card timed out: nothing went out | edit it, or **Run again** |
+| Didn't post | it stopped before Post (the media didn't arrive, another profile was signed in, the sound wasn't there): nothing went out | fix it, then **Run again** |
+| Check the profile | the Post was approved, and the task couldn't confirm it went out | look at the profile, then **It posted** or **It didn't** |
+| Missed its time | its time passed more than 2 hours ago while Mobster wasn't running | set a new time, or **Run again** |
+
+If Mobster quits while a post is going out, the post is **Check the profile** when Mobster opens again. If it quit while sending the media, the post is **Didn't post**.
+
+**Results** lists every post that ended, with its profile, outcome, time and link. **Export report**, at the top right of Results, saves a CSV with every post: profile, app, phone, time, state, link, media, how the media were checked, the route, the caption and the task.
+
+## CSV columns
+
+One post a row, with a header row. Columns go in any order. Only `media` is required.
+
+| Column | What |
+| --- | --- |
+| `media` | the photo or video paths, separated by `|` for a carousel; relative paths start from the CSV's folder |
+| `caption` | the words |
+| `hashtags` | `#spring #sale` or `spring, sale` |
+| `sound` | the sound's name as the app's picker shows it |
+| `profile` | `@getmobster`, `@getmobster on TikTok`, or a profile's id |
+| `schedule` | `2026-10-20T09:30`, in this Mac's time zone; empty for when the queue starts |
+| `format` | `auto`, `post`, `reel`, `story` or `video` |
+
+```csv
+media,caption,hashtags,sound,profile,schedule
+launch/teaser.mov,Two days.,launch,Golden Hour,@getmobster on TikTok,2026-10-20T09:30
+launch/1.jpg|launch/2.jpg,Swipe for the details.,"launch, spring",,@getmobster on Instagram,2026-10-20T12:00
+```
+
+## HTTP API
+
+Under `/api/queue` and `/api/transfers`, with the same token as the rest of the API ([the HTTP API](/scripting#the-http-api)). Starting a queue, the batch approval, imports, marking a post, getting a client approval link and starting a transfer are your own clicks in the Mac app: with the Mac app running they need its session, so another program with the token can't do them.
+
+| Route | What it does |
+| --- | --- |
+| `GET /api/queue` | the queues, with counts per state |
+| `POST /api/queue` | `{name?, approval?}`: a new queue |
+| `GET /api/queue/{id}` | the queue, its posts and its journal |
+| `POST /api/queue/{id}/items` | `{items: [{media, caption, hashtags, sound, format, profile, scheduledAt}]}`; a post with `draft: true` needs no `media` ([Drafts](#drafts)) |
+| `POST /api/queue/{id}/items/{item}` | change a post that hasn't gone out |
+| `POST /api/queue/{id}/start`, `/stop` | start or stop the queue; `?profile=<id>` starts or stops that profile's posts alone. With the [iPhone checks](#check-the-iphone-first) on, start answers `warnings: [{code, device, message}]` and can refuse (409 `photos_denied`, `photos_restricted`, `photos_not_determined`, `photos_unreadable`) |
+| `POST /api/queue/{id}/approve` | `{items}`: the batch approval |
+| `POST /api/queue/{id}/items/{item}/mark` | `{outcome: posted \| ready}`: you looked |
+| `POST /api/queue/{id}/items/{item}/client` | `{item, link}`: the post's client approval link, made when it has none |
+| `DELETE /api/queue/{id}/items/{item}/client` | revoke the link: the post waits for a new one's OK |
+| `POST /api/queue/{id}` | `{name, approval, watch: {folder, profile} \| null, staggerSeconds}` |
+| `GET`, `POST /api/accounts/{id}/pacing` | a profile's pace: `{timeZone, window: {start, end}, limits: {post, message, comment, follow, react: {daily, gapMinutes}}}`, with `paused` and `today` |
+| `POST /api/accounts/{id}/resume` | a paused profile runs again |
+| `POST /api/queue/{id}/import` | `{csvPath}` or `{folder, profile?}` |
+| `GET /api/queue/{id}/report?format=csv\|json` | the posting report |
+| `POST /api/transfers` | `{direction, what, device \| profile, via, paths \| folder, count, album}`: a transfer |
+| `GET /api/transfers/{id}` | its progress: each file's bytes sent and how it ended |
+
+Each queue keeps a journal beside Mobster's task history (`queue-journal/<id>.jsonl`): every step is written before it starts.

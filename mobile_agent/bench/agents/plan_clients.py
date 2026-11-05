@@ -12,7 +12,6 @@
 Neither prints, logs or stores a token. Neither hedges (a twin would spend the plan twice).
 """
 
-import base64
 import http.client
 import json
 import os
@@ -92,7 +91,8 @@ class CodexCLIChat:
     def complete(self, messages, schema, *, timeout=60, reasoning=None, strict=True):
         payload = json.dumps(self.body(messages, schema, reasoning=reasoning, strict=strict)).encode()
         token, account = _codex_token()
-        headers = {"Content-Type": "application/json", "Accept": "text/event-stream", "Authorization": "Bearer " + token,
+        headers = {"Content-Type": "application/json", "Accept": "text/event-stream",
+                   "Authorization": "Bearer " + token,
                    "chatgpt-account-id": account, "originator": "codex_cli_rs", "OpenAI-Beta": "responses=experimental",
                    "session_id": self.session}
         deadline = time.monotonic() + timeout
@@ -189,7 +189,8 @@ class ClaudeCLIChat:
     def complete(self, messages, schema, *, timeout=120, reasoning=None):
         from ...model_clients import anthropic_schema
         system = "\n\n".join(m["content"] if isinstance(m["content"], str) else
-                             "".join(p.get("text", "") for p in m["content"]) for m in messages if m["role"] == "system")
+                             "".join(p.get("text", "") for p in m["content"]) for m in messages
+                             if m["role"] == "system")
         blocks = []
         for message in messages:
             if message["role"] == "system":
@@ -242,6 +243,3 @@ def plan_client(model, reasoning="low"):
         return ClaudeCLIChat(model, reasoning=reasoning)
     return None
 
-
-def image_bytes(part):
-    return base64.b64decode(part["image_url"]["url"].split(",", 1)[1])

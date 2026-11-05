@@ -1,0 +1,76 @@
+{
+"note": "Synthetic and inferred: TikTok's usual iOS labels, every name, handle and text made up; waiting for a recorded tree (REAL-QA-QUEUE.md, PRIORITY: app packs, list B).",
+"rows": [
+{
+"role": "StaticText",
+"label": "1,203 comments",
+"rect": [
+0.35,
+0.3,
+0.3,
+0.03
+]
+},
+{
+"role": "Button",
+"label": "Close",
+"rect": [
+0.88,
+0.3,
+0.08,
+0.03
+]
+},
+{
+"role": "Cell",
+"label": "grill.fan, That crust though, 2h, 1,021 likes",
+"rect": [
+0.0,
+0.35,
+1.0,
+0.08
+]
+},
+{
+"role": "Button",
+"label": "Reply",
+"rect": [
+0.14,
+0.41,
+0.1,
+0.02
+]
+},
+{
+"role": "Cell",
+"label": "veggie.life, Any plant based version?, 5h, 88 likes",
+"rect": [
+0.0,
+0.45,
+1.0,
+0.08
+]
+},
+{
+"role": "Cell",
+"label": "night.owl, Making this tonight, 1d",
+"rect": [
+0.0,
+0.55,
+1.0,
+0.08
+]
+},
+{
+"role": "TextView",
+"label": "Add comment...",
+"rect": [
+0.04,
+0.92,
+0.7,
+0.04
+],
+"editable": true
+}
+]
+}

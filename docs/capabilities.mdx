@@ -1,0 +1,225 @@
+---
+title: "What it can and can't do"
+"og:title": "What Mobster can and can't do on your iPhone"
+sidebarTitle: "What it can and can't do"
+description: "What Mobster does on your iPhone besides tap and type, one example each, and what it won't do."
+icon: "list-checks"
+keywords: ["locked iPhone", "unlock", "passcode", "face id", "apple pay", "sign-in code", "2fa", "notifications", "clipboard", "deep link", "url scheme", "photos", "camera roll", "permission prompt", "allow paste", "teach", "packet trace"]
+---
+
+Mobster's agent taps, types and reads the screen like you do. Each section below is something it does beyond that, with one example, and what it won't do beside it.
+
+The iPhone stays plugged into your Mac. [Without the cable](/wifi), on the same Wi-Fi, is a preview.
+
+<span id="what-it-can-do"></span>
+## Locks, codes and passwords
+
+### Wait for you on a locked iPhone
+
+When you start a task from the Mac app, the terminal UI or `mobster chat` and the iPhone is locked, Mobster says "Look at your iPhone: unlock it and Mobster starts". The task starts the moment you unlock it. While it waits, Mobster only reads whether the phone is locked, once a second, and calls no model.
+
+- **After 2 minutes** still locked, the task stops: "Still locked, so the task didn't start. Unlock your iPhone and try again."
+- **Mid-task**, a phone that locks waits the same way ("Your iPhone locked: unlock it and Mobster carries on") and goes on from the step it was at.
+- **From MCP or Mobster Remote**, the status is `waiting_for_phone`, so the agent can tell you.
+- **Schedules, scripts and `mobster run` don't wait:** "Your iPhone is locked. Unlock it and try again. No action was taken." Set Auto-Lock to **Never** for long or scheduled tasks.
+
+Mobster never unlocks the iPhone and never enters its passcode or an app's PIN. When an app asks for Face ID, a task you started waits up to 2 minutes for you to look at the phone. Elsewhere it stops and tells you.
+
+### Enter sign-in codes
+
+When an app asks for a code sent by text or email, Mobster finds it in the keyboard's suggestion, Notification Center or the newest messages. It asks you first, such as "Use the code Chase sent 40 seconds ago to sign in to Chase?", then types it into the code field. The model never sees the code. Mobster looks in Messages last, and opening it can mark a conversation you left open there as read. With no code yet, the task says "Waiting for the sign-in code to arrive" for up to a minute. Mobster types a code only into a code field in the app that is signing in, never into Messages, Mail, Notes, a search box or a password, PIN or card field. It refuses a code older than 10 minutes, and two codes when it can't tell which one is meant.
+
+### Type a password privately
+
+`mobster phone password` types one password into a secure field you have focused and left empty:
+
+```sh
+mobster phone password --app com.example.app --field password
+```
+
+It reads the password from a hidden prompt, or from a private file with `--file` (mode 600). The password never goes in a command line, a task, a prompt, the journal or a log. Mobster checks the app is in front and the field is the only match first. It doesn't tap or clear the field, submit the form, retry or unlock the phone, and it refuses a phone passcode. If the outcome is unknown, it says so and doesn't send again. Mobster's runner on the iPhone has to be rebuilt once to get this route.
+
+## iOS itself
+
+### Jump straight to a screen
+
+When a link goes where the task needs to be, Mobster opens it instead of tapping through menus: `maps://?q=coffee` for Maps' results, `instagram://direct-inbox` for the Instagram DM inbox, `App-prefs:WIFI` for Settings › Wi-Fi. If a link lands somewhere else, it carries on by tapping.
+
+On a real iPhone, `tel:`, `facetime:`, `sms:`, `mailto:` and `shortcuts://run-shortcut` links need your approval each time; **Don't ask again** isn't offered for them. Without approval, Mobster won't open them. Unfamiliar app links also ask unless you choose **Don't ask again** for that app's links; outside agents can't use that saved approval ([Safety](/safety#links)). Apple doesn't document the Settings links, and some land on Settings' first page.
+
+### Answer iOS's own prompts
+
+iOS asks its own questions, such as "Allow Maps to use your location?". Mobster answers each the way your permission setting says, never with a blanket Allow, and shows it as a step: "iOS asked about notifications for Duolingo: Mobster chose “Don't Allow”".
+
+| iOS asks | What Mobster does |
+| --- | --- |
+| To use your location, Photos, the camera, the microphone, contacts or other private data | Asks you, with iOS's own buttons. With nobody to ask, the task stops and leaves the question for you |
+| To send notifications | Asks you. In Full access, or with nobody to ask, chooses Don't Allow |
+| To track you across apps | Chooses Ask App Not to Track (Ask before every change asks you) |
+| To paste from another app | Allow Paste only within 20 seconds of Mobster putting text on the clipboard itself; otherwise Don't Allow Paste |
+| To open a link in an app | Open when Mobster opened that link; otherwise asks |
+| To save a password, sign in to your Apple Account, or trust a computer | Never answers: Not Now for a password, and the task stops for the rest |
+| To install an iOS update | Later, since installing restarts the iPhone. With no Later button, asks you |
+| To let an app use a website's sign-in | Asks you |
+| Undo Typing, after a shake | Cancel, which keeps the text |
+| Screen Time's limit is up | The task stops. Mobster never ignores a limit |
+| A double-click of the side button, for an App Store install, a purchase or Apple Pay | The task stops and asks you to confirm on the phone. Mobster never pays with Apple Pay |
+| An app you locked with Face ID or a passcode | Mobster won't open it |
+
+Only iOS's own prompts are answered this way. An app's own alert, such as "Delete this post?", goes through your approvals like any other screen.
+
+### Read your notifications
+
+Mobster reads Notification Center, up to 30 notifications with each one's app, title, body and time, without tapping any:
+
+```text
+What did my last five notifications say?
+```
+
+A code in a notification is hidden from the model. Mobster reads only an unlocked phone, and iOS hides what notifications say unless Settings › Notifications › **Show Previews** is **Always**.
+
+### Press buttons and change the display
+
+For testing your app, `mobster phone button volume_up` presses a hardware button, and a coding agent's `set_display` switches to dark mode or landscape, then says what it was before. `mobster phone button lock` locks the screen, and Mobster can't unlock it again.
+
+## Files, media and the network
+
+### Put text on the phone's clipboard
+
+`mobster phone clipboard set "text"` puts up to 64 KB of text on the phone's clipboard, ready to paste. `mobster phone clipboard get` prints what it holds, at the terminal only: coding agents can't read it, because it may hold a password. A task that types 200 characters or more pastes them, then reads the field back to check every character arrived.
+
+### Move photos between your Mac and your iPhone
+
+Drop a photo on your iPhone in the Mac app, or run:
+
+```sh
+mobster phone photos add beach.jpg
+```
+
+It goes into the iPhone's Photos library, where any app's photo picker finds it. The first time, iOS asks whether Mobster's runner may use Photos: **Limit Access** is enough. With `MOBSTER_QUEUE_PREFLIGHT=1`, Setup asks once, in a row of its own, so an unattended [content queue](/content-queue#check-the-iphone-first) never waits for an answer nobody gives. `mobster phone photos pull -n 3` copies your newest three photos or recordings to this Mac. [Transfers](/files#photos-and-videos) lists the routes and how each file is checked.
+
+### Use your files
+
+Attach an image, a PDF, a text or a CSV file to a task, and Mobster's agent reads it on your Mac: "Text Sam the vegetarian options from this menu", with the menu attached. Mobster can also put a file in an app's folder on the iPhone, and asks you first. [Files](/files) has the limits.
+
+### Install your own builds
+
+`mobster phone install MyApp.ipa` installs a build signed for your iPhone, with Developer Mode on, or a simulator build on one of Mobster's simulators.
+
+### Record the screen
+
+```sh
+mobster phone record --output demo.mov --seconds 30
+```
+
+This saves 1 to 300 seconds of a USB iPhone's screen, and the audio it offers, to a new `.mov` file, through the capture device QuickTime Player uses. macOS asks once for the camera and microphone. Protected content may not record. Mobster never overwrites a file, and a cancelled recording leaves nothing behind.
+
+### Watch and hear what the iPhone plays
+
+Mobster watches a video, a Reel or a voice note while it plays: a frame at each new scene, the captions, and on a USB iPhone the sound, turned into text on your Mac. Ask it to summarize a TikTok or transcribe a voice note. [Watch and hear](/watch) has the details and how to turn hearing off.
+
+### Network profiles and packet traces
+
+`mobster phone network proxy-profile`, `vpn-profile` and `relay-profile` write a `.mobileconfig` file for a Wi-Fi proxy, an IKEv2 VPN or an Apple HTTP/2 relay:
+
+```sh
+mobster phone network proxy-profile --ssid "Office Wi-Fi" --server 192.168.1.50 --port 8080 --output proxy.mobileconfig
+```
+
+It prints `Saved` with the file's path and "The profile is not installed.", then where to install it: Settings > General > VPN & Device Management. The file is private (mode 600), and passwords come from `--password-file` and the like, never an argument. Run it again and it refuses, because Mobster never overwrites a file:
+
+```text Output
+mobster phone: The output file already exists. Choose another --output path.
+```
+
+A profile doesn't decrypt TLS or route cellular traffic, and apps can ignore an HTTP proxy.
+
+`mobster phone network capture --device <name> --output trace.pcap` saves up to 300 seconds of a USB iPhone's packets through Apple's Remote Virtual Interface (`rvictl` and `tcpdump`, from Xcode). `tcpdump` needs capture permission on this Mac. TLS stays encrypted, but the trace shows which hosts the iPhone talks to, so the file is mode 600. Only you start a capture: no task and no MCP tool does. If a capture was killed, the next one removes the interface it made. If `rvictl` doesn't answer, Mobster doesn't try again. `mobster phone network diagnose` reports this Mac's route and, with `--host` and `--port`, tries a connection from this Mac.
+
+## Long and repeated work
+
+### Work through a feed or a list
+
+A long task shows its plan before it starts: its steps, how much it covers, about how long it holds your iPhone and about what it costs.
+
+```text
+Go through my Instagram DMs and sort them into a review queue: needs a reply, can wait, and spam. Draft a one-line reply for each one that needs a reply.
+```
+
+Mobster reads each conversation or Reel in code, gives your iPhone back, and hands you a [review queue](/results#review-queues) or cards of what it kept. It closes the phone connection before writing the report, so another queued task can use the phone while the first report is written. Opening a conversation marks it read, and each screen's text and picture go to the model your task runs on. The run itself sends nothing: approving a draft starts a separate task that sends exactly that text to that person, and asks first. In a long task, every reply, like, comment, message or booking asks you, even in Full access.
+
+The report's **What it was asked to do** lists each requested outcome as Confirmed, Partly confirmed or Not confirmed, with what the screen showed for it and any value it found. A limit, such as "don't comment", is listed as a limit. The current run comes first, then the run before you picked the task up. A plan step marked done or a screen that only changed doesn't confirm that an action went through.
+
+### Teach Mobster a task
+
+Do a task once on the iPhone's live view, and Mobster repeats it when you ask. It keeps what each step was for, not only where you tapped, so a repeat that meets a different screen still knows what to do.
+
+On Workflows, type the words for the task and choose **Teach it**. The save form starts with those words. A lesson keeps the words it started with.
+
+1. Choose **Show iPhone**, then **Teach** above the phone. Start from the Home Screen, and tap, swipe and type as you always do. Each step shows under the phone with what it was for, such as "Tap “Log food” to get to Search foods".
+2. Choose **Done**. Write the **Words that run it**, such as `Log oat milk latte in CalTrack`. For each value you typed, choose **Always this** or **Ask each time**. **Save as a workflow** also puts it in Workflows, ⌘K and Siri.
+3. Answer at most 2 questions, such as "Always Oat Milk Latte, 12 oz, or the cheapest?", when a step could mean something else next time.
+4. Choose **Try it now**. Mobster runs it once and asks about each step: **That's right**, **Not that, tap this**, **Skip this step** or **Let Mobster do it**.
+
+What you taught is under Workflows › **Learned steps**, with **Run**, **Rename** and **Forget**.
+
+- **Where a repeat starts.** Mobster brings the app back to the screen your lesson started on, with its Back button (at most 4 times) or by reopening it once. It never closes an app while a field holds text you typed.
+- **How it runs.** Each step runs by code only when its screen matches one you taught. Where a screen differs, the model does that one step, told what it was for, and your steps go on once a screen matches. It never picks up again at a step that types, sends or taps a spot with no label.
+- **Trust.** The model checks the first run before it counts as done, and the next run after a practice run changed a step.
+- **Teaching again.** The same words add a version of a step for a screen that looks different, up to 4 per step. A tap on an unlabeled spot requires the geometry recorded before that tap. Teach an older coordinate step again if it has no saved geometry proof. Other steps under the same words are refused: use other words, or forget the first.
+
+In Workflows, **Forget** asks in the program's row first.
+
+Mobster never keeps a password, a code or text typed into a password field: your steps stop before it, and the model does the rest each run. A send, post, delete or purchase you taught asks you on every run. Teaching needs a USB iPhone, and a lesson and a task can't share the phone. `MOBSTER_PROGRAMS=off` turns taught steps off.
+
+### See your workflows on Home
+
+Home shows **Your workflows** above the task box, scheduled ones first, each with its last result, what it took and cost, and what needs you. A run that repeated learned steps says so: **Learned 6s, \$0.00**, and its tooltip says what the first run took ("First run took 48s, \$0.06"). **Since you last looked** says what finished while you were away, and one line counts this week: "This week: 9 jobs done, 212 items reviewed, \$0.41 spent."
+
+Every number comes from your tasks' records, not an estimate. Home doesn't show hours saved: Mobster can't measure them. `GET /api/home` returns the same ([The HTTP API](/scripting#the-http-api)).
+
+### Keep one list of what needs you
+
+**Needs you**, always in the sidebar, lists what waits for you now, with its count on the Dock icon:
+
+| Kind | What you see | What you can do |
+|---|---|---|
+| **Approval** | The profile it acts as, who it goes to, the exact words | **Send** or **Don't send**, or **Open task** |
+| **Question** | What Mobster asked, and its choices | Choose, type an answer, or **Skip** |
+| **Check the result** | The answer, and why Mobster isn't sure | **Looks right**, or **Open task** |
+| **Workflow failed** | Why its last run stopped | **Run again** or **Edit workflow** |
+| **Draft** | A reply a finished task drafted (who it goes to, their last message and the words), grouped by the profile it sends from | **Approve**, **Edit** or **Skip** |
+
+A draft leaves the list when you approve or skip it, when a newer draft addresses the same recipient from that profile, or after 7 days. A result leaves the list once a later run of the same task works, or after 7 days. `GET /api/inbox` returns the same list.
+
+Under what waits, **Finished today** lists the tasks that ended today and aren't a card above: results to check first, then what couldn't finish, then the rest, newest first, each with its outcome and when it ended. Click one to open it. The sidebar's Recent keeps every day before.
+
+### Tell you when a scheduled task needs you
+
+Set a webhook for Slack, Discord, ntfy or any HTTPS address in Settings. Mobster posts there when a scheduled task fails, stops early, or waits a minute for your approval. The post says which task and why, never the answer or anything it typed. `mobster alerts test` sends a test post ([Alerts for scheduled tasks](/scripting#alerts-for-scheduled-tasks)).
+
+While a task runs, or a scheduled one is due within 10 minutes, Mobster keeps the Mac awake. A long or scheduled task pauses while the iPhone's battery is at 10% or less and not charging ([Battery, heat and the Mac](/devices#battery-heat-and-the-mac)).
+
+## Your accounts
+
+<Warning>
+  Mobster acts as you, on your phone, and you're responsible for what it does in your accounts. Approvals reduce the risk; they don't remove it.
+</Warning>
+
+- Keep **Ask before acting** on, so you see each post, message, follow and offer before it happens.
+- Mobster never opens an app you list in [`MOBSTER_BLOCKED_APPS`](/configuration).
+- Apps such as Instagram watch for automated use, and their terms limit it. If an app shows a warning, a captcha or "Try again later", stop and do the task yourself.
+
+## Next
+
+<CardGroup cols={3}>
+  <Card title="Approvals and safety" icon="shield-check" href="/safety">
+    What waits for your OK, and the permission modes.
+  </Card>
+  <Card title="Workflows, schedules and alerts" icon="calendar-clock" href="/schedules">
+    Save a task, give it blanks and run it on a schedule.
+  </Card>
+  <Card title="Results" icon="layout-list" href="/results">
+    Review queues, cards and tables a task hands back.
+  </Card>
+</CardGroup>

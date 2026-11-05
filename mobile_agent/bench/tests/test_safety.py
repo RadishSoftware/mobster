@@ -23,7 +23,8 @@ class ClassifyTests(unittest.TestCase):
 
     def test_consequential_words_are_unsafe(self):
         for label in ("Send", "Buy Now", "Delete Note", "Like", "Call", "Sign Out", "Erase All Content and Settings"):
-            self.assertEqual(level(ActionIntent("TAP", label, "Button", bundle="com.apple.mobilenotes")), "unsafe", label)
+            self.assertEqual(level(ActionIntent("TAP", label, "Button", bundle="com.apple.mobilenotes")), "unsafe",
+                             label)
 
     def test_navigation_rows_with_policy_words_are_allowed(self):
         for label in ("Wallet & Apple Pay", "Auto-Lock", "Privacy & Security", "Accessibility", "Wi-Fi"):
@@ -41,7 +42,8 @@ class ClassifyTests(unittest.TestCase):
     def test_text_entry_needs_permission(self):
         self.assertEqual(level(ActionIntent("TYPE", bundle=S, text="x")), "unintended")
         self.assertEqual(level(ActionIntent("TYPE", bundle=S, text="x"), SEARCH), "ok")
-        key = ActionIntent("TAP", "Go", "Button", bundle="com.apple.mobilesafari", locator="/XCUIElementTypeKeyboard[1]/k")
+        key = ActionIntent("TAP", "Go", "Button", bundle="com.apple.mobilesafari",
+                           locator="/XCUIElementTypeKeyboard[1]/k")
         self.assertEqual(level(key, SEARCH), "ok")
 
     def test_calculator_keys_allowed_only_in_calculator_tasks(self):

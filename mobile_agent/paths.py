@@ -1,11 +1,11 @@
-"""Where Mobster writes. A source checkout keeps its files beside the package; an installed or frozen copy
-uses the user's data folder, never site-packages or the signed app bundle."""
+"""Where Mobster writes."""
 
 import hashlib
 import os
-from pathlib import Path
 import re
 import sys
+import tempfile
+from pathlib import Path
 
 PACKAGE = Path(__file__).resolve().parent
 IDENTIFIER = "app.mobster.desktop"
@@ -16,30 +16,26 @@ CHECKOUT_DATA = PACKAGE / ".state" / "data"
 
 
 def write_text_atomic(path, text):
-    """Write ``text`` to ``path`` (UTF-8) through a sibling .tmp file, so a reader never sees half a file. Makes
-    the parent folders; raises OSError."""
+    """Write ``text`` to ``path`` (UTF-8) through a sibling .tmp file, so a reader never sees half a file."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_name(path.name + ".tmp")
-    temporary.write_text(text, encoding="utf-8")
-    os.replace(temporary, path)
+    descriptor, temporary = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.", suffix=".tmp")
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+            handle.write(text)
+        os.replace(temporary, path)
+    finally:
+        Path(temporary).unlink(missing_ok=True)
     return path
 
 
 def installed_data_dir():
-    """The installed Mac app's folder. Only the installed app writes here, except for what the whole Mac shares
-    (see `machine_data_dir`)."""
+    """The installed Mac app's folder."""
     return Path.home() / "Library" / "Application Support" / IDENTIFIER
 
 
 def user_data_dir():
-    """The data root: the one decision every store (memory, connectors, outlets, profiles, learned steps, settings,
-    queue, attachments, ...) resolves under.
-
-    The installed app and its agent use the installed folder, so one iPhone setup serves both. A dev window slot
-    (`app.mobster.desktop.devN`) uses its own folder, handed down as $MOBSTER_APP_DATA_DIR. A source checkout without
-    one keeps its data beside the package (`mobile_agent/.state/data`), as it does `mobster.sqlite3`; a development
-    shell without one gets the `.dev` folder. A development run never lands in the installed app's folder."""
+    """The data root every store (memory, connectors, settings, queue, ...) resolves under."""
     value = os.environ.get(DATA_DIR_ENV, "").strip()
     if value:
         return Path(value).expanduser().resolve()
@@ -51,8 +47,7 @@ def user_data_dir():
 
 
 def machine_data_dir():
-    """What the whole Mac shares by design, whichever copy of Mobster runs: the device leases (one physical phone,
-    one driver), compiled helper binaries (named by their source hash) and the simulators `mobster sim` manages."""
+    """What the whole Mac shares by design, whichever copy of Mobster runs."""
     return installed_data_dir()
 
 
@@ -62,8 +57,7 @@ def use_data_dir(path):
 
 
 def keychain_service(service):
-    """A Keychain service name for this run. The installed app's names are unchanged; any other data root gets its
-    own (`<service>.dev2`), so a dev slot never reads or overwrites the installed app's items."""
+    """A Keychain service name for this run."""
     root = user_data_dir().resolve()
     installed = installed_data_dir().resolve()
     if root == installed:
@@ -76,8 +70,7 @@ def keychain_service(service):
 
 
 def dev_data_dir():
-    """The developer tools' folder (`mobster verify`, `mobster sim`, `mobster mcp`): simulators, the
-    WebDriverAgent build and logs. $MOBSTER_DATA_DIR when set, else the `dev` folder of the data folder."""
+    """The developer tools' folder (`mobster verify`, `mobster sim`, `mobster mcp`)."""
     value = os.environ.get("MOBSTER_DATA_DIR", "").strip()
     return Path(value).expanduser() if value else machine_data_dir() / "dev"
 
@@ -87,16 +80,12 @@ def source_checkout():
 
 
 def default_history_db():
-    """The terminal's own journal, beside `serve`'s but a separate file.
-
-    A journal has one owner at a time (``journal.Lease``); a separate file lets the terminal UI run while
-    `mobster serve` or the Mac app holds theirs.
-    """
+    """The terminal's own journal beside `serve`'s: a journal has one owner (journal.Lease), so both can run."""
     return (PACKAGE / ".state" if source_checkout() else user_data_dir() / "state") / "terminal.sqlite3"
 
 
 def build_dir():
-    """Compiled helpers (`mobster build-ocr`, `vision_judge build-t0`)."""
+    """Compiled helpers (`mobster build-ocr`)."""
     return PACKAGE / ".build" if source_checkout() else user_data_dir() / "build"
 
 

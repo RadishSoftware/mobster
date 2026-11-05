@@ -1,0 +1,37 @@
+Test and automate apps on real iPhones.
+Type a task and Mobster's agent does it on your iPhone, over USB from your Mac. It asks before it
+sends, buys, posts or deletes. Claude Code and your own agents can use the phone too.
+
+Usage
+  mobster                      open Mobster in this terminal
+  mobster "TASK"               open it and run TASK
+  mobster <command> [options]  run one of the commands below
+
+Commands
+  doctor                       check your iPhone, key and tools; --fix fixes what it can
+  devices                      list the iPhones and simulators Mobster can use
+  test                         run your app's saved checks on simulators and iPhones, with reports
+  mcp                          let your coding agent use the phone and check your app
+
+Options
+  -h, --help                   show this help; after a command, that command's help
+  --version                    print the version
+  --demo                       try Mobster on a pretend iPhone: no phone or key needed
+  --json                       print JSON for scripts, on run, chat, doctor and devices
+
+Examples
+  $ mobster doctor --fix
+  $ mobster "Turn on Dark Mode"
+  $ mobster chat "Find my last message from Kate Bell"
+  $ mobster run "What's my battery level?" --execute --json
+  $ mobster test
+  $ mobster mcp install --all
+
+Learn more
+  mobster help <command>       options and examples for one command
+  mobster help environment     every variable Mobster reads
+  mobster help exit-codes      what each exit code means
+  mobster help tui             the terminal UI's options and keys
+  mobster help --all           all 35 commands, with login, chat, run and sim
+  Docs                         https://docs.mobster.dev
+

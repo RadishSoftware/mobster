@@ -1,0 +1,67 @@
+---
+title: "Use Mobster from Windsurf"
+sidebarTitle: "Windsurf"
+description: "Add Mobster's MCP server to Windsurf with one command. Only Claude Code and Codex are tested with the server."
+icon: "/images/marks-ink/windsurf.svg"
+keywords: ["windsurf", "mcp", "mobster mcp install", "ios testing", "agent"]
+---
+
+Use Mobster's command below to add its MCP server to Windsurf's config. The server exposes Mobster's tools (`verify_start`, `screen`, `tap`, `run_tests` and the rest of [the MCP server](/mcp-server)).
+
+## Add it
+
+```sh
+mobster mcp install windsurf
+```
+
+It prints what it changed:
+
+```text
+Mobster's MCP server: /Applications/Mobster.app/Contents/MacOS/mobster-agent mcp
+  Windsurf        added      ~/.config/devin/mcp_config.json
+Restart Windsurf to load the change.
+New sessions of the other clients pick it up. Check it with `mobster mcp doctor`.
+```
+
+Add `--dry-run` to see the change first and write nothing. Run the command again and nothing changes. `mobster mcp install --all` sets up every agent it finds, Windsurf included.
+
+## What it writes
+
+The entry goes in `~/.config/devin/mcp_config.json`, the user-level file listed in Devin Desktop's MCP docs. If you set `$XDG_CONFIG_HOME`, Mobster uses the same path under that directory. Windsurf became Devin Desktop on 2 Jun 2026. Mobster 0.4.0 and earlier wrote `~/.codeium/windsurf/mcp_config.json`, which Devin's command line still imports. If Mobster's entry exists only in the old file, `mobster mcp install windsurf` moves it to the new file, preserving options such as `--allow-device`. The command removes the entry from the old file. If both files contain matching Mobster entries, the command keeps one entry in the new file. If their options or environment differ, the command writes nothing. It returns one error naming both files. Delete the `mobster` entry you don't want from one of the files, then run the command again. Or run `mobster mcp install windsurf --reset-server-options` with the flags you want, such as `--allow-device`: it writes one fresh entry and drops both entries' saved options. `mobster mcp install windsurf --remove` removes Mobster's entry from both files.
+
+```json
+{
+  "mcpServers": {
+    "mobster": {
+      "command": "/Applications/Mobster.app/Contents/MacOS/mobster-agent",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+Mobster keeps the rest of the file as it is, with a copy of the old one beside it (`.mobster-backup`). It writes the full path to `mobster` because apps opened from the Dock don't see your shell's `PATH`, and it never writes a key. Windsurf has no project-level MCP file, so `--project` skips it.
+
+## Check it
+
+```sh
+mobster mcp doctor
+```
+
+The doctor starts the server the way Windsurf does, lists its tools and calls `status`. Then it checks that the Windsurf entry runs a `mobster` that exists, and says which command to run if it doesn't. Restart Windsurf, then open Cascade's MCP panel.
+
+## Add the skill
+
+```sh
+mobster mcp install windsurf --with-skill
+```
+
+This copies the `mobster` skill into `~/.codeium/windsurf/skills`, so the agent also knows the verify loop and the rules for a real iPhone: ask before anything that sends, buys, posts or deletes, and never enter a passcode.
+
+## Take it out
+
+```sh
+mobster mcp install windsurf --remove
+```
+
+This removes the `mobster` entry and leaves your other servers alone. Devin Desktop's own reference for the file is at https://docs.devin.ai/desktop/devin-local/customizations.

@@ -1,0 +1,137 @@
+{
+"note": "Synthetic: the shape of Instagram 448.0.0's screen on a real iPhone (13 Oct 2026), every name, handle and text made up.",
+"rows": [
+{
+"role": "TextView",
+"label": "search-bar-text-view",
+"rect": [
+0.18,
+0.08,
+0.67,
+0.04
+],
+"value": "space",
+"editable": true
+},
+{
+"role": "Button",
+"label": "Clear",
+"rect": [
+0.78,
+0.07,
+0.1,
+0.05
+]
+},
+{
+"role": "Button",
+"label": "Back",
+"rect": [
+0.03,
+0.08,
+0.06,
+0.03
+]
+},
+{
+"role": "Cell",
+"label": "search-collection-view-cell-1001",
+"rect": [
+0.0,
+0.14,
+1.0,
+0.07
+]
+},
+{
+"role": "Other",
+"label": "space.fan.page. Profile picture",
+"rect": [
+0.84,
+0.15,
+0.11,
+0.05
+]
+},
+{
+"role": "StaticText",
+"label": "space fan page, verified account",
+"rect": [
+0.18,
+0.15,
+0.54,
+0.02
+]
+},
+{
+"role": "StaticText",
+"label": "space.fan.page • 2.7M followers",
+"rect": [
+0.18,
+0.17,
+0.51,
+0.01
+]
+},
+{
+"role": "Cell",
+"label": "search-collection-view-cell-1002",
+"rect": [
+0.0,
+0.21,
+1.0,
+0.07
+]
+},
+{
+"role": "Other",
+"label": "space. Profile picture",
+"rect": [
+0.84,
+0.21,
+0.11,
+0.05
+]
+},
+{
+"role": "StaticText",
+"label": "space agency, verified account",
+"rect": [
+0.18,
+0.22,
+0.4,
+0.02
+]
+},
+{
+"role": "StaticText",
+"label": "space • 104M followers",
+"rect": [
+0.18,
+0.24,
+0.45,
+0.02
+]
+},
+{
+"role": "Cell",
+"label": "search-collection-view-cell-1003",
+"rect": [
+0.0,
+0.27,
+1.0,
+0.07
+]
+},
+{
+"role": "StaticText",
+"label": "space news",
+"rect": [
+0.18,
+0.3,
+0.37,
+0.02
+]
+}
+]
+}

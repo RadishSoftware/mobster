@@ -13,6 +13,13 @@ regex = '''discord(?:app)?\.com/api/(?:v\d+/)?webhooks/\d{5,}/[A-Za-z0-9_-]{20,}
 keywords = ["webhooks"]
 
 [[allowlists]]
+description = "A made-up token in one history commit"
+commits = [
+  # fake ghp_ fixture in test_traces.py, replaced by a runtime-built value in b9a092454
+  "ba98bbf57dbed9a659e64db2a9f671b327211713",
+]
+
+[[allowlists]]
 description = "Exact synthetic fixture values; tests, examples and QA files are still scanned"
 regexTarget = "secret"
 regexes = [
@@ -40,6 +47,8 @@ regexes = [
   '^test-ledger-key-0123456789abcdef0123456789$',
   '^sk_test_0123456789abcdef$',
   '^whsec_0123456789abcdef0123$',
+  # The wire assertions' storage tests (test_verify_wire.py): a made-up Stripe-style key that the diff must mask.
+  '^sk_live_abcdefghijklmnop$',
   # Settings › Team's fake agent (dashboard/src/features/team/fake-team.ts): a station's public key, bytes 1 to 32.
   '^AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA$'
 ]
@@ -64,3 +73,24 @@ regexes = [
 description = "The team features' test vectors (mobile_agent/tests/teams_vectors.py writes them): public keys, credential ids and signatures made in memory for the run. No private key is ever written; every other rule still scans the file"
 targetRules = ["generic-api-key"]
 paths = ['''^mobile_agent/tests/fixtures/teams/vectors\.json$''']
+
+[[allowlists]]
+description = "Public Ed25519 verification keys for signed synthetic audit records"
+condition = "AND"
+paths = ['(^|/)mobile_agent/tests/test_audit_verify\.py$']
+regexTarget = "secret"
+regexes = ['^iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w$', '^gTl3Dqh9F19Wo1Rmw0x\-zMuNipG07jeiXfYPW4_Js5Q$']
+
+[[allowlists]]
+description = "Offline project-password sentinel in mock stores"
+condition = "AND"
+paths = ['(^|/)mobile_agent/tests/test_project_env\.py$']
+regexTarget = "secret"
+regexes = ['^hunter2\-Zq9xK$']
+
+[[allowlists]]
+description = "Offline saved-task password sentinel in mock stores"
+condition = "AND"
+paths = ['(^|/)mobile_agent/tests/test_project_env_tasks\.py$']
+regexTarget = "secret"
+regexes = ['^hunter2\-Zq9xK$']

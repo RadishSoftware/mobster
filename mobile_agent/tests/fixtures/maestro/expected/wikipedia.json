@@ -1,0 +1,61 @@
+{
+  "ios-advanced-flow.yaml": {
+    "outcome": "refused",
+    "reason": null,
+    "checks": {},
+    "refused": [
+      [
+        "command 2 (runFlow)",
+        "runFlow",
+        "runs only when a condition holds, and a check is a fixed list of steps"
+      ],
+      [
+        "command 3 (runFlow)",
+        "runFlow",
+        "runs only when a condition holds, and a check is a fixed list of steps"
+      ],
+      [
+        "command 7 (inputText)",
+        "inputText",
+        "uses the JavaScript expression ${output.result}, which Mobster doesn't run"
+      ],
+      [
+        "command 10 (assertVisible)",
+        "assertVisible",
+        "uses the JavaScript expression ${output.result}, which Mobster doesn't run"
+      ],
+      [
+        "subflows/launch-clearstate-ios.yaml command 1 (launchApp)",
+        "launchApp",
+        "clears app data in the middle of the flow"
+      ]
+    ],
+    "notes": [
+      "2 commands became a step marked TODO: the first run (Smart) fills it, then replay keeps what it did; read that run's report before you trust the check"
+    ]
+  },
+  "ios-flow.yaml": {
+    "outcome": "imported",
+    "reason": null,
+    "checks": {
+      "ios-flow.yaml": {
+        "version": 1,
+        "name": "ios flow",
+        "app": {
+          "bundle": "org.wikimedia.wikipedia"
+        },
+        "reset": "none",
+        "tags": [
+          "maestro",
+          "ios",
+          "passing"
+        ],
+        "expect": []
+      }
+    },
+    "refused": [],
+    "notes": [
+      "the flow asserts nothing, so the check ends needs_review; add an assertVisible"
+    ]
+  }
+}

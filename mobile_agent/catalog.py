@@ -38,8 +38,6 @@ APPS = [
 ]
 
 
-# Names for apps outside the catalog, registered by whoever installs them (a benchmark's own apps). The browsers a link
-# can land in are named here too: a card says "Chrome", not its bundle id.
 _EXTRA_NAMES = {"com.google.chrome.ios": "Chrome", "org.mozilla.ios.Firefox": "Firefox", "com.microsoft.msedge": "Edge",
                 "com.brave.ios.browser": "Brave", "com.duckduckgo.mobile.ios": "DuckDuckGo",
                 "com.opera.OperaTouch": "Opera"}
@@ -53,6 +51,16 @@ def register_app_names(names):
 def app_name(bundle):
     """The app's display name ("Safari"), or None when the catalog and the registered names don't have it."""
     return _EXTRA_NAMES.get(bundle) or next((a["name"] for a in APPS if a["bundleId"] == bundle), None)
+
+
+def pack_apps():
+    """(key, bundle id, name) of each app Mobster has an app pack for (Instagram, X, YouTube...), or () without packs.
+    A saved task may name these before the phone lists them; the run says so if the phone doesn't have one."""
+    try:
+        from .packs.register import all_packs
+        return tuple((pack.key, pack.bundle, pack.name) for pack in all_packs())
+    except Exception:  # noqa: BLE001 -- no packs track: the catalog's apps only
+        return ()
 
 
 def app_label(bundle):
