@@ -1,0 +1,20 @@
+{
+  "name": "@radishsoftware/mobster",
+  "version": "0.4.0",
+  "description": "MCP server and CLI for AI agents to drive a real iPhone or iOS simulator and verify accessibility assertions",
+  "license": "MIT",
+  "author": "Radish Retail, LLC",
+  "homepage": "https://mobster.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RadishSoftware/mobster.git",
+    "directory": "packaging/npm"
+  },
+  "bugs": "https://github.com/RadishSoftware/mobster/issues",
+  "keywords": ["mcp", "mcp-server", "ios", "iphone", "ios-simulator", "app-testing", "accessibility", "claude-code", "cursor", "codex"],
+  "os": ["darwin"],
+  "bin": { "mobster": "bin/mobster" },
+  "files": ["bin/mobster", "LICENSE", "README.md"],
+  "scripts": { "test": "node --test test/launcher.test.cjs" },
+  "publishConfig": { "access": "public", "registry": "https://registry.npmjs.org/" }
+}

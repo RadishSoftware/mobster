@@ -1,0 +1,146 @@
+name: Publish Python package
+
+on:
+  push:
+    tags: ["cli-v*"]
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish the validated distributions to PyPI
+        type: boolean
+        default: false
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-pypi
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Check release tag matches package version
+        if: ${{ github.event_name == 'push' }}
+        run: |
+          python3 - <<'PYCODE'
+          import os
+          import sys
+          from mobile_agent import __version__
+
+          expected = f"refs/tags/cli-v{__version__}"
+          actual = os.environ["GITHUB_REF"]
+          if actual != expected:
+              sys.exit(f"Release tag {actual!r} must match package version: {expected!r}")
+          PYCODE
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - name: Install test and build tools
+        run: python -m pip install -r mobile_agent/requirements.txt -r mobile_agent/requirements-dev.txt build twine
+      - name: Install the release secret scanner
+        run: brew install gitleaks
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+      - name: Lint and test
+        run: |
+          python -m ruff check mobile_agent scripts
+          make test-backend PYTHON=python TEST_JOBS=2
+        env:
+          MOBSTER_TEST_TIME_SCALE: "2.5"
+      - name: Build and check distributions
+        run: |
+          python -m build
+          python -m twine check --strict dist/*
+      - name: Scan release archives for secrets
+        run: python scripts/scan_release_secrets.py dist/*.whl dist/*.tar.gz
+      - name: Install the wheel in a clean environment
+        working-directory: ${{ runner.temp }}
+        run: |
+          python -m venv pypi-smoke
+          pypi-smoke/bin/python -m pip install "$GITHUB_WORKSPACE"/dist/*.whl
+          pypi-smoke/bin/python -m pip check
+      - name: Smoke test the installed CLI and MCP server
+        working-directory: ${{ runner.temp }}
+        env:
+          MOBSTER_NO_DEVICES: "1"
+          MOBSTER_NO_UPDATE_CHECK: "1"
+          MOBSTER_DATA_DIR: ${{ runner.temp }}/pypi-smoke-data
+          MOBSTER_APP_DATA_DIR: ${{ runner.temp }}/pypi-smoke-app
+          MOBSTER_RUNS_DIR: ${{ runner.temp }}/pypi-smoke-runs
+        run: |
+          pypi-smoke/bin/python - <<'PY'
+          import json
+          import subprocess
+          import sys
+          from importlib.metadata import version
+          from importlib.resources import files
+          from pathlib import Path
+
+          import mobile_agent
+
+          assert Path(mobile_agent.__file__).resolve().is_relative_to(Path(sys.prefix).resolve())
+          required_resources = [
+              "wireless/mobster-wifi-pair.c", "netxray/mobster-pcap.c", "verify/netshim.m",
+              "swift/ocr.swift", "swift/helper_doc_text.swift", "swift/helper_phone_screen.swift",
+              "swift/helper_draft_reply.swift", "swift/helper_pdf.swift", "swift/helper_mirroring.swift",
+              "swift/helper_phone_audio.swift", "swift/helper_transfer.swift", "swift/helper_screen_text.swift",
+              "swift/helper_mjpeg_mp4.swift", "swift/helper_bt_hid.swift", "swift/helper_map.swift",
+          ]
+          for resource in required_resources:
+              assert files("mobile_agent").joinpath(resource).read_bytes(), f"Missing or empty resource: {resource}"
+          expected = version("mobster-cli")
+          cli = str(Path(sys.executable).with_name("mobster"))
+          for args in (["--help"], ["mcp", "--help"], ["verify", "--help"]):
+              subprocess.run([cli, *args], check=True, timeout=30)
+          info = json.loads(subprocess.check_output([cli, "version", "--json"], text=True, timeout=30))
+          assert (info.get("version") or info.get("mobster")) == expected, info
+          requests = [
+              {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {
+                  "protocolVersion": "2025-06-18", "capabilities": {},
+                  "clientInfo": {"name": "wheel-smoke", "version": "1"}}},
+              {"jsonrpc": "2.0", "method": "notifications/initialized"},
+              {"jsonrpc": "2.0", "id": 2, "method": "tools/list"},
+          ]
+          result = subprocess.run([cli, "mcp", "--keyless"], check=True, text=True, capture_output=True,
+                                  input="".join(json.dumps(item) + "\n" for item in requests), timeout=30)
+          replies = {item.get("id"): item for item in map(json.loads, result.stdout.splitlines())}
+          assert replies[1]["result"]["serverInfo"] == {"name": "mobster", "version": expected}
+          tools = {tool["name"]: tool for tool in replies[2]["result"]["tools"]}
+          assert {"status", "verify_start", "screen", "tap", "verify_finish"} <= tools.keys()
+          assert "smart" not in tools["verify_start"]["inputSchema"]["properties"]
+          print(f"Installed mobster-cli {expected}: CLI and keyless MCP smoke passed")
+          PY
+      - name: Upload validated distributions
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: python-distributions
+          path: |
+            dist/*.whl
+            dist/*.tar.gz
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    if: ${{ (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/cli-v')) || (github.event_name == 'workflow_dispatch' && inputs.publish) }}
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: pypi
+      url: https://pypi.org/p/mobster-cli
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: python-distributions
+          path: dist
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3

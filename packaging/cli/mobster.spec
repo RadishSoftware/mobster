@@ -59,10 +59,12 @@ HIDDEN_IMPORTS = [
 # A module another workstream adds may be missing from the tree being built. PyInstaller
 # only warns about a hidden import it can't find, and build.sh's smoke then fails on the
 # command that needs it, so a partial build never ships quietly.
-# Source files a command reads at run time: `mobster build-ocr` compiles ocr.swift (with Xcode's swiftc).
+# Native helpers compile their packaged Swift/C sources on demand with Xcode tools and external libraries.
 # `conditions.network` and `stubs` compile verify/netshim.m for the simulator the first time a check uses them.
-DATAS = [(os.path.join(ROOT, "mobile_agent", "swift", "ocr.swift"), "mobile_agent/swift"),
-         (os.path.join(ROOT, "mobile_agent", "verify", "netshim.m"), "mobile_agent/verify")]
+DATAS = [(os.path.join(ROOT, "mobile_agent", "swift", "*.swift"), "mobile_agent/swift"),
+         (os.path.join(ROOT, "mobile_agent", "verify", "netshim.m"), "mobile_agent/verify"),
+         (os.path.join(ROOT, "mobile_agent", "wireless", "mobster-wifi-pair.c"), "mobile_agent/wireless"),
+         (os.path.join(ROOT, "mobile_agent", "netxray", "mobster-pcap.c"), "mobile_agent/netxray")]
 
 a = Analysis(
     [os.path.join(SPECPATH, "entry.py")],

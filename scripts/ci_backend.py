@@ -321,7 +321,13 @@ def main():
     with ThreadPoolExecutor(max_workers=args.jobs) as pool:
         futures = [pool.submit(run, args.python, root, name, env, scratch) for name in names]
         for future in as_completed(futures):
-            results.append(future.result())
+            result = future.result()
+            results.append(result)
+            status = "ok" if result["ok"] else "failed (will retry)"
+            print(f"backend [{len(results)}/{len(names)}] {result['module']}: {status} "
+                  f"({result['seconds']:.1f}s)", flush=True)
+            if not result["ok"]:
+                print(result["output"], flush=True)
     flaky = []
     for index, result in enumerate(results):
         if result["ok"]:

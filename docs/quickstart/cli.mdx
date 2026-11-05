@@ -1,32 +1,38 @@
 ---
 title: "Quickstart: the mobster command"
 sidebarTitle: "In your terminal"
-description: "Put the mobster command from Mobster for Mac on your PATH, run the demo, then run a task on your iPhone from the terminal."
+description: "Install the standalone mobster CLI, run the demo, then run a task on your iPhone from the terminal."
 icon: "terminal"
 keywords: ["install", "cli", "terminal", "mobster command", "demo", "first task"]
 ---
 
-The `mobster` command is the agent inside Mobster for Mac. Step 2 runs a demo that needs no iPhone and no key.
+The standalone `mobster` command runs without Mobster for Mac. Step 2 runs a demo that needs no iPhone and no key.
 
 ## Before you begin
 
-- Mobster for Mac in your Applications folder: [download it](https://mobster.dev/download), or run `brew install --cask radishsoftware/tap/mobster-app`.
-- For a task on your iPhone, the iPhone set up in Mobster for Mac ([Quickstart: Mobster for Mac](/quickstart/mac)) and a Claude or OpenAI key.
+- macOS and [uv](https://docs.astral.sh/uv/getting-started/installation/), with `uv` and `uvx` on your `PATH`. uv manages the CLI's Python environment.
+- Xcode for device operation, with your iPhone or simulator configured through [device setup](/device-setup).
+- A Claude or OpenAI key for autonomous tasks. The demo needs no key; MCP clients use their own model account.
 
 ## Set up
 
 <Steps>
-  <Step title="Put mobster on your PATH">
-    Link the command inside Mobster for Mac into `~/.local/bin`, add that folder to your `PATH`, and open a new terminal window:
+  <Step title="Install the standalone CLI">
+    Install the Python package in an isolated tool environment:
 
     ```sh
-    mkdir -p ~/.local/bin
-    ln -sf /Applications/Mobster.app/Contents/MacOS/mobster-agent \
-      ~/.local/bin/mobster
-    echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
+    uv tool install --python 3.12 mobster-cli
     ```
 
-    Check the version:
+    If uv reports that its executable directory is missing from your `PATH`, run `uv tool update-shell` and open a new terminal.
+
+    If you prefer npm, install the launcher instead. It still requires uv and downloads the same Python CLI on first use:
+
+    ```sh
+    npm install -g @radishsoftware/mobster
+    ```
+
+    Both install paths provide the `mobster` command:
 
     ```sh
     mobster version
@@ -36,7 +42,7 @@ The `mobster` command is the agent inside Mobster for Mac. Step 2 runs a demo th
     mobster 0.4.0
     ```
 
-    Mobster for Mac updates itself and the command bundled with it.
+    These registry commands require the corresponding Python and npm releases to be published.
   </Step>
   <Step title="Run the demo">
     ```sh
@@ -68,7 +74,7 @@ The `mobster` command is the agent inside Mobster for Mac. Step 2 runs a demo th
     Mobster doctor
 
       ✓ Python            3.12.13
-      ✓ Mobster           0.4.0, frozen app build
+      ✓ Mobster           0.4.0, installed
       ✗ Model key         none yet
                           → mobster login
       ✓ Xcode             Xcode 26.4
@@ -105,6 +111,10 @@ The `mobster` command is the agent inside Mobster for Mac. Step 2 runs a demo th
     Mobster tests the key with one small request, then saves it on this Mac. Run `mobster doctor` again: its last line says `Ready for tasks.`
   </Step>
 </Steps>
+
+## Use Mobster for Mac
+
+The [Mac app](/quickstart/mac) is a separate install with a desktop interface and its own bundled command. Choose it for the app workspace; it is not a prerequisite for the standalone CLI above.
 
 ## Run a task
 

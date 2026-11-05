@@ -46,7 +46,7 @@ Deep links Mobster opened on a real iPhone, by app. The `open_url` MCP tool list
 - [Test and automate apps on real iPhones](https://docs.mobster.dev/index.md): Set up Mobster, test your app, or connect your coding agent to your iPhone.
 - [Quickstart: Mobster for Mac](https://docs.mobster.dev/quickstart/mac.md): Install Mobster for Mac, connect your iPhone and run your first task.
 - [Quickstart: test your app](https://docs.mobster.dev/quickstart/test.md): Install Mobster, prepare a simulator, then write, save and run your first check of your own app. On a simulator it's free: no iPhone, plan, sign-in or API key.
-- [Quickstart: the mobster command](https://docs.mobster.dev/quickstart/cli.md): Put the mobster command from Mobster for Mac on your PATH, run the demo, then run a task on your iPhone from the terminal.
+- [Quickstart: the mobster command](https://docs.mobster.dev/quickstart/cli.md): Install the standalone mobster CLI, run the demo, then run a task on your iPhone from the terminal.
 
 ## Get started: Concepts
 

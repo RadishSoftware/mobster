@@ -8,6 +8,8 @@ Copy these into your app's repository to run Mobster's checks in CI, after Xcode
 | `gitlab/mobster.gitlab-ci.yml` | `.gitlab-ci.yml`, or included from it | The same for GitLab merge requests, with the JUnit report in the merge request. Needs `MOBSTER_GITLAB_TOKEN`. |
 | `checks/home.yaml` | `.mobster/checks/home.yaml` | A launch-only check tagged `smoke` and `screenshot`: CI runs it, `mobster xcode hook --tag smoke` runs it after each build, and `mobster asc screenshots` makes a store screenshot from it. |
 
+Install uv on the runner with `brew install uv`. The workflows run the pinned standalone CLI without the Mac app.
+
 Then, on your Mac:
 
 ```sh

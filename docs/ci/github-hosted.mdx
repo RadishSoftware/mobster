@@ -2,13 +2,13 @@
 title: "Running checks on a GitHub-hosted runner"
 sidebarTitle: "GitHub-hosted runner"
 keywords: ["github actions", "macos-15", "hosted runner", "ci token", "wda cache", "mobster ci init --hosted"]
-description: "Run your checks on every pull request on GitHub's own macOS runner, with simulators, a CI token and no Mac of yours."
+description: "Run your checks on every pull request on GitHub's own macOS runner, with simulators and no Mac of yours."
 icon: "cloud"
 hidden: true
 noindex: true
 ---
 
-<Warning>CI tokens are not enabled yet, so hosted runners cannot run your checks today. Run them on [your own Mac](/ci#a-mac-of-yours).</Warning>
+The generated workflow runs the standalone `mobster-cli==0.4.0` package through uv. It needs macOS, Xcode and an iOS Simulator runtime. The Mac app is not required.
 
 Your pull requests are tested on `macos-15`, the arm64 macOS runner GitHub hosts. You run no Mac, and the runner needs nothing installed beforehand. [CI](/ci) has the parts every host shares: the comment, the report and the flags.
 
@@ -20,11 +20,13 @@ From your project's folder:
 mobster ci init --hosted
 ```
 
-It writes `.github/workflows/mobster.yml` and prints what's left: make a CI token (below), add it as `MOBSTER_CI_TOKEN` and, for checks with steps, `ANTHROPIC_API_KEY` as repository secrets, commit the file and open a pull request. `--force` replaces an existing file, and `--print` shows the workflow without writing it.
+It writes `.github/workflows/mobster.yml` and prints what's left: add `ANTHROPIC_API_KEY` as a repository secret for checks with steps, commit the file and open a pull request. `--force` replaces an existing file, and `--print` shows the workflow without writing it.
 
 ## The workflow
 
 ```yaml .github/workflows/mobster.yml
+# Mobster checks on every pull request, on a GitHub-hosted Mac (https://docs.mobster.dev/ci/github-hosted).
+# Add ANTHROPIC_API_KEY as a repository secret for checks with steps.
 name: mobster
 on: pull_request
 permissions:
@@ -33,8 +35,6 @@ permissions:
 concurrency:
   group: mobster-${{ github.event.pull_request.number }}
   cancel-in-progress: true
-env:
-  MOBSTER: /Applications/Mobster.app/Contents/MacOS/mobster-agent
 jobs:
   checks:
     runs-on: macos-15
@@ -46,8 +46,8 @@ jobs:
       - name: Install Mobster
         id: mobster
         run: |
-          brew install --cask radishsoftware/tap/mobster-app
-          echo "version=$(brew list --cask --versions mobster-app | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+          brew install uv
+          echo "version=0.4.0" >> "$GITHUB_OUTPUT"
           echo "xcode=$(xcodebuild -version | head -1 | tr -d ' ')" >> "$GITHUB_OUTPUT"
       - name: Cache WebDriverAgent
         uses: actions/cache@v4
@@ -58,12 +58,11 @@ jobs:
             mobster-wda-${{ runner.arch }}-${{ steps.mobster.outputs.xcode }}-
       - name: Prepare a simulator
         run: |
-          "$MOBSTER" sim doctor --fix
+          uvx --python 3.12 --from mobster-cli==0.4.0 mobster sim doctor --fix
       - name: Test what this PR changed
         run: |
-          "$MOBSTER" ci run
+          uvx --python 3.12 --from mobster-cli==0.4.0 mobster ci run
         env:
-          MOBSTER_CI_TOKEN: ${{ secrets.MOBSTER_CI_TOKEN }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}   # only checks with steps use it
       - name: Upload the report
         id: upload
@@ -72,12 +71,13 @@ jobs:
         with:
           name: mobster-report
           path: .mobster/ci/
+          include-hidden-files: true
           retention-days: 14
           if-no-files-found: ignore
       - name: Comment on the PR
         if: always()
         run: |
-          "$MOBSTER" ci comment
+          uvx --python 3.12 --from mobster-cli==0.4.0 mobster ci comment
         env:
           GITHUB_TOKEN: ${{ github.token }}
           MOBSTER_ARTIFACT_URL: ${{ steps.upload.outputs.artifact-url }}
@@ -85,12 +85,12 @@ jobs:
 
 The cache holds the WebDriverAgent build, the slow part of a first job. Its key names the Xcode and Mobster versions, so a new Xcode or a new Mobster builds it once and every job after restores it. The simulator runtimes come with the runner's Xcode.
 
-## Sign in with a CI token
+## Credentials
 
-The job signs in with a CI token, not with Mobster for Mac. It is part of your plan, adds no seat and counts no runs. It licenses simulator checks only (`mobster ci run` and `mobster test`), it ends after 90 days unless you choose up to 365, and it never licenses an iPhone. Make one with `mobster account ci-token create NAME` or in the console under Settings › CI tokens, and revoke it from either. Store it as `MOBSTER_CI_TOKEN`, as a secret of the service. `mobster ci doctor` in the job checks that it is live and says what to fix if it isn't.
+Launch-only checks need no model key. Set `ANTHROPIC_API_KEY` for checks that use Smart. The standalone CLI requires no Mobster account or CI token. If you supply `MOBSTER_CI_TOKEN`, `mobster ci doctor` still validates it. App-bundled commands retain their plan and token checks.
 
 ## What this runner doesn't do
 
 A hosted Mac has no iPhone, so the checks run on simulators. To test on a phone, use [a Mac of yours](/ci/mac-runner).
 
-A pull request from a fork gets no repository secrets, so the token is empty there: the job says Mobster couldn't run, and your token never reaches the fork's code.
+A pull request from a fork gets no repository secrets. Checks that need a model key cannot run there without a separate trusted workflow.

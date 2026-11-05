@@ -6,7 +6,7 @@ import urllib.request
 from pathlib import Path
 from unittest.mock import patch
 
-from mobile_agent import pinning, update_check
+from mobile_agent import pinning
 
 FIXTURES = Path(__file__).parent / "fixtures" / "tls"
 SHELL_PINS = Path(__file__).resolve().parents[2] / "desktop" / "src-tauri" / "src" / "pinning.rs"
@@ -129,24 +129,6 @@ class PinTests(unittest.TestCase):
         self.assertEqual(set(re.findall(r'"([A-Za-z0-9+/]{43}=)"', block)), set(pinning.PINS))
         hosts = source.split("pub const PINNED_HOSTS")[1].split("];")[0]
         self.assertEqual(set(re.findall(r'"([a-z.]+)"', hosts)), set(pinning.PINNED_HOSTS))
-
-
-class PinnedCallersTests(unittest.TestCase):
-
-
-
-
-    def test_the_clis_update_feed_is_read_through_the_pinned_opener(self):
-        opened = []
-
-        class Opener:
-            def open(self, request, timeout):
-                opened.append(request.full_url)
-                raise pinning.PinMismatch("mobster.dev")
-
-        with patch.object(pinning, "opener", return_value=Opener()):
-            self.assertIsNone(update_check.minimum_version())
-        self.assertEqual(opened, ["https://mobster.dev/updates/latest.json"])
 
 
 if __name__ == "__main__":

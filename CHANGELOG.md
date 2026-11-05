@@ -6,12 +6,18 @@ All notable changes to Mobster CLI are listed here. The format follows [Keep a C
 
 ### Fixed
 
+- Standalone installs include the Wi-Fi pairing and packet-capture helper sources; frozen builds include every Swift helper.
+- Update checks use PyPI for Python installs and CLI archives for frozen installs. App-owned copies use the Mac app updater.
+- Generated CI jobs run the standalone CLI through uv. Runner checks require a Mac app account only for app-owned copies.
+
 - Failed permission-store writes leave the active grants unchanged.
 - Simulator leases close even when release callbacks fail, and simulator listings use one lease observation per row.
 - Verification suites drain refused checks without recursive calls.
 - Recent terminal-thread addresses use atomic file replacement.
 
 ### Maintenance
+
+- Publish `mobster-cli` through a checked GitHub release workflow and provide `@radishsoftware/mobster` as a small uv launcher.
 
 - Remove unused attach adapters and Android recording scaffolding; retain the existing app scorer and Android logs.
 - Remove retired engine-export and app-only packaging/CI code from the standalone CLI.

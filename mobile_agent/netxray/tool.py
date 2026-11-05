@@ -1,4 +1,4 @@
-"""Find (or build) ``mobster-pcap``, Mobster's own pcapd client (desktop/iphone-tools/mobster-pcap.c)."""
+"""Find (or build) ``mobster-pcap``, Mobster's own pcapd client."""
 
 import hashlib
 import os
@@ -7,7 +7,7 @@ import subprocess
 from pathlib import Path
 
 NAME = "mobster-pcap"
-SOURCE = Path(__file__).resolve().parents[2] / "desktop" / "iphone-tools" / f"{NAME}.c"
+SOURCE = Path(__file__).resolve().with_name(f"{NAME}.c")
 LIBRARIES = ("libimobiledevice-1.0", "libplist-2.0")
 
 
@@ -20,7 +20,7 @@ def _cached():
 
 
 def find():
-    """The tool: the Mac app's bundled copy, else one built earlier from this checkout; None when neither exists."""
+    """The app's bundled tool or a previously built copy; None when neither exists."""
     from ..mac_tools import bundled_tools_dir, executable
     folder = bundled_tools_dir()
     if folder is not None and (path := executable(folder, NAME)):
@@ -32,7 +32,7 @@ def find():
 
 
 def build():
-    """Compile the tool from this checkout against Homebrew's libimobiledevice."""
+    """Compile the packaged tool source against Homebrew's libimobiledevice."""
     target = _cached()
     if target is None:
         raise LookupError("This Mobster has no mobster-pcap source to build")

@@ -45,7 +45,7 @@ Without the app list (no `ideviceinstaller`, a locked phone) every process keeps
 
 ## mobster-pcap
 
-`desktop/iphone-tools/mobster-pcap.c` (MIT) is Mobster's own pcapd client over libimobiledevice (LGPL-2.1), built and bundled like `mobster-wifi-pair`: `desktop/scripts/build-iphone-tools.sh` compiles every `desktop/iphone-tools/*.c` statically into `Contents/Resources/iphone-tools/bin`, and `mobile_agent/netxray/tool.py` finds that copy, else builds one into the data folder's `helpers/` (`mobile_agent/wireless/pair.py` does the same for `mobster-wifi-pair`). It never imports or copies pymobiledevice3 (GPL-3.0-or-later).
+`mobile_agent/netxray/mobster-pcap.c` (MIT) is Mobster's pcapd client over libimobiledevice (LGPL-2.1). The CLI ships its source beside `tool.py`, which compiles it into the data folder's `helpers/` using Xcode command-line tools, `pkg-config` and Homebrew's libimobiledevice. `mobile_agent/wireless/pair.py` builds its adjacent `mobster-wifi-pair.c` the same way. Both prefer an existing Mac app tool when available. They never import or copy pymobiledevice3 (GPL-3.0-or-later).
 
 ```sh
 mobster-pcap --udid <UDID> [--network] [--seconds N] [--max-mb N] [--snaplen N] --out FILE.pcapng

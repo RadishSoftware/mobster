@@ -2,13 +2,13 @@
 title: "Running checks in Bitrise"
 sidebarTitle: "Bitrise"
 keywords: ["bitrise", "bitrise.yml", "hosted runner", "ci token"]
-description: "Run your checks on every pull request on a Bitrise Mac, with simulators and a CI token."
+description: "Run your checks on every pull request on a Bitrise Mac, with simulators and the standalone CLI."
 icon: "cloud"
 hidden: true
 noindex: true
 ---
 
-<Warning>CI tokens are not enabled yet, so hosted runners cannot run your checks today. Run them on [your own Mac](/ci#a-mac-of-yours).</Warning>
+The generated workflow runs the standalone `mobster-cli==0.4.0` package through uv. It needs macOS, Xcode and an iOS Simulator runtime. The Mac app is not required.
 
 Bitrise builds on macOS machines it hosts. `mobster ci init --host bitrise` writes a workflow with the steps. [CI](/ci) has the parts every host shares.
 
@@ -18,13 +18,13 @@ Bitrise builds on macOS machines it hosts. `mobster ci init --host bitrise` writ
 mobster ci init --host bitrise
 ```
 
-It writes `bitrise.yml`. When that file exists, it leaves it as it is and writes the `mobster` workflow to `.mobster/hosts/bitrise.yml` for you to merge. Then add `MOBSTER_CI_TOKEN` as a Secret of the Bitrise app, trigger the `mobster` workflow on pull requests, commit the file and open a pull request.
+It writes `bitrise.yml`. When that file exists, it leaves it as it is and writes the `mobster` workflow to `.mobster/hosts/bitrise.yml` for you to merge. Then add `ANTHROPIC_API_KEY` for checks with steps as a Secret of the Bitrise app, trigger the `mobster` workflow on pull requests, commit the file and open a pull request.
 
-The workflow clones the repository, installs Mobster for Mac with Homebrew, runs `mobster sim doctor --fix`, runs `mobster ci run`, and deploys `.mobster/ci` as the build's artifacts even when a check fails. The target branch comes from `BITRISEIO_GIT_BRANCH_DEST`. Bitrise gets no comment from Mobster: GitHub and GitLab are the hosts where `mobster ci comment` posts.
+The workflow clones the repository, installs uv with Homebrew and runs the pinned standalone CLI, runs `mobster sim doctor --fix`, runs `mobster ci run`, and deploys `.mobster/ci` as the build's artifacts even when a check fails. The target branch comes from `BITRISEIO_GIT_BRANCH_DEST`. Bitrise gets no comment from Mobster: GitHub and GitLab are the hosts where `mobster ci comment` posts.
 
-## Sign in with a CI token
+## Credentials
 
-The job signs in with a CI token, not with Mobster for Mac. It is part of your plan, adds no seat and counts no runs. It licenses simulator checks only (`mobster ci run` and `mobster test`), it ends after 90 days unless you choose up to 365, and it never licenses an iPhone. Make one with `mobster account ci-token create NAME` or in the console under Settings › CI tokens, and revoke it from either. Store it as `MOBSTER_CI_TOKEN`, as a secret of the service. `mobster ci doctor` in the job checks that it is live and says what to fix if it isn't.
+Launch-only checks need no model key. Set `ANTHROPIC_API_KEY` for checks that use Smart. The standalone CLI requires no Mobster account or CI token. If you supply `MOBSTER_CI_TOKEN`, `mobster ci doctor` still validates it. App-bundled commands retain their plan and token checks.
 
 ## What this runner doesn't do
 

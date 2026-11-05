@@ -112,7 +112,7 @@ def _init(args, cwd, environ):
         from . import ci_hosts
         lines = [f"Wrote {target.relative_to(root)}.", *notes, "", "Next:",
                  *(f"  {number}. {step}" for number, step in enumerate(ci_hosts.NEXT[host], 1)),
-                 "", "On the runner, `mobster ci doctor` checks the token before the run."]
+                 "", "On the runner, `mobster ci doctor` checks this runner before the run."]
         say("\n".join(lines))
         return 0
     github = host == "github"

@@ -12,8 +12,9 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-from .. import plan_gate, premium_model
-from . import APP_AGENT, DevError, self_argv
+from .. import __version__, plan_gate, premium_model
+from . import DevError, self_argv
+from .ci_hosts import COMMAND
 
 CI_DIR = ".mobster/ci"
 MARKER = "<!-- mobster:test-pr -->"
@@ -97,7 +98,7 @@ def _flags(devices, testflight):
 def github_workflow(*, devices=(), testflight=()):
     flags = _flags(devices, testflight)
     return f"""# Mobster checks on every pull request, on a Mac of yours ({DOCS}/ci).
-# The runner needs Mobster for Mac in Applications. On that Mac, `mobster ci doctor` says what's missing.
+# Install uv on the runner (`brew install uv`). `mobster ci doctor` says what else is missing.
 name: mobster
 on: pull_request
 permissions:
@@ -106,8 +107,6 @@ permissions:
 concurrency:
   group: mobster-${{{{ github.event.pull_request.number }}}}
   cancel-in-progress: true
-env:
-  MOBSTER: {APP_AGENT}
 jobs:
   checks:
     runs-on: [self-hosted, macOS, mobster]
@@ -118,7 +117,7 @@ jobs:
           fetch-depth: 0   # the diff needs the base branch
       - name: Test what this PR changed
         run: |
-          "$MOBSTER" ci run{flags}
+          {COMMAND} ci run{flags}
         env:
           ANTHROPIC_API_KEY: ${{{{ secrets.ANTHROPIC_API_KEY }}}}   # only checks with steps use it
       - name: Upload the report
@@ -134,7 +133,7 @@ jobs:
       - name: Comment on the PR
         if: always()
         run: |
-          "$MOBSTER" ci comment
+          {COMMAND} ci comment
         env:
           GITHUB_TOKEN: ${{{{ github.token }}}}
           MOBSTER_ARTIFACT_URL: ${{{{ steps.upload.outputs.artifact-url }}}}
@@ -145,8 +144,8 @@ def gitlab_job(*, devices=(), testflight=()):
     flags = _flags(devices, testflight)
     return f"""# Mobster checks on every merge request, on a Mac of yours ({DOCS}/ci/gitlab).
 # Register the Mac as a runner with the shell executor and the tag "mobster". On it, `mobster ci doctor` says what's
-# missing. For the MR comment, add MOBSTER_GITLAB_TOKEN (a project access token with the api scope) as a masked
-# CI/CD variable. For checks with steps, add ANTHROPIC_API_KEY the same way.
+# missing. Install uv with `brew install uv`. For the MR comment, add MOBSTER_GITLAB_TOKEN (a project access token
+# with the api scope) as a masked CI/CD variable. For checks with steps, add ANTHROPIC_API_KEY the same way.
 mobster:
   stage: test
   tags: [mobster]
@@ -154,15 +153,14 @@ mobster:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
   variables:
     GIT_DEPTH: "0"
-    MOBSTER: {APP_AGENT}
   timeout: 1h
   interruptible: true
   script:
     - |
-      "$MOBSTER" ci run{flags}
+      {COMMAND} ci run{flags}
   after_script:
     - |
-      "$MOBSTER" ci comment
+      {COMMAND} ci comment
   artifacts:
     when: always
     expire_in: 14 days
@@ -271,7 +269,7 @@ def runner_env(home, environ=None):
     return {}, None
 
 
-def doctor(*, run=_run, home=None, environ=None, machine=None, plan=None, agent=APP_AGENT, disk=None, hosted=None,
+def doctor(*, run=_run, home=None, environ=None, machine=None, plan=None, agent=None, disk=None, hosted=None,
            ci_token=None):
     home = Path(home or Path.home())
     environ = os.environ if environ is None else environ
@@ -295,18 +293,30 @@ def doctor(*, run=_run, home=None, environ=None, machine=None, plan=None, agent=
     rows.append(Row("iOS Simulator runtime", "ok" if runtimes else "fail",
                     ", ".join(runtimes[-2:]) if runtimes else "none installed",
                     "" if runtimes else "Run `xcodebuild -downloadPlatform iOS`."))
-    installed = Path(agent).exists()
-    rows.append(Row("Mobster for Mac", "ok" if installed else "fail",
-                    "in Applications" if installed else "not in Applications",
-                    "" if installed else "Download it from https://mobster.dev/download and open it once."))
-    if hosted:
-        rows.append(_token_row(ci_token) if ci_token else hosted_token_row(environ))
-    else:
-        problem = (plan or _plan_problem)()
-        rows.append(Row("Mobster plan", "ok" if problem is None else "fail",
-                        "active on this Mac" if problem is None else f"none active ({problem.replace('_', ' ')})",
-                        "" if problem is None else "Open Mobster, sign in, and start your free trial or choose a "
-                                                   "plan."))
+    agent = self_argv()[0][0] if agent is None else agent
+    installed = Path(agent).is_file()
+    rows.append(Row("Mobster CLI", "ok" if installed else "fail",
+                    f"version {__version__}" if installed else "executable not found",
+                    "" if installed else f"Install uv, then run `{COMMAND} ci doctor`."))
+    bundled = plan_gate.bundled()
+    has_token = bool(environ.get("MOBSTER_CI_TOKEN", "").strip())
+    if hosted or ci_token is not None or has_token:
+        if ci_token is not None:
+            token_row = _token_row(ci_token)
+        elif bundled or has_token:
+            token_row = hosted_token_row(environ)
+        else:
+            token_row = Row("CI token", "skip", "not required by the standalone CLI")
+        rows.append(token_row)
+    if not hosted:
+        if bundled or plan is not None:
+            problem = (plan or _plan_problem)()
+            rows.append(Row("Mobster plan", "ok" if problem is None else "fail",
+                            "active on this Mac" if problem is None else f"none active ({problem.replace('_', ' ')})",
+                            "" if problem is None else "Open Mobster, sign in, and start your free trial or choose a "
+                                                       "plan."))
+        else:
+            rows.append(Row("Mobster plan", "skip", "not required by the standalone CLI"))
     if hosted:
         # a hosted runner is a fresh machine for every job, so the rows about keeping one running don't apply
         for name in ("System sleep", "Restart after a power cut", "Automatic login", "Runner service"):

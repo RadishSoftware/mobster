@@ -1,8 +1,10 @@
 
 import contextlib
+import importlib.util
 import io
 import json
 import shlex
+import sys
 import tempfile
 import unittest
 import urllib.error
@@ -38,12 +40,13 @@ class InitTests(Temp):
         self.assertEqual(names, ["actions/checkout@v4", "Test what this PR changed", "Upload the report",
                                  "Comment on the PR"])
         self.assertEqual(job["steps"][0]["with"]["fetch-depth"], 0)
-        self.assertIn('"$MOBSTER" ci run', job["steps"][1]["run"])
+        self.assertIn(f"{ci.COMMAND} ci run", job["steps"][1]["run"])
         self.assertEqual(job["steps"][2]["if"], "always()")
         comment = job["steps"][3]
         self.assertEqual(comment["env"]["MOBSTER_ARTIFACT_URL"], "${{ steps.upload.outputs.artifact-url }}")
         self.assertNotIn("${{", comment["run"])
-        self.assertEqual(flow["env"]["MOBSTER"], ci.APP_AGENT)
+        self.assertNotIn("MOBSTER", flow.get("env", {}))
+        self.assertNotIn("/Applications/Mobster.app", path.read_text())
 
     def test_gitlab_job_reports_junit_and_comments_in_after_script(self):
         path, _ = ci.init(self.root, host="gitlab", devices=("Studio iPhone",), testflight=("com.example.app",))
@@ -54,8 +57,8 @@ class InitTests(Temp):
         self.assertEqual(job["artifacts"]["when"], "always")
         self.assertEqual(job["variables"]["GIT_DEPTH"], "0")
         self.assertEqual(job["script"][0].strip(),
-                         '"$MOBSTER" ci run --device \'Studio iPhone\' --testflight com.example.app')
-        self.assertEqual(job["after_script"][0].strip(), '"$MOBSTER" ci comment')
+                         f"{ci.COMMAND} ci run --device 'Studio iPhone' --testflight com.example.app")
+        self.assertEqual(job["after_script"][0].strip(), f"{ci.COMMAND} ci comment")
 
     def test_an_existing_gitlab_file_gets_an_include_and_nothing_is_overwritten_without_force(self):
         (self.root / ".gitlab-ci.yml").write_text("stages: [build]\n")
@@ -138,7 +141,7 @@ class PhoneFlagsTests(Temp):
         code, out, _, _ = self.ci("init", "--host", "gitlab", "--device", "Test iPhone", "--device", "Lab iPhone")
         self.assertEqual(code, 0)
         job = yaml.safe_load((self.root / ".gitlab-ci.yml").read_text())["mobster"]
-        self.assertEqual(job["script"][0].strip(), '"$MOBSTER" ci run --device \'Test iPhone\' --device \'Lab iPhone\'')
+        self.assertEqual(job["script"][0].strip(), f"{ci.COMMAND} ci run --device 'Test iPhone' --device 'Lab iPhone'")
         self.assertIn("On the runner, allow the phones: MOBSTER_RUNNER_DEVICES=Test iPhone,Lab iPhone", out)
 
     def test_a_phone_name_with_quotes_and_emoji_reaches_the_workflow_intact(self):
@@ -147,7 +150,7 @@ class PhoneFlagsTests(Temp):
         self.assertEqual(code, 0)
         run = yaml.safe_load((self.root / ".github/workflows/mobster.yml").read_text())["jobs"]["checks"]["steps"][1]
         self.assertEqual(shlex.split(run["run"].strip()),
-                         ["$MOBSTER", "ci", "run", "--device", name, "--testflight", "com.example.app"])
+                         shlex.split(ci.COMMAND) + ["ci", "run", "--device", name, "--testflight", "com.example.app"])
 
     def test_a_line_break_tab_or_control_character_in_a_phone_or_app_is_refused_before_anything_is_written(self):
         for flags in (("--device", "Test\niPhone"), ("--device", "Test\u2028iPhone"), ("--device", "Test\tiPhone"),
@@ -302,6 +305,7 @@ class CommentTests(Temp):
                       "GIFs](https://gitlab.example.com/o/r/-/jobs/7/artifacts/browse/.mobster/ci/)",
                       body)
 
+    @unittest.skipUnless(importlib.util.find_spec("mobile_agent.teams"), "requires the app teams extension")
     def test_a_shared_report_is_what_the_comment_links_on_any_host(self):
         suite_folder(self.root)
         ci.collect(self.root, "s1", self.root / ".mobster" / "ci")
@@ -319,6 +323,23 @@ class CommentTests(Temp):
         (folder / "pr.json").write_text(json.dumps({**pr, "hostedReport": "https://example.com/x"}))
         self.assertIn("https://github.com/o/r/artifacts/9", ci.comment_markdown(
             self.root, {"GITHUB_ACTIONS": "true", "MOBSTER_ARTIFACT_URL": "https://github.com/o/r/artifacts/9"}))
+
+    def test_shared_report_metadata_keeps_artifact_links_without_the_team_extension(self):
+        suite_folder(self.root)
+        folder = self.root / ".mobster" / "ci"
+        ci.collect(self.root, "s1", folder)
+        (folder / "ci.json").write_text(json.dumps({"exitCode": 1}))
+        pr = json.loads((folder / "pr.json").read_text())
+        link = "https://console.mobster.dev/r/6b1f0a52-3c1e-4d7a-9a40-5be0c2d9e7f1#k=" + "A" * 43
+        (folder / "pr.json").write_text(json.dumps({**pr, "hostedReport": link}))
+        github = "https://github.com/o/r/artifacts/9"
+        gitlab_frame = "https://gitlab.example.com/o/r/-/jobs/7/artifacts/file/.mobster/ci/pr/frames/paywall.jpg"
+        for environ, frame in (({"GITHUB_ACTIONS": "true", "MOBSTER_ARTIFACT_URL": github}, github),
+                               (self.gitlab(), gitlab_frame)):
+            with self.subTest(host=ci.host_of(environ)), mock.patch.dict(sys.modules, {"mobile_agent.teams": None}):
+                body = ci.comment_markdown(self.root, environ)
+            self.assertIn(f"[paywall.jpg]({frame})", body)
+            self.assertNotIn(link, body)
 
     def test_github_links_the_uploaded_report_and_a_missing_report_says_the_run_failed(self):
         suite_folder(self.root)
@@ -391,6 +412,22 @@ class DoctorTests(Temp):
         self.assertTrue(all(row.status == "ok" for row in rows.values()), [r.public() for r in rows.values()])
         self.assertEqual(rows["iOS Simulator runtime"].detail, "iOS 26.4")
         self.assertEqual(rows["Runner service"].detail, "GitHub Actions runner")
+
+    def test_standalone_cli_needs_neither_an_app_bundle_nor_an_account(self):
+        with mock.patch.object(plan_gate, "bundled", return_value=False), \
+                mock.patch.object(ci, "_plan_problem", side_effect=AssertionError("app account must not be read")):
+            rows = {row.name: row for row in ci.doctor(
+                run=self.outputs(), home=self.root, environ={}, machine="arm64", disk=lambda path: 80e9)}
+        self.assertEqual(rows["Mobster CLI"].status, "ok")
+        self.assertEqual(rows["Mobster plan"].status, "skip")
+        self.assertNotIn("Mobster for Mac", rows)
+
+    def test_app_bundle_still_requires_its_account(self):
+        with mock.patch.object(plan_gate, "bundled", return_value=True), \
+                mock.patch.object(ci, "_plan_problem", return_value="no_account"):
+            rows = {row.name: row for row in ci.doctor(
+                run=self.outputs(), home=self.root, environ={}, machine="arm64", disk=lambda path: 80e9)}
+        self.assertEqual(rows["Mobster plan"].status, "fail")
 
     def test_sleep_and_a_missing_xcode_fail_with_the_fix(self):
         rows = self.doctor(pmset=(0, " sleep 10\n"), xcodebuild=(1, ""))

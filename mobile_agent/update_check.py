@@ -3,6 +3,7 @@
 import json
 import math
 import os
+import re
 import sys
 import threading
 import time
@@ -16,7 +17,8 @@ _fetch = None
 
 def _cache_path():
     from .paths import user_data_dir
-    return user_data_dir() / "cli" / "update-check.json"
+    kind = "frozen" if getattr(sys, "frozen", False) else "python"
+    return user_data_dir() / "cli" / f"update-check-{kind}.json"
 
 
 def enabled(command, args, stream=None):
@@ -43,8 +45,6 @@ def _read_cache():
         value["checkedAt"] = 0
     if not isinstance(value.get("latest"), dict):
         value["latest"] = None
-    if not isinstance(value.get("minimum"), str):
-        value["minimum"] = None
     return value
 
 
@@ -58,12 +58,15 @@ def _write_cache(value):
 
 
 def latest_release(timeout=1.0, opener=None):
-    """{"version", "publishedAt"} of the newest release of Mobster for Mac, or None."""
+    """The newest published release for this installation, or None when unavailable."""
     import urllib.request
 
     from . import links
-    request = urllib.request.Request(links.RELEASES_API, headers={"Accept": "application/vnd.github+json",
-                                                                   "User-Agent": "mobster-cli"})
+    if inside_app():
+        return None
+    frozen = bool(getattr(sys, "frozen", False))
+    request = urllib.request.Request(links.CLI_RELEASES_API if frozen else links.PYPI_API,
+                                     headers={"Accept": "application/json", "User-Agent": "mobster-cli"})
     try:
         with (opener or urllib.request.urlopen)(request, timeout=timeout) as response:
             data = json.loads(response.read(200_000))
@@ -71,34 +74,28 @@ def latest_release(timeout=1.0, opener=None):
         return None
     if not isinstance(data, dict):
         return None
-    tag = str(data.get("tag_name") or "").lstrip("v")
-    if not tag or data.get("draft") or data.get("prerelease"):
+    if frozen:
+        version = str(data.get("tag_name") or "").removeprefix("v")
+        assets = data.get("assets")
+        names = {asset.get("name") for asset in assets if isinstance(asset, dict)
+                 and isinstance(asset.get("name"), str)} if isinstance(assets, list) else set()
+        if data.get("draft") or data.get("prerelease") or not links.CLI_ASSETS <= names:
+            return None
+        published = data.get("published_at")
+    else:
+        info, files = data.get("info"), data.get("urls")
+        if not isinstance(info, dict) or info.get("name") != "mobster-cli" or info.get("yanked"):
+            return None
+        version = str(info.get("version") or "")
+        artifacts = [item for item in files if isinstance(item, dict) and item.get("yanked") is False
+                     and item.get("packagetype") in ("bdist_wheel", "sdist")] if isinstance(files, list) else []
+        if not artifacts:
+            return None
+        published = artifacts[0].get("upload_time_iso_8601")
+    # Mobster publishes three-part stable versions. Do not offer development or prerelease builds.
+    if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", version):
         return None
-    assets = data.get("assets")
-    names = {str(asset.get("name") or "") for asset in assets
-             if isinstance(asset, dict)} if isinstance(assets, list) else set()
-    if links.APP_ASSET not in names:
-        return None
-    return {"version": tag, "publishedAt": data.get("published_at")}
-
-
-def minimum_version(timeout=1.0, opener=None):
-    """The update feed's `minimum_version`, or None (none set, offline, or mobster.dev's pin didn't match)."""
-    import urllib.request
-
-    from . import links
-    request = urllib.request.Request(links.UPDATE_FEED,
-                                     headers={"Accept": "application/json", "User-Agent": "mobster-cli"})
-    if opener is None:
-        from . import pinning
-        opener = pinning.opener().open
-    try:
-        with opener(request, timeout=timeout) as response:
-            data = json.loads(response.read(200_000))
-    except Exception:  # noqa: BLE001 -- the check is a courtesy; it never fails a command
-        return None
-    value = str(data.get("minimum_version") or "").strip().lstrip("v") if isinstance(data, dict) else ""
-    return value or None
+    return {"version": version, "publishedAt": published}
 
 
 def parse_version(text):
@@ -124,25 +121,22 @@ def start(command, args):
 
     def fetch():
         found = latest_release()
-        value = {"checkedAt": time.time(), "latest": found, "minimum": minimum_version()}
+        value = {"checkedAt": time.time(), "latest": found}
         _write_cache(value)
     _fetch = threading.Thread(target=fetch, name="mobster-update-check", daemon=True)
     _fetch.start()
 
 
-def unsupported(current, cache):
-    """Whether the feed's minimum_version (in the cache) is above this version."""
-    minimum = (cache or {}).get("minimum")
-    return bool(minimum) and newer(minimum, current)
+def update_location():
+    """Where to find this distribution; never choose or invoke an installer for the user."""
+    from . import links
+    return links.CLI_RELEASES if getattr(sys, "frozen", False) else links.PYPI_PROJECT
 
 
 def notice(current, cache, now=None):
-    """The one line, or "" when there's nothing newer. It points at Mobster for Mac, never at an installer."""
-    from . import links
+    """The one line, or "" when there is no newer standalone CLI release."""
     latest = (cache or {}).get("latest") or {}
     version = latest.get("version")
-    if unsupported(current, cache):
-        return f"Mobster {current} is no longer supported. Download Mobster for Mac at {links.APP_DOWNLOAD}"
     if not version or not newer(version, current):
         return ""
     released = ""
@@ -156,8 +150,8 @@ def notice(current, cache, now=None):
         except ValueError:
             released = ""
     return (
-        f"Mobster {version} is out{released}, in Mobster for Mac (you have {current}). Download it at "
-        f"{links.APP_DOWNLOAD}")
+        f"Mobster {version} is out{released} (you have {current}). "
+        f"Upgrade with the installer you used: {update_location()}")
 
 
 def pending_notice(current, wait):
@@ -182,38 +176,38 @@ def after_command(command, args):
         from .style import palette
         paint = palette(sys.stderr)
         try:
-            print(paint(line, "amber" if unsupported(__version__, cache) else "tertiary"), file=sys.stderr, flush=True)
+            print(paint(line, "tertiary"), file=sys.stderr, flush=True)
         except (OSError, ValueError):
             pass
 
 
 def inside_app():
-    """Whether this is Mobster for Mac's own copy of mobster (the frozen sidecar in the .app bundle)."""
-    return bool(getattr(sys, "frozen", False)) and ".app/Contents" in sys.executable
+    """Use the same app ownership boundary as the frozen agent's plan and signature checks."""
+    from .build_identity import app_bundle
+    return app_bundle()
 
 
 def run_update(args):
     """`mobster update`: whether a newer Mobster is out, and where to get it."""
-    from . import __version__, links
+    from . import __version__
     from .style import palette
     paint = palette(sys.stdout)
     if inside_app():
         print("This copy of Mobster belongs to Mobster for Mac, which updates itself.")
         return 0
     found = latest_release(timeout=5)
-    cache = {"checkedAt": time.time(), "latest": found, "minimum": minimum_version(timeout=5)}
+    cache = {"checkedAt": time.time(), "latest": found}
     _write_cache(cache)
     line = notice(__version__, cache)
     if line:
-        print(paint(line, "amber" if unsupported(__version__, cache) else "accent"))
+        print(paint(line, "accent"))
     elif found:
         print(paint("✓ ", "green") + f"Mobster {__version__} is the latest release.")
     else:
-        print(f"Mobster couldn't check for a new release right now. New versions come in Mobster for Mac: "
-              f"{links.APP_DOWNLOAD}")
+        print(f"Mobster couldn't check for a new release right now. Check {update_location()}")
         return 1 if args.check else 0
     if source_checkout() and line:
-        print("This is a source checkout: update it with git (git pull).")
+        print("This is a source checkout: update it with Git, then reinstall if it is not editable.")
     elif line:
         print("This mobster keeps working.")
     return 0
