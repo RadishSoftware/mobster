@@ -834,13 +834,40 @@ class DoctorTests(TempHomeCase):
         self.assertIn("mobster mcp install cursor", report["problems"][0]["message"])
 
     def test_the_real_server_answers(self):
-        server = clients.Server(sys.executable, ["-m", "mobile_agent", "mcp", "--keyless"], {"PYTHONPATH": str(ROOT)})
+        # Keep the real CLI and stdio server; the child must not inventory this Mac's simulators or contact its app.
+        server = self.fake(textwrap.dedent("""\
+            import sys
+            from types import SimpleNamespace
+            from unittest.mock import Mock, patch
+            from mobile_agent.__main__ import main
+            from mobile_agent.threads.client import NoService
+
+            status = Mock(return_value={"runtime": "synthetic iOS", "device_type": "synthetic iPhone"})
+            manager = SimpleNamespace(status=status)
+            with (patch("mobile_agent.mac_tools.adopt_xcode", return_value=None),
+                  patch("mobile_agent.mcp_server.tools.default_manager", return_value=manager),
+                  patch("mobile_agent.engine_health.read_from_app", return_value=None) as engine,
+                  patch("mobile_agent.threads.client.Client.connect", side_effect=NoService("synthetic app offline")),
+                  patch("subprocess.Popen", side_effect=AssertionError("unexpected child process")) as spawn,
+                  patch("socket.create_connection", side_effect=AssertionError("unexpected network")) as connect):
+                code = main(["mcp", "--keyless"])
+                status.assert_called_once_with()
+                engine.assert_called_once_with(origin="mcp")
+                spawn.assert_not_called()
+                connect.assert_not_called()
+            sys.exit(code)
+            """))
+        server.env = {"PYTHONPATH": str(ROOT)}
         environ = {"HOME": str(self.home.path), "MOBSTER_DATA_DIR": str(self.home.path / "data")}
         report = doctor.probe(server, environ, cwd=str(self.home.path))
         self.assertTrue(report["ok"], report)
+        self.assertEqual(report["exit_code"], 0, report)
+        self.assertEqual([step["step"] for step in report["steps"]],
+                         ["initialize", "tools/list", "tools/call status"])
         self.assertIn("status", report["tools"])
         self.assertIn("verify_start", report["tools"])
         self.assertTrue(report["status"].startswith(f"Mobster {__version__}."))
+        self.assertIn("Default simulator: synthetic iPhone, synthetic iOS", report["status"])
 
 
 class CommandTests(unittest.TestCase):

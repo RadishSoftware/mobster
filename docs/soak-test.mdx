@@ -5,6 +5,8 @@ icon: "gauge"
 keywords: ["soak", "fleet", "latency", "p99", "many phones", "hub", "reliability"]
 ---
 
+These commands require the private `mobster-app` checkout. The standalone CLI repository and PyPI package do not include `scripts/soak_fleet.py`.
+
 `scripts/soak_fleet.py` asks each phone's helper the same read-only questions in a loop and tells you how long each answer took and how often it failed. Run it before you rely on a row of phones, after you add a hub or a phone, and after an iOS update.
 
 It sends `GET` requests only. It sends no tap, swipe or key, creates no session and never unlocks a phone. It stops reading a phone the moment its owner starts using it ([While you use your iPhone](/safety#while-you-use-your-iphone)).

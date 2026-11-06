@@ -231,14 +231,13 @@ class UpdateNoticeTests(Home):
         cache = {"latest": {"version": "0.4.0", "publishedAt": "2026-10-01T00:00:00Z"}}
         now = 1791676800  # 11 Oct 2026, 00:00 UTC
         self.assertEqual(update_check.notice("0.3.0", cache, now=now),
-                         "Mobster 0.4.0 is out, released 10 days ago, in Mobster for Mac (you have 0.3.0). "
-                         "Download it at https://mobster.dev/download")
+                         "Mobster 0.4.0 is out, released 10 days ago (you have 0.3.0). "
+                         "Upgrade with the installer you used: https://pypi.org/project/mobster-cli/")
         self.assertEqual(update_check.notice("0.4.0", cache, now=now), "")
 
     def test_update_never_runs_an_installer_or_a_package_manager(self):
         release = {"version": "99.0.0", "publishedAt": "2026-10-01T00:00:00Z"}
         with mock.patch.object(update_check, "latest_release", return_value=release), \
-                mock.patch.object(update_check, "minimum_version", return_value=None), \
                 mock.patch.object(update_check, "inside_app", return_value=False), \
                 mock.patch.object(update_check, "source_checkout", return_value=False), \
                 mock.patch("subprocess.call") as call, mock.patch("subprocess.run") as run, \
@@ -246,7 +245,7 @@ class UpdateNoticeTests(Home):
             self.assertEqual(update_check.run_update(mock.Mock(check=False)), 0)
             call.assert_not_called(), run.assert_not_called(), system.assert_not_called()
             self.assertIn("Mobster 99.0.0 is out", out.getvalue())
-            self.assertIn("https://mobster.dev/download", out.getvalue())
+            self.assertIn("https://pypi.org/project/mobster-cli/", out.getvalue())
             self.assertIn("This mobster keeps working.", out.getvalue())
             self.assertNotIn("install.sh", out.getvalue())
             self.assertNotIn("brew upgrade", out.getvalue())
@@ -255,19 +254,17 @@ class UpdateNoticeTests(Home):
         from mobile_agent import __version__
         current = {"version": __version__, "publishedAt": "2026-10-01T00:00:00Z"}
         with mock.patch.object(update_check, "latest_release", return_value=current), \
-                mock.patch.object(update_check, "minimum_version", return_value=None), \
                 mock.patch.object(update_check, "inside_app", return_value=False), \
                 redirect_stdout(io.StringIO()) as out:
             self.assertEqual(update_check.run_update(mock.Mock(check=False)), 0)
         self.assertIn(f"Mobster {__version__} is the latest release.", out.getvalue())
         for check, code in ((True, 1), (False, 0)):
             with mock.patch.object(update_check, "latest_release", return_value=None), \
-                    mock.patch.object(update_check, "minimum_version", return_value=None), \
                     mock.patch.object(update_check, "inside_app", return_value=False), \
                     mock.patch("subprocess.call") as call, redirect_stdout(io.StringIO()) as out:
                 self.assertEqual(update_check.run_update(mock.Mock(check=check)), code)
             call.assert_not_called()
-            self.assertIn("https://mobster.dev/download", out.getvalue())
+            self.assertIn("https://pypi.org/project/mobster-cli/", out.getvalue())
 
     def test_the_apps_own_copy_still_defers_to_the_app(self):
         with mock.patch.object(update_check, "inside_app", return_value=True), \
@@ -557,31 +554,7 @@ class Response(io.BytesIO):
         return False
 
 
-class MinimumTests(unittest.TestCase):
-    def test_the_feed_minimum_is_read_and_a_bad_answer_is_none(self):
-        feed = lambda body: (lambda request, timeout: Response(json.dumps(body).encode()))
-        self.assertEqual(update_check.minimum_version(opener=feed({"version": "0.4.0", "minimum_version": "v0.3.1"})),
-                         "0.3.1")
-        self.assertIsNone(update_check.minimum_version(opener=feed({"version": "0.4.0"})))
-        self.assertIsNone(update_check.minimum_version(opener=feed(["not", "an", "object"])))
-
-        def offline(request, timeout):
-            raise OSError("offline")
-        self.assertIsNone(update_check.minimum_version(opener=offline))
-
-    def test_below_the_minimum_the_line_says_no_longer_supported(self):
-        cache = {"latest": {"version": "0.4.0"}, "minimum": "0.3.1"}
-        self.assertEqual(update_check.notice("0.3.0", cache),
-                         "Mobster 0.3.0 is no longer supported. "
-                         "Download Mobster for Mac at https://mobster.dev/download")
-        self.assertTrue(update_check.unsupported("0.3.0", cache))
-        self.assertFalse(update_check.unsupported("0.3.1", cache))
-        self.assertTrue(update_check.notice("0.3.1", cache).startswith("Mobster 0.4.0 is out"))
-        self.assertEqual(update_check.notice("0.4.0", cache), "")
-        self.assertEqual(update_check.notice("0.3.0", {"minimum": "0.3.1"}),
-                         "Mobster 0.3.0 is no longer supported. "
-                         "Download Mobster for Mac at https://mobster.dev/download")
-
+class UpdateCacheTests(unittest.TestCase):
     def test_malformed_release_or_cache_never_breaks_a_command(self):
         for value in ([], None, "not an object"):
             with self.subTest(value=value):

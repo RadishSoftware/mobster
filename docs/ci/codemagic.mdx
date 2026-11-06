@@ -2,13 +2,13 @@
 title: "Running checks in Codemagic"
 sidebarTitle: "Codemagic"
 keywords: ["codemagic", "codemagic.yaml", "hosted runner", "ci token"]
-description: "Run your checks on every pull request on a Codemagic Mac, with simulators and a CI token."
+description: "Run your checks on every pull request on a Codemagic Mac, with simulators and the standalone CLI."
 icon: "cloud"
 hidden: true
 noindex: true
 ---
 
-<Warning>CI tokens are not enabled yet, so hosted runners cannot run your checks today. Run them on [your own Mac](/ci#a-mac-of-yours).</Warning>
+The generated workflow runs the standalone `mobster-cli==0.4.3` package through uv. It needs macOS, Xcode and an iOS Simulator runtime. The Mac app is not required.
 
 Codemagic builds on macOS machines it hosts. `mobster ci init --host codemagic` writes the workflow. [CI](/ci) has the parts every host shares.
 
@@ -18,9 +18,11 @@ Codemagic builds on macOS machines it hosts. `mobster ci init --host codemagic` 
 mobster ci init --host codemagic
 ```
 
-It writes `codemagic.yaml`. When that file exists, it leaves it as it is and writes the workflow to `.mobster/hosts/codemagic.yaml` for you to merge. Then put `MOBSTER_CI_TOKEN` in a variable group named `mobster` (Codemagic › Teams › Global variables and secrets), commit the file and open a pull request.
+It writes `codemagic.yaml`. When that file exists, it leaves it as it is and writes the workflow to `.mobster/hosts/codemagic.yaml` for you to merge. Then put `ANTHROPIC_API_KEY` for checks with steps in a variable group named `mobster` (Codemagic › Teams › Global variables and secrets), commit the file and open a pull request.
 
 ```yaml codemagic.yaml
+# Mobster checks on every pull request, on a Codemagic Mac (https://docs.mobster.dev/ci/codemagic).
+# Put ANTHROPIC_API_KEY in a variable group named mobster for checks with steps.
 workflows:
   mobster:
     name: Mobster checks
@@ -33,24 +35,23 @@ workflows:
       groups:
         - mobster
       vars:
-        MOBSTER: /Applications/Mobster.app/Contents/MacOS/mobster-agent
         MOBSTER_BASE_BRANCH: main   # the branch your pull requests merge into
     scripts:
       - name: Install Mobster
-        script: brew install --cask radishsoftware/tap/mobster-app
+        script: brew install uv
       - name: Prepare a simulator
-        script: $MOBSTER sim doctor --fix
+        script: uvx --python 3.12 --from mobster-cli==0.4.3 mobster sim doctor --fix
       - name: Test what this PR changed
-        script: $MOBSTER ci run
+        script: uvx --python 3.12 --from mobster-cli==0.4.3 mobster ci run
     artifacts:
       - .mobster/ci/**
 ```
 
 Set `MOBSTER_BASE_BRANCH` to the branch your pull requests merge into. The report, the JUnit file and the comment text are the build's artifacts. Codemagic gets no comment from Mobster: GitHub and GitLab are the hosts where `mobster ci comment` posts.
 
-## Sign in with a CI token
+## Credentials
 
-The job signs in with a CI token, not with Mobster for Mac. It is part of your plan, adds no seat and counts no runs. It licenses simulator checks only (`mobster ci run` and `mobster test`), it ends after 90 days unless you choose up to 365, and it never licenses an iPhone. Make one with `mobster account ci-token create NAME` or in the console under Settings › CI tokens, and revoke it from either. Store it as `MOBSTER_CI_TOKEN`, as a secret of the service. `mobster ci doctor` in the job checks that it is live and says what to fix if it isn't.
+Launch-only checks need no model key. Set `ANTHROPIC_API_KEY` for checks that use Smart. The standalone CLI requires no Mobster account or CI token. If you supply `MOBSTER_CI_TOKEN`, `mobster ci doctor` still validates it. App-bundled commands retain their plan and token checks.
 
 ## What this runner doesn't do
 

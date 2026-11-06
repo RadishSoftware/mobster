@@ -13,6 +13,7 @@ from .media_check import POST_ACTS
 from .store import (
     ADD_PHOTOS,
     LATE_LIMIT_MS,
+    PACED_REFRESH_MS,
     STAGGER_S,
     QueueError,
     armed_for,
@@ -153,27 +154,9 @@ class QueueRunner:
                 if not item.get("media"):
                     self.store.set_state(queue["id"], item["id"], "draft", note=ADD_PHOTOS)
                     continue
-                when = item.get("scheduledAt")
-                if when is not None and when > stamp:
-                    continue
-                if when is not None and stamp - when > LATE_LIMIT_MS:
-                    self.store.set_state(queue["id"], item["id"], "missed", note=(
-                        "Its time passed while it waited for your client. Set a new time." if client.holds(item)
-                        else "Its time passed while Mobster wasn't running. Set a new time or run it."))
-                    continue
-                if client.holds(item):
-                    continue  # the row shows what the client said (client.public)
                 profile = profiles.get(item.get("profile"))
-                if profile is None:
-                    self.store.set_state(queue["id"], item["id"], "failed",
-                                         note="Choose a profile for this post (Settings › Profiles).")
+                if not self._due(queue["id"], item, profile, pacing, stamp):
                     continue
-                if pacing is not None:
-                    note = self._paced(pacing, profile, when)
-                    if note is not None:
-                        if note != item.get("note"):
-                            self.store.set_state(queue["id"], item["id"], "ready", note=note)
-                        continue
                 phone = profile.get("device") or "default"
                 due.setdefault(phone, []).append((queue["id"], item["id"]))
                 stagger.setdefault(phone, queue.get("staggerSeconds", STAGGER_S))
@@ -192,6 +175,48 @@ class QueueRunner:
                 started.append(phone)
         return started
 
+    def _due(self, queue_id, item, profile, pacing, stamp):
+        """Check timing and holds both when selecting work and when its worker reaches dispatch."""
+        when = item.get("scheduledAt")
+        if when is not None and when > stamp:
+            return False
+        note, hold = self._paced(pacing, profile, item) if pacing is not None and profile else (None, None)
+        # Late because Mobster held it for its profile's pace or posting window (the person's own settings) is
+        # no miss while its day lasts. Late while Mobster wasn't running, while its profile was paused or
+        # while it waited for the client is, and its note says which.
+        held = item.get("pacedAt") is not None and stamp - item["pacedAt"] <= LATE_LIMIT_MS
+        if when is not None and stamp - when > LATE_LIMIT_MS and not held:
+            if client.holds(item):
+                missed = "Its time passed while it waited for your client. Set a new time."
+            elif hold == "paused":
+                missed = (f"Your post misses its time because of a pause on @{profile['handle']}. Set a new "
+                          "time or run it.")
+            else:
+                missed = "Its time passed while Mobster wasn't running. Set a new time or run it."
+            self.store.set_state(queue_id, item["id"], "missed", note=missed)
+            return False
+        if client.holds(item):
+            return False  # the row shows what the client said (client.public)
+        if profile is None:
+            self.store.set_state(queue_id, item["id"], "failed",
+                                 note="Choose a profile for this post (Settings › Profiles).")
+            return False
+        if hold == "day":
+            self.store.set_state(queue_id, item["id"], "missed", note=note)
+            return False
+        if note is not None:
+            paused = hold == "paused"
+            # Each pace hold says so again now and then: the proof Mobster held it, so it isn't a miss.
+            if note != item.get("note"):
+                self.store.set_state(queue_id, item["id"], "ready", note=note,
+                                     **({} if paused else {"pacedAt": stamp}))
+            elif not paused and stamp - (item.get("pacedAt") or 0) > PACED_REFRESH_MS:
+                # Only the stamp is due: no journal line, and never on a post that has moved on since the read.
+                self.store.change_item(queue_id, item["id"], lambda held_item, at=stamp: held_item.update(
+                    pacedAt=at) if held_item["state"] == "ready" else None)
+            return False
+        return True
+
     def wait(self, timeout=10):
         """Tests: until every worker ended."""
         end = time.monotonic() + timeout
@@ -206,18 +231,30 @@ class QueueRunner:
             return None
 
     @staticmethod
-    def _paced(pacing, profile, when):
-        """None when the profile may post now; else the item's note (paused, or when its pace lets it go)."""
+    def _paced(pacing, profile, item):
+        """What the profile's pacing says of a due post: (None, None) when it may go now; else its note and why:
+        "paused", "pace" (it waits for its pace or posting window) or "day" (that wait runs past its day: a miss)."""
         settings = pacing.settings(profile["id"])
         if settings.get("paused"):
             return (f"@{profile['handle']} is paused: {settings['paused']['reason']} Resume it "
-                    "here once it's dealt with.")
+                    "here once it's dealt with."), "paused"
+        when = item.get("scheduledAt")
         at = pacing.next_post_time(profile["id"], (when or 0) / 1000 or None)
-        if at is None or at <= time.time() + 1:
-            return None
+        if at is None:
+            return None, None
+        waits = at > pacing.clock() + 1
+        # A timed post waits for its pace or window only within its own day, in the profile's time zone: Monday
+        # evening's post never goes out on Tuesday unasked. That counts once the pace held it, too, if its day ended
+        # before it could go. Run again drops the time (store.mark): the person's OK to post it late.
+        if (when is not None and (waits or (item.get("pacedAt") or 0) >= when)
+                and not pacing.same_day(profile["id"], when / 1000, at)):
+            return (f"@{profile['handle']}'s pace or posting window would post it after its day. Set a new time or "
+                    "run it."), "day"
+        if not waits:
+            return None, None
         import datetime
         local = datetime.datetime.fromtimestamp(at).astimezone()
-        return f"Waits for @{profile['handle']}'s pace: next post at {local.strftime('%a %H:%M')}."
+        return f"Waits for @{profile['handle']}'s pace: next post at {local.strftime('%a %H:%M')}.", "pace"
 
     def take_new_files(self, queue, profiles):
         """New photos and videos in the queue's watched folder join it, one post each, for the folder's profile."""
@@ -266,6 +303,9 @@ class QueueRunner:
             if self.held(queue_id, item, profiles[item["profile"]].get("device")):
                 break  # the phone is locked or out of reach: its other posts wait too, and the next tick looks again
             try:
+                # A stagger or an earlier post can carry this item past its day or into a new pace hold.
+                if not self._due(queue_id, item, profiles[item["profile"]], self._pacing(), now_ms()):
+                    continue
                 self.post(queue, item, profiles[item["profile"]])
             except Exception as error:  # noqa: BLE001 - one item never stops the phone's others
                 log.exception("queue item failed")

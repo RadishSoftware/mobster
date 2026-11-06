@@ -288,10 +288,7 @@ class PairTests(unittest.TestCase):
         with self.assertRaises(pair.PairError):
             pair.run(PRO, "enable", tool=tool)
 
-    @unittest.skipUnless(
-        pair.SOURCE.is_file(), "the Mac app's tools are not part of this copy"
-    )
-    def test_the_c_source_is_the_one_the_app_bundles(self):
+    def test_the_packaged_c_source_uses_the_trusted_usb_protocol(self):
         source = pair.SOURCE.read_text()
         self.assertIn('"com.apple.mobile.wireless_lockdown"', source)
         self.assertIn('"EnableWifiConnections"', source)

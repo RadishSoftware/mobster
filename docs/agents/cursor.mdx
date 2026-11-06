@@ -12,22 +12,22 @@ To add the skill as well, see [Editors and Xcode](/agents/editors).
 
 ## Add it
 
-With Mobster for Mac in Applications, open this link in Cursor and confirm:
-
-<div className="mob-actions">
-  <a className="mob-button" href="cursor://anysphere.cursor-deeplink/mcp/install?name=mobster&config=eyJjb21tYW5kIjoiL0FwcGxpY2F0aW9ucy9Nb2JzdGVyLmFwcC9Db250ZW50cy9NYWNPUy9tb2JzdGVyLWFnZW50IiwiYXJncyI6WyJtY3AiXX0=">Add Mobster to Cursor</a>
-</div>
-
-Or add it from the terminal:
+First [install the standalone CLI](/quickstart/cli) and check `mobster version`. Mobster for Mac is optional.
 
 ```sh
 mobster mcp install cursor
 ```
 
-It prints what it changed:
+If you use the optional Mac app in Applications, this link adds its bundled server instead:
+
+<div className="mob-actions">
+  <a className="mob-button" href="cursor://anysphere.cursor-deeplink/mcp/install?name=mobster&config=eyJjb21tYW5kIjoiL0FwcGxpY2F0aW9ucy9Nb2JzdGVyLmFwcC9Db250ZW50cy9NYWNPUy9tb2JzdGVyLWFnZW50IiwiYXJncyI6WyJtY3AiXX0=">Add Mobster for Mac to Cursor</a>
+</div>
+
+The terminal command prints what it changed:
 
 ```text
-Mobster's MCP server: /Applications/Mobster.app/Contents/MacOS/mobster-agent mcp
+Mobster's MCP server: /absolute/path/to/mobster mcp
   Cursor          added      ~/.cursor/mcp.json
 Restart Cursor to load the change.
 New sessions of the other clients pick it up. Check it with `mobster mcp doctor`.
@@ -37,6 +37,8 @@ Add `--dry-run` to see the change first and write nothing. Run the command again
 
 ## What it writes
 
+The examples use `/absolute/path/to/mobster` for your installed executable. `mobster mcp install` writes the actual path; `--dry-run` shows it before changing the config.
+
 The entry goes in `~/.cursor/mcp.json`, which Cursor reads in every project:
 
 ```json ~/.cursor/mcp.json
@@ -44,7 +46,7 @@ The entry goes in `~/.cursor/mcp.json`, which Cursor reads in every project:
   "mcpServers": {
     "mobster": {
       "type": "stdio",
-      "command": "/Applications/Mobster.app/Contents/MacOS/mobster-agent",
+      "command": "/absolute/path/to/mobster",
       "args": ["mcp"]
     }
   }

@@ -276,8 +276,9 @@ def cli_page():
              NOTICE.replace("SOURCE", "the argparse parsers in mobile_agent/__main__.py and each command's cli module"),
              "",
              "Each command's section is what `mobster <command> --help` prints in the terminal, and "
-             "[Errors and exit codes](/reference/errors) lists the exit codes. The `mobster` command comes with "
-             "Mobster for Mac: [Quickstart: the mobster command](/quickstart/cli) puts it on your `PATH`.",
+             "[Errors and exit codes](/reference/errors) lists the exit codes. "
+             "[Quickstart: the mobster command](/quickstart/cli) installs the standalone Python CLI or its npm "
+             "launcher with uv. Mobster for Mac is a separate app with its own bundled command.",
              "",
              "| Command | What it does |", "|---|---|"]
     lines += [f"| [{code(f'mobster {name}')}](#{anchor(f'mobster {name}')}) | {escape(help_text, True)} |"
@@ -654,11 +655,11 @@ def cli_paths():
 
 
 def api_paths():
-    """The API's paths: registered routes and the core HTTP modules' string literals."""
+    """Registered routes and core dispatch paths; authorization allowlists do not create routes."""
     from mobile_agent import api_routes, tracks
     tracks.load()
     found = {route.pattern.replace("{id}", "x").replace("{device}", "x") for route in api_routes._routes}
-    for name in ("api_http.py", "api_get.py", "api_post.py", "api_devices.py"):
+    for name in ("api_get.py", "api_post.py", "api_devices.py"):
         found |= set(re.findall(r'"(/api/[a-z0-9][a-z0-9/_-]*)"', (ROOT / "mobile_agent" / name).read_text()))
     return found
 
@@ -690,10 +691,11 @@ def parity_page():
              "and an MCP tool for coding agents. This page lists where each one is, and for every place it isn't, "
              "either why Mobster left it out on purpose (**No**) or that it is still to build (**Gap 1 to 3**, 1 "
              "first). A test fails when a command, tool or API group ships without a row here, and when a testing "
-             "capability has no MCP tool and no reason.",
+             "capability has no MCP tool and no reason. Optional Teams and Remote extensions appear only when "
+             "included in this build.",
              ""]
     for group in parity.GROUPS:
-        rows = [r for r in parity.ROWS if r.group == group]
+        rows = [r for r in parity.rows() if r.group == group]
         lines += [f"## {group}", "", "| Capability | CLI | API | MCP |", "|---|---|---|---|"]
         lines += [f"| {escape(r.name, True)} | {cell(r, 'cli')} | {cell(r, 'api')} | {cell(r, 'mcp')} |" for r in rows]
         lines.append("")

@@ -44,7 +44,7 @@ These are separate programs that you install. Mobster starts them as child proce
 
 | tool | licence | how Mobster uses it |
 | --- | --- | --- |
-| [libimobiledevice](https://libimobiledevice.org/) and libusbmuxd | LGPL-2.1-or-later (libraries; see each project for its command-line tools) | `idevice_id`, `ideviceinfo` and `iproxy`, installed with `brew install libimobiledevice`, are invoked as external commands to find the phone and relay ports 8100 and 9100 over USB. `mobster-pcap` (Network X-ray; `desktop/iphone-tools/mobster-pcap.c`, MIT) is compiled against it with `clang`, or runs from the Mac app, to read Apple's `com.apple.pcapd` service. |
+| [libimobiledevice](https://libimobiledevice.org/) and libusbmuxd | LGPL-2.1-or-later (libraries; see each project for its command-line tools) | `idevice_id`, `ideviceinfo` and `iproxy`, installed with `brew install libimobiledevice`, are invoked as external commands to find the phone and relay ports 8100 and 9100 over USB. `mobster-pcap` (Network X-ray; `mobile_agent/netxray/mobster-pcap.c`, MIT) is compiled against it with `clang`, or runs from the Mac app, to read Apple's `com.apple.pcapd` service. `mobile_agent/wireless/mobster-wifi-pair.c` (MIT) uses the same external libraries to toggle Wi-Fi reachability over trusted USB. |
 | [ideviceinstaller](https://github.com/libimobiledevice/ideviceinstaller) | GPL-2.0-or-later | `brew install ideviceinstaller`; invoked as `ideviceinstaller list` to read which apps are installed (never to install or remove one) |
 | Xcode (`xcodebuild`, `swiftc`, `xcrun`) | Apple's Xcode licence | builds WebDriverAgent and the optional Swift helpers (`mobile_agent/swift/`) |
 | `git` | GPL-2.0 | fetches WebDriverAgent |

@@ -1,5 +1,5 @@
 # Mobster checks on every pull request, on a Mac of yours (https://docs.mobster.dev/ci).
-# The runner needs Mobster for Mac in Applications. On that Mac, `mobster ci doctor` says what's missing.
+# Install uv on the runner (`brew install uv`). `mobster ci doctor` says what else is missing.
 name: mobster
 on: pull_request
 permissions:
@@ -8,8 +8,6 @@ permissions:
 concurrency:
   group: mobster-${{ github.event.pull_request.number }}
   cancel-in-progress: true
-env:
-  MOBSTER: /Applications/Mobster.app/Contents/MacOS/mobster-agent
 jobs:
   checks:
     runs-on: [self-hosted, macOS, mobster]
@@ -20,7 +18,7 @@ jobs:
           fetch-depth: 0   # the diff needs the base branch
       - name: Test what this PR changed
         run: |
-          "$MOBSTER" ci run
+          uvx --python 3.12 --from mobster-cli==0.4.3 mobster ci run
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}   # only checks with steps use it
       - name: Upload the report
@@ -36,7 +34,7 @@ jobs:
       - name: Comment on the PR
         if: always()
         run: |
-          "$MOBSTER" ci comment
+          uvx --python 3.12 --from mobster-cli==0.4.3 mobster ci comment
         env:
           GITHUB_TOKEN: ${{ github.token }}
           MOBSTER_ARTIFACT_URL: ${{ steps.upload.outputs.artifact-url }}

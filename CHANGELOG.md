@@ -6,12 +6,26 @@ All notable changes to Mobster CLI are listed here. The format follows [Keep a C
 
 ### Fixed
 
+- Generated app assemblies keep helper builds and runtime data outside the generated source tree.
+
+- Your timed post no longer shows **Missed its time** when its profile's pace or posting window holds it more than 2 hours within its day. It goes out when both allow it, on its own day. If they would hold it to a later day, it misses its time. If your post misses its time, the note gives the reason: Mobster not running, a pause on its profile, a wait for your client's approval, or its profile's pace or posting window holding it past its day. **Run again** on a missed post now drops its old time. It goes once its queue runs and its profile's pace and window allow, even on a later day. If that run does not post, press **Run again** to try again. Before this fix, the queue's next check marked it missed again.
+
+- Mobster adds text at the end of a field without emptying it first. If the field reads back differently, Mobster keeps the text and tells the agent what differs. A formatting change no longer triggers a rewrite that can leave the field empty.
+- Keep screen signatures in the standalone engine boundary and include the frozen heldout task manifest.
+- CLI tests use local fixtures; app packaging and service parity checks remain in the app repository.
+
+- Standalone installs include the Wi-Fi pairing and packet-capture helper sources; frozen builds include every Swift helper.
+- Update checks use PyPI for Python installs and CLI archives for frozen installs. App-owned copies use the Mac app updater.
+- Generated CI jobs run the standalone CLI through uv. Runner checks require a Mac app account only for app-owned copies.
+
 - Failed permission-store writes leave the active grants unchanged.
 - Simulator leases close even when release callbacks fail, and simulator listings use one lease observation per row.
 - Verification suites drain refused checks without recursive calls.
 - Recent terminal-thread addresses use atomic file replacement.
 
 ### Maintenance
+
+- Publish `mobster-cli` through a checked GitHub release workflow and provide `@radishsoftware/mobster` as a small uv launcher.
 
 - Remove unused attach adapters and Android recording scaffolding; retain the existing app scorer and Android logs.
 - Remove retired engine-export and app-only packaging/CI code from the standalone CLI.

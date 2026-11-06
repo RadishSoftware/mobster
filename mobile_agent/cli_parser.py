@@ -505,10 +505,11 @@ def build_parser(load="all"):
     completion.add_argument("--values", choices=["devices", "tasks", "threads"], help=argparse.SUPPRESS)
 
     update = command("update", HELP["update"], (
-        "Say whether a newer Mobster is out. New versions come in Mobster for Mac, which\n"
-        "updates itself: https://mobster.dev/download. It installs nothing, and the mobster\n"
-        "you have keeps working. Mobster checks once a day and says so after a command;\n"
-        "MOBSTER_NO_UPDATE_CHECK=1 turns that off."),
+        "Check for a newer standalone CLI on PyPI, or a frozen CLI archive on GitHub.\n"
+        "Upgrade with the installer you used: pip, uv, npm or the frozen archive. This\n"
+        "command installs nothing. A copy owned by Mobster for Mac uses the app's updater.\n"
+        "Mobster checks once a day after interactive commands; MOBSTER_NO_UPDATE_CHECK=1\n"
+        "turns off the daily check. An explicit mobster update still checks."),
         epilog="examples:\n  mobster update\n  mobster update --check")
     update.add_argument("--check", action="store_true", help="only say whether a new release is out")
 

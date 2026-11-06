@@ -402,8 +402,7 @@ def screen_pairs(snapshot):
 
 
 def screen_signature(snapshot):
-    from ..replay_core.path import signature_hash
-    from ..state import signature
+    from ..state import signature, signature_hash
     try:
         pairs = signature(snapshot)
     except Exception:

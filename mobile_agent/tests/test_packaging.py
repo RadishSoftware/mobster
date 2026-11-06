@@ -159,10 +159,14 @@ class FrozenBuildTests(unittest.TestCase):
         self.assertLess(after.index('rm -rf "$STAGE" "$WORK"'), after.index("fail "))
         self.assertIn("couldn't read the frozen", after)
 
-    def test_build_ocr_has_its_source_in_the_bundle(self):
+    def test_native_helper_sources_keep_their_package_locations_in_the_bundle(self):
         datas = self.spec()["Analysis"][1]["datas"]
-        self.assertIn((str(ROOT / "mobile_agent" / "swift" / "ocr.swift"), "mobile_agent/swift"), datas)
+        self.assertIn((str(ROOT / "mobile_agent" / "swift" / "*.swift"), "mobile_agent/swift"), datas)
         self.assertTrue((ROOT / "mobile_agent" / "swift" / "ocr.swift").is_file())
+        for package, name in (("wireless", "mobster-wifi-pair.c"), ("netxray", "mobster-pcap.c")):
+            source = ROOT / "mobile_agent" / package / name
+            self.assertIn((str(source), f"mobile_agent/{package}"), datas)
+            self.assertTrue(source.is_file())
 
     def test_the_terminal_ui_stays_in_and_the_entry_belongs_to_the_cli(self):
         calls = self.spec()

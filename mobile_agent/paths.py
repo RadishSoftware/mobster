@@ -76,7 +76,9 @@ def dev_data_dir():
 
 
 def source_checkout():
-    return not getattr(sys, "frozen", False) and (PACKAGE.parent / "pyproject.toml").is_file()
+    # Generated app packages are immutable even when assembled beneath the app's pyproject.toml.
+    return (not getattr(sys, "frozen", False) and (PACKAGE.parent / "pyproject.toml").is_file()
+            and not (PACKAGE / ".mobster-assembly.json").is_file())
 
 
 def default_history_db():

@@ -13,9 +13,7 @@ from unittest.mock import patch
 
 from .. import genuine, plan_gate, premium_model
 from ..api_errors import APIError
-from .test_packaging import analysis
 
-ROOT = Path(__file__).resolve().parents[2]
 TEAM = "ABCDE12345"
 FAILED = "codesign: Mobster.app: a sealed resource is missing or invalid"
 CHANGED = (genuine.CHANGED, FAILED)
@@ -149,65 +147,6 @@ class ProblemTests(unittest.TestCase):
         for identity in ("-", "", "Apple Development: Sam (ABCDE12345)", "Developer ID Application: Sam (abc)",
                          "Developer ID Application: Sam", "Developer ID Application: Sam (ABCDE12345) (x)"):
             self.assertEqual(genuine.team_of(identity), "", identity)
-
-    @unittest.skipUnless((ROOT / "desktop/scripts/build-sidecar.sh").is_file()
-                         and (ROOT / "desktop/scripts/mobster-agent.spec").is_file(),
-                         "the app build source is not part of this repository")
-    def test_the_build_writes_the_team_and_the_spec_bundles_it(self):
-        script = (ROOT / "desktop" / "scripts" / "build-sidecar.sh").read_text()
-        self.assertIn("from mobile_agent.genuine import team_of", script)
-        self.assertIn('"${APPLE_SIGNING_IDENTITY:-}" > "$OUT/signing-team"', script)
-        self.assertLess(script.index('> "$OUT/signing-team"'), script.index('"$VENV/bin/pyinstaller"'))
-        datas = analysis(ROOT / "desktop" / "scripts" / "mobster-agent.spec")["datas"]
-        self.assertEqual(datas, [(str(ROOT / "desktop" / "src-tauri" / "binaries" / genuine.TEAM_FILE), ".")])
-
-
-@unittest.skipUnless((ROOT / "desktop/scripts/finish-release.sh").is_file(),
-                     "the app release source is not part of this repository")
-class ReleaseGuardTests(unittest.TestCase):
-    """finish-release.sh's same_team: a release whose bundled agent's signing-team isn't the app's team fails."""
-
-    SCRIPT = ROOT / "desktop" / "scripts" / "finish-release.sh"
-
-    def setUp(self):
-        folder = tempfile.TemporaryDirectory()
-        self.addCleanup(folder.cleanup)
-        self.app = Path(folder.name) / "Mobster.app"
-        # The finished app's layout (build-sidecar.sh, the spec, tauri.conf.json bundle.macOS.files): PyInstaller puts
-        # the file in Contents/Resources and links it from Contents/Frameworks, the agent's sys._MEIPASS.
-        (self.app / "Contents" / "Resources").mkdir(parents=True)
-        (self.app / "Contents" / "Frameworks").mkdir()
-        (self.app / "Contents" / "Frameworks" / genuine.TEAM_FILE).symlink_to(Path("..") / "Resources" /
-                                                                             genuine.TEAM_FILE)
-
-    def same_team(self, bundled, team=TEAM):
-        script = self.SCRIPT.read_text()
-        start = script.index("same_team() {")
-        function = script[start:script.index("\n}\n", start) + 3]
-        if bundled is not None:
-            (self.app / "Contents" / "Resources" / genuine.TEAM_FILE).write_text(bundled)
-        details = f"Executable={self.app}/Contents/MacOS/mobster-desktop\n"
-        if team is not None:
-            details += f"TeamIdentifier={team}\n"
-        return subprocess.run(["/bin/bash", "-c", function + 'same_team "$1" "$2"', "test", str(self.app), details],
-                              capture_output=True, text=True, timeout=10, stdin=subprocess.DEVNULL).returncode
-
-    def test_the_apps_own_team_passes(self):
-        self.assertEqual(self.same_team(TEAM), 0)
-        self.assertEqual(self.same_team(TEAM + "\n"), 0)  # $(cat) drops a trailing line break, as the agent strips
-
-    def test_an_empty_missing_or_other_team_fails_the_release(self):
-        for bundled, team in (("", TEAM), (None, TEAM), ("ABCDE12345", TEAM), ("", "not set"), (TEAM, "not set"),
-                              ("  ", TEAM), ("", None), (None, None)):  # None: codesign showed no team at all
-            self.assertEqual(self.same_team(bundled, team), 1, (bundled, team))
-
-    def test_both_the_app_and_the_update_archives_app_are_guarded(self):
-        script = self.SCRIPT.read_text()
-        check = script[script.index("check_app() {"):]
-        check = check[:check.index("\n}\n")]
-        self.assertIn('same_team "$1" "$details" || exit 1', check)
-        self.assertIn('check_app "$APP"', script)
-        self.assertIn('check_app "$unpacked/Mobster.app"', script)
 
 
 @contextlib.contextmanager

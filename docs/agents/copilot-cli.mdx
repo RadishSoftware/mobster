@@ -10,6 +10,8 @@ Use Mobster's command below to add its MCP server to GitHub Copilot CLI's config
 
 ## Add it
 
+First [install the standalone CLI](/quickstart/cli) and check `mobster version`. Mobster for Mac is optional.
+
 ```sh
 mobster mcp install copilot-cli
 ```
@@ -17,7 +19,7 @@ mobster mcp install copilot-cli
 It prints what it changed:
 
 ```text
-Mobster's MCP server: /Applications/Mobster.app/Contents/MacOS/mobster-agent mcp
+Mobster's MCP server: /absolute/path/to/mobster mcp
   Copilot CLI     added      ~/.copilot/mcp-config.json
 New sessions of the other clients pick it up. Check it with `mobster mcp doctor`.
 ```
@@ -26,6 +28,8 @@ Add `--dry-run` to see the change first and write nothing. Run the command again
 
 ## What it writes
 
+The examples use `/absolute/path/to/mobster` for your installed executable. `mobster mcp install` writes the actual path; `--dry-run` shows it before changing the config.
+
 The entry goes in `~/.copilot/mcp-config.json`. `$COPILOT_HOME` replaces `~/.copilot`. The entry has `"tools": ["*"]`, so Copilot offers every Mobster tool.
 
 ```json
@@ -33,7 +37,7 @@ The entry goes in `~/.copilot/mcp-config.json`. `$COPILOT_HOME` replaces `~/.cop
   "mcpServers": {
     "mobster": {
       "type": "local",
-      "command": "/Applications/Mobster.app/Contents/MacOS/mobster-agent",
+      "command": "/absolute/path/to/mobster",
       "args": ["mcp"],
       "env": {},
       "tools": ["*"]

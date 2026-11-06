@@ -1,3 +1,4 @@
+import datetime
 import hashlib
 import io
 import json
@@ -9,6 +10,7 @@ import unittest
 from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
+from zoneinfo import ZoneInfo
 
 from PIL import Image
 
@@ -280,6 +282,24 @@ class RunnerTests(Base):
         self.assertEqual(self.store.get(queue["id"])["items"][0]["state"], "unknown")
         self.assertEqual(queue_runner_.tick(), [])
         self.assertEqual(len(runtime.created), 1)
+
+    def test_run_again_posts_a_missed_post_once_and_only_on_your_press(self):
+        runtime = FakeRuntime(self.dir, finish=lambda run: (post_events("approved"),
+                                                            {"status": "completed", "data": {"posted": True}}))
+        queue_runner_, _ = self.runner(runtime)
+        queue, (item,) = self.queued()
+        self.store.edit_item(queue["id"], item["id"], {"scheduledAt": round((time.time() - 3 * 3600) * 1000)}, PROFILES)
+        self.store.arm(queue["id"], True)
+        for _ in range(2):  # missed, and it stays so: nothing posts it without the press
+            self.assertEqual(queue_runner_.tick(), [])
+        self.assertEqual((self.store.get(queue["id"])["items"][0]["state"], runtime.created), ("missed", []))
+        self.store.arm(queue["id"], False)  # Run again shows while the queue is stopped
+        self.store.mark(queue["id"], item["id"], "ready")
+        self.store.arm(queue["id"], True)
+        self.assertEqual(queue_runner_.tick(), ["phone-one"])  # the old time no longer misses it
+        queue_runner_.wait()
+        self.assertEqual(queue_runner_.tick(), [])
+        self.assertEqual((self.store.get(queue["id"])["items"][0]["state"], len(runtime.created)), ("posted", 1))
 
     def test_media_that_didnt_arrive_start_no_task(self):
         runtime = FakeRuntime(self.dir)
@@ -572,6 +592,26 @@ class PacingAndFolderTests(Base):
         self.assertEqual(runtime.created, [])
         self.assertEqual(item["state"], "ready")
 
+    def test_a_late_post_names_why_it_missed_its_time(self):
+        from mobile_agent.accounts.pacing import Pacing
+        pacing = Pacing(self.dir / "pacing")
+        queue_runner_, _ = self.runner(FakeRuntime(self.dir), pacing=pacing)
+        queue = self.store.create()
+        away, paused = self.store.add_items(queue["id"], [self.item(), self.item(profile=PROFILES[1]["id"])], PROFILES)
+        late = round((time.time() - 3 * 3600) * 1000)
+        for item in (away, paused):
+            self.store.edit_item(queue["id"], item["id"], {"scheduledAt": late}, PROFILES)
+        # A pace hold that stopped saying so hours ago means Mobster wasn't running since: a miss, as is a pause.
+        self.store.set_state(queue["id"], away["id"], "ready", pacedAt=late)
+        pacing.pause(PROFILES[1]["id"], "Instagram asked for a selfie check.")
+        self.store.arm(queue["id"], True)
+        queue_runner_.tick()
+        notes = {i["id"]: (i["state"], i["note"]) for i in self.store.get(queue["id"])["items"]}
+        self.assertEqual(notes[away["id"]],
+                         ("missed", "Its time passed while Mobster wasn't running. Set a new time or run it."))
+        self.assertEqual(notes[paused["id"]][0], "missed")
+        self.assertIn(f"because of a pause on @{PROFILES[1]['handle']}", notes[paused["id"]][1])
+
     def test_new_files_in_the_watched_folder_join_the_queue_once(self):
         watched = self.dir / "drop"
         watched.mkdir()
@@ -590,6 +630,130 @@ class PacingAndFolderTests(Base):
         self.assertEqual(queue_runner_.take_new_files(self.store.get(queue["id"]), {p["id"]: p for p in PROFILES}), [])
         self.assertEqual(len(self.store.get(queue["id"])["items"]), 1)
         self.assertIsNone(self.store.get(queue["id"])["batch"])
+
+def tokyo(text):
+    """A wall time in Tokyo as epoch seconds: the profile's zone in OwnDayTests, never this Mac's or UTC."""
+    return datetime.datetime.fromisoformat(text).replace(tzinfo=ZoneInfo("Asia/Tokyo")).timestamp()
+
+
+PAST_ITS_DAY = "@getmobster's pace or posting window would post it after its day. Set a new time or run it."
+
+
+class OwnDayTests(Base):
+    """A timed post its pace or posting window holds waits only within its own day, in its profile's time zone. The
+    pacing ledger and the runner read one clock, set by ``tick``."""
+
+    def setUp(self):
+        super().setUp()
+        from mobile_agent.accounts.pacing import Pacing
+        self.now = tokyo("2026-11-04T05:00")
+        self.pacing = Pacing(self.dir / "pacing", clock=lambda: self.now)
+        self.runtime = FakeRuntime(self.dir, finish=lambda run: (post_events("approved"),
+                                                                 {"status": "completed", "data": {"posted": True}}))
+        self.queue_runner, _ = self.runner(self.runtime, pacing=self.pacing)
+        clock = mock.patch("mobile_agent.content_queue.runner.now_ms", side_effect=lambda: round(self.now * 1000))
+        clock.start()
+        self.addCleanup(clock.stop)
+        self.queue = self.store.create()["id"]
+
+    def post_at(self, text):
+        item = self.store.add_items(self.queue, [self.item(scheduledAt=round(tokyo(text) * 1000))], PROFILES)[0]
+        self.store.arm(self.queue, True)
+        return item["id"]
+
+    def tick(self, text, minutes=0):
+        self.now = tokyo(text) + minutes * 60
+        started = self.queue_runner.tick()
+        self.queue_runner.wait()
+        return started
+
+    def row(self, item_id):
+        return next(i for i in self.store.get(self.queue)["items"] if i["id"] == item_id)
+
+    def test_a_window_hold_waits_within_its_day_and_one_past_its_day_misses_its_time(self):
+        self.pacing.save(PROFILES[0]["id"], {"timeZone": "Asia/Tokyo", "window": {"start": "09:00", "end": "21:00"}})
+        morning, evening = self.post_at("2026-11-04T05:00"), self.post_at("2026-11-04T22:00")
+        # 05:00 waits 4 hours for the window, saying so as it goes (09:00 in Tokyo is a new day in UTC).
+        for minutes in range(0, 240, 5):
+            self.assertEqual(self.tick("2026-11-04T05:00", minutes), [])
+            self.assertEqual(self.row(morning)["state"], "ready")
+        self.assertGreater(self.row(morning)["pacedAt"], tokyo("2026-11-04T08:40") * 1000)
+        self.assertEqual(self.tick("2026-11-04T09:00"), ["phone-one"])
+        self.assertEqual(self.row(morning)["state"], "posted")
+        # 22:00 is after the window: its next slot is 09:00 tomorrow in Tokyo (still today on a US Mac), so it misses.
+        self.assertEqual(self.tick("2026-11-04T22:00"), [])
+        self.assertEqual((self.row(evening)["state"], self.row(evening)["note"]), ("missed", PAST_ITS_DAY))
+        self.assertEqual(self.tick("2026-11-05T09:00"), [])
+        self.assertEqual(len(self.runtime.created), 1)
+        # Set a new time, and it goes then.
+        self.store.edit_item(self.queue, evening, {"scheduledAt": round(tokyo("2026-11-05T10:00") * 1000)}, PROFILES)
+        self.assertEqual(self.tick("2026-11-05T10:00"), ["phone-one"])
+        self.assertEqual((self.row(evening)["state"], len(self.runtime.created)), ("posted", 2))
+
+    def test_a_pace_gap_hold_waits_within_its_day_and_one_past_midnight_misses_until_you_run_it_again(self):
+        self.pacing.save(PROFILES[0]["id"], {"timeZone": "Asia/Tokyo"})
+        self.now = tokyo("2026-11-04T08:00")
+        self.pacing.record(PROFILES[0]["id"], "post")
+        first, last = self.post_at("2026-11-04T08:30"), self.post_at("2026-11-04T23:30")
+        self.assertEqual(self.tick("2026-11-04T08:30"), [])  # the gap holds it to 09:00, a new day in UTC
+        self.assertIn("Waits for @getmobster's pace", self.row(first)["note"])
+        self.assertEqual(self.tick("2026-11-04T09:00"), ["phone-one"])
+        self.assertEqual(self.row(first)["state"], "posted")
+        self.now = tokyo("2026-11-04T23:15")
+        self.pacing.record(PROFILES[0]["id"], "post")
+        # The gap holds 23:30 to 00:15, a new day in Tokyo (not in UTC or on a US Mac): it misses, and nothing posts.
+        self.assertEqual(self.tick("2026-11-04T23:30"), [])
+        self.assertEqual((self.row(last)["state"], self.row(last)["note"]), ("missed", PAST_ITS_DAY))
+        self.assertEqual(self.tick("2026-11-05T00:15"), [])
+        self.assertEqual(len(self.runtime.created), 1)
+        # Run again is your OK to post it late: it waits for the pace, never missed for its old time, and goes once.
+        self.store.arm(self.queue, False)
+        self.store.mark(self.queue, last, "ready")
+        self.store.arm(self.queue, True)
+        self.pacing.record(PROFILES[0]["id"], "post")
+        self.assertEqual(self.tick("2026-11-05T00:20"), [])
+        self.assertIn("Waits for @getmobster's pace", self.row(last)["note"])
+        self.assertEqual(self.tick("2026-11-05T01:15"), ["phone-one"])
+        self.assertEqual(self.tick("2026-11-05T01:20"), [])
+        self.assertEqual((self.row(last)["state"], len(self.runtime.created)), ("posted", 2))
+
+    def test_a_post_its_pace_held_misses_its_time_when_its_day_ends_before_it_goes(self):
+        self.pacing.save(PROFILES[0]["id"], {"timeZone": "Asia/Tokyo"})
+        self.now = tokyo("2026-11-04T22:59")
+        self.pacing.record(PROFILES[0]["id"], "post")
+        item = self.post_at("2026-11-04T23:30")
+        self.assertEqual(self.tick("2026-11-04T23:30"), [])  # held to 23:59, on its day
+        self.assertEqual(self.row(item)["state"], "ready")
+        # Mobster gets to it only after midnight (the Mac slept, say): it would go on the next day, so it misses.
+        self.assertEqual(self.tick("2026-11-05T00:01"), [])
+        self.assertEqual((self.row(item)["state"], self.row(item)["note"], self.runtime.created),
+                         ("missed", PAST_ITS_DAY, []))
+
+    def test_a_time_zone_that_cant_be_read_posts_nothing(self):
+        from mobile_agent.accounts.pacing import PacingError
+        self.pacing.save(PROFILES[0]["id"], {"timeZone": "Asia/Tokyo", "window": {"start": "09:00", "end": "21:00"}})
+        item = self.post_at("2026-11-04T20:30")
+        settings = self.pacing.settings_path
+        settings.write_text(settings.read_text().replace("Asia/Tokyo", "Mars/Olympus_Mons"))
+        with self.assertRaises(PacingError):  # never guesses a day in the Mac's zone
+            self.tick("2026-11-04T21:30")
+        self.assertEqual((self.row(item)["state"], self.runtime.created), ("ready", []))
+
+    def test_a_worker_delayed_past_midnight_does_not_post_an_admitted_item(self):
+        self.pacing.save(PROFILES[0]["id"], {"timeZone": "Asia/Tokyo"})
+        self.now = tokyo("2026-11-04T22:59")
+        self.pacing.record(PROFILES[0]["id"], "post")
+        item = self.post_at("2026-11-04T23:30")
+        self.assertEqual(self.tick("2026-11-04T23:30"), [])
+        self.assertEqual(self.row(item)["state"], "ready")
+        # The tick admits it on its day, but the worker does not get to dispatch until the next day.
+        with mock.patch.object(queue_runner.threading, "Thread") as thread:
+            self.assertEqual(self.tick("2026-11-04T23:59"), ["phone-one"])
+            worker = thread.call_args.kwargs
+        self.now = tokyo("2026-11-05T00:01")
+        worker["target"](*worker["args"])
+        self.assertEqual((self.row(item)["state"], self.row(item)["note"], self.runtime.created),
+                         ("missed", PAST_ITS_DAY, []))
 
 
 class ImportTests(Base):
@@ -752,6 +916,18 @@ class ClientTests(Base):
         self.assertTrue(client.holds(edited))
         page = client.answer(runtime, hashlib.sha256(link.rsplit("/", 1)[1].encode()).hexdigest())["view"]
         self.assertEqual(page["caption"], "Spring is finally here")
+
+    def test_a_post_still_waiting_for_its_client_two_hours_past_its_time_misses_it(self):
+        runtime = FakeRuntime(self.dir)
+        queue_runner_, _ = self.runner(runtime)
+        queue, item, _ = self.sent(runtime)
+        self.store.edit_item(queue["id"], item["id"], {"scheduledAt": round((time.time() - 3 * 3600) * 1000)}, PROFILES)
+        self.store.arm(queue["id"], True)
+        self.assertEqual(queue_runner_.tick(), [])
+        stored = self.store.get(queue["id"])["items"][0]
+        self.assertEqual((stored["state"], stored["note"]),
+                         ("missed", "Its time passed while it waited for your client. Set a new time."))
+        self.assertEqual(runtime.created, [])
 
     def test_a_link_works_for_seven_days(self):
         runtime = FakeRuntime(self.dir)

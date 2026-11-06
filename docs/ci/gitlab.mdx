@@ -38,7 +38,13 @@ include:
 
 ## The job
 
+Install uv on the runner with `brew install uv`. The job runs the pinned standalone CLI.
+
 ```yaml .gitlab-ci.yml
+# Mobster checks on every merge request, on a Mac of yours (https://docs.mobster.dev/ci/gitlab).
+# Register the Mac as a runner with the shell executor and the tag "mobster". On it, `mobster ci doctor` says what's
+# missing. Install uv with `brew install uv`. For the MR comment, add MOBSTER_GITLAB_TOKEN (a project access token
+# with the api scope) as a masked CI/CD variable. For checks with steps, add ANTHROPIC_API_KEY the same way.
 mobster:
   stage: test
   tags: [mobster]
@@ -46,15 +52,14 @@ mobster:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
   variables:
     GIT_DEPTH: "0"
-    MOBSTER: /Applications/Mobster.app/Contents/MacOS/mobster-agent
   timeout: 1h
   interruptible: true
   script:
     - |
-      "$MOBSTER" ci run
+      uvx --python 3.12 --from mobster-cli==0.4.3 mobster ci run
   after_script:
     - |
-      "$MOBSTER" ci comment
+      uvx --python 3.12 --from mobster-cli==0.4.3 mobster ci comment
   artifacts:
     when: always
     expire_in: 14 days
@@ -94,7 +99,7 @@ A merge request can edit `.gitlab-ci.yml`, so the runner's owner lists the phone
 ```yaml
   script:
     - |
-      "$MOBSTER" ci run --device "Test iPhone"
+      uvx --python 3.12 --from mobster-cli==0.4.3 mobster ci run --device "Test iPhone"
 ```
 
 A phone or TestFlight app the runner doesn't list stops the job before a check runs. `gitlab-runner restart` picks up the change.

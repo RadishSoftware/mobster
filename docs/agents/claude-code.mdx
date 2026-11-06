@@ -10,6 +10,8 @@ Mobster adds its MCP server to Claude Code for every project on this Mac. Claude
 
 ## Add it
 
+First [install the standalone CLI](/quickstart/cli) and check `mobster version`. Mobster for Mac is optional.
+
 ```sh
 mobster mcp install claude-code
 ```
@@ -17,22 +19,24 @@ mobster mcp install claude-code
 It prints what it changed:
 
 ```text
-Mobster's MCP server: /Applications/Mobster.app/Contents/MacOS/mobster-agent mcp
+Mobster's MCP server: /absolute/path/to/mobster mcp
   Claude Code     added      ~/.claude.json
 New sessions of the other clients pick it up. Check it with `mobster mcp doctor`.
 ```
 
 Start a new Claude Code session to load it. Add `--dry-run` to see the change first and write nothing. Run the command again and nothing changes.
 
-Without the `mobster` command on your `PATH`, run Claude Code's own command with the agent inside Mobster for Mac:
+Alternatively, register the installed command through Claude Code:
 
 ```sh
-claude mcp add --scope user mobster -- /Applications/Mobster.app/Contents/MacOS/mobster-agent mcp
+claude mcp add --scope user mobster -- "$(command -v mobster)" mcp
 ```
 
 `--scope user` adds it to every project. Without it, Claude Code adds the server to the current folder only. Mobster for Mac does the same from Settings › Connectors: **Add** beside Claude Code, under **Use Mobster from…**.
 
 ## What it writes
+
+The examples use `/absolute/path/to/mobster` for your installed executable. `mobster mcp install` writes the actual path; `--dry-run` shows it before changing the config.
 
 When the `claude` command is on your `PATH`, Mobster runs `claude mcp add --scope user`, as above. Otherwise it writes the same entry in `~/.claude.json`, or in `$CLAUDE_CONFIG_DIR/.claude.json` when that is set:
 
@@ -41,7 +45,7 @@ When the `claude` command is on your `PATH`, Mobster runs `claude mcp add --scop
   "mcpServers": {
     "mobster": {
       "type": "stdio",
-      "command": "/Applications/Mobster.app/Contents/MacOS/mobster-agent",
+      "command": "/absolute/path/to/mobster",
       "args": ["mcp"],
       "env": {}
     }

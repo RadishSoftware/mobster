@@ -8,7 +8,7 @@ icon: "workflow"
 
 `mobster ci` runs your app's checks on every pull request or merge request. It tests the screens the pull request changed, on simulators, and on any iPhone plugged into a Mac of yours. Then it keeps one comment on the pull request up to date: the verdict, and for each failure the repro steps, the frame, a GIF, the video and the command that runs it again.
 
-You run the checks on your own Mac. Mobster hosts no runners and no phones, and charges nothing per run or per device. The `mobster` command in a job is the agent inside [Mobster for Mac](https://mobster.dev/download).
+You run the checks on your own Mac. Mobster hosts no runners and no phones, and charges nothing per run or per device. Generated jobs run the pinned standalone CLI through [uv](https://docs.astral.sh/uv/guides/tools/).
 
 | Where it runs | What `mobster ci init` writes | Page |
 | --- | --- | --- |
@@ -18,7 +18,7 @@ You run the checks on your own Mac. Mobster hosts no runners and no phones, and 
 
 ## A Mac of yours
 
-On a Mac of yours the runner is the Mac, and it also tests on any iPhone plugged into it. It needs [Mobster for Mac](https://mobster.dev/download) in Applications and an active plan.
+On a Mac of yours the runner is the Mac, and it also tests on any iPhone plugged into it. Install uv on that runner with `brew install uv`. The standalone CLI needs no Mac app or Mobster account.
 
 From your project's folder:
 
@@ -44,8 +44,8 @@ Add `--device "Test iPhone"` to test on a phone plugged into the runner too ([be
 ✓ Apple silicon              this Mac is arm64
 ✓ Xcode                      Xcode 26.4
 ✓ iOS Simulator runtime      iOS 26.4
-✓ Mobster for Mac            in Applications
-✓ Mobster plan               active on this Mac
+✓ Mobster CLI                version 0.4.3
+- Mobster plan               not required by the standalone CLI
 ✗ System sleep               after 10 minutes
                              Run `sudo pmset -a sleep 0 disksleep 0`, so the Mac never sleeps through a job.
 ! Restart after a power cut  off
@@ -63,6 +63,8 @@ Fix the rows marked ✗, then run `mobster ci doctor` again.
 `mobster ci init` writes this file. It runs on a runner with the `mobster` label, so your other jobs stay on hosted runners.
 
 ```yaml .github/workflows/mobster.yml
+# Mobster checks on every pull request, on a Mac of yours (https://docs.mobster.dev/ci).
+# Install uv on the runner (`brew install uv`). `mobster ci doctor` says what else is missing.
 name: mobster
 on: pull_request
 permissions:
@@ -71,8 +73,6 @@ permissions:
 concurrency:
   group: mobster-${{ github.event.pull_request.number }}
   cancel-in-progress: true
-env:
-  MOBSTER: /Applications/Mobster.app/Contents/MacOS/mobster-agent
 jobs:
   checks:
     runs-on: [self-hosted, macOS, mobster]
@@ -83,7 +83,7 @@ jobs:
           fetch-depth: 0   # the diff needs the base branch
       - name: Test what this PR changed
         run: |
-          "$MOBSTER" ci run
+          uvx --python 3.12 --from mobster-cli==0.4.3 mobster ci run
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}   # only checks with steps use it
       - name: Upload the report
@@ -99,7 +99,7 @@ jobs:
       - name: Comment on the PR
         if: always()
         run: |
-          "$MOBSTER" ci comment
+          uvx --python 3.12 --from mobster-cli==0.4.3 mobster ci comment
         env:
           GITHUB_TOKEN: ${{ github.token }}
           MOBSTER_ARTIFACT_URL: ${{ steps.upload.outputs.artifact-url }}
@@ -221,7 +221,7 @@ On the [Team plan](/pricing), the comment can link your team's hosted report ins
 ```yaml
       - name: Test what this PR changed
         run: |
-          "$MOBSTER" ci run
+          uvx --python 3.12 --from mobster-cli==0.4.3 mobster ci run
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           MOBSTER_TEAM_KEY: ${{ secrets.MOBSTER_TEAM_KEY }}
@@ -241,7 +241,7 @@ MOBSTER_RUNNER_TESTFLIGHT=com.example.yourapp
 ```yaml
       - name: Test what this PR changed
         run: |
-          "$MOBSTER" ci run --device "Test iPhone" --testflight com.example.yourapp
+          uvx --python 3.12 --from mobster-cli==0.4.3 mobster ci run --device "Test iPhone" --testflight com.example.yourapp
 ```
 
 - A `--device` or `--testflight` the runner doesn't list stops the job before a check runs. Put these flags before `--`; forwarded `mobster test pr` flags after `--` cannot select a phone or TestFlight build. Restart the runner after you change `.env`.
@@ -258,7 +258,7 @@ Flags after `--` go to `mobster test pr`:
 
 ```yaml
         run: |
-          "$MOBSTER" ci run --sim "iPhone 17 Pro" --sim "iPhone SE (3rd generation)" -- --parallel 2 --retries 2
+          uvx --python 3.12 --from mobster-cli==0.4.3 mobster ci run --sim "iPhone 17 Pro" --sim "iPhone SE (3rd generation)" -- --parallel 2 --retries 2
 ```
 
 `--no-video` turns the screen recordings off. [CLI: mobster ci](/reference/cli#mobster-ci) lists every flag.
@@ -283,7 +283,7 @@ To run a project's checks on a Mac's simulators instead, make the key with `run_
 
 ```yaml
         run: |
-          "$MOBSTER" ci run --sim "iPhone 17 Pro" -- --xctest
+          uvx --python 3.12 --from mobster-cli==0.4.3 mobster ci run --sim "iPhone 17 Pro" -- --xctest
 ```
 
 The comment gains one line per failed test, with its file and line:
@@ -329,8 +329,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: |
-          /Applications/Mobster.app/Contents/MacOS/mobster-agent sim doctor --fix
-          /Applications/Mobster.app/Contents/MacOS/mobster-agent test --video --junit build/junit.xml --html build/mobster-report
+          uvx --python 3.12 --from mobster-cli==0.4.3 mobster sim doctor --fix
+          uvx --python 3.12 --from mobster-cli==0.4.3 mobster test --video --junit build/junit.xml --html build/mobster-report
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       - if: always()

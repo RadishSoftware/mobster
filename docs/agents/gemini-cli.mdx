@@ -10,6 +10,8 @@ Use Mobster's command below to add its MCP server to Gemini CLI's config. The se
 
 ## Add it
 
+First [install the standalone CLI](/quickstart/cli) and check `mobster version`. Mobster for Mac is optional.
+
 ```sh
 mobster mcp install gemini-cli
 ```
@@ -17,7 +19,7 @@ mobster mcp install gemini-cli
 It prints what it changed:
 
 ```text
-Mobster's MCP server: /Applications/Mobster.app/Contents/MacOS/mobster-agent mcp
+Mobster's MCP server: /absolute/path/to/mobster mcp
   Gemini CLI      added      ~/.gemini/settings.json
 New sessions of the other clients pick it up. Check it with `mobster mcp doctor`.
 ```
@@ -26,13 +28,15 @@ Add `--dry-run` to see the change first and write nothing. Run the command again
 
 ## What it writes
 
+The examples use `/absolute/path/to/mobster` for your installed executable. `mobster mcp install` writes the actual path; `--dry-run` shows it before changing the config.
+
 The entry goes in `~/.gemini/settings.json`. `$GEMINI_CLI_HOME` moves the folder. The file holds your other Gemini settings, and Mobster changes only `mcpServers.mobster`.
 
 ```json
 {
   "mcpServers": {
     "mobster": {
-      "command": "/Applications/Mobster.app/Contents/MacOS/mobster-agent",
+      "command": "/absolute/path/to/mobster",
       "args": ["mcp"]
     }
   }

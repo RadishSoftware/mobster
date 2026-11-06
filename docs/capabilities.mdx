@@ -86,7 +86,9 @@ For testing your app, `mobster phone button volume_up` presses a hardware button
 
 ### Put text on the phone's clipboard
 
-`mobster phone clipboard set "text"` puts up to 64 KB of text on the phone's clipboard, ready to paste. `mobster phone clipboard get` prints what it holds, at the terminal only: coding agents can't read it, because it may hold a password. A task that types 200 characters or more pastes them, then reads the field back to check every character arrived.
+`mobster phone clipboard set "text"` puts up to 64 KB of text on the phone's clipboard, ready to paste. `mobster phone clipboard get` prints what it holds, at the terminal only: coding agents can't read it, because it may hold a password. When replacing a field, a task that types 200 characters or more pastes them, then reads the field back to check every character arrived.
+
+When adding text to an existing field, Mobster types the addition without emptying or pasting over the field. If the read-back differs, it keeps the text and reports the difference instead of clearing and rewriting it. An explicit replacement can still be repaired once. Line breaks become spaces in chat composers and one-line fields, so typing them cannot press Return.
 
 ### Move photos between your Mac and your iPhone
 

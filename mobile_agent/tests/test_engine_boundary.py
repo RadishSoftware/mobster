@@ -121,6 +121,13 @@ CHILD = textwrap.dedent('''
     about = Snapshot([Element("1", "About", "Button", (.4, .1, .2, .05))], "General", 400, 800, "synthetic_fixture",
                      bundle_id="com.apple.Preferences")
 
+    # Live guards need the screen digest even when replay and every other harness module are absent.
+    from mobile_agent.frontier.screen import screen_signature
+    from mobile_agent.state import signature, signature_hash
+    assert screen_signature(about) == signature_hash(signature(about))
+    assert signature_hash([]) == "97d170e1550eee4a"
+    assert screen_signature(None) == ""
+
     class Driver:
         can_type = True
         def __init__(self):

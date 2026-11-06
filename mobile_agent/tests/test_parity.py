@@ -7,7 +7,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from mobile_agent import parity
+from mobile_agent import parity, tracks
 
 SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "gen_docs_reference.py"
 
@@ -17,6 +17,26 @@ def load_generator():
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+class ExtensionRowsTests(unittest.TestCase):
+    def test_absent_extensions_are_not_core_capabilities(self):
+        with mock.patch.object(parity, "ROWS", ()), mock.patch.object(tracks, "load"), \
+                mock.patch.dict(tracks.STATUS, {"teams": "absent", "remote": "absent"}, clear=True):
+            self.assertEqual(parity.rows(), ())
+            self.assertEqual(parity.analyse(set(), set(), set()), [])
+
+    def test_installed_and_broken_extensions_must_have_their_routes(self):
+        for extension in ("teams", "remote"):
+            for status in ("ok", "error: ImportError"):
+                with self.subTest(extension=extension, status=status), mock.patch.object(parity, "ROWS", ()), \
+                        mock.patch.object(tracks, "load"), \
+                        mock.patch.dict(tracks.STATUS, {"teams": "absent", "remote": "absent", extension: status},
+                                        clear=True):
+                    path = f"/api/{extension}"
+                    self.assertEqual(parity.analyse(set(), {path}, set()), [])
+                    self.assertEqual(parity.analyse(set(), set(), set()),
+                                     [f"{extension.title()}: {path} is not a route."])
 
 
 @unittest.skipUnless(SCRIPT.is_file(), "the docs generator is not part of this copy")
@@ -30,6 +50,13 @@ class ParityTests(unittest.TestCase):
     def problems(self, cli=None, mcp=None, api=None):
         return parity.analyse(self.cli if cli is None else cli, self.api if api is None else api,
                               self.mcp if mcp is None else mcp)
+
+    def test_authorization_allowlists_do_not_create_api_routes(self):
+        from mobile_agent import api_routes
+        with mock.patch.object(tracks, "load"), mock.patch.object(api_routes, "_routes", []):
+            paths = load_generator().api_paths()
+        self.assertNotIn("/api/teams", paths)  # api_http protects it even in a build without Teams
+        self.assertIn("/api/status", paths)
 
     def test_the_rows_match_the_code(self):
         self.assertEqual(self.problems(), [])

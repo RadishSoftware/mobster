@@ -221,9 +221,23 @@ class ExactTextTests(unittest.TestCase):
         driver = FakeWDA(value="Groceries: eggs")
         receipt = self.write(driver, ", milk", append=True)
         self.assertEqual((receipt["expected"], receipt["matches"]), ("Groceries: eggs, milk", True))
+        # A long append is typed at the end too: a paste writes the whole field, so it would be emptied first.
         long_driver = FakeWDA(value="start ")
         receipt = self.write(long_driver, "y" * 300, append=True)
-        self.assertEqual((receipt["method"], long_driver.value), ("paste", "start " + "y" * 300))
+        self.assertEqual((receipt["method"], long_driver.value), ("type", "start " + "y" * 300))
+        self.assertNotIn(("POST", "/element/field/clear"), long_driver.calls)
+        self.assertNotIn(("POST", "/wda/setPasteboard"), long_driver.calls)
+
+    def test_an_append_that_reads_back_differently_is_never_emptied(self):
+        # iOSWorld multi-087 (5 Nov 2026): the repair emptied a packing list in Notes to rewrite it whole, the rewrite
+        # didn't land, and the note was saved empty.
+        old = "Trip to Portland\n- Passport\n- Sunglasses"
+        driver = FakeWDA(value=old, drops=5, paste_menu=False)
+        with patch.object(wda_text, "WDA_PASTE_MENU_SECONDS", 0):
+            receipt = self.write(driver, "\n- Umbrella", append=True)
+        self.assertEqual((receipt["repaired"], receipt["matches"]), (False, False))
+        self.assertTrue(driver.value.startswith(old), driver.value)
+        self.assertNotIn(("POST", "/element/field/clear"), driver.calls)
 
 
 class TuneAndSettleTests(unittest.TestCase):

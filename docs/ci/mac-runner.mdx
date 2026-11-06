@@ -16,7 +16,7 @@ Mobster doesn't host runners or phones. Your code, builds, screenshots and video
 | --- | --- |
 | An Apple silicon Mac, on macOS 13 or later | Simulators run on it. Memory decides how many run at once: on 8 GB, more than 2 slow every run down |
 | Xcode and an iOS Simulator runtime | To build your app and run the simulators, on the macOS your Xcode version needs ([Apple lists it on its Xcode page](https://developer.apple.com/support/xcode/)) |
-| [Mobster for Mac](https://mobster.dev/download), signed in, with a plan or the free trial | Its agent is the `mobster` command in each job |
+| [uv](https://docs.astral.sh/uv/) | Runs the pinned standalone CLI and downloads Python 3.12 when needed |
 | Optional: an iPhone with a cable | To run checks on a real phone. Use a test phone with a test account |
 
 ## 1. The Mac
@@ -45,10 +45,11 @@ xcodebuild -downloadPlatform iOS
 
 ## 3. Mobster
 
-Install Mobster for Mac, open it, and sign in. Start your free trial or pick a plan. Then prepare a simulator, so the first job doesn't wait for one:
+Install uv and prepare a simulator, so the first job does not wait for one:
 
 ```sh
-/Applications/Mobster.app/Contents/MacOS/mobster-agent sim doctor --fix
+brew install uv
+uvx --python 3.12 --from mobster-cli==0.4.3 mobster sim doctor --fix
 ```
 
 The first time builds WebDriverAgent, which takes several minutes. Later jobs reuse it.
@@ -112,15 +113,15 @@ Skip this for simulators only.
 ## 6. Check it
 
 ```sh
-/Applications/Mobster.app/Contents/MacOS/mobster-agent ci doctor
+uvx --python 3.12 --from mobster-cli==0.4.3 mobster ci doctor
 ```
 
 ```text
 ✓ Apple silicon              this Mac is arm64
 ✓ Xcode                      Xcode 26.4
 ✓ iOS Simulator runtime      iOS 26.4
-✓ Mobster for Mac            in Applications
-✓ Mobster plan               active on this Mac
+✓ Mobster CLI                version 0.4.3
+- Mobster plan               not required by the standalone CLI
 ✓ System sleep               never
 ✓ Restart after a power cut  on
 ✓ Automatic login            as ci
@@ -135,7 +136,7 @@ A row marked ✗ fails the check and says the fix. A row marked ! works, and is 
 
 ## Keeping it running
 
-- Update Xcode and Mobster for Mac on the runner when you update them on your own Mac, so CI builds what you build.
+- Update Xcode and the pinned `mobster-cli` version in your workflow when you update your development setup.
 - Delete simulators of runtimes you removed: `xcrun simctl delete unavailable`.
 - Xcode's DerivedData and old simulator runtimes fill the disk. `mobster ci doctor` warns under 30 GB free and fails under 10 GB.
 - One runner runs one job at a time. For more jobs at once, add a second Mac, and split the checks with `--shard` ([CI](/ci#several-machines)).

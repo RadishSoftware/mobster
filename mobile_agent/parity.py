@@ -2,7 +2,7 @@
 and MCP (coding agents), and what is missing where.
 
 The surfaces are read from the code: the argparse parsers, the registered and core API routes, and the MCP tool list.
-``ROWS`` says which of them make one capability. ``analyse`` checks the two against each other:
+``ROWS`` groups the core capabilities; ``rows()`` adds installed app extensions. ``analyse`` checks the result:
 
 - every command, subcommand and `mobster test` mode, every MCP tool and every API route group is in a row, so a
   feature that ships in one surface alone fails a test until someone says where its other surfaces are;
@@ -176,8 +176,8 @@ ROWS = (
     row("Alerts to a webhook", TA, ["alerts test"], ["triggers"], [], no={"mcp": "The webhook is the person's."}),
     row("Longform and Fleet", TA, [], ["longform", "fleet"], [],
         gap={"cli": (3, "Only the app runs these."), "mcp": (3, "An agent can't start these.")}),
-    row("Teams, remote, plugins and destinations", TA, ["audit verify"],
-        ["teams", "remote", "plugins", "connectors", "outlets", "waiting", "feedback"], [],
+    row("Audit records, plugins and destinations", TA, ["audit verify"],
+        ["plugins", "connectors", "outlets", "waiting", "feedback"], [],
         no={"mcp": "These are the person's accounts and destinations."}),
     # -- Apps ------------------------------------------------------------------------------------------------------
     row("App packs: read and act in an app", AP, ["api serve", "api tokens"], ["packs", "apps"],
@@ -193,6 +193,24 @@ ROWS = (
         no={"api": "The Mac app updates itself.", "mcp": "An agent has no use for them."}),
 )
 
+# These API groups belong to optional app extensions, not the standalone core.
+APP_ROWS = {
+    "teams": row("Teams", TA, [], ["teams"], [],
+                 no={"cli": "Mobster for Mac manages the person's team.",
+                     "mcp": "Team membership is the person's decision."}),
+    "remote": row("Remote", TA, [], ["remote"], [],
+                  no={"cli": "Mobster for Mac manages remote access.",
+                      "mcp": "Remote access is the person's decision."}),
+}
+
+
+def rows():
+    """Core capabilities plus installed app extensions; a broken extension must still fail validation."""
+    from . import tracks
+    tracks.load()
+    return ROWS + tuple(value for name, value in APP_ROWS.items() if tracks.STATUS.get(name) != "absent")
+
+
 # Parser paths that are not capabilities of their own (a parent that only holds subcommands).
 PARENTS = frozenset({"sim", "ci", "account", "account ci-token", "expo", "asc", "testflight", "xcode", "phone",
                      "memory", "env", "wifi", "workflow", "xray", "alerts", "audit", "api", "mcp", "phone clipboard",
@@ -204,20 +222,21 @@ def matches(pattern, name):
 
 
 def analyse(cli, api, mcp):
-    """Check ``ROWS`` against the surfaces: ``cli`` is the set of command paths, ``api`` the set of route paths (without
-    the method, with /api/), ``mcp`` the set of tool names. Returns the list of problems, each one sentence."""
+    """Check this build's rows against command paths, API paths (with /api/, without the method), and MCP tool names.
+    Return the problems as a list of sentences."""
     problems = []
+    capabilities = rows()
     api_groups = {path.split("/")[2] for path in api if path.count("/") >= 2}
-    listed_cli = {item for r in ROWS for item in r.cli}
-    listed_api = {item.split("/")[0] for r in ROWS for item in r.api}
+    listed_cli = {item for r in capabilities for item in r.cli}
+    listed_api = {item.split("/")[0] for r in capabilities for item in r.api}
     for path in sorted(cli - listed_cli - PARENTS):
         problems.append(f"The command `mobster {path}` is in no row of mobile_agent/parity.py. Add it with its API and "
                         "MCP surfaces, or the reason it has none.")
-    for name in sorted(n for n in mcp if not any(matches(p, n) for r in ROWS for p in r.mcp)):
+    for name in sorted(n for n in mcp if not any(matches(p, n) for r in capabilities for p in r.mcp)):
         problems.append(f"The MCP tool {name} is in no row of mobile_agent/parity.py.")
     for group in sorted(api_groups - listed_api):
         problems.append(f"The API group /api/{group} is in no row of mobile_agent/parity.py.")
-    for r in ROWS:
+    for r in capabilities:
         for item in r.cli:
             if item not in cli:
                 problems.append(f"{r.name}: `mobster {item}` is not a command.")
@@ -240,12 +259,12 @@ def analyse(cli, api, mcp):
         for surface, value in r.gap.items():
             if not (isinstance(value, tuple) and value[0] in (1, 2, 3) and value[1]):
                 problems.append(f"{r.name}: the {surface} gap needs a rank 1 to 3 and a sentence.")
-    names = [r.name for r in ROWS]
+    names = [r.name for r in capabilities]
     problems += [f"Two rows are called {n!r}." for n in sorted({n for n in names if names.count(n) > 1})]
     return problems
 
 
 def gaps():
     """[(rank, row, surface, what)] of the open gaps, the testing ICP's first."""
-    out = [(value[0], r, surface, value[1]) for r in ROWS for surface, value in r.gap.items()]
+    out = [(value[0], r, surface, value[1]) for r in rows() for surface, value in r.gap.items()]
     return sorted(out, key=lambda item: (item[0], GROUPS.index(item[1].group), item[1].name, item[2]))

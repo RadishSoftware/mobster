@@ -16,13 +16,31 @@ Every connection Mobster makes to the internet uses HTTPS with TLS 1.2 or later,
 |---|---|---|
 | `api.mobster.dev` | Your plan, your Macs, checkout and billing links | macOS's trust store, then Mobster's pins |
 | `remote.mobster.dev` | [Mobster Remote](/remote)'s relay | macOS's trust store, then Mobster's pins |
-| `mobster.dev/updates/latest.json` | The update check | macOS's trust store, then Mobster's pins |
+| `mobster.dev/updates/latest.json` | Mobster for Mac updates | macOS's trust store, then Mobster's pins |
 | Your Mobster account's sign-in (Supabase) | Signing in | macOS's trust store |
-| GitHub | Update downloads, which the update check points to | macOS's trust store, and the update's signature |
+| GitHub | Frozen CLI release metadata and update downloads | macOS's trust store; signed downloads are checked separately |
+| `pypi.org` | Standalone Python CLI release metadata, including the npm launcher's Python runtime | macOS's trust store |
 | Anthropic, OpenAI and the other model providers | Your agent's model calls, on your key or plan | macOS's trust store |
 | Connectors, webhooks and alerts | The services you connect | macOS's trust store |
 
 An AI provider's address, a connector or a webhook can use plain `http://` only on this Mac or your local network, such as Ollama or LM Studio. Mobster refuses to send a key to an internet address over `http://`.
+
+## Standalone CLI update checks
+
+`mobster update` checks PyPI for a Python installation and GitHub for a frozen CLI archive. It prints the release location and installs nothing. The npm launcher uses a pinned Python package, so its check also reads PyPI; a newer Python release does not mean a matching npm launcher is published yet. App-owned copies defer to Mobster for Mac's updater.
+
+Use the installer that owns your copy when you choose to upgrade:
+
+| Installation | Upgrade |
+|---|---|
+| pip | Run `python -m pip install --upgrade mobster-cli` in the environment where you installed it |
+| uv tool | Run `uv tool upgrade mobster-cli` |
+| npm global launcher | Run `npm install -g @radishsoftware/mobster@latest`; its package pins the Python version |
+| npx launcher | Request `@radishsoftware/mobster@latest` on the next invocation |
+| Frozen archive | Replace it with the verified CLI archive from the linked release |
+| Source checkout | Update the checkout with Git and reinstall if your installation is not editable |
+
+Automatic checks run at most daily on an interactive terminal. They are silent for JSON output, pipes, CI, MCP, the HTTP server and shell completion. Set `MOBSTER_NO_UPDATE_CHECK=1` to disable automatic checks. An explicit `mobster update` still checks. Requests use public release endpoints without account credentials or device identifiers. Python and frozen copies keep separate metadata caches. The app's minimum-version policy is not applied to the independent CLI.
 
 ## Pinned servers
 
@@ -36,7 +54,7 @@ Mobster couldn't verify its server, so it didn't connect. Another app or this ne
 
 It never falls back to an unpinned connection. The rest of Mobster keeps working: tasks, your phone, and your plan for as long as its last check allows ([Your Mobster account](/account)).
 
-A network that inspects HTTPS with its own certificate, such as some company networks and security apps, fails this check. Sign-in, the plan check, Remote and the update check need a network that doesn't intercept `mobster.dev`. Model calls, connectors and GitHub aren't pinned and work through it.
+A network that inspects HTTPS with its own certificate, such as some company networks and security apps, fails this check. Sign-in, the plan check, Remote and Mobster for Mac updates need a network that doesn't intercept `mobster.dev`. Model calls, connectors, PyPI and GitHub aren't pinned and work through it.
 
 Mobster pins certificate authority keys, never a server's own certificate, so a routine certificate renewal never breaks a pin. These are the keys, as `pin-sha256` values, checked against the live servers on 13 Oct 2026:
 
@@ -78,7 +96,7 @@ The pins live in two places that a test keeps equal: `mobile_agent/pinning.py` (
 
    It exits 1 when a host's chain has no pinned key, and warns when a pinned authority a host uses expires within 180 days. `cargo test --manifest-path desktop/src-tauri/Cargo.toml -- --ignored live` checks the Mac app's own client the same way.
 2. Before you move a host to a new certificate authority, add that authority's root and issuing keys to both files, and ship an app update with them.
-3. Move the host only after most Macs run that update. A Mac on an older version can't reach that host until it updates. The update check uses `mobster.dev`, so moving `mobster.dev` before the update ships strands those Macs.
+3. Move the host only after most Macs run that update. A Mac on an older version can't reach that host until it updates. Mobster for Mac checks for updates on `mobster.dev`, so moving `mobster.dev` before the update ships strands those Macs.
 4. Run `scripts/check_tls_pins.py --save` to refresh the saved chains in `mobile_agent/tests/fixtures/tls`, which the offline tests check.
 5. Remove a pin only after no host has used it for a release.
 

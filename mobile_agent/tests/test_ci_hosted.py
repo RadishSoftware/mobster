@@ -12,7 +12,7 @@ from unittest import mock
 
 import yaml
 
-from mobile_agent import plan_gate
+from mobile_agent import __version__, plan_gate
 from mobile_agent.devkit import DevError, ci, ci_cli, ci_hosts
 from mobile_agent.tests.test_plan_gate import KEY, OTHER_SEED, SEED, b64, sign
 
@@ -248,17 +248,17 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(names, ["actions/checkout@v4", "Install Mobster", "Cache WebDriverAgent",
                                  "Prepare a simulator", "Test what this PR changed", "Upload the report",
                                  "Comment on the PR"])
-        self.assertIn("brew install --cask radishsoftware/tap/mobster-app", job["steps"][1]["run"])
+        self.assertIn(ci_hosts.INSTALL, job["steps"][1]["run"])
         cache = job["steps"][2]
         self.assertEqual(cache["uses"], "actions/cache@v4")
         self.assertIn("Application Support/app.mobster.desktop/wda", cache["with"]["path"])
         self.assertIn("steps.mobster.outputs.xcode", cache["with"]["key"])
-        self.assertIn('"$MOBSTER" sim doctor --fix', job["steps"][3]["run"])
+        self.assertIn(f"{ci_hosts.COMMAND} sim doctor --fix", job["steps"][3]["run"])
         run = job["steps"][4]
-        self.assertEqual(run["env"]["MOBSTER_CI_TOKEN"], "${{ secrets.MOBSTER_CI_TOKEN }}")
+        self.assertNotIn("MOBSTER_CI_TOKEN", run["env"])
         self.assertNotIn("--device", run["run"])
         self.assertEqual(job["steps"][5]["if"], "always()")
-        self.assertEqual(flow["env"]["MOBSTER"], ci.APP_AGENT)
+        self.assertNotIn("MOBSTER", flow.get("env", {}))
 
     def test_a_hosted_runner_has_no_phone_to_name(self):
         for kw in ({"devices": ("Sam",)}, {"testflight": ("com.x",)}):
@@ -275,7 +275,7 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(yaml.safe_load(path.read_text())["jobs"]["checks"]["runs-on"],
                          ["self-hosted", "macOS", "mobster"])
 
-    def test_every_template_installs_prepares_and_runs_with_the_token(self):
+    def test_every_template_runs_the_pinned_standalone_cli_without_the_app(self):
         for host in ("github", *ci.HOSTED_HOSTS):
             with self.subTest(host):
                 text = ci_hosts.render(host)
@@ -285,7 +285,11 @@ class WorkflowTests(unittest.TestCase):
                 self.assertIn("sim doctor --fix", text)
                 self.assertIn("ci run", text)
                 self.assertNotIn("--device", text)
-                self.assertIn("MOBSTER_CI_TOKEN", text)
+                self.assertIn(f"uvx --python 3.12 --from mobster-cli=={__version__} mobster", text)
+                self.assertNotIn("/Applications/Mobster.app", text)
+                self.assertNotIn("mobster-app", text)
+                self.assertNotIn("$MOBSTER", text)
+                self.assertNotIn("MOBSTER_CI_TOKEN", text)
 
     def test_xcode_cloud_script(self):
         path, _ = ci.init(self.root, host="xcode-cloud")
@@ -300,8 +304,8 @@ class WorkflowTests(unittest.TestCase):
         flow = yaml.safe_load(ci.init(self.root, host="codemagic")[0].read_text())["workflows"]["mobster"]
         self.assertEqual(flow["triggering"]["events"], ["pull_request"])
         self.assertEqual(flow["environment"]["groups"], ["mobster"])
-        self.assertEqual([step["script"] for step in flow["scripts"]][1:], ["$MOBSTER sim doctor --fix",
-                                                                           "$MOBSTER ci run"])
+        self.assertEqual([step["script"] for step in flow["scripts"]][1:], [f"{ci_hosts.COMMAND} sim doctor --fix",
+                                                                           f"{ci_hosts.COMMAND} ci run"])
         self.assertEqual(flow["artifacts"], [".mobster/ci/**"])
         bitrise = yaml.safe_load(ci.init(self.root, host="bitrise")[0].read_text())["workflows"]["mobster"]
         self.assertEqual(len(bitrise["steps"]), 4)
@@ -360,7 +364,7 @@ class DoctorTests(unittest.TestCase):
                        "pmset": (0, " sleep 0\n autorestart 1\n"), "defaults": (0, "ci\n"), "launchctl": (0, "")}
             return {row.name: row for row in ci.doctor(
                 run=lambda argv: answers[argv[0]], home=home, environ={}, machine="arm64", plan=lambda: "no_account",
-                agent=str(agent), disk=lambda path: 80e9, hosted=hosted, ci_token=token, **kw)}
+                agent=str(agent), disk=lambda path: 80e9, hosted=hosted, ci_token=token if hosted else None, **kw)}
 
     def test_a_hosted_runner_skips_the_rows_that_keep_a_mac_running_and_checks_the_token(self):
         rows = self.rows()
@@ -370,6 +374,27 @@ class DoctorTests(unittest.TestCase):
         self.assertNotIn("Mobster plan", rows)
         self.assertEqual(rows["CI token"].status, "ok")
         self.assertFalse([row for row in rows.values() if row.status == "fail"])
+
+    def test_standalone_hosted_runner_needs_no_token(self):
+        with mock.patch.object(plan_gate, "bundled", return_value=False):
+            self.assertEqual(self.rows(token=None)["CI token"].status, "skip")
+
+    def test_a_configured_token_is_still_checked_in_the_standalone_cli(self):
+        for hosted in (False, True):
+            with self.subTest(hosted=hosted), mock.patch.object(plan_gate, "bundled", return_value=False), \
+                    mock.patch.object(ci, "hosted_token_row",
+                                      return_value=ci.Row("CI token", "fail", "revoked")) as check:
+                environment = {"MOBSTER_CI_TOKEN": "synthetic-token"}
+                rows = ci.doctor(run=lambda argv: (0, "{}"), environ=environment,
+                                 hosted=hosted, disk=lambda path: 80e9)
+            check.assert_called_once_with(environment)
+            self.assertEqual(next(row for row in rows if row.name == "CI token").status, "fail")
+
+    def test_bundled_hosted_runner_still_checks_a_missing_token(self):
+        with mock.patch.object(plan_gate, "bundled", return_value=True), \
+                mock.patch.object(ci, "hosted_token_row", return_value=ci.Row("CI token", "fail", "no token")) as check:
+            self.assertEqual(self.rows(token=None)["CI token"].status, "fail")
+        check.assert_called_once_with({})
 
     def test_a_missing_or_expired_token_fails_with_the_fix(self):
         for problem, words in (("no_token", "MOBSTER_CI_TOKEN"), ("expired", "new CI token"),
@@ -404,7 +429,7 @@ class InitCliTests(unittest.TestCase):
             with mock.patch("sys.stdout", out):
                 self.assertEqual(ci_cli.run(args, cwd=Path(folder), environ={}), 0)
             self.assertIn("Wrote .github/workflows/mobster.yml.", out.getvalue())
-            self.assertIn("MOBSTER_CI_TOKEN", out.getvalue())
+            self.assertIn("ANTHROPIC_API_KEY", out.getvalue())
             self.assertNotIn("self-hosted", out.getvalue())
             printed = io.StringIO()
             args = build_parser().parse_args(["ci", "init", "--host", "circleci", "--print"])

@@ -2,15 +2,14 @@
 # "mobster" on PyPI is an unrelated SBOM tool. The import package is mobile_agent; the command is `mobster`.
 name = "mobster-cli"
 dynamic = ["version"]
-# The positioning's one line for package indexes.
-description = "The open-source harness that lets AI agents use a real iPhone over USB"
+description = "MCP server and CLI that lets Claude Code, Cursor and Codex drive a real iPhone or iOS simulator: read the screen, tap, type, and get pass/fail verdicts from accessibility assertions"
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 authors = [{ name = "Radish Retail, LLC" }]
 requires-python = ">=3.12"
-# Compatible ranges for installing beside other libraries. The tested pins (CI, `make venv`, the desktop
-# sidecar) are in mobile_agent/requirements.txt.
+# Compatible ranges for installing beside other libraries. CI and `make venv` use
+# the tested pins in mobile_agent/requirements.txt.
 dependencies = [
     "jsonschema>=4.23,<5",
     "referencing>=0.35",  # imported directly (extraction.py, loops.py); also a jsonschema dependency
@@ -20,7 +19,7 @@ dependencies = [
     "textual>=8,<9",  # the terminal UI (`mobster`); imported only when it opens
     "rich>=13.3.3",  # imported directly (tui/, doctor.py); also a Textual dependency
     "textual-image>=0.14,<0.15",  # the phone's real screenshot in terminals that draw images
-    "cryptography>=46,<51",  # team features (mobile_agent/teams): passkey signatures, the signed roster and policy
+    "cryptography>=46,<51",  # signature verification and Network X-ray packet decryption
 ]
 keywords = ["ios", "iphone", "agent", "accessibility", "webdriveragent", "automation", "mcp", "mcp-server",
             "model-context-protocol", "ios-simulator", "ios-testing", "e2e-testing", "ui-testing", "claude-code"]
@@ -69,16 +68,18 @@ exclude = ["mobile_agent.tests*", "mobile_agent.bench.tests*", "mobile_agent.pri
            "mobile_agent.teams*"]
 
 # Non-Python files the documented commands read: the Swift helper sources (`mobster build-ocr` and the native helpers
-# native_helpers.py compiles), the frozen benchmark manifest and ground truth
+# native_helpers.py compiles), the Wi-Fi and packet-capture C helpers, the frozen benchmark manifest and ground truth
 # (`python -m mobile_agent.bench`), and the labelled VisionJudge set (CC0 / public-domain images;
 # see evals/vision/manifest.json).
 [tool.setuptools.package-data]
 mobile_agent = ["swift/*.swift"]
 "mobile_agent.verify" = ["netshim.m"]
+"mobile_agent.wireless" = ["mobster-wifi-pair.c"]
+"mobile_agent.netxray" = ["mobster-pcap.c"]
 "mobile_agent.bench" = ["README.md", "manifest.json", "*-manifest.json", "truth/*.json"]
 "mobile_agent.evals.vision" = ["manifest.json", "images/*.jpg"]
 
-# `make lint` and the lint step of CI (`ruff check mobile_agent scripts desktop/scripts`): pyflakes, isort's import
+# `make lint` and CI (`ruff check mobile_agent scripts`): pyflakes, isort's import
 # order and lines of at most 120 columns; formatting isn't checked. Generated files and the frozen bench graders are
 # exempt from the last two.
 [tool.ruff]

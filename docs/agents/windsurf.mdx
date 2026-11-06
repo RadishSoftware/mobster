@@ -10,6 +10,8 @@ Use Mobster's command below to add its MCP server to Windsurf's config. The serv
 
 ## Add it
 
+First [install the standalone CLI](/quickstart/cli) and check `mobster version`. Mobster for Mac is optional.
+
 ```sh
 mobster mcp install windsurf
 ```
@@ -17,7 +19,7 @@ mobster mcp install windsurf
 It prints what it changed:
 
 ```text
-Mobster's MCP server: /Applications/Mobster.app/Contents/MacOS/mobster-agent mcp
+Mobster's MCP server: /absolute/path/to/mobster mcp
   Windsurf        added      ~/.config/devin/mcp_config.json
 Restart Windsurf to load the change.
 New sessions of the other clients pick it up. Check it with `mobster mcp doctor`.
@@ -27,13 +29,15 @@ Add `--dry-run` to see the change first and write nothing. Run the command again
 
 ## What it writes
 
+The examples use `/absolute/path/to/mobster` for your installed executable. `mobster mcp install` writes the actual path; `--dry-run` shows it before changing the config.
+
 The entry goes in `~/.config/devin/mcp_config.json`, the user-level file listed in Devin Desktop's MCP docs. If you set `$XDG_CONFIG_HOME`, Mobster uses the same path under that directory. Windsurf became Devin Desktop on 2 Jun 2026. Mobster 0.4.0 and earlier wrote `~/.codeium/windsurf/mcp_config.json`, which Devin's command line still imports. If Mobster's entry exists only in the old file, `mobster mcp install windsurf` moves it to the new file, preserving options such as `--allow-device`. The command removes the entry from the old file. If both files contain matching Mobster entries, the command keeps one entry in the new file. If their options or environment differ, the command writes nothing. It returns one error naming both files. Delete the `mobster` entry you don't want from one of the files, then run the command again. Or run `mobster mcp install windsurf --reset-server-options` with the flags you want, such as `--allow-device`: it writes one fresh entry and drops both entries' saved options. `mobster mcp install windsurf --remove` removes Mobster's entry from both files.
 
 ```json
 {
   "mcpServers": {
     "mobster": {
-      "command": "/Applications/Mobster.app/Contents/MacOS/mobster-agent",
+      "command": "/absolute/path/to/mobster",
       "args": ["mcp"]
     }
   }

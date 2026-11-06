@@ -1,0 +1,36 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "dev.mobster/mobster",
+  "description": "Control iPhones and iOS simulators: read screens, tap, type and verify. Requires macOS and uv.",
+  "title": "Mobster",
+  "repository": {
+    "url": "https://github.com/RadishSoftware/mobster",
+    "source": "github"
+  },
+  "version": "0.4.3",
+  "websiteUrl": "https://mobster.dev",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "mobster-cli",
+      "version": "0.4.3",
+      "runtimeHint": "uvx",
+      "transport": {
+        "type": "stdio"
+      },
+      "runtimeArguments": [
+        {
+          "type": "named",
+          "name": "--python",
+          "value": "3.12"
+        }
+      ],
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "mcp"
+        }
+      ]
+    }
+  ]
+}
