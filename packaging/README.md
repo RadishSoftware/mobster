@@ -9,7 +9,7 @@ packaging/cli/build.sh
 
 The build freezes the command, performs smoke checks and writes the macOS arm64 archive under `dist/`. Signing and notarization require the release owner's configured Apple credentials. Do not commit those credentials.
 
-This repository split has not published a new binary or registry release. The standalone Homebrew formula and Claude Desktop bundle remain release inputs until the integrated gates pass. App casks and the deprecated CLI cask stay in the app repository.
+The standalone Python package is published on [PyPI](https://pypi.org/project/mobster-cli/0.4.3/); no new frozen binary has been published. The standalone Homebrew formula and Claude Desktop bundle remain release inputs until the integrated gates pass. App casks and the deprecated CLI cask stay in the app repository.
 
 Release artifacts are checked by `scripts/scan_release_secrets.py`, using the shared detection rules in `scripts/secret_patterns.py`.
 
@@ -33,11 +33,11 @@ Before the first publication, sign in to PyPI and add a [pending trusted publish
 
 The GitHub repository must have an environment named `pypi`. No PyPI API token or repository secret is needed. PyPI creates the project when the configured publisher first uploads a release. See [PyPI's trusted-publishing instructions](https://docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/).
 
-For the initial `0.4.3` release, check out the reviewed release commit, then create and push its release tag:
+Release `0.4.3` is published from the immutable `cli-v0.4.3` tag. For a future version, update the version and package pins, check out the reviewed release commit, then create and push the matching tag:
 
 ```sh
-git tag -a cli-v0.4.3 -m "Release mobster-cli 0.4.3"
-git push origin cli-v0.4.3
+git tag -a cli-v<version> -m "Release mobster-cli <version>"
+git push origin cli-v<version>
 ```
 
 Pushing the tag starts publication. The workflow validates the tagged source and publishes only that run's artifact from a separate Ubuntu job with `id-token: write`. The publishing job does not check out or run repository code. An existing PyPI version cannot be overwritten.
@@ -45,3 +45,9 @@ Pushing the tag starts publication. The workflow validates the tagged source and
 Manual runs default to `publish=false`; set `publish=true` to publish after validation. Unlike a tag push, `workflow_dispatch` requires this workflow file on the repository's default branch. See [GitHub's manual-trigger requirements](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflow_dispatch).
 
 The frozen macOS archive, Homebrew formula and Claude Desktop bundle use their own release checks; this workflow publishes only the Python wheel and source distribution.
+
+## Publish the MCP Registry metadata
+
+[`server.json`](../server.json) records the published `dev.mobster/mobster` entry. Its PyPI command uses the `mobster-cli` executable alias, which starts the same CLI as `mobster`. Verify the package installation and MCP handshake before publishing metadata with `mcp-publisher publish server.json`.
+
+Authenticate as the domain owner using the official registry's HTTP or DNS proof. Keep signing keys and publisher tokens outside this repository. Published registry versions are immutable; adding another package requires a new registry version. Do not advertise an npm package until that exact version is published and checked.
