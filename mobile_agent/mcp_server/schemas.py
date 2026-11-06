@@ -358,8 +358,8 @@ def build_tools(toolset):
                                                      "description": "only newer ones: 10m, 2h, 1d or an ISO "
                                                                     "time"})), toolset.tool_read_notifications,
                                budget),
-        "set_clipboard": ("Put text (at most 64 KB) or a picture on the device's clipboard, to paste with a long "
-                          "press › Paste. type_text pastes replacements of 200 characters or more; appends are typed. "
+        "set_clipboard": ("Put text (up to 64 KB) or a picture on the device clipboard; long press › Paste. "
+                          "type_text pastes replacements of 200+ characters; appends are typed. "
                           "No tool reads the clipboard: it may hold a password.",
                           _schema(_phone(text={"type": "string", "minLength": 1, "maxLength": 65536,
                                                "description": "the text"},

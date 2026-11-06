@@ -1,7 +1,7 @@
 {
   "name": "@radishsoftware/mobster",
   "mcpName": "dev.mobster/mobster",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "MCP server and CLI for AI agents to drive a real iPhone or iOS simulator and verify accessibility assertions",
   "license": "MIT",
   "author": "Radish Retail, LLC",

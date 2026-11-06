@@ -33,11 +33,11 @@ Before the first publication, sign in to PyPI and add a [pending trusted publish
 
 The GitHub repository must have an environment named `pypi`. No PyPI API token or repository secret is needed. PyPI creates the project when the configured publisher first uploads a release. See [PyPI's trusted-publishing instructions](https://docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/).
 
-For the initial `0.4.2` release, check out the reviewed release commit, then create and push its release tag:
+For the initial `0.4.3` release, check out the reviewed release commit, then create and push its release tag:
 
 ```sh
-git tag -a cli-v0.4.2 -m "Release mobster-cli 0.4.2"
-git push origin cli-v0.4.2
+git tag -a cli-v0.4.3 -m "Release mobster-cli 0.4.3"
+git push origin cli-v0.4.3
 ```
 
 Pushing the tag starts publication. The workflow validates the tagged source and publishes only that run's artifact from a separate Ubuntu job with `id-token: write`. The publishing job does not check out or run repository code. An existing PyPI version cannot be overwritten.

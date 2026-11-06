@@ -49,7 +49,7 @@ Install uv and prepare a simulator, so the first job does not wait for one:
 
 ```sh
 brew install uv
-uvx --python 3.12 --from mobster-cli==0.4.2 mobster sim doctor --fix
+uvx --python 3.12 --from mobster-cli==0.4.3 mobster sim doctor --fix
 ```
 
 The first time builds WebDriverAgent, which takes several minutes. Later jobs reuse it.
@@ -113,14 +113,14 @@ Skip this for simulators only.
 ## 6. Check it
 
 ```sh
-uvx --python 3.12 --from mobster-cli==0.4.2 mobster ci doctor
+uvx --python 3.12 --from mobster-cli==0.4.3 mobster ci doctor
 ```
 
 ```text
 ✓ Apple silicon              this Mac is arm64
 ✓ Xcode                      Xcode 26.4
 ✓ iOS Simulator runtime      iOS 26.4
-✓ Mobster CLI                version 0.4.2
+✓ Mobster CLI                version 0.4.3
 - Mobster plan               not required by the standalone CLI
 ✓ System sleep               never
 ✓ Restart after a power cut  on

@@ -8,7 +8,7 @@ hidden: true
 noindex: true
 ---
 
-The generated workflow runs the standalone `mobster-cli==0.4.2` package through uv. It needs macOS, Xcode and an iOS Simulator runtime. The Mac app is not required.
+The generated workflow runs the standalone `mobster-cli==0.4.3` package through uv. It needs macOS, Xcode and an iOS Simulator runtime. The Mac app is not required.
 
 Your pull requests are tested on `macos-15`, the arm64 macOS runner GitHub hosts. You run no Mac, and the runner needs nothing installed beforehand. [CI](/ci) has the parts every host shares: the comment, the report and the flags.
 
@@ -58,10 +58,10 @@ jobs:
             mobster-wda-${{ runner.arch }}-${{ steps.mobster.outputs.xcode }}-
       - name: Prepare a simulator
         run: |
-          uvx --python 3.12 --from mobster-cli==0.4.2 mobster sim doctor --fix
+          uvx --python 3.12 --from mobster-cli==0.4.3 mobster sim doctor --fix
       - name: Test what this PR changed
         run: |
-          uvx --python 3.12 --from mobster-cli==0.4.2 mobster ci run
+          uvx --python 3.12 --from mobster-cli==0.4.3 mobster ci run
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}   # only checks with steps use it
       - name: Upload the report
@@ -77,7 +77,7 @@ jobs:
       - name: Comment on the PR
         if: always()
         run: |
-          uvx --python 3.12 --from mobster-cli==0.4.2 mobster ci comment
+          uvx --python 3.12 --from mobster-cli==0.4.3 mobster ci comment
         env:
           GITHUB_TOKEN: ${{ github.token }}
           MOBSTER_ARTIFACT_URL: ${{ steps.upload.outputs.artifact-url }}
