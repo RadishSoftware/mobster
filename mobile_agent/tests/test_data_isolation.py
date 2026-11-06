@@ -1,4 +1,5 @@
 import io
+import json
 import os
 import subprocess
 import sys
@@ -162,17 +163,23 @@ class DevIdentity(Home):
         self.assertNotEqual(*journals)
 
     def test_a_source_checkout_keeps_its_data_beside_the_package(self):
-        code = ("from mobile_agent import paths, keychain_acl\n"
+        package = self.home / "checkout" / "mobile_agent"
+        package.mkdir(parents=True)
+        (package.parent / "pyproject.toml").write_text("[project]\nname = 'synthetic-cli'\n")
+        code = ("from pathlib import Path\n"
+                "from mobile_agent import paths, keychain_acl\n"
                 "from mobile_agent.memory import store\n"
+                f"paths.PACKAGE = Path({str(package)!r})\n"
+                "paths.CHECKOUT_DATA = paths.PACKAGE / '.state' / 'data'\n"
                 "print(paths.source_checkout(), paths.user_data_dir(), store.memory_dir(),"
                 " paths.keychain_service('Mobster AI'), sep='\\n')")
-        env = {"HOME": str(self.home), "PATH": os.environ["PATH"]}
+        env = {"HOME": str(self.home), "PATH": os.environ["PATH"], "PYTHONDONTWRITEBYTECODE": "1"}
         root = Path(paths.PACKAGE).parent
         out = subprocess.run([sys.executable, "-c", code], cwd=root, env=env,
                              capture_output=True, text=True, check=True).stdout.split("\n")
         self.assertEqual(out[0], "True")
-        self.assertEqual(Path(out[1]), paths.PACKAGE / ".state" / "data")
-        self.assertEqual(Path(out[2]), paths.PACKAGE / ".state" / "data" / "memory")
+        self.assertEqual(Path(out[1]), package / ".state" / "data")
+        self.assertEqual(Path(out[2]), package / ".state" / "data" / "memory")
         self.assertTrue(out[3].startswith("Mobster AI.dev-"))
         self.assert_away_from_installed(out[1])
 
@@ -189,6 +196,13 @@ class DevIdentity(Home):
 
 
 class StateDbDefaultTests(unittest.TestCase):
+    def setUp(self):
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        self.package = Path(folder.name) / "mobile_agent"
+        self.package.mkdir()
+        (self.package.parent / "pyproject.toml").write_text("[project]\nname = 'synthetic-cli'\n")
+
     def parse(self, *extra):
         return cli_parser.build_parser().parse_args(["serve", "--port", "8799", *extra])
 
@@ -198,8 +212,11 @@ class StateDbDefaultTests(unittest.TestCase):
     def test_source_checkout_keeps_the_journal_beside_the_package(self):
         args = self.parse()
         self.assertIsNone(args.state_db)
-        with mock.patch.object(sys, "frozen", False, create=True):
-            self.assertEqual(cli.default_state_db(args), Path(cli.__file__).parent / ".state" / "mobster.sqlite3")
+        with mock.patch.object(sys, "frozen", False, create=True), \
+                mock.patch.object(paths, "PACKAGE", self.package), \
+                mock.patch.dict(os.environ, {paths.DATA_DIR_ENV: ""}), \
+                mock.patch.object(cli, "__file__", str(self.package / "__main__.py")):
+            self.assertEqual(cli.default_state_db(args), self.package / ".state" / "mobster.sqlite3")
 
     def test_frozen_sidecar_uses_the_data_dir(self):
         with mock.patch.object(sys, "frozen", True, create=True):
@@ -215,9 +232,71 @@ class StateDbDefaultTests(unittest.TestCase):
             self.assertEqual(paths.build_dir(), paths.user_data_dir() / "build")
 
     def test_source_checkout_builds_beside_the_package(self):
-        with mock.patch.object(sys, "frozen", False, create=True):
+        with mock.patch.object(sys, "frozen", False, create=True), \
+                mock.patch.object(paths, "PACKAGE", self.package):
             self.assertTrue(paths.source_checkout())
-            self.assertEqual(paths.build_dir(), Path(cli.__file__).resolve().parent / ".build")
+            self.assertEqual(paths.build_dir(), self.package / ".build")
+
+
+class AssembledPackageTests(Home):
+    def setUp(self):
+        super().setUp()
+        self.package = self.home / "checkout" / "mobile_agent"
+        self.package.mkdir(parents=True)
+        (self.package.parent / "pyproject.toml").write_text("[project]\nname = 'synthetic-app'\n")
+
+    def read_paths(self, *, frozen=False, external=False):
+        # tests/__init__.py redirects paths in this process. The child imports the real functions without that guard.
+        code = ("import json, sys\n"
+                "from pathlib import Path\n"
+                "from types import SimpleNamespace\n"
+                "from mobile_agent import paths, plan_gate\n"
+                "from mobile_agent import __main__ as cli\n"
+                "paths.PACKAGE = Path(sys.argv[1])\n"
+                "paths.CHECKOUT_DATA = paths.PACKAGE / '.state' / 'data'\n"
+                "sys.frozen = sys.argv[2] == 'true'\n"
+                "print(json.dumps(dict(source=paths.source_checkout(), user=str(paths.user_data_dir()),\n"
+                " build=str(paths.build_dir()), history=str(paths.default_history_db()),\n"
+                " state=str(cli.default_state_db(SimpleNamespace(data_dir=None))), bundled=plan_gate.bundled())))")
+        env = {"HOME": str(self.home), "PATH": os.environ["PATH"], "PYTHONDONTWRITEBYTECODE": "1",
+               "MOBSTER_NO_DEVICES": "1", "MOBSTER_NO_UPDATE_CHECK": "1"}
+        if external:
+            env[paths.DATA_DIR_ENV] = str(self.home / "runtime")
+        result = subprocess.run([sys.executable, "-c", code, str(self.package), str(frozen).lower()],
+                                cwd=Path(paths.__file__).resolve().parent.parent, env=env,
+                                capture_output=True, text=True, check=True, timeout=30)
+        return json.loads(result.stdout)
+
+    def test_source_without_an_assembly_marker_keeps_checkout_paths(self):
+        found = self.read_paths()
+        self.assertTrue(found["source"])
+        self.assertEqual(Path(found["user"]), self.package / ".state" / "data")
+        self.assertEqual(Path(found["build"]), self.package / ".build")
+        self.assertEqual(Path(found["history"]), self.package / ".state" / "terminal.sqlite3")
+
+    def test_assembly_uses_external_data_for_helpers_and_journals(self):
+        (self.package / ".mobster-assembly.json").write_text("{}\n")
+        external = self.home / "runtime"
+        found = self.read_paths(external=True)
+        self.assertFalse(found["source"])
+        self.assertEqual(Path(found["user"]), external)
+        self.assertEqual(Path(found["build"]), external / "build")
+        self.assertEqual(Path(found["history"]), external / "state" / "terminal.sqlite3")
+        self.assertEqual(Path(found["state"]), external / "state" / "mobster.sqlite3")
+        self.assertFalse((self.package / ".state").exists())
+        self.assertFalse((self.package / ".build").exists())
+
+    def test_frozen_app_identity_and_paths_do_not_depend_on_the_assembly_marker(self):
+        external = self.home / "runtime"
+        for assembled in (False, True):
+            with self.subTest(assembled=assembled):
+                if assembled:
+                    (self.package / ".mobster-assembly.json").write_text("{}\n")
+                found = self.read_paths(frozen=True, external=True)
+                self.assertFalse(found["source"])
+                self.assertEqual(Path(found["build"]), external / "build")
+                self.assertEqual(Path(found["history"]), external / "state" / "terminal.sqlite3")
+                self.assertTrue(found["bundled"])
 
 
 class VersionTests(unittest.TestCase):
