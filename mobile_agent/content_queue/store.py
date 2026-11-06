@@ -25,6 +25,8 @@ HASHTAGS = 30
 SOUND_CHARS = 120
 NAME_CHARS = 60
 LATE_LIMIT_MS = 2 * 3600 * 1000
+# How often a post its profile's pace holds says so again: the proof that Mobster held it, not that it was away.
+PACED_REFRESH_MS = 10 * 60 * 1000
 STAGGER_S = 90
 STAGGER_MAX_S = 3600
 WATCH_SEEN = 2000
@@ -35,6 +37,7 @@ ADD_PHOTOS = "Add photos"      # a draft's note: a caption and a profile, no med
 APPROVALS = ("each", "batch")
 FORMATS = ("auto", "post", "reel", "story", "video")
 EDITABLE = frozenset({"ready", "declined", "failed", "missed"})
+RUN_AGAIN = frozenset({"declined", "failed", "missed"})   # the states whose row has Run again
 
 
 class QueueError(ValueError):
@@ -430,7 +433,7 @@ class QueueStore:
             queue["items"].insert(max(0, min(int(index), len(queue["items"]))), item)
 
     def set_state(self, queue_id, item_id, state, **fields):
-        """Journal, then store, an item's new state (and its runId, transfer, result or note)."""
+        """Journal, then store, an item's new state (and its runId, transfer, result, note, pacedAt or scheduledAt)."""
         if state not in STATES:
             raise QueueError("Unknown state")
         self.journal(queue_id, state, item=item_id, **{k: v for k, v in fields.items() if k in ("runId", "note")})
@@ -438,7 +441,7 @@ class QueueStore:
             queue = self._find(data, queue_id)
             _, item = self._item(queue, item_id)
             item["state"] = state
-            for key in ("runId", "transfer", "result", "note"):
+            for key in ("runId", "transfer", "result", "note", "pacedAt", "scheduledAt"):
                 if key in fields:
                     item[key] = fields[key]
             item["updatedAt"] = now_ms()
@@ -454,7 +457,9 @@ class QueueStore:
             return dict(item)
 
     def mark(self, queue_id, item_id, outcome):
-        """The person looked: an ``unknown`` post went out (``posted``) or didn't (``ready``, to run again)."""
+        """The person looked: an ``unknown`` post went out (``posted``) or didn't (``ready``, to run again).
+        ``ready`` on a missed, declined or failed post is **Run again**: the press is the person's OK to post it now, so
+        its passed time goes, and it posts once its queue runs and its pace allows, never missed for that old time."""
         if outcome not in ("posted", "ready"):
             raise QueueError("Mark it posted, or ready to run again.")
         with self.edit() as data:
@@ -463,9 +468,11 @@ class QueueStore:
             if item["state"] not in ("unknown", "missed", "declined", "failed") and not (
                     outcome == "posted" and item["state"] == "posted"):
                 raise QueueError("Only a post that ended can be marked.", "locked", 409)
-        note = "You said it went out." if outcome == "posted" else None
-        return self.set_state(queue_id, item_id, outcome, note=note, **(
-            {"result": {**(item.get("result") or {}), "markedAt": now_ms()}} if outcome == "posted" else {}))
+        if outcome == "posted":
+            return self.set_state(queue_id, item_id, outcome, note="You said it went out.",
+                                  result={**(item.get("result") or {}), "markedAt": now_ms()})
+        again = {"scheduledAt": None} if item["state"] in RUN_AGAIN else {}
+        return self.set_state(queue_id, item_id, outcome, note=None, **again)
 
     def recover(self):
         """After a stop mid-post: ``posting`` becomes ``unknown`` (it may have posted), ``sending`` ``failed``."""
