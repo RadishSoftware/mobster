@@ -6,6 +6,7 @@ All notable changes to Mobster CLI are listed here. The format follows [Keep a C
 
 ### Fixed
 
+- Mobster adds text at the end of a field without emptying it first. If the field reads back differently, Mobster keeps the text and tells the agent what differs. A formatting change no longer triggers a rewrite that can leave the field empty.
 - Keep screen signatures in the standalone engine boundary and include the frozen heldout task manifest.
 - CLI tests use local fixtures; app packaging and service parity checks remain in the app repository.
 

@@ -19,7 +19,7 @@ Or run without a global npm install:
 npx -y @radishsoftware/mobster version
 ```
 
-The launcher runs `uvx --python 3.12 --from mobster-cli==0.4.1 mobster`. On first use, uv downloads the Python package and its dependencies, and Python 3.12 if needed. Later runs reuse uv's cache. Arguments and standard input/output pass through unchanged. Missing `uvx` produces an installation link on stderr and exit status 127.
+The launcher runs `uvx --python 3.12 --from mobster-cli==0.4.2 mobster`. On first use, uv downloads the Python package and its dependencies, and Python 3.12 if needed. Later runs reuse uv's cache. Arguments and standard input/output pass through unchanged. Missing `uvx` produces an installation link on stderr and exit status 127.
 
 ## Connect your coding agent
 
@@ -30,7 +30,7 @@ Add this local stdio server to your agent's MCP configuration:
   "mcpServers": {
     "mobster": {
       "command": "npx",
-      "args": ["-y", "@radishsoftware/mobster@0.4.1", "mcp"]
+      "args": ["-y", "@radishsoftware/mobster@0.4.2", "mcp"]
     }
   }
 }

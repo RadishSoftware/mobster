@@ -60,7 +60,7 @@ Deep links Mobster opened on a real iPhone, by app. The `open_url` MCP tool list
 ## Get started: Plans and help
 
 - [Your Mobster account](https://docs.mobster.dev/account.md): Sign in to Mobster for Mac with Apple, Google, GitHub or an email code. Your plan lives in your account: buy in the app, and run it on one Mac at a time, moved to another Mac in one click.
-- [Pricing and plans](https://docs.mobster.dev/pricing.md): Mobster for Mac is $12 a month, $99 a year, or $149 once. Every phone included, with 7 days free and no card first, on one Mac at a time, moved in one click. Mobster's engine and research are open source under MIT.
+- [Pricing and plans](https://docs.mobster.dev/pricing.md): Mobster for Mac is $12 a month, $99 a year, or $149 once. Every phone included, with 7 days free and no card first, on one Mac at a time, moved in one click. Mobster's standalone CLI and MCP server are open source under MIT.
 - [Team plan](https://docs.mobster.dev/team.md): One Mobster for a group: members with roles, a pool of Macs, and a plan an Owner pays for. What the Team plan costs, who can do what, and what Mobster sees.
 - [Console and control plane](https://docs.mobster.dev/console.md): How a team's Macs, phones and Profiles are listed in one place: what the registry holds, what Mobster sees, and how to read it from a script. Part of the Team plan, off until its release.
 - [Enterprise](https://docs.mobster.dev/enterprise.md): Mobster for your company: single sign-on, a signed DPA and MSA, invoices against your purchase order, an uptime SLA and a named contact. What's in it, how to buy it, and the security review.

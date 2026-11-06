@@ -38,7 +38,7 @@ Each tool carries MCP annotations. Read-only tools change nothing. Tools that ac
 | [`save_check`](#save_check) | Local | Save a check as checks/\<name\>.yaml for `mobster test` and run_tests: from a finished check run, or a task in the Mobster app (its id from `mobster history`). |
 | [`use_code`](#use_code) | Acts on the device | On a phone, type the sign-in code it just received (keyboard suggestion, Notification Center or Messages) into the code field. You never see the code; Mobster refuses fields that aren't code fields. |
 | [`read_notifications`](#read_notifications) | Read-only | Read Notification Center on the device, read-only: up to 30 notifications with app, title, body and time, codes masked. Mobster goes back to the app afterwards. Content is hidden while the phone is locked. |
-| [`set_clipboard`](#set_clipboard) | Acts on the device | Put text (at most 64 KB) or a picture on the device's clipboard, to paste with a long press › Paste. type_text already pastes text of 200 characters or more. No tool reads the clipboard: it may hold a password. |
+| [`set_clipboard`](#set_clipboard) | Acts on the device | Put text (at most 64 KB) or a picture on the device's clipboard, to paste with a long press › Paste. type_text pastes replacements of 200 characters or more; appends are typed. No tool reads the clipboard: it may hold a password. |
 | [`install_app`](#install_app) | Acts on the device | Install a local signed .app or .ipa on a USB iPhone (devicectl) or a Mobster simulator. The iPhone needs Developer Mode on. |
 | [`unlock_status`](#unlock_status) | Read-only | Whether the iPhone is locked now (locked: true, false, or null when its runner doesn't answer). Mobster can't unlock an iPhone and never enters a passcode: if it is locked, ask the user to unlock it. |
 | [`device_status`](#device_status) | Read-only | Read a device's battery, thermal state and whether this Mac is on battery, and who holds the device (holder) and what waits for it (queue). Taps nothing; needs no run. |
@@ -2542,7 +2542,7 @@ only newer ones: 10m, 2h, 1d or an ISO time
 
 ## `set_clipboard`
 
-Put text (at most 64 KB) or a picture on the device's clipboard, to paste with a long press › Paste. type_text already pastes text of 200 characters or more. No tool reads the clipboard: it may hold a password.
+Put text (at most 64 KB) or a picture on the device's clipboard, to paste with a long press › Paste. type_text pastes replacements of 200 characters or more; appends are typed. No tool reads the clipboard: it may hold a password.
 
 **Acts on the device.** Taps, types, opens or installs on a simulator or a real iPhone. A client that asks before destructive or open-world calls asks before these.
 

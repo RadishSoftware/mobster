@@ -44,7 +44,7 @@ Add `--device "Test iPhone"` to test on a phone plugged into the runner too ([be
 ✓ Apple silicon              this Mac is arm64
 ✓ Xcode                      Xcode 26.4
 ✓ iOS Simulator runtime      iOS 26.4
-✓ Mobster CLI                version 0.4.1
+✓ Mobster CLI                version 0.4.2
 - Mobster plan               not required by the standalone CLI
 ✗ System sleep               after 10 minutes
                              Run `sudo pmset -a sleep 0 disksleep 0`, so the Mac never sleeps through a job.
@@ -83,7 +83,7 @@ jobs:
           fetch-depth: 0   # the diff needs the base branch
       - name: Test what this PR changed
         run: |
-          uvx --python 3.12 --from mobster-cli==0.4.1 mobster ci run
+          uvx --python 3.12 --from mobster-cli==0.4.2 mobster ci run
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}   # only checks with steps use it
       - name: Upload the report
@@ -99,7 +99,7 @@ jobs:
       - name: Comment on the PR
         if: always()
         run: |
-          uvx --python 3.12 --from mobster-cli==0.4.1 mobster ci comment
+          uvx --python 3.12 --from mobster-cli==0.4.2 mobster ci comment
         env:
           GITHUB_TOKEN: ${{ github.token }}
           MOBSTER_ARTIFACT_URL: ${{ steps.upload.outputs.artifact-url }}
@@ -221,7 +221,7 @@ On the [Team plan](/pricing), the comment can link your team's hosted report ins
 ```yaml
       - name: Test what this PR changed
         run: |
-          uvx --python 3.12 --from mobster-cli==0.4.1 mobster ci run
+          uvx --python 3.12 --from mobster-cli==0.4.2 mobster ci run
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           MOBSTER_TEAM_KEY: ${{ secrets.MOBSTER_TEAM_KEY }}
@@ -241,7 +241,7 @@ MOBSTER_RUNNER_TESTFLIGHT=com.example.yourapp
 ```yaml
       - name: Test what this PR changed
         run: |
-          uvx --python 3.12 --from mobster-cli==0.4.1 mobster ci run --device "Test iPhone" --testflight com.example.yourapp
+          uvx --python 3.12 --from mobster-cli==0.4.2 mobster ci run --device "Test iPhone" --testflight com.example.yourapp
 ```
 
 - A `--device` or `--testflight` the runner doesn't list stops the job before a check runs. Put these flags before `--`; forwarded `mobster test pr` flags after `--` cannot select a phone or TestFlight build. Restart the runner after you change `.env`.
@@ -258,7 +258,7 @@ Flags after `--` go to `mobster test pr`:
 
 ```yaml
         run: |
-          uvx --python 3.12 --from mobster-cli==0.4.1 mobster ci run --sim "iPhone 17 Pro" --sim "iPhone SE (3rd generation)" -- --parallel 2 --retries 2
+          uvx --python 3.12 --from mobster-cli==0.4.2 mobster ci run --sim "iPhone 17 Pro" --sim "iPhone SE (3rd generation)" -- --parallel 2 --retries 2
 ```
 
 `--no-video` turns the screen recordings off. [CLI: mobster ci](/reference/cli#mobster-ci) lists every flag.
@@ -283,7 +283,7 @@ To run a project's checks on a Mac's simulators instead, make the key with `run_
 
 ```yaml
         run: |
-          uvx --python 3.12 --from mobster-cli==0.4.1 mobster ci run --sim "iPhone 17 Pro" -- --xctest
+          uvx --python 3.12 --from mobster-cli==0.4.2 mobster ci run --sim "iPhone 17 Pro" -- --xctest
 ```
 
 The comment gains one line per failed test, with its file and line:
@@ -329,8 +329,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: |
-          uvx --python 3.12 --from mobster-cli==0.4.1 mobster sim doctor --fix
-          uvx --python 3.12 --from mobster-cli==0.4.1 mobster test --video --junit build/junit.xml --html build/mobster-report
+          uvx --python 3.12 --from mobster-cli==0.4.2 mobster sim doctor --fix
+          uvx --python 3.12 --from mobster-cli==0.4.2 mobster test --video --junit build/junit.xml --html build/mobster-report
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       - if: always()

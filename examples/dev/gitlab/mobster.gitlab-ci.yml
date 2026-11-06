@@ -13,10 +13,10 @@ mobster:
   interruptible: true
   script:
     - |
-      uvx --python 3.12 --from mobster-cli==0.4.1 mobster ci run
+      uvx --python 3.12 --from mobster-cli==0.4.2 mobster ci run
   after_script:
     - |
-      uvx --python 3.12 --from mobster-cli==0.4.1 mobster ci comment
+      uvx --python 3.12 --from mobster-cli==0.4.2 mobster ci comment
   artifacts:
     when: always
     expire_in: 14 days

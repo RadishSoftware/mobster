@@ -34,9 +34,9 @@ Follow the [agent setup guide](https://docs.mobster.dev/agents/setup) and [testi
 
 These are scripted demo sessions, not captures of a personal phone.
 
-![A completed scripted task](https://raw.githubusercontent.com/RadishSoftware/mobster/cli-v0.4.1/docs/images/tui-finished.png)
+![A completed scripted task](https://raw.githubusercontent.com/RadishSoftware/mobster/cli-v0.4.2/docs/images/tui-finished.png)
 
-![Scripted task history](https://raw.githubusercontent.com/RadishSoftware/mobster/cli-v0.4.1/docs/images/tui-history.png)
+![Scripted task history](https://raw.githubusercontent.com/RadishSoftware/mobster/cli-v0.4.2/docs/images/tui-history.png)
 
 ## Develop
 
@@ -47,4 +47,4 @@ make venv
 make test-backend
 ```
 
-Read [CONTRIBUTING.md](https://github.com/RadishSoftware/mobster/blob/cli-v0.4.1/CONTRIBUTING.md). Training, model weights, datasets and experiment outputs are maintained separately from the product runtime.
+Read [CONTRIBUTING.md](https://github.com/RadishSoftware/mobster/blob/cli-v0.4.2/CONTRIBUTING.md). Training, model weights, datasets and experiment outputs are maintained separately from the product runtime.

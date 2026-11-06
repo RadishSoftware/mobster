@@ -391,7 +391,8 @@ class WDAText:
 
     def write_text(self, target, snapshot, text, append=False, submit=False, timeout=30):
         """Write ``text`` into ``target`` and prove it by reading the whole field back.
-        A read-back that differs is repaired once (emptied, written again), and only when the earlier text is known.
+        An append is typed at the end of the field's text and never empties it; a replace whose read-back differs is
+        repaired once (emptied, written again). An append's read-back is reported as it is.
         Failing before anything that can change the field keeps its own error, so a caller may resend. Failing after is
         WriteInterrupted, whatever the last request said."""
         self._write_sent = False
@@ -421,22 +422,21 @@ class WDAText:
         # TextField does not): an earlier text is known only when it cannot be a placeholder.
         known = old is not None and (not old or target.role == "TextView" or bool(target.placeholder)
                                      or "\n" in old or len(old) >= 60)
-        paste = bool(text) and (len(text) >= self.paste_min_chars or breaks) and old is not None
+        # An append is typed at the end of what the field holds, never pasted: a paste writes the whole field, so the
+        # field is emptied first, and a paste or retype that then fails leaves it empty (iOSWorld multi-087, 5 Nov 2026:
+        # a packing list in Notes was emptied and saved so).
+        paste = bool(text) and not append and (len(text) >= self.paste_min_chars or breaks) and old is not None
         receipt = {"method": "clear" if not text else "paste" if paste else "type", "repaired": False,
                    "flattened": False}
         current, field = snapshot, target
-        if paste or not append:
+        if not append:
             if self._emptied(field, current, deadline):
                 current, field = self._reread(field, deadline)
-                if append and not known and (field.value or "") == old:
-                    old, known = "", True  # emptying changed nothing: it showed its placeholder
-            elif append:
-                old, known = "", True
         expected = (old or "") + text if append else text
         if paste and not self._paste(field, current, expected, deadline):
             receipt["method"] = "type"
         if receipt["method"] == "type":
-            typed = expected if (not append or current is not snapshot) else text
+            typed = text
             if breaks:
                 # Never Return in a field not known to take line breaks: it may submit.
                 typed, receipt["flattened"] = " ".join(typed.split("\n")), True
@@ -453,7 +453,11 @@ class WDAText:
             again, current = self._read_back(target, deadline, rank)
             if again == value:
                 receipt["placeholder"], value, matches = value, "", True
-        elif not matches and value is not None and (not append or known):
+        elif not matches and value is not None and not append:
+            # A replace is repaired once: emptied and written again. An append never is: its field holds the person's
+            # text, and emptying it to rewrite the whole lost a note when the rewrite didn't land (multi-087: Notes'
+            # list formatting changed the added lines, the read-back differed, and the note was left empty). Its
+            # read-back is reported as it is.
             receipt["repaired"] = True
             field = self._same_field(current, target, rank) or field
             if self._emptied(field, current, deadline):

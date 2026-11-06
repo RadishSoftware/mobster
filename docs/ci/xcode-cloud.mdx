@@ -8,7 +8,7 @@ hidden: true
 noindex: true
 ---
 
-The generated workflow runs the standalone `mobster-cli==0.4.1` package through uv. It needs macOS, Xcode and an iOS Simulator runtime. The Mac app is not required.
+The generated workflow runs the standalone `mobster-cli==0.4.2` package through uv. It needs macOS, Xcode and an iOS Simulator runtime. The Mac app is not required.
 
 Xcode Cloud runs a script after a build when the script is named `ci_post_xcodebuild.sh` in a `ci_scripts` folder at the root of your repository. `mobster ci init` writes that script. [CI](/ci) has the parts every host shares.
 
@@ -30,10 +30,10 @@ if [ -z "${CI_PULL_REQUEST_NUMBER:-}" ]; then
   exit 0
 fi
 brew install uv
-uvx --python 3.12 --from mobster-cli==0.4.1 mobster sim doctor --fix
+uvx --python 3.12 --from mobster-cli==0.4.2 mobster sim doctor --fix
 status=0
-uvx --python 3.12 --from mobster-cli==0.4.1 mobster ci run || status=$?
-uvx --python 3.12 --from mobster-cli==0.4.1 mobster ci comment || true   # Xcode Cloud has no comment token; the verdict is in this log
+uvx --python 3.12 --from mobster-cli==0.4.2 mobster ci run || status=$?
+uvx --python 3.12 --from mobster-cli==0.4.2 mobster ci comment || true   # Xcode Cloud has no comment token; the verdict is in this log
 exit "$status"
 ```
 

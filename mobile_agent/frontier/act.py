@@ -200,8 +200,10 @@ class ActMixin:
         self.run_state.last_receipt = receipt
         if receipt.get("value") is not None and not receipt.get("matches"):
             self.run_state.macro_feedback = (
-                "The field does not hold what you wrote (it was cleared and written once more): "
-                + text_difference(receipt["value"], receipt.get("expected") or "")
+                "The field does not hold what you wrote ("
+                + ("it was cleared and written once more" if receipt.get("repaired") else
+                   "what it held before was kept, and nothing was rewritten: the app may have formatted it")
+                + "): " + text_difference(receipt["value"], receipt.get("expected") or "")
                 + ". Do not retype blindly: see the field's status on this screen.")
         if op == "TYPE_SUBMIT" and receipt.get("submitted") is False:
             said = self.run_state.macro_feedback
