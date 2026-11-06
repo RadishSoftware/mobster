@@ -112,7 +112,7 @@ Each profile keeps a pace, in every task as that profile, the queue's included. 
 | Follows | 30 | 2 |
 | Likes and reactions | 100 | 0.5 |
 
-By default, a profile sends at most 20 messages a day, at least 4 minutes apart. A day is counted in the profile's own time zone, which you set in **Pacing**, and so is its posting window (**Posts between** 09:00 and 21:00, say). The queue holds a post until its profile's pace and window allow it, and the post says when: "Waits for @getmobster's pace: next post at Thu 14:00". A CSV's times without an offset are read in the profile's time zone.
+By default, a profile sends at most 20 messages a day, at least 4 minutes apart. A day is counted in the profile's own time zone, which you set in **Pacing**, and so is its posting window (**Posts between** 09:00 and 21:00, say). The queue holds a post until its profile's pace and window allow it, and the post says when: "Waits for @getmobster's pace: next post at Thu 14:00". A post with a time waits for them only within its own day. If they would hold it to a later day, it's **Missed its time**. A post with no time waits as long as they need. A CSV's times without an offset are read in the profile's time zone.
 
 In a task, a gap of up to 15 minutes is waited out before the action. A longer wait, or a day's limit, stops the task before the action, and the task says why. A workflow step stopped this way waits for the pace and runs again, within the workflow's time limit ([Workflows › How a graph runs](/workflows#how-a-graph-runs)).
 
@@ -138,7 +138,11 @@ The Queue's **Tasks for your profiles** put a ready task in Home's box for your 
 | Declined | the Post wasn't approved, or the card timed out: nothing went out | edit it, or **Run again** |
 | Didn't post | it stopped before Post (the media didn't arrive, another profile was signed in, the sound wasn't there): nothing went out | fix it, then **Run again** |
 | Check the profile | the Post was approved, and the task couldn't confirm it went out | look at the profile, then **It posted** or **It didn't** |
-| Missed its time | its time passed more than 2 hours ago while Mobster wasn't running | set a new time, or **Run again** |
+| Missed its time | more than 2 hours past its time while Mobster isn't running, its profile is paused, or it waits for your client's approval; or its profile's pace or posting window would hold it past its day | set a new time, or **Run again** |
+
+Mobster checks the time and pacing again when the worker reaches the post, after any stagger or earlier post. Waiting for that worker does not extend a timed post into the next day.
+
+**Run again** drops the post's old time: it goes once its queue runs and its profile's pace and window allow, on any day. If that run does not post, press **Run again** to try again.
 
 If Mobster quits while a post is going out, the post is **Check the profile** when Mobster opens again. If it quit while sending the media, the post is **Didn't post**.
 
@@ -177,7 +181,7 @@ Under `/api/queue` and `/api/transfers`, with the same token as the rest of the 
 | `POST /api/queue/{id}/items/{item}` | change a post that hasn't gone out |
 | `POST /api/queue/{id}/start`, `/stop` | start or stop the queue; `?profile=<id>` starts or stops that profile's posts alone. With the [iPhone checks](#check-the-iphone-first) on, start answers `warnings: [{code, device, message}]` and can refuse (409 `photos_denied`, `photos_restricted`, `photos_not_determined`, `photos_unreadable`) |
 | `POST /api/queue/{id}/approve` | `{items}`: the batch approval |
-| `POST /api/queue/{id}/items/{item}/mark` | `{outcome: posted \| ready}`: you looked |
+| `POST /api/queue/{id}/items/{item}/mark` | `{outcome: posted \| ready}`: you confirm a post went out with `posted`. With `ready`, you make a **Check the profile** post ready again with its time. On a **Missed its time**, **Declined** or **Didn't post** post, you use `ready` for **Run again**, which drops its old time. |
 | `POST /api/queue/{id}/items/{item}/client` | `{item, link}`: the post's client approval link, made when it has none |
 | `DELETE /api/queue/{id}/items/{item}/client` | revoke the link: the post waits for a new one's OK |
 | `POST /api/queue/{id}` | `{name, approval, watch: {folder, profile} \| null, staggerSeconds}` |

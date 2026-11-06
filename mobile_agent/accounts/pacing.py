@@ -49,6 +49,12 @@ def _zone(name):
         return None
 
 
+def _local(settings, at):
+    """``at`` (epoch seconds) in the profile's time zone, or the Mac's when it names none."""
+    zone = _zone(settings.get("timeZone"))
+    return datetime.datetime.fromtimestamp(at, zone) if zone else datetime.datetime.fromtimestamp(at).astimezone()
+
+
 def _minutes(text):
     hours, minutes = text.split(":")
     value = int(hours) * 60 + int(minutes)
@@ -224,10 +230,7 @@ class Pacing:
                       if entry["profile"] == profile and entry["kind"] == kind and entry["at"] >= cutoff)
 
     def _day_start(self, settings, now):
-        zone = _zone(settings.get("timeZone"))
-        local = (datetime.datetime.fromtimestamp(now, zone) if zone
-                 else datetime.datetime.fromtimestamp(now).astimezone())
-        return local.replace(hour=0, minute=0, second=0, microsecond=0)
+        return _local(settings, now).replace(hour=0, minute=0, second=0, microsecond=0)
 
     def today(self, profile):
         """{kind: how many ran today} in the profile's time zone."""
@@ -271,12 +274,17 @@ class Pacing:
             at = max(at, verdict["until"])
         return self._in_window(settings, at)
 
+    def same_day(self, profile, first, second):
+        """Whether two times (epoch seconds) fall on one calendar day in the profile's time zone (the Mac's when it
+        names none). Settings it can't read raise, so it never guesses a day."""
+        settings = self.settings(profile)
+        return _local(settings, first).date() == _local(settings, second).date()
+
     def _in_window(self, settings, at):
         window = settings.get("window")
         if not window:
             return at
-        zone = _zone(settings.get("timeZone"))
-        local = datetime.datetime.fromtimestamp(at, zone) if zone else datetime.datetime.fromtimestamp(at).astimezone()
+        local = _local(settings, at)
         start, end = _minutes(window["start"]), _minutes(window["end"])
         minute = local.hour * 60 + local.minute
         inside = start <= minute < end if start < end else (minute >= start or minute < end)

@@ -6,6 +6,8 @@ All notable changes to Mobster CLI are listed here. The format follows [Keep a C
 
 ### Fixed
 
+- Your timed post no longer shows **Missed its time** when its profile's pace or posting window holds it more than 2 hours within its day. It goes out when both allow it, on its own day. If they would hold it to a later day, it misses its time. If your post misses its time, the note gives the reason: Mobster not running, a pause on its profile, a wait for your client's approval, or its profile's pace or posting window holding it past its day. **Run again** on a missed post now drops its old time. It goes once its queue runs and its profile's pace and window allow, even on a later day. If that run does not post, press **Run again** to try again. Before this fix, the queue's next check marked it missed again.
+
 - Mobster adds text at the end of a field without emptying it first. If the field reads back differently, Mobster keeps the text and tells the agent what differs. A formatting change no longer triggers a rewrite that can leave the field empty.
 - Keep screen signatures in the standalone engine boundary and include the frozen heldout task manifest.
 - CLI tests use local fixtures; app packaging and service parity checks remain in the app repository.
