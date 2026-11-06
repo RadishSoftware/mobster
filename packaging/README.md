@@ -36,8 +36,9 @@ The GitHub repository must have an environment named `pypi`. No PyPI API token o
 Release `0.4.3` is published from the immutable `cli-v0.4.3` tag. For a future version, update the version and package pins, check out the reviewed release commit, then create and push the matching tag:
 
 ```sh
-git tag -a cli-v<version> -m "Release mobster-cli <version>"
-git push origin cli-v<version>
+release_version=$(mobile_agent/.venv/bin/python -c 'from mobile_agent import __version__; print(__version__)')
+git tag -a "cli-v${release_version}" -m "Release mobster-cli ${release_version}"
+git push origin "cli-v${release_version}"
 ```
 
 Pushing the tag starts publication. The workflow validates the tagged source and publishes only that run's artifact from a separate Ubuntu job with `id-token: write`. The publishing job does not check out or run repository code. An existing PyPI version cannot be overwritten.
