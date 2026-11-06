@@ -3,14 +3,12 @@ import os
 import threading
 import unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from pathlib import Path
 from unittest import mock
 
 from mobile_agent import result_blocks as rb
 from mobile_agent import share
 from mobile_agent.tests.test_server_engine import MESSAGES, Base
 
-FIXTURE = Path(__file__).resolve().parents[2] / "services" / "license-api" / "tests" / "fixtures" / "share-page.html"
 JPEG = bytes.fromhex("ffd8ffe000104a46494600010100000100010000ffd9")
 ENVELOPE = rb.envelope([
     rb.review_queue([{"id": "c1", "to": "Sam Rivera", "handle": "@samrivera", "app": "Instagram",
@@ -40,13 +38,6 @@ class PageTests(unittest.TestCase):
         body = page.split("</style>", 1)[1]
         self.assertIn("Sam Rivera", body)
         self.assertIn("data:image/jpeg", body)
-
-    def test_the_services_fixture_is_this_renderers_page(self):
-        page = share.page(RUN, title="DMs to answer")
-        if os.environ.get("MOBSTER_UPDATE_FIXTURES") == "1":
-            FIXTURE.write_text(page, encoding="utf-8")
-        self.assertEqual(FIXTURE.read_text(encoding="utf-8"), page,
-                         "re-record with MOBSTER_UPDATE_FIXTURES=1 and run the license API's tests")
 
 
 class Service(BaseHTTPRequestHandler):

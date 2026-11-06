@@ -1,4 +1,4 @@
-"""The agent hosts with their own docs page and the MCP directory listings. Offline; temp homes only."""
+"""Agent host setup, documentation and the public test action. Offline; temp homes only."""
 
 import json
 import re
@@ -67,26 +67,7 @@ class CopilotCLITests(TempHomeCase):
         self.assertTrue(all(row["action"] == "unchanged" for row in rows), rows)
 
 
-class ListingTests(unittest.TestCase):
-    folder = ROOT / "packaging" / "listings"
-
-    def test_the_json_listings_parse_and_the_readme_names_every_file(self):
-        readme = (self.folder / "README.md").read_text()
-        for path in sorted(self.folder.iterdir()):
-            if path.suffix == ".json":
-                json.loads(path.read_text())
-            if path.name != "README.md":
-                self.assertIn(f"`{path.name}`", readme)
-
-    def test_the_listings_agree_with_the_registry_entry(self):
-        registry = json.loads((ROOT / "packaging" / "mcp-registry" / "server.json").read_text())
-        pulse = json.loads((self.folder / "pulsemcp.json").read_text())
-        connector = json.loads((self.folder / "claude-connectors.json").read_text())
-        self.assertEqual(pulse["registry"], registry["name"])
-        self.assertTrue((self.folder / pulse["registry_file"]).is_file())
-        self.assertEqual(connector["server_url"], registry["remotes"][0]["url"])
-        self.assertTrue((self.folder / connector["icon"]).is_file())
-
+class ActionMetadataTests(unittest.TestCase):
     def test_the_action_has_marketplace_metadata_and_a_replay_example(self):
         action = (ROOT / "actions" / "test" / "action.yml").read_text()
         for key in ("name:", "description:", "author:", "branding:"):

@@ -43,6 +43,12 @@ def signature(snapshot):
     return [list(pair) for pair in pairs[:SIGNATURE_LIMIT]]
 
 
+def signature_hash(signature):
+    """The stable screen digest shared by live guards and recorded replay paths."""
+    pairs = [list(pair) for pair in signature]
+    return hashlib.sha1(json.dumps(pairs, ensure_ascii=False).encode()).hexdigest()[:16]
+
+
 def screen_shape(pairs):
     out = {hashlib.sha1(json.dumps(list(pair), ensure_ascii=False).encode()).hexdigest()[:8] for pair in pairs or ()}
     return sorted(out)[:SHAPE_LIMIT]

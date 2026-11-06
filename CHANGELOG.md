@@ -6,6 +6,9 @@ All notable changes to Mobster CLI are listed here. The format follows [Keep a C
 
 ### Fixed
 
+- Keep screen signatures in the standalone engine boundary and include the frozen heldout task manifest.
+- CLI tests use local fixtures; app packaging and service parity checks remain in the app repository.
+
 - Standalone installs include the Wi-Fi pairing and packet-capture helper sources; frozen builds include every Swift helper.
 - Update checks use PyPI for Python installs and CLI archives for frozen installs. App-owned copies use the Mac app updater.
 - Generated CI jobs run the standalone CLI through uv. Runner checks require a Mac app account only for app-owned copies.

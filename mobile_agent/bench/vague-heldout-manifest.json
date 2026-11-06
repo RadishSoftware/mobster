@@ -1,0 +1,12 @@
+{
+ "name": "vague-heldout",
+ "frozen": "2026-10-10",
+ "sha256": "effd75207973314ea22faf39fbec6fd3313965a7c620f95b86e4ab41665c1e0a",
+ "tasks": [
+  "h.feed.fitness.tiktok",
+  "h.feed.travel",
+  "h.inbox.gmail",
+  "h.inbox.instagram",
+  "h.shorts.science"
+ ]
+}

@@ -1,12 +1,13 @@
 # Examples
 
-Every example below runs as written. Try `embed_runtime.py` first: it needs no phone and no key.
+Start with `embed_runtime.py`: it needs no phone and no key. The other examples list their runtime and device requirements below.
 
 Run the commands from the repository root. Where a command says `mobster`, `mobster` is on your `PATH`, or `mobile_agent/.venv/bin/python -m mobile_agent` after `make venv`.
 
 | example | what it shows | needs | command |
 | --- | --- | --- | --- |
 | [embed_runtime.py](https://github.com/RadishSoftware/mobster/blob/main/examples/embed_runtime.py) | the terminal UI's engine from Python, with your own approval rule | `make venv`; nothing else, it runs on the scripted demo phone | `PYTHONPATH=. mobile_agent/.venv/bin/python examples/embed_runtime.py` |
+| [reference_loop.py](https://github.com/RadishSoftware/mobster/blob/main/examples/reference_loop.py) | the observe, decide, verify, act loop with every approval declined | `make venv`; a running WebDriverAgent, `WDA_URL`, and a Claude or OpenAI key in the environment | `PYTHONPATH=. mobile_agent/.venv/bin/python examples/reference_loop.py` |
 | [run_and_check.sh](https://github.com/RadishSoftware/mobster/blob/main/examples/run_and_check.sh) | `mobster run` in a shell script: read the result with `jq`, branch on the exit code | the CLI, `jq`, an iPhone, a model key | `examples/run_and_check.sh "Turn on Dark Mode"` |
 | [api_client.py](https://github.com/RadishSoftware/mobster/blob/main/examples/api_client.py) | a client for `mobster serve`: start a task, print its steps from the event stream, answer approvals | a running `mobster serve --enable-live`, an iPhone, a model key | `python3 examples/api_client.py --token-file "$TOKEN_FILE" settings "Turn on Dark Mode"` |
 | [agents](https://github.com/RadishSoftware/mobster/tree/main/examples/agents) | Mobster's MCP server in the Claude Agent SDK, OpenAI Agents SDK, Vercel AI SDK and LangChain | the CLI; a key for the agent run, none for `--list` | `.venv/bin/python main.py --list` |
@@ -14,7 +15,6 @@ Run the commands from the repository root. Where a command says `mobster`, `mobs
 | [workflows](https://github.com/RadishSoftware/mobster/tree/main/examples/workflows) | five saved tasks, saved paused | a running `mobster serve` or Mobster for Mac | `curl ... --data @examples/workflows/battery-storage.json .../api/workflows` |
 | [dev](https://github.com/RadishSoftware/mobster/tree/main/examples/dev) | CI workflows for GitHub and GitLab, a launch check | a Mac runner | see its README |
 | [plugins](https://github.com/RadishSoftware/mobster/tree/main/examples/plugins) | a plugin folder | Mobster for Mac | see its README |
-| [ios/Daybreak](https://github.com/RadishSoftware/mobster/tree/main/examples/ios/Daybreak) | a sample app with checks | Xcode and a simulator | see its README |
 
 ## embed_runtime.py
 
@@ -36,6 +36,19 @@ Done: Sent “running 10 minutes late” to Alex Rivera.
 ```
 
 It exits 0 when the task finished.
+
+## reference_loop.py
+
+Reads the iOS version by opening Settings, General, then About. The script uses a WebDriverAgent runner you have already started and a Claude or OpenAI key in the environment (`ANTHROPIC_API_KEY` or `OPENAI_API_KEY`). It does not build, sign or start the runner.
+
+```sh
+WDA_URL=http://127.0.0.1:8100 PYTHONPATH=. \
+  mobile_agent/.venv/bin/python examples/reference_loop.py
+```
+
+It allows only Settings and runs at most 12 steps. Every approval request is declined. Events stay in memory; this example does not persist a journal.
+
+After the loop returns, it prints each decision's step number, operation and target label, followed by JSON containing `status`, `answer` and `reason`. It exits 0 after printing that summary; inspect `status` to determine the task outcome. Missing `WDA_URL` or a model key prints usage to stderr and exits 2.
 
 ## run_and_check.sh
 

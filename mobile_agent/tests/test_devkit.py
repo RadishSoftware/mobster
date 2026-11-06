@@ -732,10 +732,7 @@ class RouteTests(unittest.TestCase):
             self.assertEqual((response.status, response.value["code"]), (409, "outcome_unknown"))
 
 
-ROOT = Path(__file__).resolve().parents[2]
-
-
-SCHEME = ROOT / "examples/ios/Daybreak/Daybreak.xcodeproj/xcshareddata/xcschemes/Daybreak.xcscheme"
+SCHEME = Path(__file__).parent / "fixtures" / "xctest" / "Daybreak.xcscheme"
 
 
 class HookTests(unittest.TestCase):

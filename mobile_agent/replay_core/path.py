@@ -17,11 +17,8 @@ A step is a plain dict, so it goes to JSON and YAML as it is::
 - ``live``: the step can't be replayed (text the model wrote, a macro read): the model does it each run.
 """
 
-import hashlib
-import json
-
 # A screen's role/label pairs as short hashes: the frontier's StepRecord.shape uses the same rule.
-from ..state import SHAPE_LIMIT, SIGNATURE_LIMIT, screen_shape  # noqa: F401
+from ..state import SHAPE_LIMIT, SIGNATURE_LIMIT, screen_shape, signature_hash  # noqa: F401
 
 VERSION = 1
 MAX_STEPS = 60
@@ -44,14 +41,6 @@ VERBS = {"TAP": "Tap", "LONG_PRESS": "Press and hold", "TYPE": "Type in", "TYPE_
 
 class PathError(ValueError):
     """A stored path that can't be used: it is ignored, and the next run records a new one."""
-
-
-
-
-def signature_hash(signature):
-    """The short stable hash of a signature: frontier.screen_signature's rule, so StepRecord.screen matches it."""
-    pairs = [list(pair) for pair in signature]
-    return hashlib.sha1(json.dumps(pairs, ensure_ascii=False).encode()).hexdigest()[:16]
 
 
 def screen_hashes(snapshot):

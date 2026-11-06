@@ -141,6 +141,12 @@ class Directory(unittest.TestCase):
 
 
 class AllowlistTests(Directory):
+    def test_mobsters_own_client_still_cannot_delete(self):
+        apple = Apple()
+        with self.assertRaises(DevError):
+            client(apple).request("DELETE", "/v1/certificates/C-MADE")
+        self.assertEqual(apple.seen, [])
+
     def test_the_only_writes_are_the_three_by_name(self):
         self.assertEqual(set(asc.WRITES), {"register_device", "create_certificate", "create_profile"})
         self.assertEqual({path for path, _ in asc.WRITES.values()}, {"/v1/devices", "/v1/certificates", "/v1/profiles"})
@@ -457,79 +463,6 @@ class SecretTests(Directory):
             self.assertNotIn(private, text)
         self.assertIn(PHONE["udid"], text)
         self.assertEqual(oct(self.ledger.path.stat().st_mode & 0o777), "0o600")
-
-
-class RevokeScriptTests(Directory):
-    """scripts/revoke_test_certificate.py: the one DELETE, kept out of Mobster's client."""
-
-    def load(self):
-        import importlib.util
-
-        path = Path(__file__).resolve().parents[2] / "scripts" / "revoke_test_certificate.py"
-        spec = importlib.util.spec_from_file_location("revoke_test_certificate", path)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        return module
-
-    def made(self, certificate_id="C-MADE"):
-        digest = asc.digest("create_certificate", writes.certificate_body(CSR))
-        self.ledger.begin("create_certificate", digest, {"csr_sha256": "x"})
-        self.ledger.end(digest, "done", {"id": certificate_id})
-
-    def test_it_revokes_only_a_certificate_the_ledger_made_and_only_with_yes(self):
-        script = self.load()
-        self.made()
-        seen = []
-
-        class Deleted:
-            status = 204
-
-            def __enter__(self):
-                return self
-
-            def __exit__(self, *args):
-                return False
-
-        def opener(request, timeout=None):
-            seen.append((request.get_method(), request.full_url))
-            return Deleted()
-
-        class Store:
-            items = {}
-
-            def get(self, account):
-                return None
-
-            def delete(self, account):
-                return False
-
-        key = lambda: asc.Key(TEAM_KEY, ISSUER, p8_for(RFC_D), "test")  # noqa: E731
-        folder = self.ledger.path.parent.parent
-        with contextlib.redirect_stdout(io.StringIO()) as out, contextlib.redirect_stderr(io.StringIO()):
-            self.assertEqual(
-                script.main(
-                    ["C-OTHER", "--data-dir", str(folder), "--yes"], load_key=key, opener=opener, store=Store()
-                ),
-                3,
-            )
-            self.assertEqual(
-                script.main(["C-MADE", "--data-dir", str(folder)], load_key=key, opener=opener, store=Store()), 0
-            )
-        self.assertEqual(seen, [])
-        self.assertIn("Add --yes", out.getvalue())
-        with contextlib.redirect_stdout(io.StringIO()) as out:
-            self.assertEqual(
-                script.main(["C-MADE", "--data-dir", str(folder), "--yes"], load_key=key, opener=opener, store=Store()),
-                0,
-            )
-        self.assertEqual(seen, [("DELETE", "https://api.appstoreconnect.apple.com/v1/certificates/C-MADE")])
-        self.assertNotIn("BEGIN", out.getvalue())
-
-    def test_mobsters_own_client_still_cannot_delete(self):
-        apple = Apple()
-        with self.assertRaises(DevError):
-            client(apple).request("DELETE", "/v1/certificates/C-MADE")
-        self.assertEqual(apple.seen, [])
 
 
 if __name__ == "__main__":

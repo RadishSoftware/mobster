@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "mobster",
   "display_name": "Mobster",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Test iOS screens on a simulator and control the iPhone you set up in Mobster for Mac.",
   "long_description": "Use Mobster’s MCP server in Claude Desktop through Mobster for Mac. Download the app from https://mobster.dev/download and move it to Applications. This bundle contains only a small script that finds Mobster.app and runs its agent with `mcp`.",
   "icon": "icon.png",
