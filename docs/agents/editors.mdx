@@ -8,19 +8,19 @@ keywords: ["cursor", "codex", "windsurf", "xcode", "device hub", "mcp install", 
 
 Mobster gives your agent tools and a skill that describes the testing loop. Ask your agent to run a flow on a simulator. Save the flow as a check. Run the check again on every pull request. For Cursor, Windsurf and Xcode's agents, follow the setup below from each one's documentation.
 
-Each line needs Mobster for Mac in Applications, opened once. It adds the `mobster` MCP server and the skill, and changes nothing else. Run it in a terminal, then start a new session in the agent. Restart Cursor.
+First [install the standalone CLI](/quickstart/cli) and check `mobster version`. Each line below uses that command. It adds the `mobster` MCP server and the skill, and changes nothing else. Run it in a terminal, then start a new session in the agent. Restart Cursor.
 
 | Agent | One line |
 |---|---|
-| Cursor | `/Applications/Mobster.app/Contents/MacOS/mobster-agent mcp install cursor --with-skill` |
-| Codex | `/Applications/Mobster.app/Contents/MacOS/mobster-agent mcp install codex --with-skill` |
-| Windsurf | `/Applications/Mobster.app/Contents/MacOS/mobster-agent mcp install windsurf --with-skill` |
-| Xcode's agents (Claude Agent and Codex) | `/Applications/Mobster.app/Contents/MacOS/mobster-agent mcp install xcode --with-skill` |
-| Every agent found on this Mac | `/Applications/Mobster.app/Contents/MacOS/mobster-agent mcp install --all --with-skill` |
+| Cursor | `mobster mcp install cursor --with-skill` |
+| Codex | `mobster mcp install codex --with-skill` |
+| Windsurf | `mobster mcp install windsurf --with-skill` |
+| Xcode's agents (Claude Agent and Codex) | `mobster mcp install xcode --with-skill` |
+| Every agent found on this Mac | `mobster mcp install --all --with-skill` |
 
 For Cursor's one-click link and what the install prints, see [Cursor](/agents/cursor).
 
-The long path works before `mobster` is on your `PATH`. Add `--project .` to write this repository's `.cursor/mcp.json` instead of yours; Xcode's agents have no project config. Then run `mobster mcp doctor`: it starts the server the way the agent would and lists its tools. Claude Code uses the [plugin](/agents/plugin-and-skill) instead.
+Mobster for Mac is optional; its Settings › Connectors can add the bundled server instead. Add `--project .` to write this repository's `.cursor/mcp.json` instead of yours; Xcode's agents have no project config. Then run `mobster mcp doctor`: it starts the server the way the agent would and lists its tools. Claude Code uses the [plugin](/agents/plugin-and-skill) instead.
 
 Mobster writes the files named in `mobster mcp install --dry-run`, keeps a `.mobster-backup` beside each file it changes, and never writes a key.
 

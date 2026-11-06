@@ -174,7 +174,7 @@ Deep links Mobster opened on a real iPhone, by app. The `open_url` MCP tool list
 - [Mobster's MCP server](https://docs.mobster.dev/mcp-server.md): How your coding agent checks a screen, drives a simulator or your iPhone, and hands Mobster a task through mobster mcp.
 - [Instructions for agents](https://docs.mobster.dev/agents/instructions.md): A block for CLAUDE.md, AGENTS.md or .cursor/rules that makes your coding agent check each UI change with Mobster.
 - [Mobster in Cursor and VS Code](https://docs.mobster.dev/agents/editor-extension.md): A side panel beside your code with your app live on a simulator, your checks with run and heal, approvals, and test on save. You build it on your Mac and install it from a VSIX.
-- [Setup for a coding agent](https://docs.mobster.dev/agents/setup.md): Numbered steps for a coding agent that sets Mobster up for its user: find Mobster for Mac, prepare the simulator, connect over MCP, and run a first launch-only check, with the output to expect and when to stop.
+- [Setup for a coding agent](https://docs.mobster.dev/agents/setup.md): Numbered steps for a coding agent that sets Mobster up for its user: install the standalone CLI, prepare the simulator, connect over MCP, and run a first launch-only check, with the output to expect and when to stop.
 
 ## Connect agents and tools: Apps and tools
 

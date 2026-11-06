@@ -10,6 +10,8 @@ Mobster adds its MCP server to Codex CLI's own config. Codex CLI then lists Mobs
 
 ## Add it
 
+First [install the standalone CLI](/quickstart/cli) and check `mobster version`. Mobster for Mac is optional.
+
 ```sh
 mobster mcp install codex
 ```
@@ -17,7 +19,7 @@ mobster mcp install codex
 It prints what it changed:
 
 ```text
-Mobster's MCP server: /Applications/Mobster.app/Contents/MacOS/mobster-agent mcp
+Mobster's MCP server: /absolute/path/to/mobster mcp
   Codex           added      ~/.codex/config.toml
 New sessions of the other clients pick it up. Check it with `mobster mcp doctor`.
 ```
@@ -26,11 +28,13 @@ Add `--dry-run` to see the change first and write nothing. Run the command again
 
 ## What it writes
 
+The examples use `/absolute/path/to/mobster` for your installed executable. `mobster mcp install` writes the actual path; `--dry-run` shows it before changing the config.
+
 The entry goes in `~/.codex/config.toml`. `$CODEX_HOME` moves the folder. Mobster runs `codex mcp add` when the `codex` command is on your `PATH`, and edits the file otherwise.
 
 ```toml
 [mcp_servers.mobster]
-command = "/Applications/Mobster.app/Contents/MacOS/mobster-agent"
+command = "/absolute/path/to/mobster"
 args = ["mcp"]
 ```
 

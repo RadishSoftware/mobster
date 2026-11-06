@@ -2,7 +2,7 @@
 title: "Setup for a coding agent"
 "og:title": "Set up Mobster: instructions for a coding agent"
 sidebarTitle: "Agent setup"
-description: "Numbered steps for a coding agent that sets Mobster up for its user: find Mobster for Mac, prepare the simulator, connect over MCP, and run a first launch-only check, with the output to expect and when to stop."
+description: "Numbered steps for a coding agent that sets Mobster up for its user: install the standalone CLI, prepare the simulator, connect over MCP, and run a first launch-only check, with the output to expect and when to stop."
 hidden: true
 ---
 
@@ -25,24 +25,25 @@ xcodebuild -version
 
 Expect `arm64`, then an Xcode version such as `Xcode 26.4`. If `xcodebuild` says no Xcode is selected or isn't found, stop: ask the user to install Xcode from the App Store and open it once.
 
-## 2. Find Mobster for Mac
+## 2. Install the standalone CLI
+
+Check whether the command is already installed. A missing command means you need the installation step below:
 
 ```sh
-ls /Applications/Mobster.app/Contents/MacOS/mobster-agent
-```
-
-Expect the path back. If it isn't there, stop: ask the user to get Mobster for Mac from https://mobster.dev/download, move it to Applications and open it once, then continue.
-
-The agent inside the app is the `mobster` command. Link it onto `PATH` and check it:
-
-```sh
-mkdir -p ~/.local/bin
-ln -sf /Applications/Mobster.app/Contents/MacOS/mobster-agent ~/.local/bin/mobster
-export PATH="$HOME/.local/bin:$PATH"
+command -v mobster
 mobster version
 ```
 
-Expect a line `mobster` and a version number. If the user's shell startup file doesn't put `~/.local/bin` on `PATH`, tell them to add `export PATH="$HOME/.local/bin:$PATH"` to it.
+If it is missing, install [uv](https://docs.astral.sh/uv/getting-started/installation/), then run:
+
+```sh
+uv tool install --python 3.12 mobster-cli
+uv tool update-shell
+```
+
+Open a new terminal and run `mobster version` again. Expect `mobster` and a version number. Stop if installation or the version check fails.
+
+Mobster for Mac is optional. Its bundled command is a separate installation; do not replace an existing `mobster` command with a link to the app.
 
 ## 3. Prepare the simulator
 
@@ -59,7 +60,7 @@ mobster mcp install --all
 mobster mcp doctor
 ```
 
-Expect one line per client found, such as `Claude Code  added`, and a doctor run that lists the tools and calls `status`. Tell the user to restart Cursor or Claude Desktop if either was set up. A new session of the other clients picks it up. In the app, Settings › Connectors › Use Mobster from… shows the same clients as added. To make the project's agents verify UI changes without being asked, add `--rules .` to the command: it writes the project's `AGENTS.md` block and, for Cursor, `.cursor/rules/mobster.mdc`.
+Expect one line per client found, such as `Claude Code  added`, and a doctor run that lists the tools and calls `status`. Tell the user to restart Cursor or Claude Desktop if either was set up. A new session of the other clients picks it up. If you use Mobster for Mac, Settings › Connectors › Use Mobster from… shows the same clients as added. To make the project's agents verify UI changes without being asked, add `--rules .` to the command: it writes the project's `AGENTS.md` block and, for Cursor, `.cursor/rules/mobster.mdc`.
 
 Installing again keeps each client's saved Mobster server options and environment, including phone and TestFlight restrictions. An explicitly passed option replaces that option's saved values. `--reset-server-options` replaces all saved options and environment. Mobster leaves an existing launch entry it cannot interpret untouched so you can review it.
 

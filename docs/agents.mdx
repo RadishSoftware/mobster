@@ -93,22 +93,22 @@ If your agent lists no `mobster` tools, run `mobster mcp doctor` in a terminal. 
 
 ## Add it by hand
 
-For Claude Code or Codex, run its own command:
+With `mobster` installed on your `PATH`, use its absolute path when registering the server:
 
 ```sh
 # Claude Code, for every project
-claude mcp add --scope user mobster -- /Applications/Mobster.app/Contents/MacOS/mobster-agent mcp
+claude mcp add --scope user mobster -- "$(command -v mobster)" mcp
 # Codex
-codex mcp add mobster -- /Applications/Mobster.app/Contents/MacOS/mobster-agent mcp
+codex mcp add mobster -- "$(command -v mobster)" mcp
 ```
 
-Most other clients take this entry in a JSON file:
+Most other clients take this entry in a JSON file. Replace `/absolute/path/to/mobster` with the output of `command -v mobster`:
 
 ```json ~/.cursor/mcp.json
 {
   "mcpServers": {
     "mobster": {
-      "command": "/Applications/Mobster.app/Contents/MacOS/mobster-agent",
+      "command": "/absolute/path/to/mobster",
       "args": ["mcp"]
     }
   }
@@ -131,7 +131,7 @@ Most other clients take this entry in a JSON file:
 | opencode | `~/.config/opencode/opencode.json`, `mcp`, with `"type": "local"` and the command and `mcp` in one `command` list |
 | Goose | `~/.config/goose/config.yaml`, `extensions`, in YAML with `cmd` and `args` |
 
-`mobster mcp install <client> --dry-run` prints the exact entry for any of them. If you keep Mobster in `~/Applications`, the command is `/Users/you/Applications/Mobster.app/Contents/MacOS/mobster-agent`. See [Which clients are tested](/mcp-server#which-clients-are-tested) for the clients used in a real session.
+`mobster mcp install <client> --dry-run` prints the exact entry for any of them. If you choose the optional Mac app instead, use its bundled `Contents/MacOS/mobster-agent` executable. See [Which clients are tested](/mcp-server#which-clients-are-tested) for the clients used in a real session.
 
 ## Turn on Mobster's agent
 

@@ -16,38 +16,25 @@ You need a Mac with Apple silicon, and Xcode with an iOS Simulator runtime. The 
 ## Set up
 
 <Steps>
-  <Step title="Install Mobster">
-    <Tabs>
-      <Tab title="Homebrew">
-        ```sh
-        brew install --cask radishsoftware/tap/mobster-app
-        ```
-
-        This puts `Mobster.app` in Applications.
-      </Tab>
-      <Tab title="Download">
-        [Download Mobster for Mac](https://mobster.dev/download) and drag it to Applications.
-      </Tab>
-    </Tabs>
-
-    The `mobster` command ships inside the app. Link it into `~/.local/bin`, add that folder to your `PATH`, and open a new terminal window:
+  <Step title="Install the standalone CLI">
+    Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then run:
 
     ```sh
-    mkdir -p ~/.local/bin
-    ln -sf /Applications/Mobster.app/Contents/MacOS/mobster-agent \
-      ~/.local/bin/mobster
-    echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
+    uv tool install --python 3.12 mobster-cli
+    uv tool update-shell
     ```
 
-    Check the version:
+    Open a new terminal and check the version:
 
     ```sh
     mobster version
     ```
 
     ```text Output
-    mobster 0.4.0
+    mobster 0.4.3
     ```
+
+    Mobster for Mac is optional. [The CLI quickstart](/quickstart/cli) also covers the npm launcher.
   </Step>
   <Step title="Prepare the simulator">
     ```sh
