@@ -206,7 +206,7 @@ class RunTests(Base):
             self.service.run_checks(other["id"], {})
         self.assertEqual(caught.exception.code, "no_checks")
         with self.assertRaises(ValueError):
-            self.service.run_checks(self.project["id"], {"device": "Michelle's iPhone"})
+            self.service.run_checks(self.project["id"], {"device": "Sam's iPhone"})
 
     def test_with_the_tests_page_on_a_run_takes_simulators_and_tags_or_the_projects_links(self):
         with mock.patch.dict(os.environ, {PAGE_FLAG: "1"}):

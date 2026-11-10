@@ -32,9 +32,9 @@ class RunSummaryTests(unittest.TestCase):
                 sim = finished(origin, SimpleNamespace(kind="simulator"), "iPhone 17 Pro")
                 self.assertEqual((sim["deviceKind"], sim["deviceName"]), ("simulator", "iPhone 17 Pro"))
                 self.assertIn("Look at the simulator", narrate.Outcome("r", sim["status"], sim).detail)
-                phone = finished(origin, None, "Michelle's iPhone")
+                phone = finished(origin, None, "Sam's iPhone")
                 self.assertEqual(phone["deviceKind"], "usb")
-                self.assertIn("Look at Michelle's iPhone", narrate.Outcome("r", phone["status"], phone).detail)
+                self.assertIn("Look at Sam's iPhone", narrate.Outcome("r", phone["status"], phone).detail)
 
     def test_a_summary_that_already_names_its_device_is_left_alone(self):
         run = Run(app=dict(APP), goal="x", mode="live")

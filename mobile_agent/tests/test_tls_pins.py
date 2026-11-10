@@ -65,7 +65,7 @@ class PinTests(unittest.TestCase):
 
     def test_other_hosts_use_the_trust_store_alone(self):
         for host in ("github.com", "api.anthropic.com", "wwljtuapjuwfzzakujav.supabase.co", "docs.mobster.dev",
-                     "mobster-remote-staging.alex-827.workers.dev", "evilmobster.dev", "127.0.0.1"):
+                     "mobster-remote-staging.example.workers.dev", "evilmobster.dev", "127.0.0.1"):
             self.assertFalse(pinning.is_pinned(host), host)
             pinning.check_pins(FakeTLS(chain("github.com")), host)
 

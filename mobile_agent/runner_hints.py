@@ -49,7 +49,7 @@ RUNNER_HINTS = (
 )
 
 # The runner says "Running tests..." and, once iOS has turned on automation mode, "Test Suite 'All tests' started"
-# about 2 s later (Michelle's iPhone 16, iOS 18.3.1, 17 Oct 2026: 1.9 s). With Settings › Developer › Enable UI
+# about 2 s later (Sam's iPhone 16, iOS 18.3.1, 17 Oct 2026: 1.9 s). With Settings › Developer › Enable UI
 # Automation off, iOS waits for the passcode instead and the start fails after 60 s. Waiting this long already names
 # the cause, so the person can act during the first launch instead of after two 60 s timeouts.
 AUTOMATION_WAIT_S = 8.0

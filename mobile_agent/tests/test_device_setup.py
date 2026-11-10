@@ -509,7 +509,7 @@ class LockedStartTests(unittest.TestCase):
 class BuildTeamTests(unittest.TestCase):
     PHONE = {"udid": "u", "name": "iPhone"}
     PAID = {"id": "ABCDE12345", "name": "Radish Retail, LLC", "personal": False}
-    PERSONAL = {"id": "97793U8886", "name": "Alex", "personal": True}
+    PERSONAL = {"id": "QQQQQ11111", "name": "Alex", "personal": True}
 
     def manager(self, teams=(), saved=None):
         manager = dm.DeviceManager(tempfile.mkdtemp())
@@ -570,7 +570,7 @@ class BuildTeamTests(unittest.TestCase):
                 self.assertNotEqual(refused.build.get("state"), "running")
 
     def test_a_team_xcode_has_no_account_for_is_a_team_error_naming_it(self):
-        raw = 'error: No Account for Team "97793U8886". Add a new account in Accounts settings.'
+        raw = 'error: No Account for Team "QQQQQ11111". Add a new account in Accounts settings.'
         signin = setup_errors.problem(raw)
         self.assertEqual(signin["kind"], "xcode_signin")
         other = self.manager([self.PAID])._team_problem(signin, self.PERSONAL["id"])

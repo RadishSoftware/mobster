@@ -57,7 +57,7 @@ def item_kind(session):
     return kind if kind in ITEM_KINDS else "row"
 
 
-# A row's leading state, which many rows share ("Unread, Michelle, …": real iPhone, 13 Oct, every unread Instagram
+# A row's leading state, which many rows share ("Unread, Sam, …": real iPhone, 13 Oct, every unread Instagram
 # thread was keyed "Unread", so READ_EACH took the first and skipped the rest as already read).
 ROW_STATE = re.compile(r"^(unread|read|new|new messages?|\d+ new messages?|pinned|muted|verified|online|active now|"
                        r"active|seen|sent|delivered|typing…?|typing\.\.\.|unread messages?)$", re.I)
@@ -65,7 +65,7 @@ ROW_STATE = re.compile(r"^(unread|read|new|new messages?|\d+ new messages?|pinne
 
 def row_name(label):
     """A row's key: its first part that isn't a state the rows share ("Riley, Your turn, Hi" -> "Riley"; "Unread,
-    Michelle, 4 new messages" -> "Michelle")."""
+    Sam, 4 new messages" -> "Sam")."""
     parts = [part for part in re.split(r",\s+|\s+[-–]\s+", " ".join(str(label or "").split())) if part]
     named = next((part for part in parts if not ROW_STATE.match(part)), parts[0] if parts else "")
     return named[:80]

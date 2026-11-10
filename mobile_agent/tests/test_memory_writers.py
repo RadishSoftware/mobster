@@ -265,7 +265,7 @@ class WriterTests(Base):
         self.assertEqual(self.store.list_facts(scope="profile:acc123456789"), [])
 
     def test_a_device_fact_and_secrets_in_any_writer_are_refused(self):
-        writer.from_device("udid-1", "Michelle's iPhone", {"iosVersion": "18.3.1", "modelName": "iPhone 16"})
+        writer.from_device("udid-1", "Sam's iPhone", {"iosVersion": "18.3.1", "modelName": "iPhone 16"})
         self.assertIn("on iOS 18.3.1", self.store.list_facts(scope="phone:udid-1")[0]["text"])
         writer.from_profile({"id": "acc123456789", "handle": "getmobster", "app": {"name": "Instagram"},
                              "notes": "The password is hunter2", "signature": ""})

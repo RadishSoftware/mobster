@@ -399,7 +399,7 @@ All notable changes to Mobster CLI are listed here. The format follows [Keep a C
 - A shared result's failed preview, a failed link copy and a map that didn't draw each say what to do next.
 - A finished task's macOS notification says the same word as its row in the sidebar (Done, Take a look, Couldn’t finish, Stopped), not the engine's status ("Failed", "Needs attention").
 - How a task ended reads in plain words in its notification and its activity: "Mobster stopped before it read the answer. Try again." instead of "The requested answer was not produced. The task stopped before result extraction." When an action's outcome is unknown, the line says to check your iPhone and never to try again.
-- "Take a look" says where to look. A run on a simulator says "Look at the simulator", a run on a named phone says its name ("Look at Michelle's iPhone"), and only a phone with no name says "your iPhone". Chat, MCP and Mobster Remote read the same words.
+- "Take a look" says where to look. A run on a simulator says "Look at the simulator", a run on a named phone says its name ("Look at Sam's iPhone"), and only a phone with no name says "your iPhone". Chat, MCP and Mobster Remote read the same words.
 - Changing Appearance recolours every control at once. A toast's buttons press in as every other button does, a list row lights up the moment you point at it, and with Reduce motion a switch still changes colour, without the slide.
 - Fourteen more buttons keep their label and width while they work, and a second press does nothing until they finish.
 - Loading buttons keep their names available to VoiceOver while a spinner covers the label.

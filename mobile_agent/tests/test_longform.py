@@ -2101,7 +2101,7 @@ class SweepNavigation(unittest.TestCase):
 
     def test_unread_rows_are_keyed_by_who_they_are_with(self):
         from mobile_agent.longform.items import row_name
-        self.assertEqual(row_name("Unread, Michelle, Delete, 4 new messages, 3 hours ago"), "Michelle")
+        self.assertEqual(row_name("Unread, Sam, Delete, 4 new messages, 3 hours ago"), "Sam")
         self.assertEqual(row_name("Unread, Sam Lee, 1 new message"), "Sam Lee")
         self.assertEqual(row_name("Riley, Your turn, Hi"), "Riley")
         self.assertEqual(row_name("Unread"), "Unread")
