@@ -1,0 +1,9 @@
+# Smithery's stdio start command for the local server: the CLI from PyPI through uv. It needs a Mac with Xcode,
+# so Smithery lists it for people to install; it doesn't host it.
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    properties: {}
+  commandFunction: |-
+    (config) => ({ command: 'uvx', args: ['--python', '3.12', 'mobster-cli', 'mcp'] })
