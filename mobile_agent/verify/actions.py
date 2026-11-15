@@ -214,9 +214,11 @@ class ActionJournal:
             self._latch("unknown_outcome")
             raise ActionError("unknown_outcome")
 
+        from ..wda.timeouts import is_action
+
         def request(method, path, *args, **kwargs):
             verb = method.upper()
-            if verb in ("GET", "HEAD"):
+            if verb == "HEAD" or not is_action(verb, path):  # a read can't change the phone: its outcome is no effect
                 return original(method, path, *args, **kwargs)
             with self._action(f"HTTP_{verb}", url_404_is_rejected=verb == "POST" and path.endswith("/url")):
                 return original(method, path, *args, **kwargs)

@@ -9,7 +9,7 @@ packaging/cli/build.sh
 
 The build freezes the command, performs smoke checks and writes the macOS arm64 archive under `dist/`. Signing and notarization require the release owner's configured Apple credentials. Do not commit those credentials.
 
-The standalone Python package is published on [PyPI](https://pypi.org/project/mobster-cli/0.4.3/); no new frozen binary has been published. The standalone Homebrew formula and Claude Desktop bundle remain release inputs until the integrated gates pass. App casks and the deprecated CLI cask stay in the app repository.
+The standalone Python package is published on [PyPI](https://pypi.org/project/mobster-cli/0.4.4/); no new frozen binary has been published. The standalone Homebrew formula and Claude Desktop bundle remain release inputs until the integrated gates pass. App casks and the deprecated CLI cask stay in the app repository.
 
 Release artifacts are checked by `scripts/scan_release_secrets.py`, using the shared detection rules in `scripts/secret_patterns.py`.
 
@@ -33,7 +33,7 @@ Before the first publication, sign in to PyPI and add a [pending trusted publish
 
 The GitHub repository must have an environment named `pypi`. No PyPI API token or repository secret is needed. PyPI creates the project when the configured publisher first uploads a release. See [PyPI's trusted-publishing instructions](https://docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/).
 
-Release `0.4.3` is published from the immutable `cli-v0.4.3` tag. For a future version, update the version and package pins, check out the reviewed release commit, then create and push the matching tag:
+Release `0.4.4` is published from the immutable `cli-v0.4.4` tag. For a future version, update the version and package pins, check out the reviewed release commit, then create and push the matching tag:
 
 ```sh
 release_version=$(mobile_agent/.venv/bin/python -c 'from mobile_agent import __version__; print(__version__)')

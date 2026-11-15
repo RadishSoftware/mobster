@@ -2,7 +2,13 @@
 
 All notable changes to Mobster CLI are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/). Before 1.0, a minor version can change the command line or the API.
 
-## Unreleased
+## 0.4.4 - 2026-11-14
+
+### Fixed
+
+- Your checks keep running on a busy Mac, such as a hosted CI runner, when a read of the screen times out. 0.4.3 counted that read as a tap with an unknown outcome, refused the next step and reported "couldn't run". A tap, swipe or typed text whose outcome is unknown still stops the run, and Mobster never repeats it.
+
+## 0.4.3 - 2026-11-06
 
 ### Fixed
 

@@ -173,6 +173,25 @@ class ActionJournalTests(unittest.TestCase):
         self.actions.unwrap_http(driver)
         self.assertEqual(driver.call, original)
 
+    def test_a_read_that_fails_leaves_no_unknown_effect_and_an_action_that_fails_still_does(self):
+        # A POST WebDriverAgent answers as a read (an app's state, a find) can't change the phone (wda.timeouts).
+        class Driver:
+            def call(self, method, path, *args, **kwargs):
+                if path.endswith(("/wda/apps/state", "/uncertain")):
+                    raise TimeoutError("lost reply")
+
+        driver = Driver()
+        self.actions.wrap_http(driver)
+        with self.assertRaises(TimeoutError):
+            driver.call("POST", "/session/s1/wda/apps/state", {"bundleId": "com.example.app"})
+        driver.call("POST", "/session/s1/wda/tap")
+        self.assertEqual([row["operation"] for row in self.rows()], ["HTTP_POST", "HTTP_POST"])
+        with self.assertRaises(TimeoutError):
+            driver.call("POST", "/session/s1/uncertain")
+        with self.assertRaises(ActionError):
+            driver.call("POST", "/session/s1/wda/tap")
+        self.actions.unwrap_http(driver)
+
     def test_driver_guard_covers_recovery_callbacks_without_double_wrapping(self):
         class Driver:
             def __init__(self):
